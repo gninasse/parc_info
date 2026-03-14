@@ -89,6 +89,66 @@
                   @endcan
                 </ul>
               </li>
+
+              <li class="nav-item">
+                <a href="#" class="nav-link">
+                  <i class="nav-icon bi bi-diagram-2"></i>
+                  <p>
+                    ORGANISATION
+                    <i class="nav-arrow bi bi-chevron-right"></i>
+                  </p>
+                </a>
+                <ul class="nav nav-treeview">
+                  <li class="nav-item">
+                    <a href="{{ route('organisation.sites.index') }}" class="nav-link {{ request()->routeIs('organisation.sites.*') ? 'active' : '' }}">
+                      <i class="nav-icon bi bi-geo-alt"></i>
+                      <p>Sites</p>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a href="{{ route('organisation.directions.index') }}" class="nav-link {{ request()->routeIs('organisation.directions.*') ? 'active' : '' }}">
+                      <i class="nav-icon bi bi-building-fill"></i>
+                      <p>Directions</p>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a href="{{ route('organisation.services.index') }}" class="nav-link {{ request()->routeIs('organisation.services.*') ? 'active' : '' }}">
+                      <i class="nav-icon bi bi-people-fill"></i>
+                      <p>Services</p>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a href="{{ route('organisation.unites.index') }}" class="nav-link {{ request()->routeIs('organisation.unites.*') ? 'active' : '' }}">
+                      <i class="nav-icon bi bi-person-badge"></i>
+                      <p>Unités cliniques</p>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a href="{{ route('organisation.batiments.index') }}" class="nav-link {{ request()->routeIs('organisation.batiments.*') ? 'active' : '' }}">
+                      <i class="nav-icon bi bi-buildings"></i>
+                      <p>Bâtiments</p>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a href="{{ route('organisation.etages.index') }}" class="nav-link {{ request()->routeIs('organisation.etages.*') ? 'active' : '' }}">
+                      <i class="nav-icon bi bi-layers"></i>
+                      <p>Étages</p>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a href="{{ route('organisation.locaux.index') }}" class="nav-link {{ request()->routeIs('organisation.locaux.*') ? 'active' : '' }}">
+                      <i class="nav-icon bi bi-door-closed"></i>
+                      <p>Locaux</p>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a href="{{ route('organisation.postes.index') }}" class="nav-link {{ request()->routeIs('organisation.postes.*') ? 'active' : '' }}">
+                      <i class="nav-icon bi bi-pc-display"></i>
+                      <p>Postes de travail</p>
+                    </a>
+                  </li>
+                </ul>
+              </li>
                
             </ul>
             <!--end::Sidebar Menu-->
