@@ -1,9 +1,12 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Grh\Http\Controllers\DashboardController;
 use Modules\Grh\Http\Controllers\EmployeController;
 
 Route::middleware(['auth'])->prefix('grh')->name('grh.')->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
     Route::prefix('employes')->name('employes.')->group(function () {
         Route::get('/', [EmployeController::class, 'index'])->name('index');
         Route::get('/data', [EmployeController::class, 'getData'])->name('data');
