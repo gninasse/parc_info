@@ -1,0 +1,11 @@
+{
+    "name": "Grh",
+    "alias": "grh",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Grh\\Providers\\GrhServiceProvider"
+    ],
+    "files": []
+}

@@ -1,5 +1,6 @@
 {
     "Core": true,
     "Organisation": true,
-    "ParcInfo": true
+    "ParcInfo": true,
+    "Grh": true
 }
