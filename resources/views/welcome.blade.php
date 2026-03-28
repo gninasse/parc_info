@@ -100,7 +100,8 @@
             <ul class="order-1 order-md-3 navbar-nav navbar-no-expand ml-auto">
                 <li class="nav-item">
                     @auth
-                        <a href="{{ route('cores.dashboard') }}" class="btn btn-outline-light">Tableau de Bord</a>
+                        <a href="{{ route('parc-info.dashboard') }}" class="btn btn-outline-light">Parc Informatique</a>
+                        <a href="{{ route('cores.dashboard') }}" class="btn btn-outline-light">Administration</a>
                     @else
                         <a href="{{ route('login') }}" class="btn btn-outline-light">Connexion</a>
                     @endauth
@@ -115,7 +116,8 @@
                 <h1>Visibilité totale et maîtrise complète de votre parc informatique</h1>
                 <p class="lead">Le module de Gestion de Parc du CHU-YO transforme la manière dont vous gérez vos actifs informatiques, de l'acquisition au retrait, en passant par la maintenance et la conformité.</p>
                 @auth
-                    <a href="{{ route('cores.dashboard') }}" class="btn btn-lg btn-success">Accéder au tableau de bord</a>
+                    <a href="{{ route('parc-info.dashboard') }}" class="btn btn-lg btn-success">Accéder au Parc Informatique</a>
+                    <a href="{{ route('cores.dashboard') }}" class="btn btn-lg btn-success">Accéder à l'Administration</a>
                 @else
                     <a href="{{ route('login') }}" class="btn btn-lg btn-success">Connectez-vous</a>
                 @endauth
@@ -158,7 +160,7 @@
                 <h2 class="mb-3">Transformons ensemble la gestion de notre parc informatique</h2>
                 <p class="lead mb-4">Vous avez des accès a cette plateforme?</p>
                 @auth
-                    <a href="{{ route('cores.dashboard') }}" class="btn btn-lg btn-light"><i class="fas fa-tachometer-alt mr-2"></i>Tableau de bord</a>
+                    <a href="{{ route('parc-info.dashboard') }}" class="btn btn-lg btn-light"><i class="fas fa-tachometer-alt mr-2"></i>Tableau de bord</a>
                 @else
                     <a href="{{ route('login') }}" class="btn btn-lg btn-light"><i class="fas fa-user mr-2"></i>Connectez-vous</a>
                 @endauth

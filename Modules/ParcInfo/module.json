@@ -1,0 +1,11 @@
+{
+    "name": "ParcInfo",
+    "alias": "parcinfo",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\ParcInfo\\Providers\\ParcInfoServiceProvider"
+    ],
+    "files": []
+}
