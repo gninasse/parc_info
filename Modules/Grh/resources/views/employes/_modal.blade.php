@@ -50,8 +50,14 @@
                                 <input type="date" class="form-control bg-light border-0 py-2" id="date_embauche" name="date_embauche">
                             </div>
                             <div class="col-12">
-                                <label for="poste" class="form-label text-muted small fw-bold">Emploi</label>
-                                <input type="text" class="form-control bg-light border-0 py-2" id="poste" name="poste" />
+                                <label for="poste" class="form-label text-muted small fw-bold">POSTE OCCUPÉ</label>
+                                <select class="form-select bg-light border-0 py-2" id="poste" name="poste">
+                                    <option value="">Sélectionner un poste...</option>
+                                    <option value="Chargé des Admissions">Chargé des Admissions</option>
+                                    <option value="Infirmier">Infirmier</option>
+                                    <option value="Médecin">Médecin</option>
+                                    <option value="Administrateur">Administrateur</option>
+                                </select>
                             </div>
                         </div>
                     </div>

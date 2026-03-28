@@ -10,9 +10,26 @@ $(function() {
     const $btnToggle = $('#btn-toggle-status');
     const $formActions = $('#form-actions');
     const $inputs = $form.find('input, select, textarea');
+
+    // Selecteurs structure administrative
     const $niveauRattachement = $('#niveau_rattachement');
-    const $rattachementLabel = $('#rattachement-label');
-    const $rattachementContainer = $('#rattachement-container');
+    const $dirSelect = $('#direction_id');
+    const $srvSelect = $('#service_id');
+    const $untSelect = $('#unite_id');
+    const $dirContainer = $('#dir-select-container');
+    const $srvContainer = $('#srv-select-container');
+    const $untContainer = $('#unt-select-container');
+
+    // Visualisation Preview
+    const $previewDir = $('#preview-direction');
+    const $previewSrv = $('#preview-service');
+    const $previewUnt = $('#preview-unite');
+
+    // Contacts
+    const $contactsContainer = $('#contacts-container');
+    const $addContactBtn = $('#add-contact-btn');
+    const contactRowTemplate = $('#contact-row-template').html();
+    let contactIndex = $contactsContainer.find('.contact-row').length;
 
     // Switch to edit mode
     $btnEdit.on('click', function() {
@@ -20,11 +37,12 @@ $(function() {
         $formActions.removeClass('d-none');
         $btnEdit.addClass('d-none');
         $btnToggle.addClass('d-none');
-        $('#btn-add-contact-row').removeClass('d-none');
+        $addContactBtn.removeClass('d-none');
+        $('.contact-actions').removeClass('d-none');
+        $('#no-contacts-alert').addClass('d-none');
 
-        // Ensure some fields are always editable or styled correctly
-        $inputs.removeClass('bg-light').addClass('border-primary shadow-sm');
-        $('#matricule').prop('disabled', true); // Matricule non modifiable?
+        $inputs.removeClass('bg-light').addClass('bg-white shadow-sm border');
+        $('#matricule').prop('disabled', true).addClass('bg-light'); // Matricule reste non modifiable
     });
 
     // Cancel edit mode
@@ -32,29 +50,125 @@ $(function() {
         window.location.reload();
     });
 
-    // Handle rattachement selection
+    // Gestion de la hiérarchie administrative
     $niveauRattachement.on('change', function() {
-        const val = $(this).val();
-        $rattachementContainer.removeClass('d-none');
-        $('#direction_id, #service_id, #unite_id').addClass('d-none').prop('required', false);
+        const niveau = $(this).val();
 
-        if (val === 'direction') {
-            $rattachementLabel.text('Sélectionner la Direction *');
-            $('#direction_id').removeClass('d-none').prop('required', true);
-        } else if (val === 'service') {
-            $rattachementLabel.text('Sélectionner le Service *');
-            $('#service_id').removeClass('d-none').prop('required', true);
-        } else if (val === 'unite') {
-            $rattachementLabel.text('Sélectionner l\'Unité *');
-            $('#unite_id').removeClass('d-none').prop('required', true);
-        } else {
-            $rattachementContainer.addClass('d-none');
+        $dirContainer.removeClass('d-none');
+        if (niveau === 'direction') {
+            $srvContainer.addClass('d-none');
+            $untContainer.addClass('d-none');
+            $srvSelect.val('');
+            $untSelect.val('');
+            $previewSrv.addClass('d-none');
+            $previewUnt.addClass('d-none');
+        } else if (niveau === 'service') {
+            $srvContainer.removeClass('d-none');
+            $untContainer.addClass('d-none');
+            $untSelect.val('');
+            $previewUnt.addClass('d-none');
+        } else if (niveau === 'unite') {
+            $srvContainer.removeClass('d-none');
+            $untContainer.removeClass('d-none');
         }
     });
+
+    $dirSelect.on('change', function() {
+        const dirId = $(this).val();
+        const dirText = $(this).find('option:selected').text();
+
+        $previewDir.text(dirId ? dirText : 'Direction Générale');
+
+        if (dirId && ($niveauRattachement.val() === 'service' || $niveauRattachement.val() === 'unite')) {
+            loadServices(dirId);
+        } else {
+            $srvSelect.empty().append('<option value="">Sélectionner le Service...</option>');
+            $untSelect.empty().append('<option value="">Sélectionner l\'Unité...</option>');
+            $previewSrv.addClass('d-none');
+            $previewUnt.addClass('d-none');
+        }
+    });
+
+    $srvSelect.on('change', function() {
+        const srvId = $(this).val();
+        const srvText = $(this).find('option:selected').text();
+
+        if (srvId) {
+            $previewSrv.text(srvText).removeClass('d-none');
+            if ($niveauRattachement.val() === 'unite') {
+                loadUnites(srvId);
+            } else {
+                $previewUnt.addClass('d-none');
+            }
+        } else {
+            $previewSrv.addClass('d-none');
+            $previewUnt.addClass('d-none');
+            $untSelect.empty().append('<option value="">Sélectionner l\'Unité...</option>');
+        }
+    });
+
+    $untSelect.on('change', function() {
+        const untId = $(this).val();
+        const untText = $(this).find('option:selected').text();
+
+        if (untId) {
+            $previewUnt.text(untText).removeClass('d-none');
+        } else {
+            $previewUnt.addClass('d-none');
+        }
+    });
+
+    function loadServices(dirId, selectedSrvId = null) {
+        $.get(window.grhRoutes.services(dirId), function(services) {
+            $srvSelect.empty().append('<option value="">Sélectionner le Service...</option>');
+            services.forEach(srv => {
+                const selected = (selectedSrvId == srv.id) ? 'selected' : '';
+                $srvSelect.append(`<option value="${srv.id}" ${selected}>${srv.libelle}</option>`);
+            });
+        });
+    }
+
+    function loadUnites(srvId, selectedUntId = null) {
+        $.get(window.grhRoutes.unites(srvId), function(unites) {
+            $untSelect.empty().append('<option value="">Sélectionner l\'Unité...</option>');
+            unites.forEach(unt => {
+                const selected = (selectedUntId == unt.id) ? 'selected' : '';
+                $untSelect.append(`<option value="${unt.id}" ${selected}>${unt.libelle}</option>`);
+            });
+        });
+    }
+
+    // Gestion des contacts
+    $addContactBtn.on('click', function() {
+        addContactRow();
+    });
+
+    $('.remove-contact-btn').on('click', function() {
+        $(this).closest('.contact-row').remove();
+    });
+
+    function addContactRow() {
+        let rowHtml = contactRowTemplate.replace(/INDEX/g, contactIndex);
+        let $row = $(rowHtml);
+
+        $row.find('.remove-contact-btn').on('click', function() {
+            $row.remove();
+        });
+
+        $contactsContainer.append($row);
+        contactIndex++;
+    }
 
     // Save profile
     $form.on('submit', function(e) {
         e.preventDefault();
+
+        if (!this.checkValidity()) {
+            e.stopPropagation();
+            $(this).addClass('was-validated');
+            return;
+        }
+
         const formData = $(this).serialize();
 
         $.ajax({
@@ -77,10 +191,25 @@ $(function() {
             },
             error: function(xhr) {
                 const message = xhr.responseJSON?.message || 'Une erreur est survenue lors de la mise à jour';
-                Swal.fire('Erreur', message, 'error');
+                const errors = xhr.responseJSON?.errors;
+                let errorHtml = '';
+
+                if (errors) {
+                    errorHtml = '<ul class="text-start mt-2 small">';
+                    Object.values(errors).forEach(err => {
+                        errorHtml += `<li>${err}</li>`;
+                    });
+                    errorHtml += '</ul>';
+                }
+
+                Swal.fire({
+                    title: 'Erreur',
+                    html: message + errorHtml,
+                    icon: 'error'
+                });
             },
             complete: function() {
-                $btnSave.prop('disabled', false).html('<i class="fas fa-save me-1"></i> ENREGISTRER LES MODIFICATIONS');
+                $btnSave.prop('disabled', false).html('<i class="fas fa-save me-1"></i> ENREGISTRER');
             }
         });
     });
