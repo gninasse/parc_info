@@ -30,34 +30,23 @@
               data-accordion="false"
               id="navigation"
             >
-              <li class="nav-item menu-open">
-                <a href="#" class="nav-link active">
-                  <i class="nav-icon bi bi-person-badge-fill"></i>
-                  <p>
-                    GESTION RH
-                    <i class="nav-arrow bi bi-chevron-right"></i>
-                  </p>
+              <li class="nav-item">
+                <a href="{{ route('grh.dashboard') }}" class="nav-link {{ request()->routeIs('grh.dashboard') ? 'active' : '' }}">
+                  <i class="nav-icon bi bi-speedometer2"></i>
+                  <p>Tableau de bord</p>
                 </a>
-                <ul class="nav nav-treeview">
-                  <li class="nav-item">
-                    <a href="{{ route('grh.dashboard') }}" class="nav-link {{ request()->routeIs('grh.dashboard') ? 'active' : '' }}">
-                      <i class="nav-icon bi bi-speedometer2"></i>
-                      <p>Dashboard</p>
-                    </a>
-                  </li>
-                  <li class="nav-item">
-                    <a href="{{ route('grh.employes.index') }}" class="nav-link {{ request()->routeIs('grh.employes.*') ? 'active' : '' }}">
-                      <i class="nav-icon bi bi-people-fill"></i>
-                      <p>Dossiers Employés</p>
-                    </a>
-                  </li>
-                </ul>
+              </li>
+              <li class="nav-item">
+                <a href="{{ route('grh.employes.index') }}" class="nav-link {{ request()->routeIs('grh.employes.*') ? 'active' : '' }}">
+                  <i class="nav-icon bi bi-people-fill"></i>
+                  <p>Dossiers Employés</p>
+                </a>
               </li>
 
-              <li class="nav-item mt-3">
-                <a href="{{ url('/') }}" class="nav-link">
+              <li class="nav-item mt-4 border-top border-secondary pt-3">
+                <a href="{{ url('/') }}" class="nav-link text-warning">
                   <i class="nav-icon bi bi-house-door"></i>
-                  <p>Retour à l'accueil</p>
+                  <p>ACCUEIL GÉNÉRAL</p>
                 </a>
               </li>
             </ul>

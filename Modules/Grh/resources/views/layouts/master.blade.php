@@ -46,7 +46,7 @@
     <!--begin::App Wrapper-->
     <div class="app-wrapper">
 
-      @include('core::layouts.partials.navbar')
+      @include('grh::layouts.partials.navbar')
 
       @include('grh::layouts.partials.sidebar')
 
