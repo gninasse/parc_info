@@ -1,4 +1,4 @@
-<div class="modal fade" id="posteModal" tabindex="-1" aria-labelledby="posteModalLabel" aria-hidden="true">
+<div class="modal fade px-0" id="posteModal" tabindex="-1" aria-labelledby="posteModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content border-0 shadow-lg">
             <div class="modal-header border-0 pb-0 pt-4 px-4">
@@ -7,7 +7,7 @@
                         <i class="fas fa-desktop text-primary fs-4"></i>
                     </div>
                     <div>
-                        <h5 class="modal-title fw-bold mb-0" id="posteModalLabel text-dark">Nouveau Poste de Travail</h5>
+                        <h5 class="modal-title fw-bold mb-0 text-dark" id="posteModalLabel">Nouveau Poste de Travail</h5>
                         <small class="text-muted">Enregistrement d'une unité de travail dans le système</small>
                     </div>
                 </div>
@@ -102,16 +102,20 @@
                             </div>
                         </div>
                         <div class="row g-3">
-                            <div class="col-md-6">
+                            <div id="statut_container" class="col-md-6">
                                 <label class="form-label text-dark fw-semibold mb-1 small d-block">Statut</label>
                                 <div class="d-flex mt-2">
-                                    <div class="form-check me-4">
+                                    <div class="form-check me-3">
                                         <input class="form-check-input shadow-none" type="radio" name="statut" id="statut_actif" value="actif" checked>
                                         <label class="form-check-label text-dark small fw-medium" for="statut_actif">Actif</label>
                                     </div>
-                                    <div class="form-check">
+                                    <div class="form-check me-3">
                                         <input class="form-check-input shadow-none" type="radio" name="statut" id="statut_inactif" value="inactif">
                                         <label class="form-check-label text-dark small fw-medium" for="statut_inactif">Inactif</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input shadow-none" type="radio" name="statut" id="statut_renovation" value="en_renovation">
+                                        <label class="form-check-label text-dark small fw-medium" for="statut_renovation">Rénovation</label>
                                     </div>
                                 </div>
                             </div>
@@ -162,5 +166,11 @@
         background-color: #f8f9fa;
         border: none;
         min-height: 40px;
+        display: flex;
+        align-items: center;
+    }
+    #posteModal .select2-container--bootstrap-5 .select2-selection__rendered {
+        color: #6c757d;
+        padding-left: 0;
     }
 </style>

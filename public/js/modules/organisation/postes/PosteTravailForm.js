@@ -23,6 +23,7 @@ export class PosteTravailForm {
                 dropdownParent: this.$modal,
                 placeholder: 'Rechercher un employé...',
                 allowClear: true,
+                theme: 'bootstrap-5',
                 ajax: {
                     url: route('organisation.postes.search-employes'),
                     dataType: 'json',
@@ -36,6 +37,8 @@ export class PosteTravailForm {
     }
 
     initChainedSelectors() {
+        const self = this;
+
         // Niveau de rattachement
         $('#niveau_rattachement').on('change', function () {
             const niveau = $(this).val();
@@ -59,16 +62,16 @@ export class PosteTravailForm {
             const $uniteSelect = $('#unite_id');
 
             $serviceSelect.html('<option value="">Chargement...</option>');
-            $uniteSelect.html('<option value="">Sélectionner...</option>');
+            $uniteSelect.html('<option value="">Sélectionner une unité</option>');
 
             if (directionId) {
                 $.get(route('grh.employes.services-by-direction', directionId), (data) => {
-                    let options = '<option value="">Sélectionner...</option>';
+                    let options = '<option value="">Sélectionner un service</option>';
                     data.forEach(item => options += `<option value="${item.id}">${item.libelle}</option>`);
                     $serviceSelect.html(options);
                 });
             } else {
-                $serviceSelect.html('<option value="">Sélectionner...</option>');
+                $serviceSelect.html('<option value="">Sélectionner un service</option>');
             }
         });
 
@@ -81,12 +84,12 @@ export class PosteTravailForm {
 
             if (serviceId) {
                 $.get(route('grh.employes.unites-by-service', serviceId), (data) => {
-                    let options = '<option value="">Sélectionner...</option>';
+                    let options = '<option value="">Sélectionner une unité</option>';
                     data.forEach(item => options += `<option value="${item.id}">${item.libelle}</option>`);
                     $uniteSelect.html(options);
                 });
             } else {
-                $uniteSelect.html('<option value="">Sélectionner...</option>');
+                $uniteSelect.html('<option value="">Sélectionner une unité</option>');
             }
         });
 
@@ -140,7 +143,6 @@ export class PosteTravailForm {
             $localSelect.html('<option value="">Chargement...</option>');
 
             if (etageId) {
-                // There is no getByEtage but getData can filter by etage_id
                 $.get(route('organisation.locaux.data'), { etage_id: etageId, limit: 1000 }, (response) => {
                     let options = '<option value="">Sélectionner...</option>';
                     response.rows.forEach(item => options += `<option value="${item.id}">${item.libelle}</option>`);
@@ -155,13 +157,16 @@ export class PosteTravailForm {
     initValidation() {
         $('input, select', this.$form).on('input change', function () {
             $(this).removeClass('is-invalid');
-            $(this).next('.invalid-feedback').remove();
+            $(this).closest('.col-md-6, .col-md-3').find('.invalid-feedback').remove();
+            if ($(this).attr('name') === 'statut') {
+                $('#statut_container').find('.invalid-feedback').remove();
+            }
         });
     }
 
     openForAdd() {
         this.resetForm();
-        $('#posteModalLabel').text('Nouveau Poste de travail');
+        $('#posteModalLabel').text('Nouveau Poste de Travail');
         $('#poste_id').val('');
         $('#statut_actif').prop('checked', true);
         $('#btn-save-poste span').text('Créer le Poste');
@@ -172,10 +177,9 @@ export class PosteTravailForm {
 
     async openForEdit(data) {
         this.resetForm();
-        $('#posteModalLabel').text('Modifier le Poste de travail');
+        $('#posteModalLabel').text('Modifier le Poste de Travail');
         $('#btn-save-poste span').text('Mettre à jour');
 
-        // Fetch full data to have all IDs (site, batiment, etage)
         try {
             const response = await $.get(route('organisation.postes.show', data.id));
             const poste = response.data;
@@ -186,14 +190,14 @@ export class PosteTravailForm {
 
             if (poste.direction_id) {
                 const services = await $.get(route('grh.employes.services-by-direction', poste.direction_id));
-                let options = '<option value="">Sélectionner...</option>';
+                let options = '<option value="">Sélectionner un service</option>';
                 services.forEach(item => options += `<option value="${item.id}" ${item.id == poste.service_id ? 'selected' : ''}>${item.libelle}</option>`);
                 $('#service_id').html(options);
             }
 
             if (poste.service_id) {
                 const unites = await $.get(route('grh.employes.unites-by-service', poste.service_id));
-                let options = '<option value="">Sélectionner...</option>';
+                let options = '<option value="">Sélectionner une unité</option>';
                 unites.forEach(item => options += `<option value="${item.id}" ${item.id == poste.unite_id ? 'selected' : ''}>${item.libelle}</option>`);
                 $('#unite_id').html(options);
             }
@@ -225,11 +229,9 @@ export class PosteTravailForm {
 
             $('#code').val(poste.code);
             $('#libelle').val(poste.libelle);
-            if (poste.statut === 'actif') {
-                $('#statut_actif').prop('checked', true);
-            } else {
-                $('#statut_inactif').prop('checked', true);
-            }
+
+            // Status radio buttons
+            $(`input[name="statut"][value="${poste.statut}"]`).prop('checked', true);
 
             if (poste.agent) {
                 const option = new Option(poste.agent.full_name + ' (' + poste.agent.matricule + ')', poste.agent.id, true, true);
@@ -254,12 +256,17 @@ export class PosteTravailForm {
                 : route('organisation.postes.store');
             const method = posteId ? 'PUT' : 'POST';
 
+            const $btn = $('#btn-save-poste');
+            const originalText = $btn.find('span').text();
+
             $.ajax({
                 url: url,
                 method: method,
                 data: this.$form.serialize(),
                 beforeSend: () => {
-                    $('#btn-save-poste').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+                    $btn.prop('disabled', true);
+                    $btn.find('span').text('Enregistrement...');
+                    $btn.find('i').attr('class', 'fas fa-spinner fa-spin ms-2');
                 },
                 success: (response) => {
                     if (response.success) {
@@ -276,7 +283,9 @@ export class PosteTravailForm {
                     }
                 },
                 complete: () => {
-                    $('#btn-save-poste').prop('disabled', false).html('<i class="fas fa-save mr-1"></i> Enregistrer');
+                    $btn.prop('disabled', false);
+                    $btn.find('span').text(originalText);
+                    $btn.find('i').attr('class', 'fas fa-arrow-right ms-2 fs-7');
                 }
             });
         });
@@ -285,9 +294,16 @@ export class PosteTravailForm {
     displayErrors(errors) {
         this.clearErrors();
         $.each(errors, (field, messages) => {
-            const $field = $(`#${field}`);
-            $field.addClass('is-invalid');
-            $field.after(`<div class="invalid-feedback">${messages[0]}</div>`);
+            let $field = $(`#${field}`);
+
+            if (field === 'statut') {
+                $('#statut_container').append(`<div class="invalid-feedback d-block">${messages[0]}</div>`);
+            } else if (field === 'dossier_employe_id') {
+                $('#dossier_employe_id').closest('.input-group').after(`<div class="invalid-feedback d-block">${messages[0]}</div>`);
+            } else {
+                $field.addClass('is-invalid');
+                $field.after(`<div class="invalid-feedback">${messages[0]}</div>`);
+            }
         });
     }
 
@@ -299,6 +315,7 @@ export class PosteTravailForm {
     resetForm() {
         this.$form[0].reset();
         $('#service_id, #unite_id, #batiment_id, #etage_id, #local_id').html('<option value="">Sélectionner...</option>');
+        $('#dossier_employe_id').val(null).trigger('change');
         this.clearErrors();
     }
 }
