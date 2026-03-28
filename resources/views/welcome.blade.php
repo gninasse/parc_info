@@ -89,19 +89,23 @@
         <div class="container">
             <a href="#" class="navbar-brand">
                 <i class="fas fa-cogs logo-icon"></i>
-                <span class="brand-text font-weight-bold">CHU-YO | <span class="font-weight-light">Gestion de Parc</span></span>
+                <span class="brand-text font-weight-bold">CHU-YO | <span class="font-weight-light">Plateforme Digitale</span></span>
             </a>
             <button class="navbar-toggler order-1" type="button" data-toggle="collapse" data-target="#navbarCollapse"><span class="navbar-toggler-icon"></span></button>
             <div class="collapse navbar-collapse order-3" id="navbarCollapse">
                 <ul class="navbar-nav"> 
+                    <li class="nav-item"><a href="#features" class="nav-link">Modules</a></li>
                     <li class="nav-item"><a href="#how-it-works" class="nav-link">Comment ça marche ?</a></li>
                 </ul>
             </div>
             <ul class="order-1 order-md-3 navbar-nav navbar-no-expand ml-auto">
                 <li class="nav-item">
                     @auth
-                        <a href="{{ route('parc-info.dashboard') }}" class="btn btn-outline-light">Parc Informatique</a>
-                        <a href="{{ route('cores.dashboard') }}" class="btn btn-outline-light">Administration</a>
+                        <div class="btn-group">
+                            <a href="{{ route('parc-info.dashboard') }}" class="btn btn-outline-light">Parc Informatique</a>
+                            <a href="{{ route('grh.dashboard') }}" class="btn btn-outline-light">GRH</a>
+                            <a href="{{ route('cores.dashboard') }}" class="btn btn-outline-light">Administration</a>
+                        </div>
                     @else
                         <a href="{{ route('login') }}" class="btn btn-outline-light">Connexion</a>
                     @endauth
@@ -113,65 +117,75 @@
     <div class="content-wrapper">
         <div class="hero-section">
             <div class="container">
-                <h1>Visibilité totale et maîtrise complète de votre parc informatique</h1>
-                <p class="lead">Le module de Gestion de Parc du CHU-YO transforme la manière dont vous gérez vos actifs informatiques, de l'acquisition au retrait, en passant par la maintenance et la conformité.</p>
+                <h1>Écosystème Digital CHU-YO</h1>
+                <p class="lead">Centralisez la gestion de votre parc informatique et de vos ressources humaines sur une plateforme unique, sécurisée et performante.</p>
                 @auth
-                    <a href="{{ route('parc-info.dashboard') }}" class="btn btn-lg btn-success">Accéder au Parc Informatique</a>
-                    <a href="{{ route('cores.dashboard') }}" class="btn btn-lg btn-success">Accéder à l'Administration</a>
+                    <div class="d-flex flex-wrap justify-content-center gap-3">
+                        <a href="{{ route('parc-info.dashboard') }}" class="btn btn-lg btn-success">
+                            <i class="fas fa-laptop me-2"></i> Parc Informatique
+                        </a>
+                        <a href="{{ route('grh.dashboard') }}" class="btn btn-lg btn-success">
+                            <i class="fas fa-user-tie me-2"></i> Gestion RH
+                        </a>
+                        <a href="{{ route('cores.dashboard') }}" class="btn btn-lg btn-secondary text-white">
+                            <i class="fas fa-shield-alt me-2"></i> Administration
+                        </a>
+                    </div>
                 @else
-                    <a href="{{ route('login') }}" class="btn btn-lg btn-success">Connectez-vous</a>
+                    <a href="{{ route('login') }}" class="btn btn-lg btn-success px-5 py-3">Connectez-vous à la plateforme</a>
                 @endauth
             </div>
         </div>
 
         <section id="features" class="section">
             <div class="container">
-                <div class="text-center"><h2 class="section-title">Une solution conçue pour les environnements exigeants</h2></div>
-                <div class="row align-items-center feature-item">
-                    <div class="col-md-7">
-                        <h3><i class="fas fa-clipboard-list text-emerald mr-2"></i>Inventaire et Découverte Automatisés</h3>
-                        <p class="text-muted">Notre outil scanne en permanence votre réseau pour découvrir et identifier chaque actif. Postes de travail, serveurs, périphériques, logiciels... Rien n'est oublié.</p>
+                <div class="text-center"><h2 class="section-title">Nos Modules Intégrés</h2></div>
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="card bg-dark border-secondary h-100 p-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="bg-emerald p-3 rounded-circle me-3" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; background-color: var(--emerald);">
+                                    <i class="fas fa-laptop-medical fa-2x text-navy" style="color: var(--navy);"></i>
+                                </div>
+                                <h3 class="mb-0">Parc Informatique</h3>
+                            </div>
+                            <p class="text-muted">Inventaire complet, gestion du cycle de vie des équipements, suivi des garanties et maintenance préventive.</p>
+                            <a href="{{ route('parc-info.dashboard') }}" class="btn btn-sm btn-outline-success mt-auto align-self-start">Ouvrir le module</a>
+                        </div>
                     </div>
-                    <div class="col-md-5 text-center"><i class="fas fa-sitemap feature-icon-lg"></i></div>
-                </div>
-                <div class="row align-items-center feature-item">
-                    <div class="col-md-5 text-center"><i class="fas fa-sync-alt feature-icon-lg"></i></div>
-                    <div class="col-md-7">
-                        <h3><i class="fas fa-recycle text-emerald mr-2"></i>Gestion du Cycle de Vie complet</h3>
-                        <p class="text-muted">Suivez chaque actif de son achat à sa mise au rebut. Gérez les garanties, planifiez les renouvellements et prenez des décisions éclairées sur la base de l'âge, de l'état et du coût total de possession de votre matériel.</p>
+                    <div class="col-md-6">
+                        <div class="card bg-dark border-secondary h-100 p-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="bg-emerald p-3 rounded-circle me-3" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; background-color: var(--emerald);">
+                                    <i class="fas fa-users-cog fa-2x text-navy" style="color: var(--navy);"></i>
+                                </div>
+                                <h3 class="mb-0">Ressources Humaines</h3>
+                            </div>
+                            <p class="text-muted">Dossiers employés centralisés, suivi des carrières, affectations organisationnelles et gestion des contacts.</p>
+                            <a href="{{ route('grh.dashboard') }}" class="btn btn-sm btn-outline-success mt-auto align-self-start">Ouvrir le module</a>
+                        </div>
                     </div>
                 </div>
             </div>
         </section>
-        <section id="benefits" class="section bg-darker">
-            <div class="container">
-                <div class="text-center"><h2 class="section-title">Les avantages concrets pour votre établissement</h2></div>
-                <div class="row">
-                    <div class="col-md-6 col-lg-3 d-flex"><div class="card card-body text-center benefit-card"><div class="card-icon mx-auto"><i class="fas fa-coins"></i></div><h5 class="mt-3">Réduction des Coûts</h5><p class="text-muted small">Optimisez les achats, éliminez les licences inutilisées et prolongez la vie de vos équipements.</p></div></div>
-                    <div class="col-md-6 col-lg-3 d-flex"><div class="card card-body text-center benefit-card"><div class="card-icon mx-auto"><i class="fas fa-shield-alt"></i></div><h5 class="mt-3">Sécurité Accrue</h5><p class="text-muted small">Détectez les appareils non autorisés et assurez-vous que tous les logiciels sont à jour et patchés.</p></div></div>
-                    <div class="col-md-6 col-lg-3 d-flex"><div class="card card-body text-center benefit-card"><div class="card-icon mx-auto"><i class="fas fa-chart-pie"></i></div><h5 class="mt-3">Aide à la Décision</h5><p class="text-muted small">Utilisez des rapports clairs pour planifier vos budgets et vos investissements technologiques.</p></div></div>
-                    <div class="col-md-6 col-lg-3 d-flex"><div class="card card-body text-center benefit-card"><div class="card-icon mx-auto"><i class="fas fa-clock"></i></div><h5 class="mt-3">Gain de Temps</h5><p class="text-muted small">Automatisez les tâches répétitives et libérez vos équipes IT pour des projets à plus forte valeur ajoutée.</p></div></div>
-                </div>
-            </div>
-        </section> 
-        
+
         <section id="cta" class="cta-section text-center">
             <div class="container">
-                <h2 class="mb-3">Transformons ensemble la gestion de notre parc informatique</h2>
-                <p class="lead mb-4">Vous avez des accès a cette plateforme?</p>
+                <h2 class="mb-3">Une plateforme unique pour l'excellence opérationnelle</h2>
+                <p class="lead mb-4">Accédez à tous vos outils de gestion en un clic.</p>
                 @auth
-                    <a href="{{ route('parc-info.dashboard') }}" class="btn btn-lg btn-light"><i class="fas fa-tachometer-alt mr-2"></i>Tableau de bord</a>
+                    <a href="{{ route('grh.dashboard') }}" class="btn btn-lg btn-light"><i class="fas fa-tachometer-alt mr-2"></i>Tableau de bord GRH</a>
                 @else
-                    <a href="{{ route('login') }}" class="btn btn-lg btn-light"><i class="fas fa-user mr-2"></i>Connectez-vous</a>
+                    <a href="{{ route('login') }}" class="btn btn-lg btn-light"><i class="fas fa-user mr-2"></i>Se connecter</a>
                 @endauth
             </div>
         </section>
     </div>
 
     <footer class="main-footer">
-        <div class="container">
-            <div class="float-right d-none d-sm-inline">Fiabilité, Sécurité et Performance.</div>
-            <strong>Copyright &copy; 2025 <a href="#">CHU-YO</a>.</strong>
+        <div class="container py-4">
+            <div class="float-right d-none d-sm-inline">Plateforme Interne CHU-YO</div>
+            <strong>Copyright &copy; 2025 <a href="#">CHU-YO</a>. Tous droits réservés.</strong>
         </div>
     </footer>
 </div>
