@@ -10,6 +10,8 @@ Route::middleware(['auth'])->prefix('grh')->name('grh.')->group(function () {
     Route::prefix('employes')->name('employes.')->group(function () {
         Route::get('/', [EmployeController::class, 'index'])->name('index');
         Route::get('/data', [EmployeController::class, 'getData'])->name('data');
+        Route::get('/services-by-direction/{directionId}', [EmployeController::class, 'getServicesByDirection'])->name('services-by-direction');
+        Route::get('/unites-by-service/{serviceId}', [EmployeController::class, 'getUnitesByService'])->name('unites-by-service');
         Route::post('/', [EmployeController::class, 'store'])->name('store');
         Route::get('/{id}', [EmployeController::class, 'show'])->name('show');
         Route::put('/{id}', [EmployeController::class, 'update'])->name('update');

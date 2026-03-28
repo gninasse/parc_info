@@ -84,7 +84,6 @@
             <button id="btn-toggle-employe" class="btn btn-warning" disabled data-bs-toggle="tooltip" title="Activer / Désactiver">
                 <i class="fas fa-power-off"></i>
             </button>
-            @endcan
         </div>
         <table id="employes-table"
                data-toggle="table"

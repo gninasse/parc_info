@@ -28,6 +28,20 @@ class EmployeController extends Controller
     /**
      * Get data for Bootstrap Table.
      */
+    public function getServicesByDirection($directionId)
+    {
+        $services = Service::where('direction_id', $directionId)->where('actif', true)->get();
+
+        return response()->json($services);
+    }
+
+    public function getUnitesByService($serviceId)
+    {
+        $unites = Unite::where('service_id', $serviceId)->where('actif', true)->get();
+
+        return response()->json($unites);
+    }
+
     public function getData(Request $request)
     {
         $query = Employe::with(['direction', 'service', 'unite']);
@@ -140,6 +154,15 @@ class EmployeController extends Controller
         try {
             $employe = Employe::findOrFail($id);
             $employe->update($request->validated());
+
+            if ($request->has('contacts')) {
+                $employe->contacts()->delete();
+                foreach ($request->contacts as $contactData) {
+                    if (! empty($contactData['valeur'])) {
+                        $employe->contacts()->create($contactData);
+                    }
+                }
+            }
 
             return response()->json([
                 'success' => true,
