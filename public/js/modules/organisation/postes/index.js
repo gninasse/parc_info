@@ -35,9 +35,39 @@ $(function () {
         $('#btn-delete').prop('disabled', !isSingleSelection);
     });
 
-    $('#filter_service_id').on('change', function () {
+    // Filtres
+    $('#filter_direction_id').on('change', function () {
+        const directionId = $(this).val();
+        const $serviceSelect = $('#filter_service_id');
+
+        $serviceSelect.prop('disabled', true).html('<option value="">Chargement...</option>');
+
+        if (directionId) {
+            $.get(route('grh.employes.services-by-direction', directionId), function (services) {
+                let options = '<option value="">Tous les services</option>';
+                services.forEach(service => {
+                    options += `<option value="${service.id}">${service.libelle}</option>`;
+                });
+                $serviceSelect.html(options).prop('disabled', false);
+            });
+        } else {
+            $serviceSelect.html('<option value="">Tous les services</option>').prop('disabled', false);
+        }
+    });
+
+    $('#btn-filter').on('click', function () {
         $table.bootstrapTable('refresh', {
-            query: { service_id: $(this).val() }
+            query: {
+                direction_id: $('#filter_direction_id').val(),
+                service_id: $('#filter_service_id').val(),
+                statut: $('#filter_statut').val()
+            }
         });
+    });
+
+    // Reset toolbar buttons on refresh
+    $table.on('load-success.bs.table', function () {
+        $('#btn-edit').prop('disabled', true);
+        $('#btn-delete').prop('disabled', true);
     });
 });

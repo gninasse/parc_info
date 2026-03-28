@@ -18,15 +18,35 @@
         <h3 class="card-title">Liste des postes</h3>
     </div>
     <div class="card-body">
-        <div class="row mb-3">
-            <div class="col-md-4">
-                <label for="filter_service_id" class="form-label">Filtrer par Service</label>
-                <select class="form-select" id="filter_service_id">
-                    <option value="">Tous les services</option>
-                    @foreach($services as $service)
-                        <option value="{{ $service->id }}">{{ $service->libelle }}</option>
+        <div class="row mb-3 align-items-end">
+            <div class="col-md-3">
+                <label for="filter_direction_id" class="form-label">Direction</label>
+                <select class="form-select" id="filter_direction_id">
+                    <option value="">Toutes les directions</option>
+                    @foreach($directions as $direction)
+                        <option value="{{ $direction->id }}">{{ $direction->libelle }}</option>
                     @endforeach
                 </select>
+            </div>
+            <div class="col-md-3">
+                <label for="filter_service_id" class="form-label">Service</label>
+                <select class="form-select" id="filter_service_id">
+                    <option value="">Tous les services</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="filter_statut" class="form-label">Statut</label>
+                <select class="form-select" id="filter_statut">
+                    <option value="">Tous</option>
+                    <option value="actif">Actif</option>
+                    <option value="inactif">Inactif</option>
+                    <option value="en_renovation">En rénovation</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button id="btn-filter" class="btn btn-secondary w-100">
+                    <i class="fas fa-filter"></i> Filtrer
+                </button>
             </div>
         </div>
         
@@ -65,10 +85,12 @@
                 <tr>
                     <th data-field="state" data-radio="true"></th>
                     <th data-field="code" data-sortable="true">Code</th>
-                    <th data-field="libelle" data-sortable="true">Libellé</th>
-                    <th data-field="direction.libelle" data-sortable="true">Site</th>
-                    <th data-field="agent.name" data-sortable="true">Responsable</th>
-                    <th data-field="actif" data-sortable="true" data-formatter="statutFormatter">Statut</th>
+                    <th data-field="libelle" data-sortable="true">Poste</th>
+                    <th data-field="direction" data-sortable="true">Direction</th>
+                    <th data-field="service" data-sortable="true">Service</th>
+                    <th data-field="emplacement" data-sortable="true">Emplacement</th>
+                    <th data-field="occupant" data-sortable="true">Occupant</th>
+                    <th data-field="statut" data-sortable="true" data-formatter="statutFormatter">Statut</th>
                 </tr>
             </thead>
         </table>
@@ -84,9 +106,19 @@
 <script src="{{ asset('plugins/sweetalert2/sweetalert2.min.js') }}"></script>
 <script>
     function statutFormatter(value) {
-        return value 
-            ? '<span class="badge bg-success">Actif</span>' 
-            : '<span class="badge bg-danger">Inactif</span>';
+        let badges = {
+            'actif': 'success',
+            'inactif': 'secondary',
+            'en_renovation': 'warning',
+            'supprime': 'danger'
+        };
+        let labels = {
+            'actif': 'Actif',
+            'inactif': 'Inactif',
+            'en_renovation': 'En rénovation',
+            'supprime': 'Supprimé'
+        };
+        return `<span class="badge bg-${badges[value] || 'info'}">${labels[value] || value}</span>`;
     }
 </script>
 

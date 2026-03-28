@@ -2,9 +2,9 @@
 
 namespace Modules\Organisation\Models;
 
-use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Modules\Grh\Models\Employe;
 
 class PosteTravail extends Model
 {
@@ -14,11 +14,12 @@ class PosteTravail extends Model
         'code',
         'libelle',
         'description',
+        'niveau_rattachement',
         'direction_id',
         'service_id',
         'unite_id',
         'local_id',
-        'agent_id',
+        'dossier_employe_id',
         'statut',
         'actif',
     ];
@@ -49,7 +50,7 @@ class PosteTravail extends Model
 
     public function agent(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'agent_id');
+        return $this->belongsTo(Employe::class, 'dossier_employe_id');
     }
 
     public function scopeActif($query)
@@ -59,19 +60,21 @@ class PosteTravail extends Model
 
     public function scopeVacant($query)
     {
-        return $query->whereNull('agent_id');
+        return $query->whereNull('dossier_employe_id');
     }
 
-    public function scopeParService($query, $serviceId)
+    public static function generateCode($parentId, $isService = true)
     {
-        return $query->where('service_id', $serviceId);
-    }
+        if ($isService) {
+            $service = Service::find($parentId);
+            $count = static::where('service_id', $parentId)->count() + 1;
+            $code = $service->code ?? 'SRV';
+        } else {
+            $direction = Direction::find($parentId);
+            $count = static::where('direction_id', $parentId)->whereNull('service_id')->count() + 1;
+            $code = $direction->code ?? 'DIR';
+        }
 
-    public static function generateCode($serviceId)
-    {
-        $service = Service::find($serviceId);
-        $count = static::where('service_id', $serviceId)->count() + 1;
-
-        return sprintf('POST-%s-%03d', strtoupper($service->code ?? 'SRV'), $count);
+        return sprintf('POST-%s-%03d', strtoupper($code), $count);
     }
 }

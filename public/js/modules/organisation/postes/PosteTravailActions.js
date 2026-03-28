@@ -10,49 +10,35 @@ export class PosteTravailActions {
     }
 
     initButtons() {
-        $('#btn-add').click(() => {
+        $('#btn-add').off('click').on('click', () => {
             this.form.openForAdd();
         });
 
-        $('#btn-edit').click(() => {
+        $('#btn-edit').off('click').on('click', () => {
             const posteId = this.table.getSelectedId();
             if (posteId) this.editPosteTravail(posteId);
         });
 
-        $('#btn-delete').click(() => {
+        $('#btn-delete').off('click').on('click', () => {
             const posteId = this.table.getSelectedId();
             if (posteId) this.deletePosteTravail(posteId);
         });
     }
 
     editPosteTravail(posteId) {
-        $.ajax({
-            url: route('organisation.postes.show', posteId),
-            method: 'GET',
-            success: (response) => {
-                if (response.success) {
-                    this.form.openForEdit(response.data);
-                }
-            },
-            error: (xhr) => {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Erreur',
-                    text: 'Impossible de charger les données'
-                });
-            }
-        });
+        // Form now handles fetching and setting up chained selects
+        this.form.openForEdit({ id: posteId });
     }
 
     deletePosteTravail(posteId) {
         Swal.fire({
             title: 'Êtes-vous sûr ?',
-            text: "Cette action va désactiver cette poste",
+            text: "Cette action va désactiver ce poste de travail",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Oui, supprimer',
+            confirmButtonText: 'Oui, désactiver',
             cancelButtonText: 'Annuler'
         }).then((result) => {
             if (result.isConfirmed) {
@@ -64,7 +50,7 @@ export class PosteTravailActions {
                             this.table.refresh();
                             Swal.fire({
                                 icon: 'success',
-                                title: 'Supprimé',
+                                title: 'Désactivé',
                                 text: response.message,
                                 timer: 2000
                             });

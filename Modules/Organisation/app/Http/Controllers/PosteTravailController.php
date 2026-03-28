@@ -3,12 +3,14 @@
 namespace Modules\Organisation\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use Illuminate\Http\Request;
+use Modules\Grh\Models\Employe;
+use Modules\Organisation\Http\Requests\PosteTravailRequest;
 use Modules\Organisation\Models\Direction;
 use Modules\Organisation\Models\Local;
 use Modules\Organisation\Models\PosteTravail;
 use Modules\Organisation\Models\Service;
+use Modules\Organisation\Models\Site;
 use Modules\Organisation\Models\Unite;
 
 class PosteTravailController extends Controller
@@ -16,23 +18,28 @@ class PosteTravailController extends Controller
     public function index()
     {
         $directions = Direction::actif()->get();
-        $services = Service::actif()->get();
-        $unites = Unite::actif()->get();
-        $locaux = Local::actif()->get();
-        $users = User::all();
+        $sites = Site::actif()->get();
 
-        return view('organisation::organisation.postes.index', compact('directions', 'services', 'unites', 'locaux', 'users'));
+        return view('organisation::organisation.postes.index', compact('directions', 'sites'));
     }
 
     public function getData(Request $request)
     {
-        $query = PosteTravail::query()->with(['direction', 'service', 'unite', 'local', 'agent']);
+        $query = PosteTravail::query()->with(['direction', 'service', 'unite', 'local.etage.batiment.site', 'agent']);
 
-        if ($request->has('service_id') && ! empty($request->service_id)) {
+        if ($request->filled('direction_id')) {
+            $query->where('direction_id', $request->direction_id);
+        }
+
+        if ($request->filled('service_id')) {
             $query->where('service_id', $request->service_id);
         }
 
-        if ($request->has('statut') && ! empty($request->statut)) {
+        if ($request->filled('unite_id')) {
+            $query->where('unite_id', $request->unite_id);
+        }
+
+        if ($request->filled('statut')) {
             $query->where('statut', $request->statut);
         }
 
@@ -40,7 +47,12 @@ class PosteTravailController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('libelle', 'like', "%{$search}%")
-                    ->orWhere('code', 'like', "%{$search}%");
+                    ->orWhere('code', 'like', "%{$search}%")
+                    ->orWhereHas('agent', function ($q) use ($search) {
+                        $q->where('nom', 'like', "%{$search}%")
+                            ->orWhere('prenom', 'like', "%{$search}%")
+                            ->orWhere('matricule', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -56,26 +68,31 @@ class PosteTravailController extends Controller
 
         return response()->json([
             'total' => $total,
-            'rows' => $postes,
+            'rows' => $postes->map(function ($poste) {
+                return [
+                    'id' => $poste->id,
+                    'code' => $poste->code,
+                    'libelle' => $poste->libelle,
+                    'direction' => $poste->direction?->libelle,
+                    'service' => $poste->service?->libelle,
+                    'unite' => $poste->unite?->libelle,
+                    'emplacement' => $poste->local ? $poste->local->nom_complet : 'N/A',
+                    'occupant' => $poste->agent ? $poste->agent->full_name : '<span class="badge bg-warning">Vacant</span>',
+                    'statut' => $poste->statut,
+                    'actif' => $poste->actif,
+                ];
+            }),
         ]);
     }
 
-    public function store(Request $request)
+    public function store(PosteTravailRequest $request)
     {
-        $request->validate([
-            'libelle' => 'required|max:255',
-            'description' => 'nullable',
-            'direction_id' => 'required|exists:organisation_directions,id',
-            'service_id' => 'required|exists:organisation_services,id',
-            'unite_id' => 'nullable|exists:organisation_unites,id',
-            'local_id' => 'nullable|exists:organisation_locaux,id',
-            'agent_id' => 'nullable|exists:users,id',
-            'statut' => 'required|in:actif,inactif,en_renovation,supprime',
-        ]);
-
         try {
-            $data = $request->all();
-            $data['code'] = PosteTravail::generateCode($request->service_id);
+            $data = $request->validated();
+
+            $parentId = $request->service_id ?? $request->direction_id;
+            $isService = !empty($request->service_id);
+            $data['code'] = PosteTravail::generateCode($parentId, $isService);
 
             $poste = PosteTravail::create($data);
 
@@ -85,10 +102,30 @@ class PosteTravailController extends Controller
         }
     }
 
+    public function searchEmployes(Request $request)
+    {
+        $search = $request->get('q');
+        $employes = Employe::where('est_actif', true)
+            ->where(function ($query) use ($search) {
+                $query->where('nom', 'like', "%$search%")
+                    ->orWhere('prenom', 'like', "%$search%")
+                    ->orWhere('matricule', 'like', "%$search%");
+            })
+            ->limit(20)
+            ->get();
+
+        return response()->json($employes->map(function ($emp) {
+            return [
+                'id' => $emp->id,
+                'text' => $emp->full_name." ({$emp->matricule})",
+            ];
+        }));
+    }
+
     public function show($id)
     {
         try {
-            $poste = PosteTravail::with(['direction', 'service', 'unite', 'local', 'agent'])->findOrFail($id);
+            $poste = PosteTravail::with(['direction', 'service', 'unite', 'local.etage.batiment.site', 'agent'])->findOrFail($id);
 
             return response()->json(['success' => true, 'data' => $poste]);
         } catch (\Exception $e) {
@@ -96,22 +133,11 @@ class PosteTravailController extends Controller
         }
     }
 
-    public function update(Request $request, $id)
+    public function update(PosteTravailRequest $request, $id)
     {
-        $request->validate([
-            'libelle' => 'required|max:255',
-            'description' => 'nullable',
-            'direction_id' => 'required|exists:organisation_directions,id',
-            'service_id' => 'required|exists:organisation_services,id',
-            'unite_id' => 'nullable|exists:organisation_unites,id',
-            'local_id' => 'nullable|exists:organisation_locaux,id',
-            'agent_id' => 'nullable|exists:users,id',
-            'statut' => 'required|in:actif,inactif,en_renovation,supprime',
-        ]);
-
         try {
             $poste = PosteTravail::findOrFail($id);
-            $poste->update($request->all());
+            $poste->update($request->validated());
 
             return response()->json(['success' => true, 'message' => 'Poste de travail modifié avec succès', 'data' => $poste]);
         } catch (\Exception $e) {

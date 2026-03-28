@@ -97,6 +97,7 @@ Route::middleware(['auth'])->prefix('organisation')->name('organisation.')->grou
     Route::prefix('postes')->name('postes.')->group(function () {
         Route::get('/', [\Modules\Organisation\Http\Controllers\PosteTravailController::class, 'index'])->name('index');
         Route::get('/data', [\Modules\Organisation\Http\Controllers\PosteTravailController::class, 'getData'])->name('data');
+        Route::get('/search-employes', [\Modules\Organisation\Http\Controllers\PosteTravailController::class, 'searchEmployes'])->name('search-employes');
         Route::post('/', [\Modules\Organisation\Http\Controllers\PosteTravailController::class, 'store'])->name('store');
         Route::get('/{id}', [\Modules\Organisation\Http\Controllers\PosteTravailController::class, 'show'])->name('show');
         Route::put('/{id}', [\Modules\Organisation\Http\Controllers\PosteTravailController::class, 'update'])->name('update');
