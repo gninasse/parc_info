@@ -65,23 +65,23 @@
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white py-3">
         <div class="d-flex justify-content-between align-items-center">
-            <h5 class="card-title mb-0">Liste des employés</h5>
-            @can('grh.employes.store')
-            <button id="btn-add-employe" class="btn btn-primary">
-                <i class="fas fa-user-plus me-1"></i> Nouvel employé
-            </button>
-            @endcan
+            <h5 class="card-title mb-0">Liste des employés</h5> 
         </div>
     </div>
     <div class="card-body">
         <div id="toolbar">
+            @can('grh.employes.store')
+            <button id="btn-add-employe" class="btn btn-primary" data-bs-toggle="tooltip" title="Nouvel employé">
+                <i class="fas fa-user-plus me-1"></i>
+            </button>
+            @endcan
             @can('grh.employes.update')
-            <button id="btn-edit-employe" class="btn btn-outline-info" disabled data-bs-toggle="tooltip" title="Détails / Modifier">
+            <button id="btn-edit-employe" class="btn btn-info" disabled data-bs-toggle="tooltip" title="Détails / Modifier">
                 <i class="fas fa-edit"></i>
             </button>
             @endcan
             @can('grh.employes.toggle-status')
-            <button id="btn-toggle-employe" class="btn btn-outline-warning" disabled data-bs-toggle="tooltip" title="Activer / Désactiver">
+            <button id="btn-toggle-employe" class="btn btn-warning" disabled data-bs-toggle="tooltip" title="Activer / Désactiver">
                 <i class="fas fa-power-off"></i>
             </button>
             @endcan
