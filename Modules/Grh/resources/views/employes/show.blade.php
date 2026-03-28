@@ -1,4 +1,4 @@
-@extends('core::layouts.master')
+@extends('grh::layouts.master')
 
 @section('header', $employe->full_name)
 
