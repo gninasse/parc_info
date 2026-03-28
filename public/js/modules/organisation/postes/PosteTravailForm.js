@@ -7,31 +7,13 @@ export class PosteTravailForm {
         this.$modal = $(modalSelector);
         this.$form = $(formSelector);
         this.table = tableInstance;
-
-        // Éléments UI
-        this.$niveauRattachement = $('#niveau_rattachement');
-        this.$dirSelect = $('#direction_id');
-        this.$srvSelect = $('#service_id');
-        this.$untSelect = $('#unite_id');
-        this.$siteSelect = $('#site_id');
-        this.$batSelect = $('#batiment_id');
-        this.$etgSelect = $('#etage_id');
-        this.$locSelect = $('#local_id');
-
-        // Conteneurs
-        this.$dirContainer = $('#dir-select-container');
-        this.$srvContainer = $('#srv-select-container');
-        this.$untContainer = $('#unt-select-container');
-        this.$batContainer = $('#bat-select-container');
-        this.$etgContainer = $('#etg-select-container');
-        this.$locContainer = $('#loc-select-container');
-
         this.init();
     }
 
     init() {
         this.initSelect2();
-        this.initEvents();
+        this.initChainedSelectors();
+        this.initValidation();
         this.initSubmission();
     }
 
@@ -39,7 +21,6 @@ export class PosteTravailForm {
         if ($.fn.select2) {
             $('#dossier_employe_id').select2({
                 dropdownParent: this.$modal,
-                theme: 'bootstrap-5',
                 placeholder: 'Rechercher un employé...',
                 allowClear: true,
                 ajax: {
@@ -54,237 +35,223 @@ export class PosteTravailForm {
         }
     }
 
-    initEvents() {
-        // --- Rattachement Administratif ---
-        this.$niveauRattachement.on('change', () => {
-            const niveau = this.$niveauRattachement.val();
-            this.hideStructureSelectors();
-            
-            if (niveau) {
-                this.$dirContainer.removeClass('d-none');
-                this.$dirSelect.prop('required', true);
-            }
-            
+    initChainedSelectors() {
+        // Niveau de rattachement
+        $('#niveau_rattachement').on('change', function () {
+            const niveau = $(this).val();
+            $('#col-service, #col-unite').addClass('d-none');
+            $('#service_id, #unite_id').val('').prop('required', false);
+
             if (niveau === 'service' || niveau === 'unite') {
-                this.$srvContainer.removeClass('d-none');
-                this.$srvSelect.prop('required', true);
+                $('#col-service').removeClass('d-none');
+                $('#service_id').prop('required', true);
             }
-            
             if (niveau === 'unite') {
-                this.$untContainer.removeClass('d-none');
-                this.$untSelect.prop('required', true);
+                $('#col-unite').removeClass('d-none');
+                $('#unite_id').prop('required', true);
             }
         });
 
-        this.$dirSelect.on('change', () => {
-            const dirId = this.$dirSelect.val();
-            const niveau = this.$niveauRattachement.val();
-            
-            this.$srvSelect.empty().append('<option value="">Sélectionner un service</option>');
-            this.$untSelect.empty().append('<option value="">Sélectionner une unité</option>');
+        // Direction -> Service
+        $('#direction_id', this.$form).on('change', function () {
+            const directionId = $(this).val();
+            const $serviceSelect = $('#service_id');
+            const $uniteSelect = $('#unite_id');
 
-            if (dirId && (niveau === 'service' || niveau === 'unite')) {
-                this.loadServices(dirId);
+            $serviceSelect.html('<option value="">Chargement...</option>');
+            $uniteSelect.html('<option value="">Sélectionner...</option>');
+
+            if (directionId) {
+                $.get(route('grh.employes.services-by-direction', directionId), (data) => {
+                    let options = '<option value="">Sélectionner...</option>';
+                    data.forEach(item => options += `<option value="${item.id}">${item.libelle}</option>`);
+                    $serviceSelect.html(options);
+                });
+            } else {
+                $serviceSelect.html('<option value="">Sélectionner...</option>');
             }
         });
 
-        this.$srvSelect.on('change', () => {
-            const srvId = this.$srvSelect.val();
-            const niveau = this.$niveauRattachement.val();
-            
-            this.$untSelect.empty().append('<option value="">Sélectionner une unité</option>');
+        // Service -> Unité
+        $('#service_id', this.$form).on('change', function () {
+            const serviceId = $(this).val();
+            const $uniteSelect = $('#unite_id');
 
-            if (srvId && niveau === 'unite') {
-                this.loadUnites(srvId);
+            $uniteSelect.html('<option value="">Chargement...</option>');
+
+            if (serviceId) {
+                $.get(route('grh.employes.unites-by-service', serviceId), (data) => {
+                    let options = '<option value="">Sélectionner...</option>';
+                    data.forEach(item => options += `<option value="${item.id}">${item.libelle}</option>`);
+                    $uniteSelect.html(options);
+                });
+            } else {
+                $uniteSelect.html('<option value="">Sélectionner...</option>');
             }
         });
 
-        // --- Localisation Physique ---
-        this.$siteSelect.on('change', () => {
-            const siteId = this.$siteSelect.val();
-            this.resetPhysicalSelectors();
-            
+        // Site -> Bâtiment
+        $('#site_id', this.$form).on('change', function () {
+            const siteId = $(this).val();
+            const $batimentSelect = $('#batiment_id');
+            const $etageSelect = $('#etage_id');
+            const $localSelect = $('#local_id');
+
+            $batimentSelect.html('<option value="">Chargement...</option>');
+            $etageSelect.html('<option value="">Sélectionner...</option>');
+            $localSelect.html('<option value="">Sélectionner...</option>');
+
             if (siteId) {
-                this.$batContainer.removeClass('d-none');
-                this.loadBatiments(siteId);
+                $.get(route('organisation.batiments.by-site', siteId), (data) => {
+                    let options = '<option value="">Sélectionner...</option>';
+                    data.forEach(item => options += `<option value="${item.id}">${item.libelle}</option>`);
+                    $batimentSelect.html(options);
+                });
+            } else {
+                $batimentSelect.html('<option value="">Sélectionner...</option>');
             }
         });
 
-        this.$batSelect.on('change', () => {
-            const batId = this.$batSelect.val();
-            this.$etgSelect.empty().append('<option value="">Sélectionner...</option>');
-            this.$locSelect.empty().append('<option value="">Sélectionner...</option>');
-            this.$etgContainer.addClass('d-none');
-            this.$locContainer.addClass('d-none');
+        // Bâtiment -> Étage
+        $('#batiment_id', this.$form).on('change', function () {
+            const batimentId = $(this).val();
+            const $etageSelect = $('#etage_id');
+            const $localSelect = $('#local_id');
 
-            if (batId) {
-                this.$etgContainer.removeClass('d-none');
-                this.loadEtages(batId);
+            $etageSelect.html('<option value="">Chargement...</option>');
+            $localSelect.html('<option value="">Sélectionner...</option>');
+
+            if (batimentId) {
+                $.get(route('organisation.etages.by-batiment', batimentId), (data) => {
+                    let options = '<option value="">Sélectionner...</option>';
+                    data.forEach(item => options += `<option value="${item.id}">${item.libelle}</option>`);
+                    $etageSelect.html(options);
+                });
+            } else {
+                $etageSelect.html('<option value="">Sélectionner...</option>');
             }
         });
 
-        this.$etgSelect.on('change', () => {
-            const etgId = this.$etgSelect.val();
-            this.$locSelect.empty().append('<option value="">Sélectionner...</option>');
-            this.$locContainer.addClass('d-none');
+        // Étage -> Local
+        $('#etage_id', this.$form).on('change', function () {
+            const etageId = $(this).val();
+            const $localSelect = $('#local_id');
 
-            if (etgId) {
-                this.$locContainer.removeClass('d-none');
-                this.loadLocaux(etgId);
+            $localSelect.html('<option value="">Chargement...</option>');
+
+            if (etageId) {
+                // There is no getByEtage but getData can filter by etage_id
+                $.get(route('organisation.locaux.data'), { etage_id: etageId, limit: 1000 }, (response) => {
+                    let options = '<option value="">Sélectionner...</option>';
+                    response.rows.forEach(item => options += `<option value="${item.id}">${item.libelle}</option>`);
+                    $localSelect.html(options);
+                });
+            } else {
+                $localSelect.html('<option value="">Sélectionner...</option>');
             }
         });
+    }
 
-        // Force uppercase for labels
-        $('#libelle').on('input', function() {
-            // No auto-uppercase for libelle unless requested, but screenshot looks standard.
+    initValidation() {
+        $('input, select', this.$form).on('input change', function () {
+            $(this).removeClass('is-invalid');
+            $(this).next('.invalid-feedback').remove();
         });
-    }
-
-    // --- Data Loading Functions ---
-    loadServices(dirId, selectedId = null) {
-        this.$srvSelect.html('<option value="">Chargement...</option>');
-        $.get(route('organisation.unites.services-by-direction', dirId), (services) => {
-            this.$srvSelect.empty().append('<option value="">Sélectionner un service</option>');
-            services.forEach(item => {
-                const selected = selectedId == item.id ? 'selected' : '';
-                this.$srvSelect.append(`<option value="${item.id}" ${selected}>${item.libelle}</option>`);
-            });
-            if (selectedId) this.$srvSelect.trigger('change');
-        });
-    }
-
-    loadUnites(srvId, selectedId = null) {
-        this.$untSelect.html('<option value="">Chargement...</option>');
-        $.get(route('organisation.unites.unites-by-service', srvId), (unites) => {
-            this.$untSelect.empty().append('<option value="">Sélectionner une unité</option>');
-            unites.forEach(item => {
-                const selected = selectedId == item.id ? 'selected' : '';
-                this.$untSelect.append(`<option value="${item.id}" ${selected}>${item.libelle}</option>`);
-            });
-        });
-    }
-
-    loadBatiments(siteId, selectedId = null) {
-        this.$batSelect.html('<option value="">Chargement...</option>');
-        $.get(route('organisation.batiments.by-site', siteId), (data) => {
-            this.$batSelect.empty().append('<option value="">Sélectionner...</option>');
-            data.forEach(item => {
-                const selected = selectedId == item.id ? 'selected' : '';
-                this.$batSelect.append(`<option value="${item.id}" ${selected}>${item.libelle}</option>`);
-            });
-            if (selectedId) this.$batSelect.trigger('change');
-        });
-    }
-
-    loadEtages(batId, selectedId = null) {
-        this.$etgSelect.html('<option value="">Chargement...</option>');
-        $.get(route('organisation.etages.by-batiment', batId), (data) => {
-            this.$etgSelect.empty().append('<option value="">Sélectionner...</option>');
-            data.forEach(item => {
-                const selected = selectedId == item.id ? 'selected' : '';
-                this.$etgSelect.append(`<option value="${item.id}" ${selected}>${item.libelle}</option>`);
-            });
-            if (selectedId) this.$etgSelect.trigger('change');
-        });
-    }
-
-    loadLocaux(etgId, selectedId = null) {
-        this.$locSelect.html('<option value="">Chargement...</option>');
-        $.get(route('organisation.locaux.by-etage', etgId), (data) => {
-            this.$locSelect.empty().append('<option value="">Sélectionner...</option>');
-            data.forEach(item => {
-                const selected = selectedId == item.id ? 'selected' : '';
-                this.$locSelect.append(`<option value="${item.id}" ${selected}>${item.libelle}</option>`);
-            });
-        });
-    }
-
-    // --- UI Helpers ---
-    hideStructureSelectors() {
-        this.$dirContainer.addClass('d-none');
-        this.$srvContainer.addClass('d-none');
-        this.$untContainer.addClass('d-none');
-        this.$dirSelect.val('').prop('required', false);
-        this.$srvSelect.empty().append('<option value="">Sélectionner un service</option>').prop('required', false);
-        this.$untSelect.empty().append('<option value="">Sélectionner une unité</option>').prop('required', false);
-    }
-
-    resetPhysicalSelectors() {
-        this.$batSelect.empty().append('<option value="">Sélectionner...</option>');
-        this.$etgSelect.empty().append('<option value="">Sélectionner...</option>');
-        this.$locSelect.empty().append('<option value="">Sélectionner...</option>');
-        this.$batContainer.addClass('d-none');
-        this.$etgContainer.addClass('d-none');
-        this.$locContainer.addClass('d-none');
     }
 
     openForAdd() {
-        this.$form[0].reset();
-        this.hideStructureSelectors();
-        this.resetPhysicalSelectors();
+        this.resetForm();
+        $('#posteModalLabel').text('Nouveau Poste de travail');
         $('#poste_id').val('');
-        $('#posteModalLabel').text('Nouveau Poste de Travail');
+        $('#statut_actif').prop('checked', true);
         $('#btn-save-poste span').text('Créer le Poste');
+        $('#niveau_rattachement').val('direction').trigger('change');
         $('#dossier_employe_id').val(null).trigger('change');
         this.$modal.modal('show');
     }
 
     async openForEdit(data) {
-        this.$form[0].reset();
-        $('#posteModalLabel').text('Modifier le Poste de Travail');
+        this.resetForm();
+        $('#posteModalLabel').text('Modifier le Poste de travail');
         $('#btn-save-poste span').text('Mettre à jour');
 
-        const response = await $.get(route('organisation.postes.show', data.id));
-        const poste = response.data;
+        // Fetch full data to have all IDs (site, batiment, etage)
+        try {
+            const response = await $.get(route('organisation.postes.show', data.id));
+            const poste = response.data;
 
-        $('#poste_id').val(poste.id);
-        $('#libelle').val(poste.libelle);
-        $('#code').val(poste.code);
-        
-        // Radio buttons for status
-        $(`input[name="statut"][value="${poste.statut}"]`).prop('checked', true);
+            $('#poste_id').val(poste.id);
+            $('#niveau_rattachement').val(poste.niveau_rattachement).trigger('change');
+            $('#direction_id').val(poste.direction_id);
 
-        // Administrative
-        this.$niveauRattachement.val(poste.niveau_rattachement).trigger('change');
-        if (poste.direction_id) {
-            this.$dirSelect.val(poste.direction_id).trigger('change');
-            if (poste.service_id) {
-                this.loadServices(poste.direction_id, poste.service_id);
-                if (poste.unite_id) {
-                    this.loadUnites(poste.service_id, poste.unite_id);
-                }
+            if (poste.direction_id) {
+                const services = await $.get(route('grh.employes.services-by-direction', poste.direction_id));
+                let options = '<option value="">Sélectionner...</option>';
+                services.forEach(item => options += `<option value="${item.id}" ${item.id == poste.service_id ? 'selected' : ''}>${item.libelle}</option>`);
+                $('#service_id').html(options);
             }
+
+            if (poste.service_id) {
+                const unites = await $.get(route('grh.employes.unites-by-service', poste.service_id));
+                let options = '<option value="">Sélectionner...</option>';
+                unites.forEach(item => options += `<option value="${item.id}" ${item.id == poste.unite_id ? 'selected' : ''}>${item.libelle}</option>`);
+                $('#unite_id').html(options);
+            }
+
+            // Physical location
+            if (poste.local) {
+                const local = poste.local;
+                const etage = local.etage;
+                const batiment = etage.batiment;
+                const site = batiment.site;
+
+                $('#site_id').val(site.id);
+
+                const batiments = await $.get(route('organisation.batiments.by-site', site.id));
+                let batOptions = '<option value="">Sélectionner...</option>';
+                batiments.forEach(item => batOptions += `<option value="${item.id}" ${item.id == batiment.id ? 'selected' : ''}>${item.libelle}</option>`);
+                $('#batiment_id').html(batOptions);
+
+                const etages = await $.get(route('organisation.etages.by-batiment', batiment.id));
+                let etageOptions = '<option value="">Sélectionner...</option>';
+                etages.forEach(item => etageOptions += `<option value="${item.id}" ${item.id == etage.id ? 'selected' : ''}>${item.libelle}</option>`);
+                $('#etage_id').html(etageOptions);
+
+                const locauxRes = await $.get(route('organisation.locaux.data'), { etage_id: etage.id, limit: 1000 });
+                let localOptions = '<option value="">Sélectionner...</option>';
+                locauxRes.rows.forEach(item => localOptions += `<option value="${item.id}" ${item.id == local.id ? 'selected' : ''}>${item.libelle}</option>`);
+                $('#local_id').html(localOptions);
+            }
+
+            $('#code').val(poste.code);
+            $('#libelle').val(poste.libelle);
+            if (poste.statut === 'actif') {
+                $('#statut_actif').prop('checked', true);
+            } else {
+                $('#statut_inactif').prop('checked', true);
+            }
+
+            if (poste.agent) {
+                const option = new Option(poste.agent.full_name + ' (' + poste.agent.matricule + ')', poste.agent.id, true, true);
+                $('#dossier_employe_id').append(option).trigger('change');
+            } else {
+                $('#dossier_employe_id').val(null).trigger('change');
+            }
+
+            this.$modal.modal('show');
+        } catch (error) {
+            Swal.fire('Erreur', 'Impossible de charger les données du poste', 'error');
         }
-
-        // Physical
-        if (poste.local) {
-            const loc = poste.local;
-            const etg = loc.etage;
-            const bat = etg.batiment;
-            const site = bat.site;
-
-            this.$siteSelect.val(site.id).trigger('change');
-            this.loadBatiments(site.id, bat.id);
-            this.loadEtages(bat.id, etg.id);
-            this.loadLocaux(etg.id, loc.id);
-        }
-
-        // Occupant
-        if (poste.agent) {
-            const option = new Option(poste.agent.full_name + ' (' + poste.agent.matricule + ')', poste.agent.id, true, true);
-            $('#dossier_employe_id').append(option).trigger('change');
-        } else {
-            $('#dossier_employe_id').val(null).trigger('change');
-        }
-
-        this.$modal.modal('show');
     }
 
     initSubmission() {
         this.$form.on('submit', (e) => {
             e.preventDefault();
+
             const posteId = $('#poste_id').val();
-            const url = posteId ? route('organisation.postes.update', posteId) : route('organisation.postes.store');
+            const url = posteId
+                ? route('organisation.postes.update', posteId)
+                : route('organisation.postes.store');
             const method = posteId ? 'PUT' : 'POST';
 
             $.ajax({
@@ -292,28 +259,46 @@ export class PosteTravailForm {
                 method: method,
                 data: this.$form.serialize(),
                 beforeSend: () => {
-                    $('#btn-save-poste').prop('disabled', true).find('i').addClass('fa-spinner fa-spin').removeClass('fa-arrow-right');
+                    $('#btn-save-poste').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
                 },
                 success: (response) => {
                     if (response.success) {
                         this.$modal.modal('hide');
                         this.table.refresh();
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Succès',
-                            text: response.message,
-                            timer: 2000,
-                            showConfirmButton: false
-                        });
+                        Swal.fire({ icon: 'success', title: 'Succès', text: response.message, timer: 2000 });
                     }
                 },
                 error: (xhr) => {
-                    Swal.fire('Erreur', xhr.responseJSON.message || 'Une erreur est survenue', 'error');
+                    if (xhr.status === 422) {
+                        this.displayErrors(xhr.responseJSON.errors);
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Erreur', text: xhr.responseJSON.message || 'Une erreur est survenue' });
+                    }
                 },
                 complete: () => {
-                    $('#btn-save-poste').prop('disabled', false).find('i').removeClass('fa-spinner fa-spin').addClass('fa-arrow-right');
+                    $('#btn-save-poste').prop('disabled', false).html('<i class="fas fa-save mr-1"></i> Enregistrer');
                 }
             });
         });
+    }
+
+    displayErrors(errors) {
+        this.clearErrors();
+        $.each(errors, (field, messages) => {
+            const $field = $(`#${field}`);
+            $field.addClass('is-invalid');
+            $field.after(`<div class="invalid-feedback">${messages[0]}</div>`);
+        });
+    }
+
+    clearErrors() {
+        $('.is-invalid', this.$form).removeClass('is-invalid');
+        $('.invalid-feedback', this.$form).remove();
+    }
+
+    resetForm() {
+        this.$form[0].reset();
+        $('#service_id, #unite_id, #batiment_id, #etage_id, #local_id').html('<option value="">Sélectionner...</option>');
+        this.clearErrors();
     }
 }

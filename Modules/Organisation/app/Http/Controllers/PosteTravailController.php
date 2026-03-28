@@ -9,7 +9,9 @@ use Modules\Organisation\Http\Requests\PosteTravailRequest;
 use Modules\Organisation\Models\Direction;
 use Modules\Organisation\Models\Local;
 use Modules\Organisation\Models\PosteTravail;
+use Modules\Organisation\Models\Service;
 use Modules\Organisation\Models\Site;
+use Modules\Organisation\Models\Unite;
 
 class PosteTravailController extends Controller
 {
@@ -35,10 +37,6 @@ class PosteTravailController extends Controller
 
         if ($request->filled('unite_id')) {
             $query->where('unite_id', $request->unite_id);
-        }
-
-        if ($request->filled('niveau_rattachement')) {
-            $query->where('niveau_rattachement', $request->niveau_rattachement);
         }
 
         if ($request->filled('statut')) {
@@ -71,38 +69,14 @@ class PosteTravailController extends Controller
         return response()->json([
             'total' => $total,
             'rows' => $postes->map(function ($poste) {
-                // Emplacement formaté: Site > Batiment > Etage > Local
-                $emplacement = 'N/A';
-                if ($poste->local) {
-                    $loc = $poste->local;
-                    $etage = $loc->etage;
-                    $bat = $etage?->batiment;
-                    $site = $bat?->site;
-
-                    $parts = [];
-                    if ($site) {
-                        $parts[] = $site->code;
-                    }
-                    if ($bat) {
-                        $parts[] = $bat->libelle;
-                    }
-                    if ($etage) {
-                        $parts[] = 'Etage '.$etage->numero;
-                    }
-                    $parts[] = $loc->libelle;
-
-                    $emplacement = implode(' > ', $parts);
-                }
-
                 return [
                     'id' => $poste->id,
                     'code' => $poste->code,
                     'libelle' => $poste->libelle,
-                    'niveau' => ucfirst($poste->niveau_rattachement),
                     'direction' => $poste->direction?->libelle,
                     'service' => $poste->service?->libelle,
                     'unite' => $poste->unite?->libelle,
-                    'emplacement' => $emplacement,
+                    'emplacement' => $poste->local ? $poste->local->nom_complet : 'N/A',
                     'occupant' => $poste->agent ? $poste->agent->full_name : '<span class="badge bg-warning">Vacant</span>',
                     'statut' => $poste->statut,
                     'actif' => $poste->actif,
@@ -116,15 +90,9 @@ class PosteTravailController extends Controller
         try {
             $data = $request->validated();
 
-            // Génération du code basée sur le niveau de rattachement
-            $parentId = match ($data['niveau_rattachement']) {
-                'direction' => $data['direction_id'],
-                'service' => $data['service_id'],
-                'unite' => $data['unite_id'],
-                default => $data['direction_id']
-            };
-
-            $data['code'] = PosteTravail::generateCode($data['niveau_rattachement'], $parentId);
+            $parentId = $request->service_id ?? $request->direction_id;
+            $isService = !empty($request->service_id);
+            $data['code'] = PosteTravail::generateCode($parentId, $isService);
 
             $poste = PosteTravail::create($data);
 
@@ -169,19 +137,7 @@ class PosteTravailController extends Controller
     {
         try {
             $poste = PosteTravail::findOrFail($id);
-            $data = $request->validated();
-
-            // Régénération du code basée sur le niveau de rattachement
-            $parentId = match ($data['niveau_rattachement']) {
-                'direction' => $data['direction_id'],
-                'service' => $data['service_id'],
-                'unite' => $data['unite_id'],
-                default => $data['direction_id']
-            };
-
-            $data['code'] = PosteTravail::generateCode($data['niveau_rattachement'], $parentId);
-
-            $poste->update($data);
+            $poste->update($request->validated());
 
             return response()->json(['success' => true, 'message' => 'Poste de travail modifié avec succès', 'data' => $poste]);
         } catch (\Exception $e) {

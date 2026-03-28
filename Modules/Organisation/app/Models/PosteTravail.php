@@ -18,8 +18,6 @@ class PosteTravail extends Model
         'direction_id',
         'service_id',
         'unite_id',
-        'batiment_id',
-        'etage_id',
         'local_id',
         'dossier_employe_id',
         'statut',
@@ -45,16 +43,6 @@ class PosteTravail extends Model
         return $this->belongsTo(Unite::class);
     }
 
-    public function batiment(): BelongsTo
-    {
-        return $this->belongsTo(Batiment::class);
-    }
-
-    public function etage(): BelongsTo
-    {
-        return $this->belongsTo(Etage::class);
-    }
-
     public function local(): BelongsTo
     {
         return $this->belongsTo(Local::class);
@@ -75,29 +63,18 @@ class PosteTravail extends Model
         return $query->whereNull('dossier_employe_id');
     }
 
-    public static function generateCode($niveau, $parentId)
+    public static function generateCode($parentId, $isService = true)
     {
-        switch ($niveau) {
-            case 'direction':
-                $model = Direction::find($parentId);
-                $count = static::where('direction_id', $parentId)->whereNull('service_id')->count() + 1;
-                $prefix = $model?->code ?? 'DIR';
-                break;
-            case 'service':
-                $model = Service::find($parentId);
-                $count = static::where('service_id', $parentId)->whereNull('unite_id')->count() + 1;
-                $prefix = $model?->code ?? 'SRV';
-                break;
-            case 'unite':
-                $model = Unite::find($parentId);
-                $count = static::where('unite_id', $parentId)->count() + 1;
-                $prefix = $model?->code ?? 'UNT';
-                break;
-            default:
-                $prefix = 'POST';
-                $count = static::count() + 1;
+        if ($isService) {
+            $service = Service::find($parentId);
+            $count = static::where('service_id', $parentId)->count() + 1;
+            $code = $service->code ?? 'SRV';
+        } else {
+            $direction = Direction::find($parentId);
+            $count = static::where('direction_id', $parentId)->whereNull('service_id')->count() + 1;
+            $code = $direction->code ?? 'DIR';
         }
 
-        return sprintf('POST-%s-%03d', strtoupper($prefix), $count);
+        return sprintf('POST-%s-%03d', strtoupper($code), $count);
     }
 }

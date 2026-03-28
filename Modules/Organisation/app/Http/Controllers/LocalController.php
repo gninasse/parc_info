@@ -135,16 +135,6 @@ class LocalController extends Controller implements HasMiddleware
         }
     }
 
-    /**
-     * Helper AJAX: locaux par étage
-     */
-    public function getByEtage($etageId)
-    {
-        $locaux = Local::where('etage_id', $etageId)->actif()->get();
-
-        return response()->json($locaux);
-    }
-
     public function toggleStatus($id)
     {
         try {

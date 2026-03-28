@@ -156,13 +156,6 @@ class UniteController extends Controller implements HasMiddleware
         return response()->json($services);
     }
 
-    public function getUnitesByService($serviceId)
-    {
-        $unites = Unite::where('service_id', $serviceId)->actif()->get();
-
-        return response()->json($unites);
-    }
-
     /**
      * Toggle status (actif/inactif).
      */
