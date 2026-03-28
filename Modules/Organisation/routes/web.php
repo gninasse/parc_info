@@ -51,6 +51,7 @@ Route::middleware(['auth'])->prefix('organisation')->name('organisation.')->grou
         Route::get('/data', [UniteController::class, 'getData'])->name('data');
         Route::get('/majors', [UniteController::class, 'getMajors'])->name('majors');
         Route::get('/services-by-direction/{directionId}', [UniteController::class, 'getServicesByDirection'])->name('services-by-direction');
+        Route::get('/unites-by-service/{serviceId}', [UniteController::class, 'getUnitesByService'])->name('unites-by-service');
         Route::post('/', [UniteController::class, 'store'])->name('store');
         Route::get('/{id}', [UniteController::class, 'show'])->name('show');
         Route::put('/{id}', [UniteController::class, 'update'])->name('update');
@@ -86,6 +87,7 @@ Route::middleware(['auth'])->prefix('organisation')->name('organisation.')->grou
     Route::prefix('locaux')->name('locaux.')->group(function () {
         Route::get('/', [LocalController::class, 'index'])->name('index');
         Route::get('/data', [LocalController::class, 'getData'])->name('data');
+        Route::get('/by-etage/{etageId}', [LocalController::class, 'getByEtage'])->name('by-etage');
         Route::post('/', [LocalController::class, 'store'])->name('store');
         Route::get('/{id}', [LocalController::class, 'show'])->name('show');
         Route::put('/{id}', [LocalController::class, 'update'])->name('update');

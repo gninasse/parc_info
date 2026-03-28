@@ -85,7 +85,8 @@
                 <tr>
                     <th data-field="state" data-radio="true"></th>
                     <th data-field="code" data-sortable="true">Code</th>
-                    <th data-field="libelle" data-sortable="true">Poste</th>
+                    <th data-field="libelle" data-sortable="true">Libellé</th>
+                    <th data-field="niveau" data-sortable="true">Niveau</th>
                     <th data-field="direction" data-sortable="true">Direction</th>
                     <th data-field="service" data-sortable="true">Service</th>
                     <th data-field="emplacement" data-sortable="true">Emplacement</th>
