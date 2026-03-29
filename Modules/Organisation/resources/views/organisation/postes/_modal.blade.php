@@ -22,7 +22,7 @@
                     <div class="mb-4">
                         <h6 class="text-uppercase fw-bold text-dark mb-3 ps-2" style="border-left: 4px solid #0d6efd; font-size: 0.75rem; letter-spacing: 1px;">Structure Administrative</h6>
                         <div class="row g-3">
-                            <div class="col-md-6">
+                            <div class="col-md-12">
                                 <label for="niveau_rattachement" class="form-label text-dark fw-semibold mb-1 small">Niveau de rattachement</label>
                                 <select class="form-select bg-light border-0 py-2" id="niveau_rattachement" name="niveau_rattachement" required>
                                     <option value="direction">Direction</option>
@@ -30,7 +30,7 @@
                                     <option value="unite">Unité</option>
                                 </select>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4" id="col-direction">
                                 <label for="direction_id" class="form-label text-dark fw-semibold mb-1 small">Direction</label>
                                 <select class="form-select bg-light border-0 py-2" id="direction_id" name="direction_id" required>
                                     <option value="">Sélectionner une direction</option>
@@ -39,13 +39,13 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-6 d-none" id="col-service">
+                            <div class="col-md-4 d-none" id="col-service">
                                 <label for="service_id" class="form-label text-dark fw-semibold mb-1 small">Service</label>
                                 <select class="form-select bg-light border-0 py-2" id="service_id" name="service_id">
                                     <option value="">Sélectionner un service</option>
                                 </select>
                             </div>
-                            <div class="col-md-6 d-none" id="col-unite">
+                            <div class="col-md-4 d-none" id="col-unite">
                                 <label for="unite_id" class="form-label text-dark fw-semibold mb-1 small">Unité</label>
                                 <select class="form-select bg-light border-0 py-2" id="unite_id" name="unite_id">
                                     <option value="">Sélectionner une unité</option>
@@ -60,8 +60,8 @@
                         <div class="row g-3">
                             <div class="col-md-3">
                                 <label for="site_id" class="form-label text-dark fw-semibold mb-1 small">Site</label>
-                                <select class="form-select bg-light border-0 py-2 px-2" id="site_id" name="site_id">
-                                    <option value="">Sélectionner...</option>
+                                <select class="form-select bg-light border-0 py-2" id="site_id" name="site_id">
+                                    <option value="">Sélectionner un site</option>
                                     @foreach($sites as $site)
                                         <option value="{{ $site->id }}">{{ $site->libelle }}</option>
                                     @endforeach
@@ -69,19 +69,19 @@
                             </div>
                             <div class="col-md-3">
                                 <label for="batiment_id" class="form-label text-dark fw-semibold mb-1 small">Bâtiment</label>
-                                <select class="form-select bg-light border-0 py-2 px-2" id="batiment_id" name="batiment_id">
+                                <select class="form-select bg-light border-0 py-2" id="batiment_id" name="batiment_id">
                                     <option value="">Sélectionner...</option>
                                 </select>
                             </div>
                             <div class="col-md-3">
                                 <label for="etage_id" class="form-label text-dark fw-semibold mb-1 small">Étage</label>
-                                <select class="form-select bg-light border-0 py-2 px-2" id="etage_id" name="etage_id">
+                                <select class="form-select bg-light border-0 py-2" id="etage_id" name="etage_id">
                                     <option value="">Sélectionner...</option>
                                 </select>
                             </div>
                             <div class="col-md-3">
                                 <label for="local_id" class="form-label text-dark fw-semibold mb-1 small">Local</label>
-                                <select class="form-select bg-light border-0 py-2 px-2" id="local_id" name="local_id">
+                                <select class="form-select bg-light border-0 py-2" id="local_id" name="local_id">
                                     <option value="">Sélectionner...</option>
                                 </select>
                             </div>
