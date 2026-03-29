@@ -1,360 +1,336 @@
 /**
  * PosteTravailForm.js
- * Handles Modal, Form Validation, and Submission for PosteTravails.
+ * Gestion de la modale création / édition des postes de travail.
  */
 export class PosteTravailForm {
     constructor(modalSelector, formSelector, tableInstance) {
         this.$modal = $(modalSelector);
-        this.$form = $(formSelector);
-        this.table = tableInstance;
-        this.init();
+        this.$form  = $(formSelector);
+        this.table  = tableInstance;
+        this._init();
     }
 
-    init() {
-        this.initSelect2();
-        this.initChainedSelectors();
-        this.initValidation();
-        this.initSubmission();
+    /* ─────────────────────────────────────────────────────────
+     * INIT
+     * ───────────────────────────────────────────────────────── */
+    _init() {
+        this._initSelect2();
+        this._initNiveauRattachement();
+        this._initAdminCascade();
+        this._initLocationCascade();
+        this._initSubmission();
     }
 
-    initSelect2() {
-        if ($.fn.select2) {
-            $('#dossier_employe_id').select2({
-                dropdownParent: this.$modal,
-                placeholder: 'Rechercher un employé...',
-                allowClear: true,
-                theme: 'bootstrap-5',
-                ajax: {
-                    url: route('organisation.postes.search-employes'),
-                    dataType: 'json',
-                    delay: 250,
-                    data: (params) => ({ q: params.term }),
-                    processResults: (data) => ({ results: data }),
-                    cache: true
-                }
-            });
-        }
+    /* ─────────────────────────────────────────────────────────
+     * SELECT2 — Employés
+     * ───────────────────────────────────────────────────────── */
+    _initSelect2() {
+        if (!$.fn.select2) return;
+        $('#dossier_employe_id').select2({
+            dropdownParent : this.$modal,
+            placeholder    : 'Rechercher un employé...',
+            allowClear     : true,
+            theme          : 'bootstrap-5',
+            ajax: {
+                url        : route('organisation.postes.search-employes'),
+                dataType   : 'json',
+                delay      : 250,
+                data       : (p) => ({ q: p.term }),
+                processResults: (d) => ({ results: d }),
+                cache      : true,
+            },
+        });
     }
 
-    initChainedSelectors() {
-        const self = this;
+    /* ─────────────────────────────────────────────────────────
+     * NIVEAU DE RATTACHEMENT → affichage conditionnel
+     * ───────────────────────────────────────────────────────── */
+    _initNiveauRattachement() {
+        $('#niveau_rattachement').on('change', (e) => this._applyNiveau(e.target.value));
+    }
 
-        // 3a. Conditional Visibility for Administrative Structure
-        $('#niveau_rattachement').on('change', function () {
-            const niveau = $(this).val();
-            $('#col-direction, #col-service, #col-unite').addClass('d-none');
-            $('#direction_id, #service_id, #unite_id').val('').prop('required', false);
+    _applyNiveau(val) {
+        const showDir = !!val;
+        const showSrv = val === 'service' || val === 'unite';
+        const showUnt = val === 'unite';
 
-            if (niveau === 'direction' || niveau === 'service' || niveau === 'unite') {
-                $('#col-direction').removeClass('d-none');
-                $('#direction_id').prop('required', true);
-            }
+        $('#field-direction').toggleClass('d-none', !showDir);
+        $('#field-service').toggleClass('d-none', !showSrv);
+        $('#field-unite').toggleClass('d-none', !showUnt);
+
+        $('#direction_id').prop('required', showDir);
+        $('#service_id').prop('required', showSrv);
+        $('#unite_id').prop('required', showUnt);
+
+        if (!showSrv) this._resetSelect('#service_id', '— Sélectionner d\'abord une direction —');
+        if (!showUnt) this._resetSelect('#unite_id',   '— Sélectionner d\'abord un service —');
+    }
+
+    /* ─────────────────────────────────────────────────────────
+     * CASCADE ADMINISTRATIVE  Direction → Service → Unité
+     * ───────────────────────────────────────────────────────── */
+    _initAdminCascade() {
+        $('#direction_id').on('change', (e) => {
+            this._resetSelect('#service_id', '— Sélectionner d\'abord une direction —');
+            this._resetSelect('#unite_id',   '— Sélectionner d\'abord un service —');
+            const id = e.target.value;
+            if (!id) return;
+            const niveau = $('#niveau_rattachement').val();
             if (niveau === 'service' || niveau === 'unite') {
-                $('#col-service').removeClass('d-none');
-                $('#service_id').prop('required', true);
-            }
-            if (niveau === 'unite') {
-                $('#col-unite').removeClass('d-none');
-                $('#unite_id').prop('required', true);
-            }
-
-            // Re-adjust columns if needed (they are col-md-4)
-            if (niveau === 'direction') {
-                $('#col-direction').removeClass('col-md-4').addClass('col-md-12');
-            } else if (niveau === 'service') {
-                $('#col-direction, #col-service').removeClass('col-md-4 col-md-12').addClass('col-md-6');
-            } else {
-                $('#col-direction, #col-service, #col-unite').removeClass('col-md-6 col-md-12').addClass('col-md-4');
+                this._loadOptions(
+                    route('organisation.postes.services-by-direction', id),
+                    '#service_id', '#spinner-service',
+                    'Sélectionner un service...'
+                );
             }
         });
 
-        // 3b. Administrative Cascading: Direction -> Service
-        $('#direction_id', this.$form).on('change', function () {
-            const directionId = $(this).val();
-            const $serviceSelect = $('#service_id');
-            const $uniteSelect = $('#unite_id');
-
-            $serviceSelect.html('<option value="">Chargement...</option>');
-            $uniteSelect.html('<option value="">Sélectionner une unité</option>');
-
-            if (directionId) {
-                $.get(route('grh.employes.services-by-direction', directionId), (data) => {
-                    let options = '<option value="">Sélectionner un service</option>';
-                    data.forEach(item => options += `<option value="${item.id}">${item.libelle}</option>`);
-                    $serviceSelect.html(options);
-                });
-            } else {
-                $serviceSelect.html('<option value="">Sélectionner un service</option>');
-            }
-        });
-
-        // 3b. Administrative Cascading: Service -> Unité
-        $('#service_id', this.$form).on('change', function () {
-            const serviceId = $(this).val();
-            const $uniteSelect = $('#unite_id');
-
-            $uniteSelect.html('<option value="">Chargement...</option>');
-
-            if (serviceId) {
-                $.get(route('grh.employes.unites-by-service', serviceId), (data) => {
-                    let options = '<option value="">Sélectionner une unité</option>';
-                    data.forEach(item => options += `<option value="${item.id}">${item.libelle}</option>`);
-                    $uniteSelect.html(options);
-                });
-            } else {
-                $uniteSelect.html('<option value="">Sélectionner une unité</option>');
-            }
-        });
-
-        // 3c. Location Cascading: Site -> Bâtiment
-        $('#site_id', this.$form).on('change', function () {
-            const siteId = $(this).val();
-            const $batimentSelect = $('#batiment_id');
-            const $etageSelect = $('#etage_id');
-            const $localSelect = $('#local_id');
-
-            $batimentSelect.html('<option value="">Chargement...</option>');
-            $etageSelect.html('<option value="">Sélectionner...</option>');
-            $localSelect.html('<option value="">Sélectionner...</option>');
-
-            if (siteId) {
-                $.get(route('organisation.batiments.by-site', siteId), (data) => {
-                    let options = '<option value="">Sélectionner...</option>';
-                    data.forEach(item => options += `<option value="${item.id}">${item.libelle}</option>`);
-                    $batimentSelect.html(options);
-                });
-            } else {
-                $batimentSelect.html('<option value="">Sélectionner...</option>');
-            }
-        });
-
-        // 3c. Location Cascading: Bâtiment -> Étage
-        $('#batiment_id', this.$form).on('change', function () {
-            const batimentId = $(this).val();
-            const $etageSelect = $('#etage_id');
-            const $localSelect = $('#local_id');
-
-            $etageSelect.html('<option value="">Chargement...</option>');
-            $localSelect.html('<option value="">Sélectionner...</option>');
-
-            if (batimentId) {
-                $.get(route('organisation.etages.by-batiment', batimentId), (data) => {
-                    let options = '<option value="">Sélectionner...</option>';
-                    data.forEach(item => options += `<option value="${item.id}">${item.libelle}</option>`);
-                    $etageSelect.html(options);
-                });
-            } else {
-                $etageSelect.html('<option value="">Sélectionner...</option>');
-            }
-        });
-
-        // 3c. Location Cascading: Étage -> Local
-        $('#etage_id', this.$form).on('change', function () {
-            const etageId = $(this).val();
-            const $localSelect = $('#local_id');
-
-            $localSelect.html('<option value="">Chargement...</option>');
-
-            if (etageId) {
-                $.get(route('organisation.locaux.data'), { etage_id: etageId, limit: 1000 }, (response) => {
-                    let options = '<option value="">Sélectionner...</option>';
-                    response.rows.forEach(item => options += `<option value="${item.id}">${item.libelle}</option>`);
-                    $localSelect.html(options);
-                });
-            } else {
-                $localSelect.html('<option value="">Sélectionner...</option>');
-            }
+        $('#service_id').on('change', (e) => {
+            this._resetSelect('#unite_id', '— Sélectionner d\'abord un service —');
+            const id = e.target.value;
+            if (!id || $('#niveau_rattachement').val() !== 'unite') return;
+            this._loadOptions(
+                route('organisation.postes.unites-by-service', id),
+                '#unite_id', '#spinner-unite',
+                'Sélectionner une unité...'
+            );
         });
     }
 
-    initValidation() {
-        $('input, select', this.$form).on('input change', function () {
-            $(this).removeClass('is-invalid');
-            $(this).closest('.col-md-6, .col-md-3, .col-md-4, .col-md-12').find('.invalid-feedback').remove();
-            if ($(this).attr('name') === 'statut') {
-                $('#statut_container').find('.invalid-feedback').remove();
-            }
+    /* ─────────────────────────────────────────────────────────
+     * CASCADE EMPLACEMENT  Site → Bâtiment → Étage → Local
+     * ───────────────────────────────────────────────────────── */
+    _initLocationCascade() {
+        $('#site_id').on('change', (e) => {
+            this._resetSelect('#batiment_id', '— Sélectionner d\'abord un site —');
+            this._resetSelect('#etage_id',    '— Sélectionner d\'abord un bâtiment —');
+            this._resetSelect('#local_id',    '— Sélectionner d\'abord un étage —');
+            const id = e.target.value;
+            if (!id) return;
+            this._loadOptions(
+                route('organisation.batiments.by-site', id),
+                '#batiment_id', '#spinner-batiment',
+                'Sélectionner un bâtiment...'
+            );
+        });
+
+        $('#batiment_id').on('change', (e) => {
+            this._resetSelect('#etage_id', '— Sélectionner d\'abord un bâtiment —');
+            this._resetSelect('#local_id', '— Sélectionner d\'abord un étage —');
+            const id = e.target.value;
+            if (!id) return;
+            this._loadOptions(
+                route('organisation.etages.by-batiment', id),
+                '#etage_id', '#spinner-etage',
+                'Sélectionner un étage...'
+            );
+        });
+
+        $('#etage_id').on('change', (e) => {
+            this._resetSelect('#local_id', '— Sélectionner d\'abord un étage —');
+            const id = e.target.value;
+            if (!id) return;
+            this._loadOptions(
+                route('organisation.locaux.by-etage', id),
+                '#local_id', '#spinner-local',
+                'Sélectionner un local...'
+            );
         });
     }
 
-    openForAdd() {
-        this.resetForm();
-        $('#posteModalLabel').text('Nouveau Poste de Travail');
-        $('#poste_id').val('');
-        $('#statut_actif').prop('checked', true);
-        $('#btn-save-poste span').text('Créer le Poste');
-        $('#niveau_rattachement').val('direction').trigger('change');
-        $('#dossier_employe_id').val(null).trigger('change');
-        this.$modal.modal('show');
-    }
-
-    // 3d. Form State Management: Populate all hierarchical fields in openForEdit
-    async openForEdit(data) {
-        this.resetForm();
-        $('#posteModalLabel').text('Modifier le Poste de Travail');
-        $('#btn-save-poste span').text('Mettre à jour');
-
-        try {
-            const response = await $.get(route('organisation.postes.show', data.id));
-            const poste = response.data;
-
-            $('#poste_id').val(poste.id);
-            $('#niveau_rattachement').val(poste.niveau_rattachement).trigger('change');
-
-            // Population of administrative fields
-            $('#direction_id').val(poste.direction_id);
-
-            if (poste.direction_id) {
-                const services = await $.get(route('grh.employes.services-by-direction', poste.direction_id));
-                let options = '<option value="">Sélectionner un service</option>';
-                services.forEach(item => options += `<option value="${item.id}" ${item.id == poste.service_id ? 'selected' : ''}>${item.libelle}</option>`);
-                $('#service_id').html(options);
-            }
-
-            if (poste.service_id) {
-                const unites = await $.get(route('grh.employes.unites-by-service', poste.service_id));
-                let options = '<option value="">Sélectionner une unité</option>';
-                unites.forEach(item => options += `<option value="${item.id}" ${item.id == poste.unite_id ? 'selected' : ''}>${item.libelle}</option>`);
-                $('#unite_id').html(options);
-            }
-
-            // Population of physical location fields
-            if (poste.local_id || poste.etage_id || poste.batiment_id) {
-                // If the model has site_id, we'd use it. Otherwise, we might need to get it from local.
-                // Assuming we can get the chain from the poste object if correctly loaded
-                let siteId = null;
-                let batimentId = poste.batiment_id;
-                let etageId = poste.etage_id;
-                let localId = poste.local_id;
-
-                if (poste.local && poste.local.etage && poste.local.etage.batiment) {
-                    siteId = poste.local.etage.batiment.site_id;
-                    batimentId = batimentId || poste.local.etage.batiment_id;
-                    etageId = etageId || poste.local.etage_id;
-                } else if (poste.etage && poste.etage.batiment) {
-                    siteId = poste.etage.batiment.site_id;
-                    batimentId = batimentId || poste.etage.batiment_id;
-                } else if (poste.batiment) {
-                    siteId = poste.batiment.site_id;
-                }
-
-                if (siteId) {
-                    $('#site_id').val(siteId);
-                    const batiments = await $.get(route('organisation.batiments.by-site', siteId));
-                    let batOptions = '<option value="">Sélectionner...</option>';
-                    batiments.forEach(item => batOptions += `<option value="${item.id}" ${item.id == batimentId ? 'selected' : ''}>${item.libelle}</option>`);
-                    $('#batiment_id').html(batOptions);
-                }
-
-                if (batimentId) {
-                    const etages = await $.get(route('organisation.etages.by-batiment', batimentId));
-                    let etageOptions = '<option value="">Sélectionner...</option>';
-                    etages.forEach(item => etageOptions += `<option value="${item.id}" ${item.id == etageId ? 'selected' : ''}>${item.libelle}</option>`);
-                    $('#etage_id').html(etageOptions);
-                }
-
-                if (etageId) {
-                    const locauxRes = await $.get(route('organisation.locaux.data'), { etage_id: etageId, limit: 1000 });
-                    let localOptions = '<option value="">Sélectionner...</option>';
-                    locauxRes.rows.forEach(item => localOptions += `<option value="${item.id}" ${item.id == localId ? 'selected' : ''}>${item.libelle}</option>`);
-                    $('#local_id').html(localOptions);
-                }
-            }
-
-            $('#code').val(poste.code);
-            $('#libelle').val(poste.libelle);
-
-            // Status radio buttons
-            $(`input[name="statut"][value="${poste.statut}"]`).prop('checked', true);
-
-            if (poste.agent) {
-                const option = new Option(poste.agent.full_name + ' (' + poste.agent.matricule + ')', poste.agent.id, true, true);
-                $('#dossier_employe_id').append(option).trigger('change');
-            } else {
-                $('#dossier_employe_id').val(null).trigger('change');
-            }
-
-            this.$modal.modal('show');
-        } catch (error) {
-            console.error(error);
-            Swal.fire('Erreur', 'Impossible de charger les données du poste', 'error');
-        }
-    }
-
-    initSubmission() {
+    /* ─────────────────────────────────────────────────────────
+     * SOUMISSION DU FORMULAIRE
+     * ───────────────────────────────────────────────────────── */
+    _initSubmission() {
         this.$form.on('submit', (e) => {
             e.preventDefault();
-
             const posteId = $('#poste_id').val();
-            const url = posteId
-                ? route('organisation.postes.update', posteId)
-                : route('organisation.postes.store');
-            const method = posteId ? 'PUT' : 'POST';
-
-            const $btn = $('#btn-save-poste');
-            const originalText = $btn.find('span').text();
+            const url     = posteId ? route('organisation.postes.update', posteId) : route('organisation.postes.store');
+            const method  = posteId ? 'PUT' : 'POST';
+            const $btn    = $('#btn-save-poste');
+            const $label  = $('#btn-save-label');
+            const origLabel = $label.text();
 
             $.ajax({
-                url: url,
-                method: method,
+                url, method,
                 data: this.$form.serialize(),
                 beforeSend: () => {
                     $btn.prop('disabled', true);
-                    $btn.find('span').text('Enregistrement...');
-                    $btn.find('i').attr('class', 'fas fa-spinner fa-spin ms-2');
+                    $label.text('Enregistrement...');
                 },
-                success: (response) => {
-                    if (response.success) {
+                success: (res) => {
+                    if (res.success) {
                         this.$modal.modal('hide');
                         this.table.refresh();
-                        Swal.fire({ icon: 'success', title: 'Succès', text: response.message, timer: 2000 });
+                        Swal.fire({ icon: 'success', title: 'Succès', text: res.message, timer: 2000, showConfirmButton: false });
                     }
                 },
                 error: (xhr) => {
                     if (xhr.status === 422) {
-                        this.displayErrors(xhr.responseJSON.errors);
+                        this._displayErrors(xhr.responseJSON.errors);
                     } else {
-                        Swal.fire({ icon: 'error', title: 'Erreur', text: xhr.responseJSON.message || 'Une erreur est survenue' });
+                        Swal.fire({ icon: 'error', title: 'Erreur', text: xhr.responseJSON?.message || 'Une erreur est survenue' });
                     }
                 },
                 complete: () => {
                     $btn.prop('disabled', false);
-                    $btn.find('span').text(originalText);
-                    $btn.find('i').attr('class', 'fas fa-arrow-right ms-2 fs-7');
-                }
+                    $label.text(origLabel);
+                },
             });
         });
     }
 
-    displayErrors(errors) {
-        this.clearErrors();
-        $.each(errors, (field, messages) => {
-            let $field = $(`#${field}`);
+    /* ─────────────────────────────────────────────────────────
+     * OUVERTURE — Ajout
+     * ───────────────────────────────────────────────────────── */
+    openForAdd() {
+        this._resetForm();
+        $('#posteModalLabel').text('Nouveau Poste de Travail');
+        $('#btn-save-label').text('Créer le Poste');
+        $('#statut_actif').prop('checked', true);
+        this.$modal.modal('show');
+    }
 
-            if (field === 'statut') {
-                $('#statut_container').append(`<div class="invalid-feedback d-block">${messages[0]}</div>`);
-            } else if (field === 'dossier_employe_id') {
-                $('#dossier_employe_id').closest('.input-group').after(`<div class="invalid-feedback d-block">${messages[0]}</div>`);
-            } else {
-                $field.addClass('is-invalid');
-                if ($field.next('.select2-container').length) {
-                    $field.next('.select2-container').after(`<div class="invalid-feedback">${messages[0]}</div>`);
-                } else {
-                    $field.after(`<div class="invalid-feedback">${messages[0]}</div>`);
+    /* ─────────────────────────────────────────────────────────
+     * OUVERTURE — Édition
+     * ───────────────────────────────────────────────────────── */
+    async openForEdit(data) {
+        this._resetForm();
+        $('#posteModalLabel').text('Modifier le Poste de Travail');
+        $('#btn-save-label').text('Enregistrer');
+
+        try {
+            const res   = await $.get(route('organisation.postes.show', data.id));
+            const poste = res.data;
+
+            $('#poste_id').val(poste.id);
+            $('#code').val(poste.code);
+            $('#libelle').val(poste.libelle);
+            $('#description').val(poste.description ?? '');
+            $(`input[name="statut"][value="${poste.statut}"]`).prop('checked', true);
+
+            // ── Structure administrative ──────────────────────
+            $('#niveau_rattachement').val(poste.niveau_rattachement ?? '');
+            this._applyNiveau(poste.niveau_rattachement ?? '');
+
+            if (poste.direction_id) {
+                $('#direction_id').val(poste.direction_id);
+
+                if (poste.service_id) {
+                    await this._loadOptions(
+                        route('organisation.postes.services-by-direction', poste.direction_id),
+                        '#service_id', '#spinner-service', 'Sélectionner un service...'
+                    );
+                    $('#service_id').val(poste.service_id);
+
+                    if (poste.unite_id) {
+                        await this._loadOptions(
+                            route('organisation.postes.unites-by-service', poste.service_id),
+                            '#unite_id', '#spinner-unite', 'Sélectionner une unité...'
+                        );
+                        $('#unite_id').val(poste.unite_id);
+                    }
                 }
+            }
+
+            // ── Emplacement physique ──────────────────────────
+            const siteId    = poste.local?.etage?.batiment?.site_id ?? null;
+            const batId     = poste.batiment_id;
+            const etgId     = poste.etage_id;
+            const localId   = poste.local_id;
+
+            if (siteId) {
+                $('#site_id').val(siteId);
+                await this._loadOptions(route('organisation.batiments.by-site', siteId),    '#batiment_id', '#spinner-batiment', 'Sélectionner un bâtiment...');
+                $('#batiment_id').val(batId);
+            }
+            if (batId) {
+                await this._loadOptions(route('organisation.etages.by-batiment', batId),    '#etage_id',    '#spinner-etage',    'Sélectionner un étage...');
+                $('#etage_id').val(etgId);
+            }
+            if (etgId) {
+                await this._loadOptions(route('organisation.locaux.by-etage', etgId),       '#local_id',    '#spinner-local',    'Sélectionner un local...');
+                $('#local_id').val(localId);
+            }
+
+            // ── Employé ───────────────────────────────────────
+            if (poste.agent) {
+                const opt = new Option(`${poste.agent.full_name} (${poste.agent.matricule})`, poste.agent.id, true, true);
+                $('#dossier_employe_id').append(opt).trigger('change');
+            }
+
+            this.$modal.modal('show');
+        } catch (err) {
+            console.error(err);
+            Swal.fire('Erreur', 'Impossible de charger les données du poste', 'error');
+        }
+    }
+
+    /* ─────────────────────────────────────────────────────────
+     * HELPERS
+     * ───────────────────────────────────────────────────────── */
+
+    /**
+     * Charge des options dans un <select> via AJAX.
+     * Retourne une Promise résolue quand le select est peuplé.
+     */
+    _loadOptions(url, selSelector, spinnerId, placeholder) {
+        const $sel     = $(selSelector);
+        const $spinner = $(spinnerId);
+
+        $spinner.removeClass('d-none');
+        $sel.prop('disabled', true).html(`<option value="">Chargement...</option>`);
+
+        return $.get(url)
+            .then((data) => {
+                let html = `<option value="">${placeholder}</option>`;
+                data.forEach(item => {
+                    html += `<option value="${item.id}">${item.libelle ?? item.nom}</option>`;
+                });
+                $sel.html(html).prop('disabled', false);
+            })
+            .catch(() => {
+                $sel.html(`<option value="">— Erreur de chargement —</option>`);
+            })
+            .always(() => {
+                $spinner.addClass('d-none');
+            });
+    }
+
+    _resetSelect(selSelector, placeholder) {
+        $(selSelector).html(`<option value="">${placeholder}</option>`).prop('disabled', true);
+    }
+
+    _resetForm() {
+        this.$form[0].reset();
+        this._applyNiveau('');
+        this._resetSelect('#service_id',  '— Sélectionner d\'abord une direction —');
+        this._resetSelect('#unite_id',    '— Sélectionner d\'abord un service —');
+        this._resetSelect('#batiment_id', '— Sélectionner d\'abord un site —');
+        this._resetSelect('#etage_id',    '— Sélectionner d\'abord un bâtiment —');
+        this._resetSelect('#local_id',    '— Sélectionner d\'abord un étage —');
+        $('#dossier_employe_id').val(null).trigger('change');
+        this._clearErrors();
+    }
+
+    _displayErrors(errors) {
+        this._clearErrors();
+        $.each(errors, (field, messages) => {
+            const $el = $(`#${field}`, this.$form);
+            if (!$el.length) return;
+            $el.addClass('is-invalid');
+            const $feedback = $(`<div class="invalid-feedback d-block">${messages[0]}</div>`);
+            // Pour Select2, insérer après le container généré
+            if ($el.next('.select2-container').length) {
+                $el.next('.select2-container').after($feedback);
+            } else {
+                $el.after($feedback);
             }
         });
     }
 
-    clearErrors() {
-        $('.is-invalid', this.$form).removeClass('is-invalid');
-        $('.invalid-feedback', this.$form).remove();
-    }
-
-    resetForm() {
-        this.$form[0].reset();
-        $('#service_id, #unite_id, #batiment_id, #etage_id, #local_id').html('<option value="">Sélectionner...</option>');
-        $('#dossier_employe_id').val(null).trigger('change');
-        this.clearErrors();
+    _clearErrors() {
+        this.$form.find('.is-invalid').removeClass('is-invalid');
+        this.$form.find('.invalid-feedback').remove();
     }
 }

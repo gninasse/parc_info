@@ -60,6 +60,10 @@
     <!--begin::Required Plugin(AdminLTE)-->
     <link rel="stylesheet" href="{{ asset('adminlte/css/adminlte.css') }}" />
     <!--end::Required Plugin(AdminLTE)-->
+    <!--begin::Third Party Plugin(Select2)-->
+    <link rel="stylesheet" href="{{ asset('plugins/select2/css/select2.min.css') }}" />
+    <link rel="stylesheet" href="{{ asset('plugins/select2/css/select2-bootstrap-5-theme.min.css') }}" />
+    <!--end::Third Party Plugin(Select2)-->
     <!--begin::Required Plugin(tools)-->
     <link rel="stylesheet" href="{{ asset('plugins/tools/tools.css') }}" />
     <!--end::Required Plugin(tools)-->
@@ -153,6 +157,7 @@
     <!--end::Required Plugin(AdminLTE)-->
     <!--begin::Third Party Plugin(sweetalert2)-->
     <script src="{{ asset('plugins/sweetalert2/sweetalert2.all.min.js') }}"></script>
+    <script src="{{ asset('plugins/select2/js/select2.full.min.js') }}"></script>
     <!--end::Third Party Plugin(sweetalert2)-->
     <!--begin::OverlayScrollbars Configure-->
     <script>

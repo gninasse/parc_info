@@ -86,6 +86,7 @@ Route::middleware(['auth'])->prefix('organisation')->name('organisation.')->grou
     Route::prefix('locaux')->name('locaux.')->group(function () {
         Route::get('/', [LocalController::class, 'index'])->name('index');
         Route::get('/data', [LocalController::class, 'getData'])->name('data');
+        Route::get('/by-etage/{etageId}', [LocalController::class, 'getByEtage'])->name('by-etage');
         Route::post('/', [LocalController::class, 'store'])->name('store');
         Route::get('/{id}', [LocalController::class, 'show'])->name('show');
         Route::put('/{id}', [LocalController::class, 'update'])->name('update');
@@ -98,6 +99,8 @@ Route::middleware(['auth'])->prefix('organisation')->name('organisation.')->grou
         Route::get('/', [\Modules\Organisation\Http\Controllers\PosteTravailController::class, 'index'])->name('index');
         Route::get('/data', [\Modules\Organisation\Http\Controllers\PosteTravailController::class, 'getData'])->name('data');
         Route::get('/search-employes', [\Modules\Organisation\Http\Controllers\PosteTravailController::class, 'searchEmployes'])->name('search-employes');
+        Route::get('/services-by-direction/{directionId}', [\Modules\Organisation\Http\Controllers\PosteTravailController::class, 'getServicesByDirection'])->name('services-by-direction');
+        Route::get('/unites-by-service/{serviceId}', [\Modules\Organisation\Http\Controllers\PosteTravailController::class, 'getUnitesByService'])->name('unites-by-service');
         Route::post('/', [\Modules\Organisation\Http\Controllers\PosteTravailController::class, 'store'])->name('store');
         Route::get('/{id}', [\Modules\Organisation\Http\Controllers\PosteTravailController::class, 'show'])->name('show');
         Route::put('/{id}', [\Modules\Organisation\Http\Controllers\PosteTravailController::class, 'update'])->name('update');

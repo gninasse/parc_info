@@ -188,7 +188,7 @@
 </template>
 
 <style>
-.ms-n2 { margin-left: -0.5rem !important; }
+/* .ms-n2 { margin-left: -0.5rem !important; }
 .shadow-xs { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
-.border-dashed { border-style: dashed !important; }
+.border-dashed { border-style: dashed !important; } */
 </style>

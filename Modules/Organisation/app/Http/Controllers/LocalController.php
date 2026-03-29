@@ -135,6 +135,13 @@ class LocalController extends Controller implements HasMiddleware
         }
     }
 
+    public function getByEtage($etageId)
+    {
+        $locaux = Local::where('etage_id', $etageId)->where('actif', true)->get(['id', 'libelle', 'code']);
+
+        return response()->json($locaux);
+    }
+
     public function toggleStatus($id)
     {
         try {

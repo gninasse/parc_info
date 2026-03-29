@@ -43,7 +43,7 @@ $(function () {
         $serviceSelect.prop('disabled', true).html('<option value="">Chargement...</option>');
 
         if (directionId) {
-            $.get(route('grh.employes.services-by-direction', directionId), function (services) {
+            $.get(route('organisation.postes.services-by-direction', directionId), function (services) {
                 let options = '<option value="">Tous les services</option>';
                 services.forEach(service => {
                     options += `<option value="${service.id}">${service.libelle}</option>`;

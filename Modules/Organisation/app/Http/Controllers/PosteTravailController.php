@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 use Modules\Grh\Models\Employe;
 use Modules\Organisation\Http\Requests\PosteTravailRequest;
 use Modules\Organisation\Models\Direction;
-use Modules\Organisation\Models\Local;
 use Modules\Organisation\Models\PosteTravail;
 use Modules\Organisation\Models\Service;
 use Modules\Organisation\Models\Site;
@@ -91,7 +90,7 @@ class PosteTravailController extends Controller
             $data = $request->validated();
 
             $parentId = $request->service_id ?? $request->direction_id;
-            $isService = !empty($request->service_id);
+            $isService = ! empty($request->service_id);
             $data['code'] = PosteTravail::generateCode($parentId, $isService);
 
             $poste = PosteTravail::create($data);
@@ -120,6 +119,20 @@ class PosteTravailController extends Controller
                 'text' => $emp->full_name." ({$emp->matricule})",
             ];
         }));
+    }
+
+    public function getServicesByDirection($directionId)
+    {
+        $services = Service::where('direction_id', $directionId)->where('actif', true)->get(['id', 'libelle']);
+
+        return response()->json($services);
+    }
+
+    public function getUnitesByService($serviceId)
+    {
+        $unites = Unite::where('service_id', $serviceId)->where('actif', true)->get(['id', 'libelle']);
+
+        return response()->json($unites);
     }
 
     public function show($id)
