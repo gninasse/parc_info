@@ -10,7 +10,18 @@
                 <input type="hidden" id="poste_id" name="id">
                 <div class="modal-body">
                     <div class="row">
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-12 mb-3">
+                            <label for="niveau_rattachement" class="form-label">Niveau de rattachement <span class="text-danger">*</span></label>
+                            <select class="form-select" id="niveau_rattachement" name="niveau_rattachement" required>
+                                <option value="direction">Direction</option>
+                                <option value="service">Service</option>
+                                <option value="unite">Unité</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3" id="div_direction">
                             <label for="direction_id" class="form-label">Direction <span class="text-danger">*</span></label>
                             <select class="form-select" id="direction_id" name="direction_id" required>
                                 <option value="">Sélectionner une direction</option>
@@ -19,38 +30,53 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3" id="div_service" style="display: none;">
                             <label for="service_id" class="form-label">Service <span class="text-danger">*</span></label>
-                            <select class="form-select" id="service_id" name="service_id" required>
+                            <select class="form-select" id="service_id" name="service_id">
                                 <option value="">Sélectionner un service</option>
-                                @foreach($services as $service)
-                                    <option value="{{ $service->id }}">{{ $service->libelle }}</option>
-                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3" id="div_unite" style="display: none;">
+                            <label for="unite_id" class="form-label">Unité <span class="text-danger">*</span></label>
+                            <select class="form-select" id="unite_id" name="unite_id">
+                                <option value="">Sélectionner une unité</option>
                             </select>
                         </div>
                     </div>
 
+                    <hr>
+                    <h6>Localisation</h6>
                     <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="unite_id" class="form-label">Unité</label>
-                            <select class="form-select" id="unite_id" name="unite_id">
-                                <option value="">Sélectionner une unité</option>
-                                @foreach($unites as $unite)
-                                    <option value="{{ $unite->id }}">{{ $unite->libelle }}</option>
+                        <div class="col-md-3 mb-3">
+                            <label for="site_id" class="form-label">Site</label>
+                            <select class="form-select" id="site_id" name="site_id">
+                                <option value="">Sélectionner un site</option>
+                                @foreach($sites as $site)
+                                    <option value="{{ $site->id }}">{{ $site->libelle }}</option>
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-3 mb-3">
+                            <label for="batiment_id" class="form-label">Bâtiment</label>
+                            <select class="form-select" id="batiment_id" name="batiment_id">
+                                <option value="">Sélectionner un bâtiment</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="etage_id" class="form-label">Étage</label>
+                            <select class="form-select" id="etage_id" name="etage_id">
+                                <option value="">Sélectionner un étage</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
                             <label for="local_id" class="form-label">Local</label>
                             <select class="form-select" id="local_id" name="local_id">
                                 <option value="">Sélectionner un local</option>
-                                @foreach($locaux as $local)
-                                    <option value="{{ $local->id }}">{{ $local->libelle }}</option>
-                                @endforeach
                             </select>
                         </div>
                     </div>
 
+                    <hr>
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label for="code" class="form-label">Code</label>
@@ -68,7 +94,7 @@
                             <select class="form-select" id="agent_id" name="agent_id">
                                 <option value="">Sélectionner un agent</option>
                                 @foreach($users as $user)
-                                    <option value="{{ $user->id }}">{{ $user->name }}</option>
+                                    <option value="{{ $user->id }}">{{ $user->name }} {{ $user->last_name }}</option>
                                 @endforeach
                             </select>
                         </div>

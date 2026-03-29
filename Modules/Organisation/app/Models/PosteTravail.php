@@ -21,6 +21,7 @@ class PosteTravail extends Model
         'agent_id',
         'statut',
         'actif',
+        'niveau_rattachement',
     ];
 
     protected $casts = [
@@ -67,11 +68,17 @@ class PosteTravail extends Model
         return $query->where('service_id', $serviceId);
     }
 
-    public static function generateCode($serviceId)
+    public static function generateCode($serviceId = null)
     {
-        $service = Service::find($serviceId);
-        $count = static::where('service_id', $serviceId)->count() + 1;
+        if ($serviceId) {
+            $service = Service::find($serviceId);
+            $count = static::where('service_id', $serviceId)->count() + 1;
 
-        return sprintf('POST-%s-%03d', strtoupper($service->code ?? 'SRV'), $count);
+            return sprintf('POST-%s-%03d', strtoupper($service->code ?? 'SRV'), $count);
+        }
+
+        $count = static::whereNull('service_id')->count() + 1;
+
+        return sprintf('POST-GEN-%03d', $count);
     }
 }

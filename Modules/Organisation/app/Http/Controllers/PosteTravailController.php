@@ -15,18 +15,19 @@ class PosteTravailController extends Controller
 {
     public function index()
     {
+        $sites = Site::actif()->get();
         $directions = Direction::actif()->get();
         $services = Service::actif()->get();
         $unites = Unite::actif()->get();
         $locaux = Local::actif()->get();
         $users = User::all();
 
-        return view('organisation::organisation.postes.index', compact('directions', 'services', 'unites', 'locaux', 'users'));
+        return view('organisation::organisation.postes.index', compact('sites', 'directions', 'services', 'unites', 'locaux', 'users'));
     }
 
     public function getData(Request $request)
     {
-        $query = PosteTravail::query()->with(['direction', 'service', 'unite', 'local', 'agent']);
+        $query = PosteTravail::query()->with(['direction', 'service', 'unite', 'local.etage.batiment.site', 'agent']);
 
         if ($request->has('service_id') && ! empty($request->service_id)) {
             $query->where('service_id', $request->service_id);
@@ -62,16 +63,27 @@ class PosteTravailController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $rules = [
             'libelle' => 'required|max:255',
             'description' => 'nullable',
             'direction_id' => 'required|exists:organisation_directions,id',
-            'service_id' => 'required|exists:organisation_services,id',
+            'service_id' => 'nullable|exists:organisation_services,id',
             'unite_id' => 'nullable|exists:organisation_unites,id',
             'local_id' => 'nullable|exists:organisation_locaux,id',
             'agent_id' => 'nullable|exists:users,id',
             'statut' => 'required|in:actif,inactif,en_renovation,supprime',
-        ]);
+            'niveau_rattachement' => 'required|in:direction,service,unite',
+        ];
+
+        if ($request->niveau_rattachement === 'service' || $request->niveau_rattachement === 'unite') {
+            $rules['service_id'] = 'required|exists:organisation_services,id';
+        }
+
+        if ($request->niveau_rattachement === 'unite') {
+            $rules['unite_id'] = 'required|exists:organisation_unites,id';
+        }
+
+        $request->validate($rules);
 
         try {
             $data = $request->all();
@@ -98,16 +110,27 @@ class PosteTravailController extends Controller
 
     public function update(Request $request, $id)
     {
-        $request->validate([
+        $rules = [
             'libelle' => 'required|max:255',
             'description' => 'nullable',
             'direction_id' => 'required|exists:organisation_directions,id',
-            'service_id' => 'required|exists:organisation_services,id',
+            'service_id' => 'nullable|exists:organisation_services,id',
             'unite_id' => 'nullable|exists:organisation_unites,id',
             'local_id' => 'nullable|exists:organisation_locaux,id',
             'agent_id' => 'nullable|exists:users,id',
             'statut' => 'required|in:actif,inactif,en_renovation,supprime',
-        ]);
+            'niveau_rattachement' => 'required|in:direction,service,unite',
+        ];
+
+        if ($request->niveau_rattachement === 'service' || $request->niveau_rattachement === 'unite') {
+            $rules['service_id'] = 'required|exists:organisation_services,id';
+        }
+
+        if ($request->niveau_rattachement === 'unite') {
+            $rules['unite_id'] = 'required|exists:organisation_unites,id';
+        }
+
+        $request->validate($rules);
 
         try {
             $poste = PosteTravail::findOrFail($id);
