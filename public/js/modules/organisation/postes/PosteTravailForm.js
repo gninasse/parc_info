@@ -39,12 +39,16 @@ export class PosteTravailForm {
     initChainedSelectors() {
         const self = this;
 
-        // Niveau de rattachement
+        // 3a. Conditional Visibility for Administrative Structure
         $('#niveau_rattachement').on('change', function () {
             const niveau = $(this).val();
-            $('#col-service, #col-unite').addClass('d-none');
-            $('#service_id, #unite_id').val('').prop('required', false);
+            $('#col-direction, #col-service, #col-unite').addClass('d-none');
+            $('#direction_id, #service_id, #unite_id').val('').prop('required', false);
 
+            if (niveau === 'direction' || niveau === 'service' || niveau === 'unite') {
+                $('#col-direction').removeClass('d-none');
+                $('#direction_id').prop('required', true);
+            }
             if (niveau === 'service' || niveau === 'unite') {
                 $('#col-service').removeClass('d-none');
                 $('#service_id').prop('required', true);
@@ -53,9 +57,18 @@ export class PosteTravailForm {
                 $('#col-unite').removeClass('d-none');
                 $('#unite_id').prop('required', true);
             }
+
+            // Re-adjust columns if needed (they are col-md-4)
+            if (niveau === 'direction') {
+                $('#col-direction').removeClass('col-md-4').addClass('col-md-12');
+            } else if (niveau === 'service') {
+                $('#col-direction, #col-service').removeClass('col-md-4 col-md-12').addClass('col-md-6');
+            } else {
+                $('#col-direction, #col-service, #col-unite').removeClass('col-md-6 col-md-12').addClass('col-md-4');
+            }
         });
 
-        // Direction -> Service
+        // 3b. Administrative Cascading: Direction -> Service
         $('#direction_id', this.$form).on('change', function () {
             const directionId = $(this).val();
             const $serviceSelect = $('#service_id');
@@ -75,7 +88,7 @@ export class PosteTravailForm {
             }
         });
 
-        // Service -> Unité
+        // 3b. Administrative Cascading: Service -> Unité
         $('#service_id', this.$form).on('change', function () {
             const serviceId = $(this).val();
             const $uniteSelect = $('#unite_id');
@@ -93,7 +106,7 @@ export class PosteTravailForm {
             }
         });
 
-        // Site -> Bâtiment
+        // 3c. Location Cascading: Site -> Bâtiment
         $('#site_id', this.$form).on('change', function () {
             const siteId = $(this).val();
             const $batimentSelect = $('#batiment_id');
@@ -115,7 +128,7 @@ export class PosteTravailForm {
             }
         });
 
-        // Bâtiment -> Étage
+        // 3c. Location Cascading: Bâtiment -> Étage
         $('#batiment_id', this.$form).on('change', function () {
             const batimentId = $(this).val();
             const $etageSelect = $('#etage_id');
@@ -135,7 +148,7 @@ export class PosteTravailForm {
             }
         });
 
-        // Étage -> Local
+        // 3c. Location Cascading: Étage -> Local
         $('#etage_id', this.$form).on('change', function () {
             const etageId = $(this).val();
             const $localSelect = $('#local_id');
@@ -157,7 +170,7 @@ export class PosteTravailForm {
     initValidation() {
         $('input, select', this.$form).on('input change', function () {
             $(this).removeClass('is-invalid');
-            $(this).closest('.col-md-6, .col-md-3').find('.invalid-feedback').remove();
+            $(this).closest('.col-md-6, .col-md-3, .col-md-4, .col-md-12').find('.invalid-feedback').remove();
             if ($(this).attr('name') === 'statut') {
                 $('#statut_container').find('.invalid-feedback').remove();
             }
@@ -175,6 +188,7 @@ export class PosteTravailForm {
         this.$modal.modal('show');
     }
 
+    // 3d. Form State Management: Populate all hierarchical fields in openForEdit
     async openForEdit(data) {
         this.resetForm();
         $('#posteModalLabel').text('Modifier le Poste de Travail');
@@ -186,6 +200,8 @@ export class PosteTravailForm {
 
             $('#poste_id').val(poste.id);
             $('#niveau_rattachement').val(poste.niveau_rattachement).trigger('change');
+
+            // Population of administrative fields
             $('#direction_id').val(poste.direction_id);
 
             if (poste.direction_id) {
@@ -202,29 +218,47 @@ export class PosteTravailForm {
                 $('#unite_id').html(options);
             }
 
-            // Physical location
-            if (poste.local) {
-                const local = poste.local;
-                const etage = local.etage;
-                const batiment = etage.batiment;
-                const site = batiment.site;
+            // Population of physical location fields
+            if (poste.local_id || poste.etage_id || poste.batiment_id) {
+                // If the model has site_id, we'd use it. Otherwise, we might need to get it from local.
+                // Assuming we can get the chain from the poste object if correctly loaded
+                let siteId = null;
+                let batimentId = poste.batiment_id;
+                let etageId = poste.etage_id;
+                let localId = poste.local_id;
 
-                $('#site_id').val(site.id);
+                if (poste.local && poste.local.etage && poste.local.etage.batiment) {
+                    siteId = poste.local.etage.batiment.site_id;
+                    batimentId = batimentId || poste.local.etage.batiment_id;
+                    etageId = etageId || poste.local.etage_id;
+                } else if (poste.etage && poste.etage.batiment) {
+                    siteId = poste.etage.batiment.site_id;
+                    batimentId = batimentId || poste.etage.batiment_id;
+                } else if (poste.batiment) {
+                    siteId = poste.batiment.site_id;
+                }
 
-                const batiments = await $.get(route('organisation.batiments.by-site', site.id));
-                let batOptions = '<option value="">Sélectionner...</option>';
-                batiments.forEach(item => batOptions += `<option value="${item.id}" ${item.id == batiment.id ? 'selected' : ''}>${item.libelle}</option>`);
-                $('#batiment_id').html(batOptions);
+                if (siteId) {
+                    $('#site_id').val(siteId);
+                    const batiments = await $.get(route('organisation.batiments.by-site', siteId));
+                    let batOptions = '<option value="">Sélectionner...</option>';
+                    batiments.forEach(item => batOptions += `<option value="${item.id}" ${item.id == batimentId ? 'selected' : ''}>${item.libelle}</option>`);
+                    $('#batiment_id').html(batOptions);
+                }
 
-                const etages = await $.get(route('organisation.etages.by-batiment', batiment.id));
-                let etageOptions = '<option value="">Sélectionner...</option>';
-                etages.forEach(item => etageOptions += `<option value="${item.id}" ${item.id == etage.id ? 'selected' : ''}>${item.libelle}</option>`);
-                $('#etage_id').html(etageOptions);
+                if (batimentId) {
+                    const etages = await $.get(route('organisation.etages.by-batiment', batimentId));
+                    let etageOptions = '<option value="">Sélectionner...</option>';
+                    etages.forEach(item => etageOptions += `<option value="${item.id}" ${item.id == etageId ? 'selected' : ''}>${item.libelle}</option>`);
+                    $('#etage_id').html(etageOptions);
+                }
 
-                const locauxRes = await $.get(route('organisation.locaux.data'), { etage_id: etage.id, limit: 1000 });
-                let localOptions = '<option value="">Sélectionner...</option>';
-                locauxRes.rows.forEach(item => localOptions += `<option value="${item.id}" ${item.id == local.id ? 'selected' : ''}>${item.libelle}</option>`);
-                $('#local_id').html(localOptions);
+                if (etageId) {
+                    const locauxRes = await $.get(route('organisation.locaux.data'), { etage_id: etageId, limit: 1000 });
+                    let localOptions = '<option value="">Sélectionner...</option>';
+                    locauxRes.rows.forEach(item => localOptions += `<option value="${item.id}" ${item.id == localId ? 'selected' : ''}>${item.libelle}</option>`);
+                    $('#local_id').html(localOptions);
+                }
             }
 
             $('#code').val(poste.code);
@@ -242,6 +276,7 @@ export class PosteTravailForm {
 
             this.$modal.modal('show');
         } catch (error) {
+            console.error(error);
             Swal.fire('Erreur', 'Impossible de charger les données du poste', 'error');
         }
     }
@@ -302,7 +337,11 @@ export class PosteTravailForm {
                 $('#dossier_employe_id').closest('.input-group').after(`<div class="invalid-feedback d-block">${messages[0]}</div>`);
             } else {
                 $field.addClass('is-invalid');
-                $field.after(`<div class="invalid-feedback">${messages[0]}</div>`);
+                if ($field.next('.select2-container').length) {
+                    $field.next('.select2-container').after(`<div class="invalid-feedback">${messages[0]}</div>`);
+                } else {
+                    $field.after(`<div class="invalid-feedback">${messages[0]}</div>`);
+                }
             }
         });
     }
