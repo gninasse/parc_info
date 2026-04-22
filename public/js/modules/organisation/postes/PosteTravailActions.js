@@ -33,12 +33,12 @@ export class PosteTravailActions {
     deletePosteTravail(posteId) {
         Swal.fire({
             title: 'Êtes-vous sûr ?',
-            text: "Cette action va désactiver ce poste de travail",
+            text: "Cette action va Supprimer ce poste de travail",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Oui, désactiver',
+            confirmButtonText: 'Oui, Supprimer',
             cancelButtonText: 'Annuler'
         }).then((result) => {
             if (result.isConfirmed) {
@@ -50,7 +50,7 @@ export class PosteTravailActions {
                             this.table.refresh();
                             Swal.fire({
                                 icon: 'success',
-                                title: 'Désactivé',
+                                title: 'Supprimé',
                                 text: response.message,
                                 timer: 2000
                             });

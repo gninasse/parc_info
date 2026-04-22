@@ -162,9 +162,9 @@ class PosteTravailController extends Controller
     {
         try {
             $poste = PosteTravail::findOrFail($id);
-            $poste->update(['actif' => false]);
+            $poste->delete();
 
-            return response()->json(['success' => true, 'message' => 'Poste de travail désactivé avec succès']);
+            return response()->json(['success' => true, 'message' => 'Poste de travail supprimé avec succès']);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Erreur: '.$e->getMessage()], 500);
         }
