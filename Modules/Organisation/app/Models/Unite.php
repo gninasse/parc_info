@@ -2,10 +2,10 @@
 
 namespace Modules\Organisation\Models;
 
-use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Modules\Grh\Models\Employe;
 
 class Unite extends Model
 {
@@ -45,7 +45,7 @@ class Unite extends Model
 
     public function major()
     {
-        return $this->belongsTo(User::class, 'major_id');
+        return $this->belongsTo(Employe::class, 'major_id');
     }
 
     public function getNomCompletAttribute(): string

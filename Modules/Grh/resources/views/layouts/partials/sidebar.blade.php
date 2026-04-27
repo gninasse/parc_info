@@ -6,9 +6,10 @@
           <a href="{{ url('/') }}" class="brand-link">
             <!--begin::Brand Image-->
             <img
-              src="{{ asset('adminlte/assets/img/AdminLTELogo.png') }}"
-              alt="AdminLTE Logo"
-              class="brand-image opacity-75 shadow"
+              src="{{ asset('img/grh-logo.png') }}"
+              alt="GRH Logo"
+              class="brand-image shadow"
+              style="max-height: 33px; width: auto;"
             />
             <!--end::Brand Image-->
             <!--begin::Brand Text-->

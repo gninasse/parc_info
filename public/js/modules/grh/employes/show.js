@@ -1,17 +1,18 @@
 /**
  * GRH - Dossiers Employés - Show/Edit JS
+ * Pattern aligné sur Core/users/show.js
  */
 
-$(function() {
+$(function () {
     const $form = $('#employe-form');
     const $btnEdit = $('#btn-edit-mode');
     const $btnCancel = $('#btn-cancel');
     const $btnSave = $('#btn-save-profile');
     const $btnToggle = $('#btn-toggle-status');
+    const $viewActions = $('#view-actions');
     const $formActions = $('#form-actions');
-    const $inputs = $form.find('input, select, textarea');
 
-    // Selecteurs structure administrative
+    // Sélecteurs structure administrative
     const $niveauRattachement = $('#niveau_rattachement');
     const $dirSelect = $('#direction_id');
     const $srvSelect = $('#service_id');
@@ -20,7 +21,7 @@ $(function() {
     const $srvContainer = $('#srv-select-container');
     const $untContainer = $('#unt-select-container');
 
-    // Visualisation Preview
+    // Visualisation
     const $previewDir = $('#preview-direction');
     const $previewSrv = $('#preview-service');
     const $previewUnt = $('#preview-unite');
@@ -31,30 +32,42 @@ $(function() {
     const contactRowTemplate = $('#contact-row-template').html();
     let contactIndex = $contactsContainer.find('.contact-row').length;
 
-    // Switch to edit mode
-    $btnEdit.on('click', function() {
-        $inputs.prop('disabled', false);
-        $formActions.removeClass('d-none');
-        $btnEdit.addClass('d-none');
-        $btnToggle.addClass('d-none');
-        $addContactBtn.removeClass('d-none');
-        $('.contact-actions').removeClass('d-none');
-        $('#no-contacts-alert').addClass('d-none');
-
-        $inputs.removeClass('bg-light').addClass('bg-white shadow-sm border');
-        $('#matricule').prop('disabled', true).addClass('bg-light'); // Matricule reste non modifiable
+    // -------------------------------------------------------
+    // Edit mode
+    // -------------------------------------------------------
+    $btnEdit.on('click', function () {
+        enableEditMode();
     });
 
-    // Cancel edit mode
-    $btnCancel.on('click', function() {
+    $btnCancel.on('click', function () {
+        disableEditMode();
         window.location.reload();
     });
 
-    // Gestion de la hiérarchie administrative
-    $niveauRattachement.on('change', function() {
-        const niveau = $(this).val();
+    function enableEditMode() {
+        $form.find('input, select, textarea').prop('disabled', false);
+        $viewActions.addClass('d-none');
+        $formActions.removeClass('d-none');
+        $addContactBtn.removeClass('d-none');
+        $('.contact-actions').removeClass('d-none');
+        $('#no-contacts-alert').addClass('d-none');
+    }
 
+    function disableEditMode() {
+        $form.find('input, select, textarea').prop('disabled', true);
+        $viewActions.removeClass('d-none');
+        $formActions.addClass('d-none');
+        $addContactBtn.addClass('d-none');
+        $('.contact-actions').addClass('d-none');
+    }
+
+    // -------------------------------------------------------
+    // Hiérarchie administrative
+    // -------------------------------------------------------
+    $niveauRattachement.on('change', function () {
+        const niveau = $(this).val();
         $dirContainer.removeClass('d-none');
+
         if (niveau === 'direction') {
             $srvContainer.addClass('d-none');
             $untContainer.addClass('d-none');
@@ -73,23 +86,22 @@ $(function() {
         }
     });
 
-    $dirSelect.on('change', function() {
+    $dirSelect.on('change', function () {
         const dirId = $(this).val();
         const dirText = $(this).find('option:selected').text();
-
         $previewDir.text(dirId ? dirText : 'Direction Générale');
 
         if (dirId && ($niveauRattachement.val() === 'service' || $niveauRattachement.val() === 'unite')) {
             loadServices(dirId);
         } else {
-            $srvSelect.empty().append('<option value="">Sélectionner le Service...</option>');
-            $untSelect.empty().append('<option value="">Sélectionner l\'Unité...</option>');
+            $srvSelect.empty().append('<option value="">Sélectionner le service...</option>');
+            $untSelect.empty().append('<option value="">Sélectionner l\'unité...</option>');
             $previewSrv.addClass('d-none');
             $previewUnt.addClass('d-none');
         }
     });
 
-    $srvSelect.on('change', function() {
+    $srvSelect.on('change', function () {
         const srvId = $(this).val();
         const srvText = $(this).find('option:selected').text();
 
@@ -103,14 +115,13 @@ $(function() {
         } else {
             $previewSrv.addClass('d-none');
             $previewUnt.addClass('d-none');
-            $untSelect.empty().append('<option value="">Sélectionner l\'Unité...</option>');
+            $untSelect.empty().append('<option value="">Sélectionner l\'unité...</option>');
         }
     });
 
-    $untSelect.on('change', function() {
+    $untSelect.on('change', function () {
         const untId = $(this).val();
         const untText = $(this).find('option:selected').text();
-
         if (untId) {
             $previewUnt.text(untText).removeClass('d-none');
         } else {
@@ -119,8 +130,8 @@ $(function() {
     });
 
     function loadServices(dirId, selectedSrvId = null) {
-        $.get(window.grhRoutes.services(dirId), function(services) {
-            $srvSelect.empty().append('<option value="">Sélectionner le Service...</option>');
+        $.get(window.grhRoutes.services(dirId), function (services) {
+            $srvSelect.empty().append('<option value="">Sélectionner le service...</option>');
             services.forEach(srv => {
                 const selected = (selectedSrvId == srv.id) ? 'selected' : '';
                 $srvSelect.append(`<option value="${srv.id}" ${selected}>${srv.libelle}</option>`);
@@ -129,8 +140,8 @@ $(function() {
     }
 
     function loadUnites(srvId, selectedUntId = null) {
-        $.get(window.grhRoutes.unites(srvId), function(unites) {
-            $untSelect.empty().append('<option value="">Sélectionner l\'Unité...</option>');
+        $.get(window.grhRoutes.unites(srvId), function (unites) {
+            $untSelect.empty().append('<option value="">Sélectionner l\'unité...</option>');
             unites.forEach(unt => {
                 const selected = (selectedUntId == unt.id) ? 'selected' : '';
                 $untSelect.append(`<option value="${unt.id}" ${selected}>${unt.libelle}</option>`);
@@ -138,20 +149,28 @@ $(function() {
         });
     }
 
-    // Gestion des contacts
-    $addContactBtn.on('click', function() {
+    // -------------------------------------------------------
+    // Contacts
+    // -------------------------------------------------------
+    $addContactBtn.on('click', function () {
         addContactRow();
     });
 
-    $('.remove-contact-btn').on('click', function() {
+    // Contacts existants : bouton suppression
+    $contactsContainer.on('click', '.remove-contact-btn', function () {
         $(this).closest('.contact-row').remove();
     });
 
-    function addContactRow() {
+    function addContactRow(data = null) {
         let rowHtml = contactRowTemplate.replace(/INDEX/g, contactIndex);
         let $row = $(rowHtml);
 
-        $row.find('.remove-contact-btn').on('click', function() {
+        if (data) {
+            $row.find('select[name*="type_contact"]').val(data.type_contact);
+            $row.find('input[name*="valeur"]').val(data.valeur);
+        }
+
+        $row.find('.remove-contact-btn').on('click', function () {
             $row.remove();
         });
 
@@ -159,8 +178,10 @@ $(function() {
         contactIndex++;
     }
 
-    // Save profile
-    $form.on('submit', function(e) {
+    // -------------------------------------------------------
+    // Sauvegarde du profil
+    // -------------------------------------------------------
+    $form.on('submit', function (e) {
         e.preventDefault();
 
         if (!this.checkValidity()) {
@@ -175,22 +196,22 @@ $(function() {
             url: window.grhRoutes.update,
             method: 'PUT',
             data: formData,
-            beforeSend: function() {
-                $btnSave.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Enregistrement...');
+            beforeSend: function () {
+                $btnSave.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Enregistrement...');
             },
-            success: function(response) {
+            success: function (response) {
                 Swal.fire({
                     title: 'Succès',
                     text: response.message,
                     icon: 'success',
                     timer: 2000,
-                    showConfirmButton: false
+                    showConfirmButton: false,
                 }).then(() => {
                     window.location.reload();
                 });
             },
-            error: function(xhr) {
-                const message = xhr.responseJSON?.message || 'Une erreur est survenue lors de la mise à jour';
+            error: function (xhr) {
+                const message = xhr.responseJSON?.message || 'Une erreur est survenue';
                 const errors = xhr.responseJSON?.errors;
                 let errorHtml = '';
 
@@ -202,45 +223,43 @@ $(function() {
                     errorHtml += '</ul>';
                 }
 
-                Swal.fire({
-                    title: 'Erreur',
-                    html: message + errorHtml,
-                    icon: 'error'
-                });
+                Swal.fire({ title: 'Erreur', html: message + errorHtml, icon: 'error' });
             },
-            complete: function() {
-                $btnSave.prop('disabled', false).html('<i class="fas fa-save me-1"></i> ENREGISTRER');
-            }
+            complete: function () {
+                $btnSave.prop('disabled', false).html('<i class="fas fa-save me-1"></i> Enregistrer');
+            },
         });
     });
 
-    // Toggle status
-    $btnToggle.on('click', function() {
+    // -------------------------------------------------------
+    // Toggle statut
+    // -------------------------------------------------------
+    $btnToggle.on('click', function () {
         const action = $(this).data('action');
         const confirmColor = action === 'activer' ? '#28a745' : '#dc3545';
 
         Swal.fire({
-            title: `Confirmer la ${action}?`,
+            title: `Confirmer la ${action} ?`,
             text: `Voulez-vous vraiment ${action} ce dossier employé ?`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: confirmColor,
             confirmButtonText: `Oui, ${action}`,
-            cancelButtonText: 'Annuler'
+            cancelButtonText: 'Annuler',
         }).then((result) => {
             if (result.isConfirmed) {
                 $.ajax({
                     url: window.grhRoutes.toggle,
                     method: 'POST',
                     data: { _token: $('meta[name="csrf-token"]').attr('content') },
-                    success: function(response) {
+                    success: function (response) {
                         Swal.fire('Succès', response.message, 'success').then(() => {
                             window.location.reload();
                         });
                     },
-                    error: function() {
+                    error: function () {
                         Swal.fire('Erreur', 'Impossible de changer le statut', 'error');
-                    }
+                    },
                 });
             }
         });

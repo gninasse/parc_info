@@ -1,126 +1,128 @@
+{{-- Modal Employé --}}
 <div class="modal fade" id="employeModal" tabindex="-1" aria-labelledby="modalTitle" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-        <form id="employeForm" novalidate>
-            @csrf
-            <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
-                <div class="modal-header border-0 p-4 pb-0">
-                    <div class="d-flex align-items-center">
-                        <div class="bg-primary bg-opacity-10 p-3 rounded-3 me-3">
-                            <i class="fas fa-user-plus text-primary fs-4"></i>
-                        </div>
-                        <div>
-                            <h4 class="modal-title fw-bold mb-0" id="modalTitle">Nouveau Collaborateur</h4>
-                            <p class="text-muted small mb-0">Complétez les informations pour l'enregistrement au module GRH</p>
-                        </div>
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="bg-primary bg-opacity-10 p-2 rounded">
+                        <i class="fas fa-user-plus text-primary"></i>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                    <div>
+                        <h5 class="modal-title mb-0" id="modalTitle">Nouveau Collaborateur</h5>
+                        <small class="text-muted">Renseigner les informations du dossier employé</small>
+                    </div>
                 </div>
-                <div class="modal-body p-4">
-                    <!-- 01. INFORMATIONS DE BASE -->
-                    <div class="mb-5">
-                        <h6 class="text-primary fw-bold mb-4" style="letter-spacing: 1px; font-size: 0.8rem;">01. INFORMATIONS DE BASE</h6>
-                        <div class="row g-4">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+
+            <form id="employeForm" novalidate>
+                @csrf
+                <div class="modal-body">
+
+                    {{-- 01. Informations de base --}}
+                    <div class="mb-4">
+                        <h6 class="text-primary fw-semibold mb-3 border-bottom pb-2">
+                            <i class="fas fa-id-card me-2"></i>Informations de base
+                        </h6>
+                        <div class="row g-3">
                             <div class="col-md-4">
-                                <label for="matricule" class="form-label text-muted small fw-bold">MATRICULE</label>
-                                <input type="text" class="form-control bg-light border-0 py-2" id="matricule" name="matricule" required placeholder="MAT-2024-">
+                                <label for="matricule" class="form-label">Matricule <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="matricule" name="matricule"
+                                       required placeholder="ex: EMP-2024-001">
                             </div>
                             <div class="col-md-4">
-                                <label for="nom" class="form-label text-muted small fw-bold">NOM</label>
-                                <input type="text" class="form-control bg-light border-0 py-2" id="nom" name="nom" required placeholder="ex: Kaboré">
+                                <label for="nom" class="form-label">Nom <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="nom" name="nom"
+                                       required placeholder="ex: Kaboré">
                             </div>
                             <div class="col-md-4">
-                                <label for="prenom" class="form-label text-muted small fw-bold">PRÉNOM</label>
-                                <input type="text" class="form-control bg-light border-0 py-2" id="prenom" name="prenom" required placeholder="ex: Jean-Paul">
+                                <label for="prenom" class="form-label">Prénom <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="prenom" name="prenom"
+                                       required placeholder="ex: Jean-Paul">
                             </div>
                             <div class="col-md-4">
-                                <label for="date_naissance" class="form-label text-muted small fw-bold">DATE DE NAISSANCE</label>
-                                <input type="date" class="form-control bg-light border-0 py-2" id="date_naissance" name="date_naissance">
+                                <label for="date_naissance" class="form-label">Date de naissance</label>
+                                <input type="date" class="form-control" id="date_naissance" name="date_naissance">
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label text-muted small fw-bold">GENRE</label>
-                                <div class="btn-group w-100 bg-light p-1 rounded" role="group">
+                                <label class="form-label">Genre</label>
+                                <div class="btn-group w-100" role="group">
                                     <input type="radio" class="btn-check" name="genre" id="genre_m" value="M" autocomplete="off" checked>
-                                    <label class="btn btn-outline-primary border-0 rounded py-2 fw-bold" for="genre_m">HOMME</label>
+                                    <label class="btn btn-outline-primary" for="genre_m">
+                                        <i class="fas fa-mars me-1"></i> Homme
+                                    </label>
                                     <input type="radio" class="btn-check" name="genre" id="genre_f" value="F" autocomplete="off">
-                                    <label class="btn btn-outline-primary border-0 rounded py-2 fw-bold" for="genre_f">FEMME</label>
+                                    <label class="btn btn-outline-danger" for="genre_f">
+                                        <i class="fas fa-venus me-1"></i> Femme
+                                    </label>
                                 </div>
                             </div>
                             <div class="col-md-4">
-                                <label for="date_embauche" class="form-label text-muted small fw-bold">DATE D'EMBAUCHE</label>
-                                <input type="date" class="form-control bg-light border-0 py-2" id="date_embauche" name="date_embauche">
+                                <label for="date_embauche" class="form-label">Date d'embauche</label>
+                                <input type="date" class="form-control" id="date_embauche" name="date_embauche">
                             </div>
                             <div class="col-12">
-                                <label for="poste" class="form-label text-muted small fw-bold">POSTE OCCUPÉ</label>
-                                <select class="form-select bg-light border-0 py-2" id="poste" name="poste">
-                                    <option value="">Sélectionner un poste...</option>
-                                    <option value="Chargé des Admissions">Chargé des Admissions</option>
-                                    <option value="Infirmier">Infirmier</option>
-                                    <option value="Médecin">Médecin</option>
-                                    <option value="Administrateur">Administrateur</option>
-                                </select>
+                                <label for="poste" class="form-label">Poste occupé</label>
+                                <input type="text" class="form-control" id="poste" name="poste"
+                                       placeholder="ex: Chargé des ressources humaines">
                             </div>
                         </div>
                     </div>
 
-                    <!-- 02. STRUCTURE ADMINISTRATIVE -->
-                    <div class="mb-5 p-4 bg-light bg-opacity-50 rounded-4 border border-light">
-                        <h6 class="text-primary fw-bold mb-4" style="letter-spacing: 1px; font-size: 0.8rem;">02. STRUCTURE ADMINISTRATIVE</h6>
-                        <div class="row g-4">
+                    {{-- 02. Structure administrative --}}
+                    <div class="mb-4">
+                        <h6 class="text-primary fw-semibold mb-3 border-bottom pb-2">
+                            <i class="fas fa-sitemap me-2"></i>Structure administrative
+                        </h6>
+                        <div class="row g-3">
                             <div class="col-md-7">
-                                <div class="mb-4">
-                                    <label for="niveau_rattachement" class="form-label text-muted small fw-bold">NIVEAU DE RATTACHEMENT</label>
-                                    <select class="form-select bg-white border-0 py-2 shadow-sm" id="niveau_rattachement" name="niveau_rattachement" required>
+                                <div class="mb-3">
+                                    <label for="niveau_rattachement" class="form-label">Niveau de rattachement <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="niveau_rattachement" name="niveau_rattachement" required>
                                         <option value="">Choisir...</option>
                                         <option value="direction">Direction</option>
                                         <option value="service">Service</option>
                                         <option value="unite">Unité</option>
                                     </select>
                                 </div>
-                                <div id="selection-structure-container" class="d-none animate__animated animate__fadeIn">
-                                    <label id="selection-structure-label" class="form-label text-muted small fw-bold">SÉLECTIONNER LE SERVICE</label>
+                                <div id="selection-structure-container" class="d-none">
+                                    <label id="selection-structure-label" class="form-label">Sélectionner le service</label>
                                     <div id="hierarchical-selects">
-                                        <!-- Direction Select -->
-                                        <div id="dir-select-container" class="mb-3 d-none">
-                                            <select class="form-select bg-white border-0 py-2 shadow-sm" id="direction_id" name="direction_id">
-                                                <option value="">Sélectionner la Direction...</option>
+                                        <div id="dir-select-container" class="mb-2 d-none">
+                                            <select class="form-select" id="direction_id" name="direction_id">
+                                                <option value="">Sélectionner la direction...</option>
                                                 @foreach($directions as $dir)
                                                     <option value="{{ $dir->id }}">{{ $dir->libelle }}</option>
                                                 @endforeach
                                             </select>
                                         </div>
-                                        <!-- Service Select -->
-                                        <div id="srv-select-container" class="mb-3 d-none">
-                                            <select class="form-select bg-white border-0 py-2 shadow-sm" id="service_id" name="service_id">
-                                                <option value="">Sélectionner le Service...</option>
+                                        <div id="srv-select-container" class="mb-2 d-none">
+                                            <select class="form-select" id="service_id" name="service_id">
+                                                <option value="">Sélectionner le service...</option>
                                             </select>
                                         </div>
-                                        <!-- Unit Select -->
-                                        <div id="unt-select-container" class="mb-3 d-none">
-                                            <select class="form-select bg-white border-0 py-2 shadow-sm" id="unite_id" name="unite_id">
-                                                <option value="">Sélectionner l'Unité...</option>
+                                        <div id="unt-select-container" class="mb-2 d-none">
+                                            <select class="form-select" id="unite_id" name="unite_id">
+                                                <option value="">Sélectionner l'unité...</option>
                                             </select>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-5">
-                                <div class="card border-0 shadow-sm h-100" style="background-color: #f0f2f5; border-radius: 15px;">
-                                    <div class="card-body text-center d-flex flex-column justify-content-center align-items-center p-4">
-                                        <div class="mb-3">
-                                            <div class="bg-primary text-white p-3 rounded-circle d-inline-block shadow">
-                                                <i class="fas fa-sitemap fs-4"></i>
-                                            </div>
-                                        </div>
-                                        <p class="small fw-bold text-uppercase text-muted mb-4" style="letter-spacing: 0.5px;">Visualisation structurelle</p>
-                                        <div id="visualisation-preview" class="w-100 px-3">
-                                            <div class="p-2 mb-2 bg-white rounded-3 shadow-sm border-start border-primary border-4 text-start small fw-bold" id="preview-direction">
+                                <div class="card border-0 bg-light h-100">
+                                    <div class="card-body d-flex flex-column justify-content-center align-items-center text-center p-3">
+                                        <i class="fas fa-sitemap text-primary fs-3 mb-2"></i>
+                                        <p class="small text-muted fw-semibold mb-3">Visualisation de la structure</p>
+                                        <div id="visualisation-preview" class="w-100 text-start">
+                                            <div class="p-2 mb-2 bg-white rounded border-start border-primary border-3 small fw-semibold" id="preview-direction">
                                                 Direction Générale
                                             </div>
-                                            <div class="ms-4 p-2 mb-2 bg-primary text-white rounded-3 shadow-sm text-start small fw-bold animate__animated animate__pulse d-none" id="preview-service">
-                                                Service RH
+                                            <div class="ms-3 p-2 mb-2 bg-primary text-white rounded small fw-semibold d-none" id="preview-service">
+                                                Service
                                             </div>
-                                            <div class="ms-5 p-2 bg-white border border-dashed rounded-3 text-muted text-start small d-none" id="preview-unite">
-                                                Unité (Non définie)
+                                            <div class="ms-4 p-2 bg-white border border-dashed rounded text-muted small d-none" id="preview-unite">
+                                                Unité
                                             </div>
                                         </div>
                                     </div>
@@ -129,58 +131,50 @@
                         </div>
                     </div>
 
-                    <!-- 03. CONTACTS & COMMUNICATION -->
+                    {{-- 03. Contacts --}}
                     <div>
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h6 class="text-primary fw-bold mb-0" style="letter-spacing: 1px; font-size: 0.8rem;">03. CONTACTS & COMMUNICATION</h6>
-                            <button type="button" class="btn btn-link text-primary text-decoration-none fw-bold p-0 small" id="add-contact-btn">
-                                <i class="fas fa-plus-circle me-1"></i> AJOUTER UN CONTACT
+                        <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                            <h6 class="text-primary fw-semibold mb-0">
+                                <i class="fas fa-address-book me-2"></i>Contacts & Communication
+                            </h6>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="add-contact-btn">
+                                <i class="fas fa-plus me-1"></i> Ajouter un contact
                             </button>
                         </div>
+                        <div id="contacts-container"></div>
+                    </div>
 
-                        <div id="contacts-container">
-                            <!-- Dynamic contacts rows -->
-                        </div>
-                    </div>
                 </div>
-                <div class="modal-footer border-0 p-4">
-                    <div class="w-100 d-flex justify-content-between align-items-center">
-                        <div class="d-flex align-items-center">
-                            <div class="avatar-group me-3 d-flex">
-                                <img src="https://ui-avatars.com/api/?name=JS&background=0D6EFD&color=fff" class="rounded-circle border border-2 border-white shadow-sm" width="32" alt="">
-                                <img src="https://ui-avatars.com/api/?name=AK&background=6C757D&color=fff" class="rounded-circle border border-2 border-white shadow-sm ms-n2" width="32" alt="">
-                                <div class="rounded-circle border border-2 border-white shadow-sm ms-n2 bg-primary text-white d-flex align-items-center justify-content-center fw-bold small" style="width: 32px; height: 32px;">+12</div>
-                            </div>
-                            <p class="text-muted small mb-0">L'employé sera visible par l'équipe d'administration dès validation.</p>
-                        </div>
-                        <div class="d-flex gap-3 align-items-center">
-                            <button type="button" class="btn btn-link text-dark text-decoration-none fw-bold" data-bs-dismiss="modal">Annuler</button>
-                            <button type="submit" class="btn btn-primary px-5 py-2 fw-bold shadow-lg" id="btn-save" style="border-radius: 10px;">
-                                <i class="fas fa-check-circle me-2"></i> CRÉER L'EMPLOYÉ
-                            </button>
-                        </div>
-                    </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i> Annuler
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="btn-save">
+                        <i class="fas fa-save me-1"></i> Enregistrer
+                    </button>
                 </div>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
 </div>
 
-<!-- Template pour contact row -->
+{{-- Template contact row --}}
 <template id="contact-row-template">
-    <div class="contact-row row g-3 mb-3 align-items-center animate__animated animate__fadeIn">
+    <div class="contact-row row g-2 mb-2 align-items-center">
         <div class="col-md-3">
-            <select class="form-select bg-light border-0" name="contacts[INDEX][type_contact]">
+            <select class="form-select form-select-sm" name="contacts[INDEX][type_contact]">
                 <option value="telephone">Téléphone</option>
                 <option value="email">Email</option>
                 <option value="whatsapp">WhatsApp</option>
             </select>
         </div>
-        <div class="col-md-7">
-            <input type="text" class="form-control bg-light border-0" name="contacts[INDEX][valeur]" placeholder="Contact..." required>
+        <div class="col-md-8">
+            <input type="text" class="form-control form-select-sm" name="contacts[INDEX][valeur]"
+                   placeholder="Valeur du contact..." required>
         </div>
-        <div class="col-md-2 text-end">
-            <button type="button" class="btn btn-outline-danger border-0 remove-contact-btn">
+        <div class="col-md-1 text-end">
+            <button type="button" class="btn btn-sm btn-outline-danger remove-contact-btn">
                 <i class="fas fa-trash"></i>
             </button>
         </div>
@@ -188,7 +182,5 @@
 </template>
 
 <style>
-/* .ms-n2 { margin-left: -0.5rem !important; }
-.shadow-xs { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
-.border-dashed { border-style: dashed !important; } */
+.border-dashed { border-style: dashed !important; }
 </style>

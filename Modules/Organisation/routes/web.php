@@ -26,6 +26,7 @@ Route::middleware(['auth'])->prefix('organisation')->name('organisation.')->grou
     Route::prefix('directions')->name('directions.')->group(function () {
         Route::get('/', [DirectionController::class, 'index'])->name('index');
         Route::get('/data', [DirectionController::class, 'getData'])->name('data');
+        Route::get('/responsables', [DirectionController::class, 'getResponsables'])->name('responsables');
         Route::post('/', [DirectionController::class, 'store'])->name('store');
         Route::get('/{id}', [DirectionController::class, 'show'])->name('show');
         Route::put('/{id}', [DirectionController::class, 'update'])->name('update');
@@ -38,6 +39,7 @@ Route::middleware(['auth'])->prefix('organisation')->name('organisation.')->grou
         Route::get('/', [ServiceController::class, 'index'])->name('index');
         Route::get('/data', [ServiceController::class, 'getData'])->name('data');
         Route::get('/directions-by-site/{siteId}', [ServiceController::class, 'getDirectionsBySite'])->name('directions-by-site');
+        Route::get('/chefs-service', [ServiceController::class, 'getChefsService'])->name('chefs-service');
         Route::post('/', [ServiceController::class, 'store'])->name('store');
         Route::get('/{id}', [ServiceController::class, 'show'])->name('show');
         Route::put('/{id}', [ServiceController::class, 'update'])->name('update');

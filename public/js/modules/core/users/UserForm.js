@@ -15,6 +15,8 @@ export class UserForm {
         this.initSubmission();
         this.initPasswordToggle();
         this.initImagePreview();
+        this.initSelect2Employe();
+        this.initEmployeToggle();
     }
 
     initValidation() {
@@ -77,6 +79,51 @@ export class UserForm {
         });
     }
 
+    initSelect2Employe() {
+        if (!$.fn.select2) return;
+        $('#employe_select2').select2({
+            dropdownParent: this.$modal,
+            placeholder: 'Rechercher un employé...',
+            allowClear: true,
+            theme: 'bootstrap-5',
+            minimumInputLength: 1,
+            ajax: {
+                url: route('cores.users.search-employes'),
+                dataType: 'json',
+                delay: 250,
+                data: (p) => ({ q: p.term }),
+                processResults: (d) => ({ results: d }),
+                cache: true,
+            },
+        });
+
+        $('#employe_select2').on('select2:select', (e) => {
+            const data = e.params.data;
+            $('#last_name').val(data.nom).prop('readonly', true);
+            $('#name').val(data.prenom).prop('readonly', true);
+            $('#dossier_employe_id').val(data.id);
+        });
+
+        $('#employe_select2').on('select2:clear', () => {
+            $('#last_name').val('').prop('readonly', false);
+            $('#name').val('').prop('readonly', false);
+            $('#dossier_employe_id').val('');
+        });
+    }
+
+    initEmployeToggle() {
+        $('#toggle-employe-link').on('change', function () {
+            const isChecked = $(this).is(':checked');
+            $('#employe-select-wrapper').toggleClass('d-none', !isChecked);
+            if (!isChecked) {
+                $('#employe_select2').val(null).trigger('change');
+                $('#last_name').prop('readonly', false);
+                $('#name').prop('readonly', false);
+                $('#dossier_employe_id').val('');
+            }
+        });
+    }
+
     openForAdd() {
         this.resetForm();
         $('#modalTitle').text('Ajouter un utilisateur');
@@ -100,6 +147,24 @@ export class UserForm {
         $('#password_confirmation').prop('required', false);
         $('.password-group').hide();
         $('#password-label').addClass('d-none');
+
+        // Restore employé liaison if existing
+        if (data.dossier_employe_id) {
+            $('#toggle-employe-link').prop('checked', true).trigger('change');
+            $.ajax({
+                url: route('cores.users.search-employes'),
+                data: { q: '' },
+                success: () => {}, // ajax préchargé via select2
+            });
+            // Build option and set it
+            const text = (data.last_name ? data.last_name : '') + ' ' + (data.name ? data.name : '');
+            const opt = new Option(text.trim(), data.dossier_employe_id, true, true);
+            $('#employe_select2').append(opt).trigger('change');
+            $('#last_name').prop('readonly', true);
+            $('#name').prop('readonly', true);
+            $('#dossier_employe_id').val(data.dossier_employe_id);
+        }
+
         this.$modal.modal('show');
     }
 
@@ -232,5 +297,12 @@ export class UserForm {
         this.$form[0].reset();
         this.clearErrors();
         $('#avatar-preview').attr('src', window.emptyAvatar);
+        // Reset employé liaison
+        $('#toggle-employe-link').prop('checked', false);
+        $('#employe-select-wrapper').addClass('d-none');
+        $('#employe_select2').val(null).trigger('change');
+        $('#last_name').prop('readonly', false);
+        $('#name').prop('readonly', false);
+        $('#dossier_employe_id').val('');
     }
 }

@@ -7,79 +7,86 @@
     <li class="breadcrumb-item active" aria-current="page">GRH - Dossiers employés</li>
 @endsection
 
+@push('css')
+<link rel="stylesheet" href="{{ asset('plugins/bootstrap-table/bootstrap-table.min.css') }}">
+@endpush
+
 @section('content')
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white py-3">
-                <h5 class="card-title mb-0">Filtres de recherche</h5>
+
+{{-- Filtres --}}
+<div class="card mb-3">
+    <div class="card-header">
+        <h5 class="card-title mb-0">Filtres de recherche</h5>
+    </div>
+    <div class="card-body">
+        <form id="filter-form" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label for="filter-direction" class="form-label">Direction</label>
+                <select class="form-select" id="filter-direction" name="direction_id">
+                    <option value="">Toutes les directions</option>
+                    @foreach($directions as $dir)
+                        <option value="{{ $dir->id }}">{{ $dir->libelle }}</option>
+                    @endforeach
+                </select>
             </div>
-            <div class="card-body">
-                <form id="filter-form" class="row g-3">
-                    <div class="col-md-3">
-                        <label for="filter-direction" class="form-label">Direction</label>
-                        <select class="form-select" id="filter-direction" name="direction_id">
-                            <option value="">Toutes les directions</option>
-                            @foreach($directions as $dir)
-                                <option value="{{ $dir->id }}">{{ $dir->libelle }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label for="filter-service" class="form-label">Service</label>
-                        <select class="form-select" id="filter-service" name="service_id">
-                            <option value="">Tous les services</option>
-                            @foreach($services as $srv)
-                                <option value="{{ $srv->id }}">{{ $srv->libelle }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label for="filter-unite" class="form-label">Unité</label>
-                        <select class="form-select" id="filter-unite" name="unite_id">
-                            <option value="">Toutes les unités</option>
-                            @foreach($unites as $unt)
-                                <option value="{{ $unt->id }}">{{ $unt->libelle }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label for="filter-status" class="form-label">Statut</label>
-                        <select class="form-select" id="filter-status" name="est_actif">
-                            <option value="">Tous</option>
-                            <option value="1">Actif</option>
-                            <option value="0">Inactif</option>
-                        </select>
-                    </div>
-                    <div class="col-md-1 d-flex align-items-end">
-                        <button type="button" id="btn-reset-filters" class="btn btn-outline-secondary w-100" data-bs-toggle="tooltip" title="Réinitialiser">
-                            <i class="fas fa-undo"></i>
-                        </button>
-                    </div>
-                </form>
+            <div class="col-md-3">
+                <label for="filter-service" class="form-label">Service</label>
+                <select class="form-select" id="filter-service" name="service_id">
+                    <option value="">Tous les services</option>
+                    @foreach($services as $srv)
+                        <option value="{{ $srv->id }}">{{ $srv->libelle }}</option>
+                    @endforeach
+                </select>
             </div>
-        </div>
+            <div class="col-md-3">
+                <label for="filter-unite" class="form-label">Unité</label>
+                <select class="form-select" id="filter-unite" name="unite_id">
+                    <option value="">Toutes les unités</option>
+                    @foreach($unites as $unt)
+                        <option value="{{ $unt->id }}">{{ $unt->libelle }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="filter-status" class="form-label">Statut</label>
+                <select class="form-select" id="filter-status" name="est_actif">
+                    <option value="">Tous</option>
+                    <option value="1">Actif</option>
+                    <option value="0">Inactif</option>
+                </select>
+            </div>
+            <div class="col-md-1">
+                <button type="button" id="btn-reset-filters" class="btn btn-outline-secondary w-100"
+                        data-bs-toggle="tooltip" title="Réinitialiser les filtres">
+                    <i class="fas fa-undo"></i>
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
-<div class="card border-0 shadow-sm">
-    <div class="card-header bg-white py-3">
-        <div class="d-flex justify-content-between align-items-center">
-            <h5 class="card-title mb-0">Liste des employés</h5>
-            <button id="btn-add-employe" class="btn btn-primary">
-                <i class="fas fa-user-plus me-1"></i> Nouvel employé
-            </button>
-        </div>
+{{-- Table des employés --}}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Liste des employés</h3>
     </div>
     <div class="card-body">
+
         <div id="toolbar">
-            <button id="btn-edit-employe" class="btn btn-outline-info" disabled data-bs-toggle="tooltip" title="Détails / Modifier">
+            <button id="btn-add-employe" class="btn btn-primary" data-bs-toggle="tooltip" title="Ajouter un employé">
+                <i class="fas fa-user-plus"></i>
+            </button>
+            <button id="btn-edit-employe" class="btn btn-info" disabled data-bs-toggle="tooltip" title="Voir / Modifier">
                 <i class="fas fa-edit"></i>
             </button>
-            <button id="btn-toggle-employe" class="btn btn-outline-warning" disabled data-bs-toggle="tooltip" title="Activer / Désactiver">
-                <i class="fas fa-power-off"></i>
+            <button id="btn-activate-employe" class="btn btn-success" disabled data-bs-toggle="tooltip" title="Activer">
+                <i class="fas fa-check"></i>
+            </button>
+            <button id="btn-deactivate-employe" class="btn btn-secondary" disabled data-bs-toggle="tooltip" title="Désactiver">
+                <i class="fas fa-ban"></i>
             </button>
         </div>
+
         <table id="employes-table"
                data-toggle="table"
                data-url="{{ route('grh.employes.data') }}"
@@ -113,10 +120,6 @@
 @include('grh::employes._modal')
 
 @stop
-
-@push('css')
-<link rel="stylesheet" href="{{ asset('plugins/bootstrap-table/bootstrap-table.min.css') }}">
-@endpush
 
 @push('js')
 <script src="{{ asset('plugins/bootstrap-table/bootstrap-table.min.js') }}"></script>

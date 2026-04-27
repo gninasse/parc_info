@@ -4,6 +4,8 @@ namespace Modules\Grh\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Modules\Core\Models\User;
 use Modules\Organisation\Models\Direction;
 use Modules\Organisation\Models\Service;
 use Modules\Organisation\Models\Unite;
@@ -13,6 +15,8 @@ class Employe extends Model
     use HasFactory;
 
     protected $table = 'grh_dossiers_employes';
+
+    protected $appends = ['full_name'];
 
     protected $fillable = [
         'matricule',
@@ -57,7 +61,7 @@ class Employe extends Model
 
     public function getFullNameAttribute()
     {
-        return "{$this->nom} {$this->prenom}";
+        return strtoupper($this->nom).' '.ucwords(strtolower($this->prenom));
     }
 
     public function getOrganisationAttribute()
@@ -72,6 +76,14 @@ class Employe extends Model
             default:
                 return '-';
         }
+    }
+
+    /**
+     * Les comptes utilisateurs système liés à cet employé.
+     */
+    public function users(): HasMany
+    {
+        return $this->hasMany(User::class, 'dossier_employe_id');
     }
 
     protected static function newFactory()

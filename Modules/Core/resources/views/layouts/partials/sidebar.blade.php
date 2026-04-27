@@ -3,17 +3,24 @@
         <!--begin::Sidebar Brand-->
         <div class="sidebar-brand">
           <!--begin::Brand Link-->
-          <a href="{{ url('/') }}" class="brand-link">
-            <!--begin::Brand Image-->
+          <a href="{{ url('/') }}" class="brand-link d-flex align-items-center gap-2 px-3 py-2">
+            <!--begin::Brand Icon-->
             <img
-              src="{{ asset('adminlte/assets/img/AdminLTELogo.png') }}"
-              alt="AdminLTE Logo"
-              class="brand-image opacity-75 shadow"
+              src="{{ asset('images/chuyo_icon.png') }}"
+              alt="CHU-YO Icon"
+              class="brand-image"
+              style="width: 36px; height: 36px; object-fit: contain; border-radius: 8px;"
             />
-            <!--end::Brand Image-->
-            <!--begin::Brand Text-->
-            <span class="brand-text fw-light">CHU-YO</span>
-            <!--end::Brand Text-->
+            CHU-YO
+            <!--end::Brand Icon-->
+            <!--begin::Brand Logo-->
+            {{-- <img
+              src="{{ asset('images/chuyo_logo.png') }}"
+              alt="CHU-YO KEYSTONE"
+              class="brand-text"
+              style="height: 32px; object-fit: contain; max-width: 140px;"
+            /> --}}
+            <!--end::Brand Logo-->
           </a>
           <!--end::Brand Link-->
         </div>
@@ -30,11 +37,12 @@
               data-accordion="false"
               id="navigation"
             >
-              <li class="nav-item menu-open">
-                <a href="#" class="nav-link active">
+              @php $adminActive = request()->is('core*') || request()->is('profile*') @endphp
+              <li class="nav-item {{ $adminActive ? 'menu-open' : '' }}">
+                <a href="#" class="nav-link {{ $adminActive ? 'active' : '' }}">
                   <i class="nav-icon bi bi-speedometer"></i>
                   <p>
-                    KEYSTONE
+                    Administration
                     <i class="nav-arrow bi bi-chevron-right"></i>
                   </p>
                 </a>
@@ -90,8 +98,9 @@
                 </ul>
               </li>
 
-              <li class="nav-item">
-                <a href="#" class="nav-link">
+              @php $orgActive = request()->is('organisation*') @endphp
+              <li class="nav-item {{ $orgActive ? 'menu-open' : '' }}">
+                <a href="#" class="nav-link {{ $orgActive ? 'active' : '' }}">
                   <i class="nav-icon bi bi-diagram-2"></i>
                   <p>
                     ORGANISATION

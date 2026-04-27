@@ -39,7 +39,8 @@ export class UniteForm {
         this.resetForm();
         $('#createUniteModalLabel').text('Nouvelle Unité');
         $('#unite_id').val('');
-        this.loadMajors();
+        $('#major_id').empty();
+        this.initSelect2();
         this.$modal.modal('show');
     }
 
@@ -50,25 +51,22 @@ export class UniteForm {
         $('#code').val(data.code);
         $('#libelle').val(data.libelle);
         
-        // Handle cascading selects for edit
-        if (data.site_id) {
-            $('#c_site_id').val(data.site_id).trigger('change');
-            
-            // We need to wait for directions to load before setting direction
-            setTimeout(() => {
-                if (data.service && data.service.direction_id) {
-                    $('#c_direction_id').val(data.service.direction_id).trigger('change');
-                    
-                    setTimeout(() => {
-                        if (data.service_id) {
-                            $('#c_service_id').val(data.service_id);
-                        }
-                    }, 500);
-                }
-            }, 500);
+        $('#major_id').empty();
+        if (data.major) {
+            const opt = new Option(`${data.major.full_name} (${data.major.matricule})`, data.major.id, true, true);
+            $('#major_id').append(opt);
+        }
+        this.initSelect2();
+
+        // Gestion de la cascade en modification
+        if (data.service && data.service.direction) {
+            const siteId = data.service.direction.site_id;
+            $('#c_site_id').val(siteId);
+            this.loadDirections(siteId, data.service.direction_id, (directionId) => {
+                this.loadServices(directionId, data.service_id);
+            });
         }
 
-        this.loadMajors(data.major_id);
         this.$modal.modal('show');
     }
 
@@ -146,57 +144,81 @@ export class UniteForm {
     }
 
     initCascadingSelects() {
-        const $site = $('#c_site_id');
-        const $direction = $('#c_direction_id');
-        const $service = $('#c_service_id');
-
-        $site.on('change', function() {
-            const siteId = $(this).val();
-            $direction.prop('disabled', true).html('<option value="">Chargement...</option>');
-            $service.prop('disabled', true).html('<option value="">Sélectionner d\'abord une direction</option>');
-
-            if (siteId) {
-                $.get(window.uniteRoutes.directionsBySite.replace(':siteId', siteId), function(data) {
-                    let html = '<option value="">Sélectionner une direction</option>';
-                    data.forEach(item => {
-                        html += `<option value="${item.id}">${item.libelle}</option>`;
-                    });
-                    $direction.html(html).prop('disabled', false);
-                });
-            } else {
-                $direction.html('<option value="">Sélectionner d\'abord un site</option>');
-            }
+        $('#c_site_id').on('change', (e) => {
+            this.loadDirections($(e.target).val());
         });
 
-        $direction.on('change', function() {
-            const directionId = $(this).val();
-            $service.prop('disabled', true).html('<option value="">Chargement...</option>');
+        $('#c_direction_id').on('change', (e) => {
+            this.loadServices($(e.target).val());
+        });
+    }
 
-            if (directionId) {
-                $.get(window.uniteRoutes.servicesByDirection.replace(':directionId', directionId), function(data) {
-                    let html = '<option value="">Sélectionner un service</option>';
-                    data.forEach(item => {
-                        html += `<option value="${item.id}">${item.libelle}</option>`;
-                    });
-                    $service.html(html).prop('disabled', false);
-                });
-            } else {
-                $service.html('<option value="">Sélectionner d\'abord une direction</option>');
+    loadDirections(siteId, selectedId = null, callback = null) {
+        const $direction = $('#c_direction_id');
+        const $service = $('#c_service_id');
+        
+        if (!siteId) {
+            $direction.html('<option value="">Sélectionner d\'abord un site</option>').prop('disabled', true);
+            $service.html('<option value="">Sélectionner d\'abord une direction</option>').prop('disabled', true);
+            return;
+        }
+
+        $direction.prop('disabled', true).html('<option value="">Chargement...</option>');
+        
+        $.get(window.uniteRoutes.directionsBySite.replace(':siteId', siteId), (data) => {
+            let html = '<option value="">Sélectionner une direction</option>';
+            data.forEach(item => {
+                const selected = selectedId == item.id ? 'selected' : '';
+                html += `<option value="${item.id}" ${selected}>${item.libelle}</option>`;
+            });
+            $direction.html(html).prop('disabled', false);
+            
+            if (callback && selectedId) {
+                callback(selectedId);
             }
         });
     }
 
-    loadMajors(selectedId = null) {
-        const $major = $('#major_id');
-        $major.html('<option value="">Chargement...</option>');
+    loadServices(directionId, selectedId = null) {
+        const $service = $('#c_service_id');
+        
+        if (!directionId) {
+            $service.html('<option value="">Sélectionner d\'abord une direction</option>').prop('disabled', true);
+            return;
+        }
 
-        $.get(window.uniteRoutes.majors, function(data) {
-            let html = '<option value="">Sélectionner un major</option>';
-            data.forEach(user => {
-                const selected = selectedId == user.id ? 'selected' : '';
-                html += `<option value="${user.id}" ${selected}>${user.name}</option>`;
+        $service.prop('disabled', true).html('<option value="">Chargement...</option>');
+        
+        $.get(window.uniteRoutes.servicesByDirection.replace(':directionId', directionId), (data) => {
+            let html = '<option value="">Sélectionner un service</option>';
+            data.forEach(item => {
+                const selected = selectedId == item.id ? 'selected' : '';
+                html += `<option value="${item.id}" ${selected}>${item.libelle}</option>`;
             });
-            $major.html(html);
+            $service.html(html).prop('disabled', false);
+        });
+    }
+
+    initSelect2() {
+        if (!$.fn.select2) return;
+        
+        if ($.fn.select2 && $('#major_id').data('select2')) {
+            $('#major_id').select2('destroy');
+        }
+
+        $('#major_id').select2({
+            dropdownParent: this.$modal,
+            placeholder: 'Rechercher un major...',
+            allowClear: true,
+            theme: 'bootstrap-5',
+            ajax: {
+                url: window.uniteRoutes.majors,
+                dataType: 'json',
+                delay: 250,
+                data: (params) => ({ q: params.term }),
+                processResults: (data) => ({ results: data }),
+                cache: true,
+            },
         });
     }
 
@@ -205,7 +227,13 @@ export class UniteForm {
         $.each(errors, (field, messages) => {
             const $field = $(`#${field}`);
             $field.addClass('is-invalid');
-            $field.after(`<div class="invalid-feedback d-block">${messages[0]}</div>`);
+            
+            // Pour Select2, insérer après le container
+            if ($field.next('.select2-container').length) {
+                $field.next('.select2-container').after(`<div class="invalid-feedback d-block">${messages[0]}</div>`);
+            } else {
+                $field.after(`<div class="invalid-feedback d-block">${messages[0]}</div>`);
+            }
         });
     }
 

@@ -2,10 +2,10 @@
 
 namespace Modules\Organisation\Models;
 
-use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Modules\Grh\Models\Employe;
 
 class Direction extends Model
 {
@@ -40,7 +40,7 @@ class Direction extends Model
 
     public function responsable()
     {
-        return $this->belongsTo(User::class, 'responsable_id');
+        return $this->belongsTo(Employe::class, 'responsable_id');
     }
 
     public function services()

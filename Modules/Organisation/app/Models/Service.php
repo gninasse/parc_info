@@ -2,10 +2,10 @@
 
 namespace Modules\Organisation\Models;
 
-use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Modules\Grh\Models\Employe;
 
 class Service extends Model
 {
@@ -46,7 +46,7 @@ class Service extends Model
 
     public function chefService()
     {
-        return $this->belongsTo(User::class, 'chef_service_id');
+        return $this->belongsTo(Employe::class, 'chef_service_id');
     }
 
     public function unites()

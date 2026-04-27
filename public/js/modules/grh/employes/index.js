@@ -8,7 +8,8 @@ $(function() {
     const $form = $('#employeForm');
     const $btnAdd = $('#btn-add-employe');
     const $btnEdit = $('#btn-edit-employe');
-    const $btnToggle = $('#btn-toggle-employe');
+    const $btnActivate = $('#btn-activate-employe');
+    const $btnDeactivate = $('#btn-deactivate-employe');
     const $filterForm = $('#filter-form');
     const $btnResetFilters = $('#btn-reset-filters');
 
@@ -199,12 +200,20 @@ $(function() {
         contactIndex++;
     }
 
-    // Selection management in table
+    // Gestion de la sélection dans la table
     $table.on('check.bs.table uncheck.bs.table check-all.bs.table uncheck-all.bs.table', function () {
         const selections = $table.bootstrapTable('getSelections');
-        const disabled = selections.length !== 1;
-        $btnEdit.prop('disabled', disabled);
-        $btnToggle.prop('disabled', disabled);
+        const hasOne = selections.length === 1;
+        $btnEdit.prop('disabled', !hasOne);
+
+        if (hasOne) {
+            const isActif = selections[0].est_actif;
+            $btnActivate.prop('disabled', isActif);   // désactivé si déjà actif
+            $btnDeactivate.prop('disabled', !isActif); // désactivé si déjà inactif
+        } else {
+            $btnActivate.prop('disabled', true);
+            $btnDeactivate.prop('disabled', true);
+        }
     });
 
     // Show modal for adding
@@ -238,7 +247,7 @@ $(function() {
             processData: false,
             contentType: false,
             beforeSend: function() {
-                $('#btn-save').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Enregistrement...');
+                $('#btn-save').prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Enregistrement...');
             },
             success: function(response) {
                 Swal.fire({
@@ -271,46 +280,75 @@ $(function() {
                 });
             },
             complete: function() {
-                $('#btn-save').prop('disabled', false).html('<i class="fas fa-check-circle me-2"></i> CRÉER L\'EMPLOYÉ');
+                $('#btn-save').prop('disabled', false).html('<i class="fas fa-save me-1"></i> Enregistrer');
             }
         });
     });
 
-    // Edit employee (Redirect to show page)
-    $btnEdit.on('click', function() {
+    // Modifier (redirige vers la page show)
+    $btnEdit.on('click', function () {
         const row = $table.bootstrapTable('getSelections')[0];
         window.location.href = window.grhRoutes.show(row.id);
     });
 
-    // Toggle status
-    $btnToggle.on('click', function() {
+    // Activer
+    $btnActivate.on('click', function () {
         const row = $table.bootstrapTable('getSelections')[0];
-        const action = row.est_actif ? 'désactiver' : 'activer';
-
         Swal.fire({
-            title: `Confirmer la ${action}?`,
-            text: `Voulez-vous vraiment ${action} le dossier de ${row.full_name} ?`,
-            icon: 'warning',
+            title: 'Activer ce dossier ?',
+            text: `Voulez-vous activer le dossier de ${row.full_name} ?`,
+            icon: 'question',
             showCancelButton: true,
-            confirmButtonText: 'Oui, confirmer',
+            confirmButtonText: 'Oui, activer',
             cancelButtonText: 'Annuler',
-            confirmButtonColor: '#0d6efd',
-            cancelButtonColor: '#6c757d'
+            confirmButtonColor: '#28a745',
         }).then((result) => {
             if (result.isConfirmed) {
-                $.ajax({
-                    url: window.grhRoutes.toggle(row.id),
-                    method: 'POST',
-                    data: { _token: $('meta[name="csrf-token"]').attr('content') },
-                    success: function(response) {
-                        Swal.fire('Succès', response.message, 'success');
-                        $table.bootstrapTable('refresh');
-                    },
-                    error: function() {
-                        Swal.fire('Erreur', 'Impossible de modifier le statut', 'error');
-                    }
-                });
+                doToggle(row.id);
             }
         });
     });
+
+    // Désactiver
+    $btnDeactivate.on('click', function () {
+        const row = $table.bootstrapTable('getSelections')[0];
+        Swal.fire({
+            title: 'Désactiver ce dossier ?',
+            text: `Voulez-vous désactiver le dossier de ${row.full_name} ?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Oui, désactiver',
+            cancelButtonText: 'Annuler',
+            confirmButtonColor: '#dc3545',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                doToggle(row.id);
+            }
+        });
+    });
+
+    function doToggle(id) {
+        $.ajax({
+            url: window.grhRoutes.toggle(id),
+            method: 'POST',
+            data: { _token: $('meta[name="csrf-token"]').attr('content') },
+            success: function (response) {
+                Swal.fire('Succès', response.message, 'success');
+                $table.bootstrapTable('refresh');
+            },
+            error: function () {
+                Swal.fire('Erreur', 'Impossible de modifier le statut', 'error');
+            },
+        });
+    }
+
+    // Ouverture automatique via URL (depuis le Dashboard)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('action') === 'add') {
+        setTimeout(() => {
+            $btnAdd.click();
+            // Nettoyer l'URL pour ne pas ré-ouvrir au refresh
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }, 500);
+    }
 });

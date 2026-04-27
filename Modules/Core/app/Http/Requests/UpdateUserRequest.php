@@ -24,14 +24,15 @@ class UpdateUserRequest extends FormRequest
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('users', 'user_name')->ignore($userId)
+                Rule::unique('users', 'user_name')->ignore($userId),
             ],
             'email' => [
                 'required',
                 'email',
-                Rule::unique('users', 'email')->ignore($userId)
+                Rule::unique('users', 'email')->ignore($userId),
             ],
             'service' => 'nullable|string|max:255',
+            'dossier_employe_id' => 'nullable|integer|exists:grh_dossiers_employes,id',
             'password' => ['nullable', 'confirmed', Password::min(8)->letters()->mixedCase()->numbers()->symbols()],
             'avatar' => 'nullable|image|max:2048',
         ];

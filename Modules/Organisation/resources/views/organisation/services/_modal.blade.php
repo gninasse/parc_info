@@ -48,11 +48,8 @@
                     </div>
                     <div class="mb-3">
                         <label for="chef_service_id" class="form-label">Chef de Service</label>
-                        <select class="form-select" id="chef_service_id" name="chef_service_id">
-                            <option value="">Sélectionner un chef de service</option>
-                            @foreach($users as $user)
-                                <option value="{{ $user->id }}">{{ $user->name }}</option>
-                            @endforeach
+                        <select class="form-select select2" id="chef_service_id" name="chef_service_id">
+                            <option value="">Rechercher un chef de service...</option>
                         </select>
                     </div>
                 </div>

@@ -67,8 +67,7 @@
                     <th data-field="code" data-sortable="true">Code</th>
                     <th data-field="libelle" data-sortable="true">Libellé</th>
                     <th data-field="site.libelle" data-sortable="true">Site</th>
-                    <th data-field="responsable.name" data-sortable="true">Responsable</th>
-                    <th data-field="actif" data-sortable="true" data-formatter="statutFormatter">Statut</th>
+                    <th data-field="responsable.full_name" data-sortable="true">Responsable</th>
                 </tr>
             </thead>
         </table>
@@ -83,6 +82,11 @@
 <script src="{{ asset('plugins/bootstrap-table/locale/bootstrap-table-fr-FR.min.js') }}"></script>
 <script src="{{ asset('plugins/sweetalert2/sweetalert2.min.js') }}"></script>
 <script>
+    window.directionRoutes = {
+        responsables: "{{ route('organisation.directions.responsables') }}",
+        data: "{{ route('organisation.directions.data') }}"
+    };
+
     function statutFormatter(value) {
         return value 
             ? '<span class="badge bg-success">Actif</span>' 

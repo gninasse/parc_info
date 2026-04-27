@@ -20,7 +20,7 @@ class PosteTravailRequest extends FormRequest
                 'nullable',
                 'exists:organisation_services,id',
                 'required_if:niveau_rattachement,service',
-                'required_if:niveau_rattachement,unite'
+                'required_if:niveau_rattachement,unite',
             ],
             'unite_id' => 'nullable|exists:organisation_unites,id|required_if:niveau_rattachement,unite',
             'site_id' => 'nullable|exists:organisation_sites,id',
@@ -28,7 +28,6 @@ class PosteTravailRequest extends FormRequest
             'etage_id' => 'nullable|exists:organisation_etages,id',
             'local_id' => 'nullable|exists:organisation_locaux,id',
             'dossier_employe_id' => 'nullable|exists:grh_dossiers_employes,id',
-            'statut' => 'required|in:actif,inactif,en_renovation,supprime',
         ];
     }
 

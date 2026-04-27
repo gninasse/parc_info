@@ -3,10 +3,10 @@
 namespace Modules\Organisation\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Modules\Grh\Models\Employe;
 use Modules\Organisation\Models\Direction;
 use Modules\Organisation\Models\Site;
 
@@ -25,11 +25,8 @@ class DirectionController extends Controller implements HasMiddleware
     public function index()
     {
         $sites = Site::actif()->get();
-        // Assuming we want active users for responsible selection
-        $users = User::where('is_active', true)->get();
-        // dd();
 
-        return view('organisation::organisation.directions.index', compact('sites', 'users'));
+        return view('organisation::organisation.directions.index', compact('sites'));
     }
 
     public function getData(Request $request)
@@ -70,7 +67,7 @@ class DirectionController extends Controller implements HasMiddleware
             'site_id' => 'required|exists:organisation_sites,id',
             'code' => 'required|unique:organisation_directions,code',
             'libelle' => 'required',
-            'responsable_id' => 'nullable|exists:users,id',
+            'responsable_id' => 'nullable|exists:grh_dossiers_employes,id',
             'description' => 'nullable|string',
         ]);
 
@@ -86,7 +83,7 @@ class DirectionController extends Controller implements HasMiddleware
     public function show($id)
     {
         try {
-            $direction = Direction::with('site')->findOrFail($id);
+            $direction = Direction::with(['site', 'responsable'])->findOrFail($id);
 
             return response()->json(['success' => true, 'data' => $direction]);
         } catch (\Exception $e) {
@@ -100,7 +97,7 @@ class DirectionController extends Controller implements HasMiddleware
             'site_id' => 'required|exists:organisation_sites,id',
             'code' => 'required|unique:organisation_directions,code,'.$id,
             'libelle' => 'required',
-            'responsable_id' => 'nullable|exists:users,id',
+            'responsable_id' => 'nullable|exists:grh_dossiers_employes,id',
             'description' => 'nullable|string',
         ]);
 
@@ -153,5 +150,29 @@ class DirectionController extends Controller implements HasMiddleware
                 'message' => 'Erreur lors du changement de statut',
             ], 500);
         }
+    }
+
+    // LISTE DES RESPONSABLES (Select2)
+    public function getResponsables(Request $request)
+    {
+        $search = $request->get('q');
+        $query = Employe::where('est_actif', true);
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nom', 'like', "%{$search}%")
+                    ->orWhere('prenom', 'like', "%{$search}%")
+                    ->orWhere('matricule', 'like', "%{$search}%");
+            });
+        }
+
+        $employes = $query->limit(20)->get();
+
+        return response()->json($employes->map(function ($emp) {
+            return [
+                'id' => $emp->id,
+                'text' => $emp->full_name." ({$emp->matricule})",
+            ];
+        }));
     }
 }

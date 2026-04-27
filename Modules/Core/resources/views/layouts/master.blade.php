@@ -3,8 +3,10 @@
   <!--begin::Head-->
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>@yield('title', 'CHU-YO-KEYSTONE')</title>
+    <title>@yield('title', 'CHU-YO | KEYSTONE')</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="icon" type="image/png" href="{{ asset('images/chuyo_icon.png') }}" />
+    <link rel="apple-touch-icon" href="{{ asset('images/chuyo_icon.png') }}" />
     <!--begin::Accessibility Meta Tags-->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
     <meta name="color-scheme" content="light dark" />

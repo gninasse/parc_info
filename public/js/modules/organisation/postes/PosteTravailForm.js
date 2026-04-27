@@ -5,8 +5,8 @@
 export class PosteTravailForm {
     constructor(modalSelector, formSelector, tableInstance) {
         this.$modal = $(modalSelector);
-        this.$form  = $(formSelector);
-        this.table  = tableInstance;
+        this.$form = $(formSelector);
+        this.table = tableInstance;
         this._init();
     }
 
@@ -27,17 +27,17 @@ export class PosteTravailForm {
     _initSelect2() {
         if (!$.fn.select2) return;
         $('#dossier_employe_id').select2({
-            dropdownParent : this.$modal,
-            placeholder    : 'Rechercher un employé...',
-            allowClear     : true,
-            theme          : 'bootstrap-5',
+            dropdownParent: this.$modal,
+            placeholder: 'Rechercher un employé...',
+            allowClear: true,
+            theme: 'bootstrap-5',
             ajax: {
-                url        : route('organisation.postes.search-employes'),
-                dataType   : 'json',
-                delay      : 250,
-                data       : (p) => ({ q: p.term }),
+                url: route('organisation.postes.search-employes'),
+                dataType: 'json',
+                delay: 250,
+                data: (p) => ({ q: p.term }),
                 processResults: (d) => ({ results: d }),
-                cache      : true,
+                cache: true,
             },
         });
     }
@@ -63,7 +63,7 @@ export class PosteTravailForm {
         $('#unite_id').prop('required', showUnt);
 
         if (!showSrv) this._resetSelect('#service_id', '— Sélectionner d\'abord une direction —');
-        if (!showUnt) this._resetSelect('#unite_id',   '— Sélectionner d\'abord un service —');
+        if (!showUnt) this._resetSelect('#unite_id', '— Sélectionner d\'abord un service —');
     }
 
     /* ─────────────────────────────────────────────────────────
@@ -72,7 +72,7 @@ export class PosteTravailForm {
     _initAdminCascade() {
         $('#direction_id').on('change', (e) => {
             this._resetSelect('#service_id', '— Sélectionner d\'abord une direction —');
-            this._resetSelect('#unite_id',   '— Sélectionner d\'abord un service —');
+            this._resetSelect('#unite_id', '— Sélectionner d\'abord un service —');
             const id = e.target.value;
             if (!id) return;
             const niveau = $('#niveau_rattachement').val();
@@ -103,8 +103,8 @@ export class PosteTravailForm {
     _initLocationCascade() {
         $('#site_id').on('change', (e) => {
             this._resetSelect('#batiment_id', '— Sélectionner d\'abord un site —');
-            this._resetSelect('#etage_id',    '— Sélectionner d\'abord un bâtiment —');
-            this._resetSelect('#local_id',    '— Sélectionner d\'abord un étage —');
+            this._resetSelect('#etage_id', '— Sélectionner d\'abord un bâtiment —');
+            this._resetSelect('#local_id', '— Sélectionner d\'abord un étage —');
             const id = e.target.value;
             if (!id) return;
             this._loadOptions(
@@ -145,10 +145,10 @@ export class PosteTravailForm {
         this.$form.on('submit', (e) => {
             e.preventDefault();
             const posteId = $('#poste_id').val();
-            const url     = posteId ? route('organisation.postes.update', posteId) : route('organisation.postes.store');
-            const method  = posteId ? 'PUT' : 'POST';
-            const $btn    = $('#btn-save-poste');
-            const $label  = $('#btn-save-label');
+            const url = posteId ? route('organisation.postes.update', posteId) : route('organisation.postes.store');
+            const method = posteId ? 'PUT' : 'POST';
+            const $btn = $('#btn-save-poste');
+            const $label = $('#btn-save-label');
             const origLabel = $label.text();
 
             $.ajax({
@@ -187,7 +187,7 @@ export class PosteTravailForm {
         this._resetForm();
         $('#posteModalLabel').text('Nouveau Poste de Travail');
         $('#btn-save-label').text('Créer le Poste');
-        $('#statut_actif').prop('checked', true);
+        // $('#statut_actif').prop('checked', true);
         this.$modal.modal('show');
     }
 
@@ -200,14 +200,14 @@ export class PosteTravailForm {
         $('#btn-save-label').text('Enregistrer');
 
         try {
-            const res   = await $.get(route('organisation.postes.show', data.id));
+            const res = await $.get(route('organisation.postes.show', data.id));
             const poste = res.data;
 
             $('#poste_id').val(poste.id);
             $('#code').val(poste.code);
             $('#libelle').val(poste.libelle);
             $('#description').val(poste.description ?? '');
-            $(`input[name="statut"][value="${poste.statut}"]`).prop('checked', true);
+            // $(`input[name="statut"][value="${poste.statut}"]`).prop('checked', true);
 
             // ── Structure administrative ──────────────────────
             $('#niveau_rattachement').val(poste.niveau_rattachement ?? '');
@@ -234,22 +234,22 @@ export class PosteTravailForm {
             }
 
             // ── Emplacement physique ──────────────────────────
-            const siteId    = poste.local?.etage?.batiment?.site_id ?? null;
-            const batId     = poste.batiment_id;
-            const etgId     = poste.etage_id;
-            const localId   = poste.local_id;
+            const siteId = poste.local?.etage?.batiment?.site_id ?? null;
+            const batId = poste.batiment_id;
+            const etgId = poste.etage_id;
+            const localId = poste.local_id;
 
             if (siteId) {
                 $('#site_id').val(siteId);
-                await this._loadOptions(route('organisation.batiments.by-site', siteId),    '#batiment_id', '#spinner-batiment', 'Sélectionner un bâtiment...');
+                await this._loadOptions(route('organisation.batiments.by-site', siteId), '#batiment_id', '#spinner-batiment', 'Sélectionner un bâtiment...');
                 $('#batiment_id').val(batId);
             }
             if (batId) {
-                await this._loadOptions(route('organisation.etages.by-batiment', batId),    '#etage_id',    '#spinner-etage',    'Sélectionner un étage...');
+                await this._loadOptions(route('organisation.etages.by-batiment', batId), '#etage_id', '#spinner-etage', 'Sélectionner un étage...');
                 $('#etage_id').val(etgId);
             }
             if (etgId) {
-                await this._loadOptions(route('organisation.locaux.by-etage', etgId),       '#local_id',    '#spinner-local',    'Sélectionner un local...');
+                await this._loadOptions(route('organisation.locaux.by-etage', etgId), '#local_id', '#spinner-local', 'Sélectionner un local...');
                 $('#local_id').val(localId);
             }
 
@@ -275,7 +275,7 @@ export class PosteTravailForm {
      * Retourne une Promise résolue quand le select est peuplé.
      */
     _loadOptions(url, selSelector, spinnerId, placeholder) {
-        const $sel     = $(selSelector);
+        const $sel = $(selSelector);
         const $spinner = $(spinnerId);
 
         $spinner.removeClass('d-none');
@@ -304,11 +304,11 @@ export class PosteTravailForm {
     _resetForm() {
         this.$form[0].reset();
         this._applyNiveau('');
-        this._resetSelect('#service_id',  '— Sélectionner d\'abord une direction —');
-        this._resetSelect('#unite_id',    '— Sélectionner d\'abord un service —');
+        this._resetSelect('#service_id', '— Sélectionner d\'abord une direction —');
+        this._resetSelect('#unite_id', '— Sélectionner d\'abord un service —');
         this._resetSelect('#batiment_id', '— Sélectionner d\'abord un site —');
-        this._resetSelect('#etage_id',    '— Sélectionner d\'abord un bâtiment —');
-        this._resetSelect('#local_id',    '— Sélectionner d\'abord un étage —');
+        this._resetSelect('#etage_id', '— Sélectionner d\'abord un bâtiment —');
+        this._resetSelect('#local_id', '— Sélectionner d\'abord un étage —');
         $('#dossier_employe_id').val(null).trigger('change');
         this._clearErrors();
     }
