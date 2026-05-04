@@ -24,5 +24,8 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::post('/types-os',                 [OrdinateurController::class, 'storeTypeOs'])->name('store-type-os');
         Route::post('/types-disque',             [OrdinateurController::class, 'storeTypeDisque'])->name('store-type-disque');
         Route::post('/affectation',              [OrdinateurController::class, 'storeAffectation'])->name('store-affectation');
+        Route::patch('/{id}/statut',             [OrdinateurController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat',               [OrdinateurController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter',         [OrdinateurController::class, 'desaffecter'])->name('desaffecter');
     });
 });

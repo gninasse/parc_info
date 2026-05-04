@@ -13,6 +13,7 @@ use Modules\Organisation\Models\Site;
 use Modules\Organisation\Models\Unite;
 use Modules\ParcInfo\Models\AffectationEquipement;
 use Modules\ParcInfo\Models\Equipement;
+use Modules\ParcInfo\Models\HistoriqueChangement;
 use Modules\ParcInfo\Models\Marque;
 use Modules\ParcInfo\Models\Ordinateur;
 use Modules\ParcInfo\Models\TypeCpu;
@@ -83,7 +84,7 @@ class OrdinateurController extends Controller
             'numero_serie'    => 'required|string|unique:parc_info_equipements,numero_serie',
             'marque_id'       => 'nullable|exists:parc_info_marques,id',
             'modele'          => 'required|string|max:255',
-            'date_acquisition'=> 'required|date',
+            'date_acquisition'=> 'nullable|date',
             'statut'          => 'required|in:en_stock,en_service,en_reparation,perdu,reforme',
             'etat'            => 'required|in:bon,passable,mauvais,avarie',
             // Ordinateur
@@ -94,9 +95,10 @@ class OrdinateurController extends Controller
             'cpu_type_id'         => 'nullable|exists:parc_info_types_cpus,id',
             // Affectation
             'type_cible'          => 'nullable|in:EMPLOYE,POSTE,LOCAL',
+            'skip_affectation'    => 'nullable|boolean',
         ]);
 
-        \DB::transaction(function () use ($request) {
+        $equipementId = \DB::transaction(function () use ($request) {
             $equipement = Equipement::create([
                 'code_inventaire'      => $request->code_inventaire,
                 'numero_serie'         => $request->numero_serie,
@@ -122,6 +124,7 @@ class OrdinateurController extends Controller
                 'stockage_capacite_go' => $request->stockage_capacite_go,
                 'os_type_id'           => $request->os_type_id,
                 'nom_hote'             => $request->nom_hote,
+                'compte_admin_local'   => $request->compte_admin_local,
                 'adresse_mac_ethernet' => $request->adresse_mac_ethernet,
                 'adresse_mac_wifi'     => $request->adresse_mac_wifi,
                 'domaine_workgroup'    => $request->domaine_workgroup,
@@ -133,7 +136,8 @@ class OrdinateurController extends Controller
                 'licence_office_cle'   => $request->licence_office_cle,
             ]);
 
-            if ($request->filled('type_cible')) {
+            // Créer affectation seulement si pas skip_affectation et type_cible renseigné
+            if (!$request->boolean('skip_affectation') && $request->filled('type_cible')) {
                 AffectationEquipement::create([
                     'code'                => 'AFF-'.strtoupper(uniqid()),
                     'equipement_id'       => $equipement->id,
@@ -151,9 +155,11 @@ class OrdinateurController extends Controller
                     'unite_id'            => $request->unite_id_aff,
                 ]);
             }
+
+            return $equipement->id;
         });
 
-        return response()->json(['success' => true, 'message' => 'Ordinateur enregistré avec succès.']);
+        return response()->json(['success' => true, 'message' => 'Ordinateur enregistré avec succès.', 'equipement_id' => $equipementId]);
     }
 
     public function show($id)
@@ -204,7 +210,7 @@ class OrdinateurController extends Controller
             'code_inventaire' => "required|string|unique:parc_info_equipements,code_inventaire,{$id}",
             'numero_serie'    => "required|string|unique:parc_info_equipements,numero_serie,{$id}",
             'modele'          => 'required|string|max:255',
-            'date_acquisition'=> 'required|date',
+            'date_acquisition'=> 'nullable|date',
             'statut'          => 'required|in:en_stock,en_service,en_reparation,perdu,reforme',
             'etat'            => 'required|in:bon,passable,mauvais,avarie',
         ]);
@@ -220,7 +226,7 @@ class OrdinateurController extends Controller
             $equipement->ordinateur->update($request->only([
                 'ram_type_id', 'ram_capacite_go', 'cpu_type_id', 'processeur_model',
                 'disque_type_id', 'stockage_capacite_go', 'os_type_id',
-                'nom_hote', 'adresse_mac_ethernet', 'adresse_mac_wifi', 'domaine_workgroup',
+                'nom_hote', 'compte_admin_local', 'adresse_mac_ethernet', 'adresse_mac_wifi', 'domaine_workgroup',
                 'support_tpm2', 'support_secure_boot',
                 'licence_windows_type', 'licence_windows_cle',
                 'licence_office_type', 'licence_office_cle',
@@ -228,6 +234,97 @@ class OrdinateurController extends Controller
         });
 
         return response()->json(['success' => true, 'message' => 'Ordinateur mis à jour avec succès.']);
+    }
+
+    public function updateStatut(Request $request, $id)
+    {
+        $request->validate([
+            'statut' => 'required|in:en_stock,en_service,en_reparation,perdu,reforme',
+            'motif'  => 'required|string',
+        ]);
+
+        \DB::transaction(function () use ($request, $id) {
+            $equipement = Equipement::findOrFail($id);
+            $ancienStatut = $equipement->statut;
+
+            // Si passage en stock, désaffecter
+            if ($request->statut === 'en_stock' && $equipement->affectationActive) {
+                AffectationEquipement::where('equipement_id', $id)
+                    ->where('statut', true)
+                    ->update(['statut' => false, 'date_fin' => now()]);
+            }
+
+            $equipement->update(['statut' => $request->statut]);
+
+            // Enregistrer dans l'historique
+            HistoriqueChangement::create([
+                'equipement_id'    => $id,
+                'date_changement'  => now(),
+                'utilisateur_id'   => auth()->id(),
+                'type_changement'  => 'STATUT',
+                'ancien_statut'    => $ancienStatut,
+                'nouveau_statut'   => $request->statut,
+                'motif'            => $request->motif,
+            ]);
+        });
+
+        return response()->json(['success' => true, 'message' => 'Statut mis à jour avec succès.']);
+    }
+
+    public function updateEtat(Request $request, $id)
+    {
+        $request->validate([
+            'etat'  => 'required|in:bon,passable,mauvais,avarie',
+            'motif' => 'required|string',
+        ]);
+
+        \DB::transaction(function () use ($request, $id) {
+            $equipement = Equipement::findOrFail($id);
+            $ancienEtat = $equipement->etat;
+
+            $equipement->update(['etat' => $request->etat]);
+
+            HistoriqueChangement::create([
+                'equipement_id'   => $id,
+                'date_changement' => now(),
+                'utilisateur_id'  => auth()->id(),
+                'type_changement' => 'ETAT',
+                'ancien_etat'     => $ancienEtat,
+                'nouvel_etat'     => $request->etat,
+                'motif'           => $request->motif,
+            ]);
+        });
+
+        return response()->json(['success' => true, 'message' => 'État mis à jour avec succès.']);
+    }
+
+    public function desaffecter(Request $request, $id)
+    {
+        $request->validate([
+            'motif' => 'required|string',
+        ]);
+
+        \DB::transaction(function () use ($request, $id) {
+            $equipement = Equipement::findOrFail($id);
+
+            AffectationEquipement::where('equipement_id', $id)
+                ->where('statut', true)
+                ->update(['statut' => false, 'date_fin' => now()]);
+
+            $equipement->update(['statut' => 'en_stock']);
+
+            HistoriqueChangement::create([
+                'equipement_id'    => $id,
+                'date_changement'  => now(),
+                'utilisateur_id'   => auth()->id(),
+                'type_changement'  => 'AFFECTATION',
+                'ancien_statut'    => $equipement->statut,
+                'nouveau_statut'   => 'en_stock',
+                'motif'            => $request->motif,
+            ]);
+        });
+
+        return response()->json(['success' => true, 'message' => 'Équipement désaffecté et mis en stock.']);
     }
 
     public function destroy($id)

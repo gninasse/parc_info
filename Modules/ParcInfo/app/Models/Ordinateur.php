@@ -33,6 +33,7 @@ class Ordinateur extends Model
         'bios_version',
         'uefi_version',
         'nom_hote',
+        'compte_admin_local',
         'domaine_workgroup',
         'adresse_mac_wifi',
         'adresse_mac_ethernet',

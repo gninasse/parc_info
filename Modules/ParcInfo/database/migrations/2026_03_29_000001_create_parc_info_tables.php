@@ -72,7 +72,7 @@ return new class extends Migration
             $table->text('numero_serie')->unique();
             $table->foreignId('marque_id')->nullable()->constrained('parc_info_marques')->nullOnDelete();
             $table->text('modele');
-            $table->date('date_acquisition');
+            $table->date('date_acquisition')->nullable();
             $table->date('date_mise_en_service')->nullable();
             $table->decimal('valeur_achat', 12, 2)->nullable();
             $table->integer('duree_vie_probable')->nullable()->comment('en années');
@@ -128,6 +128,7 @@ return new class extends Migration
             $table->text('uefi_version')->nullable();
             // Réseau
             $table->text('nom_hote')->nullable();
+            $table->text('compte_admin_local')->nullable();
             $table->text('domaine_workgroup')->nullable();
             $table->text('adresse_mac_wifi')->nullable();
             $table->text('adresse_mac_ethernet')->nullable();

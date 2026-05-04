@@ -104,12 +104,7 @@
                                 <label class="form-label field-label">RAM</label>
                                 <div class="row g-2">
                                     <div class="col-7">
-                                        <select class="form-select field-input" name="ram_capacite_go" id="ram_capacite_go">
-                                            <option value="">— Go —</option>
-                                            @foreach([4,8,16,32,64,128] as $r)
-                                            <option value="{{ $r }}">{{ $r }} Go</option>
-                                            @endforeach
-                                        </select>
+                                        <input type="number" class="form-control field-input" name="ram_capacite_go" id="ram_capacite_go" placeholder="Go" min="1">
                                     </div>
                                     <div class="col-5">
                                         <div class="input-group">
@@ -156,8 +151,8 @@
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label field-label">Date d'acquisition <span class="text-danger">*</span></label>
-                                <input type="date" class="form-control field-input" name="date_acquisition" id="date_acquisition" required>
+                                <label class="form-label field-label">Date d'acquisition</label>
+                                <input type="date" class="form-control field-input" name="date_acquisition" id="date_acquisition">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label field-label">Fin de garantie</label>
@@ -302,6 +297,9 @@
                     <div class="d-flex gap-2">
                         <button type="button" class="btn btn-outline-secondary px-4" id="btn-prev" style="display:none!important">
                             <i class="bi bi-chevron-left me-1"></i> Précédent
+                        </button>
+                        <button type="button" class="btn btn-success px-4 d-none" id="btn-save-reparation">
+                            <i class="bi bi-tools me-1"></i> Enregistrer en réparation
                         </button>
                         <button type="button" class="btn btn-primary px-4" id="btn-next">
                             Suivant <i class="bi bi-chevron-right ms-1"></i>
