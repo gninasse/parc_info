@@ -8,6 +8,7 @@ use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Modules\Grh\Models\Employe;
 use Modules\Organisation\Models\Direction;
+use Modules\Organisation\Models\Service;
 use Modules\Organisation\Models\Site;
 
 class DirectionController extends Controller implements HasMiddleware
@@ -174,5 +175,15 @@ class DirectionController extends Controller implements HasMiddleware
                 'text' => $emp->full_name." ({$emp->matricule})",
             ];
         }));
+    }
+
+    public function getServices($id)
+    {
+        return response()->json(
+            Service::where('direction_id', $id)
+                   ->where('actif', true)
+                   ->orderBy('libelle')
+                   ->get(['id', 'libelle'])
+        );
     }
 }

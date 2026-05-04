@@ -199,117 +199,94 @@
                             @endforeach
                         </div>
 
-                        {{-- Détails Employé --}}
-                        <div id="aff-employe" class="aff-detail d-none">
-                            <div class="card border-0 bg-light rounded-3 p-3">
-                                <div class="fw-semibold small mb-3"><i class="bi bi-person-badge text-primary me-2"></i>Détails de l'employé</div>
-                                <div class="row g-3">
-                                    <div class="col-md-5">
-                                        <label class="form-label field-label">Matricule</label>
-                                        <div class="input-group input-group-sm">
-                                            <input type="text" class="form-control field-input" id="employe-search" placeholder="Rechercher par matricule...">
-                                            <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                        {{-- Carte récapitulative Employé --}}
+                        <div id="aff-employe-summary" class="aff-summary d-none">
+                            <div class="card border-primary">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="mb-0"><i class="bi bi-person-badge text-primary me-2"></i>Employé sélectionné</h6>
+                                    </div>
+                                    <div class="row g-2 mt-2">
+                                        <div class="col-md-6">
+                                            <small class="text-muted d-block">Nom</small>
+                                            <strong id="emp-summary-nom">—</strong>
                                         </div>
-                                        <input type="hidden" name="dossier_employe_id" id="dossier_employe_id">
-                                    </div>
-                                    <div class="col-md-7">
-                                        <label class="form-label field-label">Nom & Prénoms</label>
-                                        <input type="text" class="form-control field-input" id="employe-nom" readonly placeholder="—">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label field-label">Date d'affectation <span class="text-danger">*</span></label>
-                                        <input type="date" class="form-control field-input" name="date_debut" id="aff-date-debut-emp">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label field-label">Durée prévue (Optionnel)</label>
-                                        <select class="form-select field-input" name="type_affectation" id="aff-type-emp">
-                                            <option value="PERMANENTE">Permanente</option>
-                                            <option value="TEMPORAIRE">Temporaire</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-12">
-                                        <div class="alert alert-info py-2 small mb-0">
-                                            <i class="bi bi-info-circle me-1"></i>
-                                            L'affectation à un employé génère automatiquement une fiche de prise en charge matérielle.
+                                        <div class="col-md-3">
+                                            <small class="text-muted d-block">Matricule</small>
+                                            <strong id="emp-summary-matricule">—</strong>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <small class="text-muted d-block">Poste</small>
+                                            <span id="emp-summary-poste">—</span>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <small class="text-muted d-block">Rattachement</small>
+                                            <span id="emp-summary-rattachement">—</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
+                            <input type="hidden" name="dossier_employe_id" id="dossier_employe_id">
                         </div>
 
-                        {{-- Détails Poste --}}
-                        <div id="aff-poste" class="aff-detail d-none">
-                            <div class="card border-0 bg-light rounded-3 p-3">
-                                <div class="fw-semibold small mb-3"><i class="bi bi-pc-display text-primary me-2"></i>Détails du poste de travail</div>
-                                <div class="row g-3">
-                                    <div class="col-12">
-                                        <label class="form-label field-label">Recherche du poste de travail</label>
-                                        <div class="input-group input-group-sm">
-                                            <input type="text" class="form-control field-input" id="poste-search" placeholder="Code ou libellé du poste...">
-                                            <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                        {{-- Carte récapitulative Poste --}}
+                        <div id="aff-poste-summary" class="aff-summary d-none">
+                            <div class="card border-primary">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="mb-0"><i class="bi bi-pc-display text-primary me-2"></i>Poste sélectionné</h6>
+                                    </div>
+                                    <div class="row g-2 mt-2">
+                                        <div class="col-md-3">
+                                            <small class="text-muted d-block">Code</small>
+                                            <strong id="poste-summary-code">—</strong>
                                         </div>
-                                        <input type="hidden" name="poste_travail_id" id="poste_travail_id">
-                                    </div>
-                                    <div id="poste-detail" class="col-12 d-none">
-                                        <div class="row g-2 p-2 bg-white rounded-3 border">
-                                            <div class="col-md-3"><div class="text-muted" style="font-size:.7rem;text-transform:uppercase">Code Poste</div><div class="fw-bold small text-primary" id="poste-code">—</div></div>
-                                            <div class="col-md-3"><div class="text-muted" style="font-size:.7rem;text-transform:uppercase">Libellé</div><div class="fw-semibold small" id="poste-libelle">—</div></div>
-                                            <div class="col-md-3"><div class="text-muted" style="font-size:.7rem;text-transform:uppercase">Service</div><div class="small" id="poste-service">—</div></div>
-                                            <div class="col-md-3"><div class="text-muted" style="font-size:.7rem;text-transform:uppercase">Local</div><div class="small" id="poste-local">—</div></div>
+                                        <div class="col-md-5">
+                                            <small class="text-muted d-block">Libellé</small>
+                                            <strong id="poste-summary-libelle">—</strong>
                                         </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label field-label">Date d'affectation</label>
-                                        <input type="date" class="form-control field-input" name="date_debut" id="aff-date-debut-poste">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label field-label">Durée prévue</label>
-                                        <select class="form-select field-input" name="type_affectation" id="aff-type-poste">
-                                            <option value="PERMANENTE">Permanente</option>
-                                            <option value="TEMPORAIRE">Temporaire</option>
-                                            <option value="">Indéterminée</option>
-                                        </select>
+                                        <div class="col-md-4">
+                                            <small class="text-muted d-block">Emplacement</small>
+                                            <span id="poste-summary-emplacement">—</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+                            <input type="hidden" name="poste_travail_id" id="poste_travail_id">
                         </div>
 
-                        {{-- Détails Local --}}
-                        <div id="aff-local" class="aff-detail d-none">
-                            <div class="card border-0 bg-light rounded-3 p-3">
-                                <div class="fw-semibold small mb-3"><i class="bi bi-geo-alt text-primary me-2"></i>Détails de la localisation</div>
-                                <div class="row g-3">
-                                    <div class="col-12">
-                                        <label class="form-label field-label">Sélectionner un local</label>
-                                        <div class="input-group input-group-sm">
-                                            <input type="text" class="form-control field-input" id="local-search" placeholder="Rechercher un local...">
-                                            <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
-                                        </div>
-                                        <input type="hidden" name="local_id" id="local_id">
+                        {{-- Carte récapitulative Local --}}
+                        <div id="aff-local-summary" class="aff-summary d-none">
+                            <div class="card border-primary">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="mb-0"><i class="bi bi-door-open text-primary me-2"></i>Local sélectionné</h6>
                                     </div>
-                                    <div class="col-12">
-                                        <label class="form-label field-label">Rattachement administratif <span class="text-danger">*</span></label>
-                                        <div class="row g-2">
-                                            <div class="col-md-4">
-                                                <select class="form-select field-input" name="niveau_rattachement" id="niveau_rattachement">
-                                                    <option value="">Niveau...</option>
-                                                    <option value="DIRECTION">Direction</option>
-                                                    <option value="SERVICE">Service</option>
-                                                    <option value="UNITE">Unité</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-8">
-                                                <select class="form-select field-input" name="direction_id_aff" id="direction_id_aff">
-                                                    <option value="">Structure administrative...</option>
-                                                    @foreach($directions as $d)
-                                                    <option value="{{ $d->id }}">{{ $d->libelle }}</option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
+                                    <div class="row g-2 mt-2">
+                                        <div class="col-md-2">
+                                            <small class="text-muted d-block">Code</small>
+                                            <strong id="local-summary-code">—</strong>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <small class="text-muted d-block">Libellé</small>
+                                            <strong id="local-summary-libelle">—</strong>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <small class="text-muted d-block">Type</small>
+                                            <span id="local-summary-type">—</span>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <small class="text-muted d-block">Étage</small>
+                                            <span id="local-summary-etage">—</span>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <small class="text-muted d-block">Bâtiment</small>
+                                            <span id="local-summary-batiment">—</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
+                            <input type="hidden" name="local_id" id="local_id">
                         </div>
 
                         <div class="text-center mt-3" id="aff-skip-hint">

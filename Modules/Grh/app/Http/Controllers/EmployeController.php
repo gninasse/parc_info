@@ -99,6 +99,41 @@ class EmployeController extends Controller
         ]);
     }
 
+    public function getApiData(Request $request)
+    {
+        $query = Employe::with(['direction', 'service', 'unite']);
+
+        if ($request->filled('direction_id')) {
+            $query->where('direction_id', $request->direction_id);
+        }
+        if ($request->filled('service_id')) {
+            $query->where('service_id', $request->service_id);
+        }
+        if ($request->filled('statut')) {
+            $query->where('est_actif', $request->statut === 'actif');
+        }
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function($q) use ($s) {
+                $q->where('matricule', 'ilike', "%{$s}%")
+                  ->orWhere('nom', 'ilike', "%{$s}%")
+                  ->orWhere('prenom', 'ilike', "%{$s}%");
+            });
+        }
+
+        return response()->json($query->get()->map(function($emp) {
+            return [
+                'id' => $emp->id,
+                'matricule' => $emp->matricule,
+                'nom_complet' => $emp->full_name,
+                'poste' => $emp->poste,
+                'niveau' => ucfirst($emp->niveau_rattachement),
+                'rattachement' => $emp->organisation,
+                'statut' => $emp->est_actif ? 'actif' : 'inactif'
+            ];
+        }));
+    }
+
     /**
      * Store a newly created resource in storage.
      */

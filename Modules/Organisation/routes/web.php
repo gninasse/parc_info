@@ -88,6 +88,7 @@ Route::middleware(['auth'])->prefix('organisation')->name('organisation.')->grou
     Route::prefix('locaux')->name('locaux.')->group(function () {
         Route::get('/', [LocalController::class, 'index'])->name('index');
         Route::get('/data', [LocalController::class, 'getData'])->name('data');
+        Route::get('/api', [LocalController::class, 'getApiData'])->name('api');
         Route::get('/by-etage/{etageId}', [LocalController::class, 'getByEtage'])->name('by-etage');
         Route::post('/', [LocalController::class, 'store'])->name('store');
         Route::get('/{id}', [LocalController::class, 'show'])->name('show');
@@ -97,9 +98,10 @@ Route::middleware(['auth'])->prefix('organisation')->name('organisation.')->grou
     });
 
     // Postes de travail
-    Route::prefix('postes')->name('postes.')->group(function () {
+    Route::prefix('postes-travail')->name('postes-travail.')->group(function () {
         Route::get('/', [\Modules\Organisation\Http\Controllers\PosteTravailController::class, 'index'])->name('index');
         Route::get('/data', [\Modules\Organisation\Http\Controllers\PosteTravailController::class, 'getData'])->name('data');
+        Route::get('/api', [\Modules\Organisation\Http\Controllers\PosteTravailController::class, 'getApiData'])->name('api');
         Route::get('/search-employes', [\Modules\Organisation\Http\Controllers\PosteTravailController::class, 'searchEmployes'])->name('search-employes');
         Route::get('/services-by-direction/{directionId}', [\Modules\Organisation\Http\Controllers\PosteTravailController::class, 'getServicesByDirection'])->name('services-by-direction');
         Route::get('/unites-by-service/{serviceId}', [\Modules\Organisation\Http\Controllers\PosteTravailController::class, 'getUnitesByService'])->name('unites-by-service');
@@ -109,4 +111,9 @@ Route::middleware(['auth'])->prefix('organisation')->name('organisation.')->grou
         Route::delete('/{id}', [\Modules\Organisation\Http\Controllers\PosteTravailController::class, 'destroy'])->name('destroy');
         Route::patch('/{id}/toggle-status', [\Modules\Organisation\Http\Controllers\PosteTravailController::class, 'toggleStatus'])->name('toggle-status');
     });
+
+    // Routes pour les dépendances hiérarchiques
+    Route::get('/directions/{id}/services', [DirectionController::class, 'getServices'])->name('directions.services');
+    Route::get('/sites/{id}/batiments', [SiteController::class, 'getBatiments'])->name('sites.batiments');
+    Route::get('/batiments/{id}/etages', [BatimentController::class, 'getEtages'])->name('batiments.etages');
 });

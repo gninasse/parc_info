@@ -6,9 +6,9 @@
 
 window.ordinateursQueryParams = function (params) {
     return Object.assign(params, {
-        site_id      : $('#filter-site').val(),
-        direction_id : $('#filter-direction').val(),
-        statut       : $('#filter-statut').val(),
+        site_id: $('#filter-site').val(),
+        direction_id: $('#filter-direction').val(),
+        statut: $('#filter-statut').val(),
     });
 };
 
@@ -17,11 +17,11 @@ window.codeFormatter = (val) =>
 
 window.statutFormatter = (val) => {
     const map = {
-        en_service   : ['success', 'EN SERVICE'],
-        en_stock     : ['secondary', 'EN STOCK'],
+        en_service: ['success', 'EN SERVICE'],
+        en_stock: ['secondary', 'EN STOCK'],
         en_reparation: ['warning', 'EN RÉPARATION'],
-        perdu        : ['danger', 'PERDU / VOLÉ'],
-        reforme      : ['dark', 'RÉFORMÉ'],
+        perdu: ['danger', 'PERDU / VOLÉ'],
+        reforme: ['dark', 'RÉFORMÉ'],
     };
     const [color, label] = map[val] ?? ['info', val];
     return `<span class="badge bg-${color}-subtle text-${color} border border-${color}-subtle px-2 py-1">${label}</span>`;
@@ -55,12 +55,12 @@ const Wizard = (() => {
     let currentStep = 1;
     const TOTAL = 3;
 
-    const $modal   = () => $('#ordinateurModal');
-    const $form    = () => $('#ordinateurForm');
-    const $step    = (n) => $(`#step-${n}`);
-    const $circle  = (n) => $(`.wizard-step-circle[data-step="${n}"]`);
-    const $label   = (n) => $(`.wizard-step-label[data-step="${n}"]`);
-    const $line    = (n) => $(`.wizard-step-line[data-after="${n}"]`);
+    const $modal = () => $('#ordinateurModal');
+    const $form = () => $('#ordinateurForm');
+    const $step = (n) => $(`#step-${n}`);
+    const $circle = (n) => $(`.wizard-step-circle[data-step="${n}"]`);
+    const $label = (n) => $(`.wizard-step-label[data-step="${n}"]`);
+    const $line = (n) => $(`.wizard-step-line[data-after="${n}"]`);
 
     // Retourne true si le statut sélectionné est "en_stock"
     function isEnStock() {
@@ -160,8 +160,8 @@ const Wizard = (() => {
         $('#btn-submit-label').text('Enregistrer');
         try {
             const res = await $.get(route('parc-info.ordinateurs-fixes.show', id));
-            const e   = res.data;
-            const o   = e.ordinateur ?? {};
+            const e = res.data;
+            const o = e.ordinateur ?? {};
             const aff = e.affectation_active;
 
             $('#ord_id').val(e.id);
@@ -392,23 +392,23 @@ const Wizard = (() => {
             });
         });
 
-        $('#btn-add-ram').on('click',    () => quickAdd('Nouveau type de RAM',    'Ex: DDR4, DDR5...',          'parc-info.ordinateurs-fixes.store-type-ram',    'ram_type_id'));
-        $('#btn-add-os').on('click',     () => quickAdd("Nouveau système d'exploitation", 'Ex: Windows 11 Pro, Ubuntu 22.04...', 'parc-info.ordinateurs-fixes.store-type-os', 'os_type_id'));
+        $('#btn-add-ram').on('click', () => quickAdd('Nouveau type de RAM', 'Ex: DDR4, DDR5...', 'parc-info.ordinateurs-fixes.store-type-ram', 'ram_type_id'));
+        $('#btn-add-os').on('click', () => quickAdd("Nouveau système d'exploitation", 'Ex: Windows 11 Pro, Ubuntu 22.04...', 'parc-info.ordinateurs-fixes.store-type-os', 'os_type_id'));
         $('#btn-add-disque').on('click', () => quickAdd('Nouveau type de disque', 'Ex: SSD NVMe, HDD, SSD SATA...', 'parc-info.ordinateurs-fixes.store-type-disque', 'disque_type_id'));
 
         // Soumission
         $form().on('submit', async (e) => {
             e.preventDefault();
-            const id     = $('#ord_id').val();
-            const url    = id ? route('parc-info.ordinateurs-fixes.update', id) : route('parc-info.ordinateurs-fixes.store');
-            const method = id ? 'PUT' : 'POST';
-            const $btn   = $('#btn-submit');
-            $btn.prop('disabled', true).find('#btn-submit-label').text('Enregistrement...');
 
-            // Synchroniser les champs date_debut selon le type d'affectation actif
-            const typeCible = $('input[name="type_cible"]:checked').val();
-            if (typeCible === 'EMPLOYE') $('input[name="date_debut"]').val($('#aff-date-debut-emp').val());
-            if (typeCible === 'POSTE')   $('input[name="date_debut"]').val($('#aff-date-debut-poste').val());
+            // Nettoyer les erreurs précédentes
+            $('.is-invalid').removeClass('is-invalid');
+            $('.invalid-feedback').remove();
+
+            const id = $('#ord_id').val();
+            const url = id ? route('parc-info.ordinateurs-fixes.update', id) : route('parc-info.ordinateurs-fixes.store');
+            const method = id ? 'PUT' : 'POST';
+            const $btn = $('#btn-submit');
+            $btn.prop('disabled', true).find('#btn-submit-label').text('Enregistrement...');
 
             $.ajax({
                 url, method,
@@ -424,9 +424,25 @@ const Wizard = (() => {
                 error: (xhr) => {
                     if (xhr.status === 422) {
                         const errors = xhr.responseJSON?.errors ?? {};
+                        let firstErrorField = null;
+
                         Object.entries(errors).forEach(([field, msgs]) => {
-                            $(`#${field}`).addClass('is-invalid').after(`<div class="invalid-feedback">${msgs[0]}</div>`);
+                            const $field = $(`#${field}`);
+                            if ($field.length) {
+                                $field.addClass('is-invalid');
+                                $field.after(`<div class="invalid-feedback d-block">${msgs[0]}</div>`);
+                                if (!firstErrorField) firstErrorField = $field;
+                            }
                         });
+
+                        // Aller à l'étape contenant la première erreur
+                        if (firstErrorField) {
+                            const errorStep = firstErrorField.closest('.wizard-step').attr('id').replace('step-', '');
+                            goToStep(parseInt(errorStep));
+                            firstErrorField[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+
+                        Swal.fire('Erreur de validation', 'Veuillez corriger les erreurs dans le formulaire.', 'error');
                     } else {
                         Swal.fire('Erreur', xhr.responseJSON?.message ?? 'Une erreur est survenue.', 'error');
                     }

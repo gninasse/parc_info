@@ -84,6 +84,41 @@ class PosteTravailController extends Controller
         ]);
     }
 
+    public function getApiData(Request $request)
+    {
+        $query = PosteTravail::query()->with(['direction', 'service', 'unite', 'local.etage.batiment.site', 'agent']);
+
+        if ($request->filled('direction_id')) {
+            $query->where('direction_id', $request->direction_id);
+        }
+        if ($request->filled('service_id')) {
+            $query->where('service_id', $request->service_id);
+        }
+        if ($request->filled('statut')) {
+            $query->where('actif', $request->statut === 'actif');
+        }
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function($q) use ($s) {
+                $q->where('code', 'ilike', "%{$s}%")
+                  ->orWhere('libelle', 'ilike', "%{$s}%");
+            });
+        }
+
+        return response()->json($query->get()->map(function($poste) {
+            return [
+                'id' => $poste->id,
+                'code' => $poste->code,
+                'libelle' => $poste->libelle,
+                'direction' => $poste->direction?->libelle,
+                'service' => $poste->service?->libelle,
+                'emplacement' => $poste->local ? $poste->local->nom_complet : '—',
+                'occupant' => $poste->agent ? $poste->agent->full_name : '—',
+                'statut' => $poste->actif ? 'actif' : 'inactif'
+            ];
+        }));
+    }
+
     public function store(PosteTravailRequest $request)
     {
         try {

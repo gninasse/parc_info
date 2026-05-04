@@ -94,7 +94,6 @@ class OrdinateurController extends Controller
             'cpu_type_id'         => 'nullable|exists:parc_info_types_cpus,id',
             // Affectation
             'type_cible'          => 'nullable|in:EMPLOYE,POSTE,LOCAL',
-            'date_debut'          => 'required_with:type_cible|nullable|date',
         ]);
 
         \DB::transaction(function () use ($request) {
@@ -140,8 +139,8 @@ class OrdinateurController extends Controller
                     'equipement_id'       => $equipement->id,
                     'statut'              => true,
                     'type_cible'          => $request->type_cible,
-                    'type_affectation'    => $request->type_affectation ?? 'PERMANENTE',
-                    'date_debut'          => $request->date_debut,
+                    'type_affectation'    => 'PERMANENTE',
+                    'date_debut'          => now()->format('Y-m-d'),
                     'date_fin'            => $request->date_fin,
                     'dossier_employe_id'  => $request->dossier_employe_id,
                     'poste_travail_id'    => $request->poste_travail_id,

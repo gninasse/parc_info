@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Modules\Organisation\Models\Batiment;
+use Modules\Organisation\Models\Etage;
 use Modules\Organisation\Models\Site;
 
 class BatimentController extends Controller implements HasMiddleware
@@ -156,5 +157,15 @@ class BatimentController extends Controller implements HasMiddleware
                 'message' => 'Erreur lors du changement de statut',
             ], 500);
         }
+    }
+
+    public function getEtages($id)
+    {
+        return response()->json(
+            Etage::where('batiment_id', $id)
+                 ->where('actif', true)
+                 ->orderBy('numero')
+                 ->get(['id', 'libelle'])
+        );
     }
 }
