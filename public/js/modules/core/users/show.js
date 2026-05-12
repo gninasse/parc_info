@@ -16,6 +16,49 @@ $(document).ready(function () {
     let isEditMode = false;
     const originalAvatarUrl = window.userAvatarUrl;
 
+    // Init select2 pour la liaison employé sur la page profil
+    if ($.fn.select2) {
+        $('#employe_select2_profile').select2({
+            placeholder: 'Rechercher un employé...',
+            allowClear: true,
+            theme: 'bootstrap-5',
+            minimumInputLength: 1,
+            ajax: {
+                url: route('cores.users.search-employes'),
+                dataType: 'json',
+                delay: 250,
+                data: (p) => ({ q: p.term }),
+                processResults: (d) => ({ results: d }),
+                cache: true,
+            },
+        });
+
+        $('#employe_select2_profile').on('select2:select', function (e) {
+            const data = e.params.data;
+            $('#last_name').val(data.nom).addClass('employe-locked');
+            $('#name').val(data.prenom).addClass('employe-locked');
+            $('#dossier_employe_id_profile').val(data.id);
+        });
+
+        $('#employe_select2_profile').on('select2:clear', function () {
+            $('#last_name').val('').removeClass('employe-locked');
+            $('#name').val('').removeClass('employe-locked');
+            $('#dossier_employe_id_profile').val('');
+        });
+    }
+
+    // Toggle liaison employé
+    $('#toggle-employe-link-profile').on('change', function () {
+        const isChecked = $(this).is(':checked');
+        $('#employe-select-wrapper-profile').toggleClass('d-none', !isChecked);
+        if (!isChecked) {
+            $('#employe_select2_profile').val(null).trigger('change');
+            $('#last_name').prop('disabled', false).val('');
+            $('#name').prop('disabled', false).val('');
+            $('#dossier_employe_id_profile').val('');
+        }
+    });
+
     // Edit Mode Toggle
     $('#btn-edit-mode').click(function () {
         isEditMode = true;
@@ -32,6 +75,41 @@ $(document).ready(function () {
     // Enable Edit Mode
     function enableEditMode() {
         $('#profile-form input:not([type="password"])').prop('disabled', false);
+        // Les champs liés à l'employé restent readonly mais le toggle et select2 s'activent
+        if ($('#employe_select2_profile').val()) {
+            $('#last_name, #name').prop('disabled', true);
+        }
+        $('#toggle-employe-link-profile').prop('disabled', false);
+        $('#employe_select2_profile').prop('disabled', false);
+        // Réinitialiser select2 pour qu'il soit interactif
+        if ($.fn.select2 && $('#employe_select2_profile').data('select2')) {
+            $('#employe_select2_profile').select2('destroy');
+            $('#employe_select2_profile').select2({
+                placeholder: 'Rechercher un employé...',
+                allowClear: true,
+                theme: 'bootstrap-5',
+                minimumInputLength: 1,
+                ajax: {
+                    url: route('cores.users.search-employes'),
+                    dataType: 'json',
+                    delay: 250,
+                    data: (p) => ({ q: p.term }),
+                    processResults: (d) => ({ results: d }),
+                    cache: true,
+                },
+            });
+            $('#employe_select2_profile').on('select2:select', function (e) {
+                const data = e.params.data;
+                $('#last_name').val(data.nom).prop('disabled', true);
+                $('#name').val(data.prenom).prop('disabled', true);
+                $('#dossier_employe_id_profile').val(data.id);
+            });
+            $('#employe_select2_profile').on('select2:clear', function () {
+                $('#last_name').prop('disabled', false).val('');
+                $('#name').prop('disabled', false).val('');
+                $('#dossier_employe_id_profile').val('');
+            });
+        }
         $('#form-actions').removeClass('d-none');
         $('#btn-edit-mode').prop('disabled', true);
     }
@@ -39,6 +117,8 @@ $(document).ready(function () {
     // Disable Edit Mode
     function disableEditMode() {
         $('#profile-form input').prop('disabled', true);
+        $('#toggle-employe-link-profile').prop('disabled', true);
+        $('#employe_select2_profile').prop('disabled', true);
         $('#form-actions').addClass('d-none');
         $('#btn-edit-mode').prop('disabled', false);
     }
@@ -124,7 +204,8 @@ $(document).ready(function () {
             last_name: $('#last_name').val(),
             user_name: $('#user_name').val(),
             email: $('#email').val(),
-            service: $('#service').val()
+            service: $('#service').val(),
+            dossier_employe_id: $('#dossier_employe_id_profile').val() || null,
         };
 
         $.ajax({

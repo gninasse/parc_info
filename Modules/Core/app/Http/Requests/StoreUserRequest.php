@@ -18,6 +18,7 @@ class StoreUserRequest extends FormRequest
             'user_name' => 'required|string|max:255|unique:users,user_name',
             'email' => 'required|email|unique:users,email',
             'service' => 'nullable|string|max:255',
+            'dossier_employe_id' => 'nullable|integer|exists:grh_dossiers_employes,id',
             'password' => ['required', 'confirmed', Password::min(8)->letters()->mixedCase()->numbers()->symbols()],
             'avatar' => 'nullable|image|max:2048',
         ];

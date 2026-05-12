@@ -158,6 +158,39 @@
                                 </div>
                             </div>
                             <div class="col-md-9">
+
+                                {{-- Liaison employé --}}
+                                <div class="card border-0 bg-light mb-3" id="employe-link-section-profile">
+                                    <div class="card-body py-2 px-3">
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <div>
+                                                <div class="fw-semibold text-primary">Lier à un employé</div>
+                                                <small class="text-muted">Associer ce compte à un profil existant.</small>
+                                            </div>
+                                            <div class="form-check form-switch ms-3 mb-0">
+                                                <input class="form-check-input" type="checkbox"
+                                                       id="toggle-employe-link-profile" role="switch"
+                                                       style="width:2.5em; height:1.4em;"
+                                                       {{ $user->dossier_employe_id ? 'checked' : '' }}
+                                                       disabled>
+                                            </div>
+                                        </div>
+                                        <div id="employe-select-wrapper-profile" class="mt-2 {{ $user->dossier_employe_id ? '' : 'd-none' }}">
+                                            <label for="employe_select2_profile" class="form-label small mb-1">Employé lié</label>
+                                            <select class="form-select" id="employe_select2_profile" style="width:100%" disabled>
+                                                @if($user->dossier_employe_id && $user->dossierEmploye)
+                                                    <option value="{{ $user->dossierEmploye->id }}" selected>
+                                                        {{ $user->dossierEmploye->full_name }} ({{ $user->dossierEmploye->matricule }})
+                                                    </option>
+                                                @else
+                                                    <option value=""></option>
+                                                @endif
+                                            </select>
+                                            <input type="hidden" id="dossier_employe_id_profile" name="dossier_employe_id" value="{{ $user->dossier_employe_id }}">
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label for="last_name" class="form-label">
@@ -212,10 +245,10 @@
                                 </div>
                                 <div class="mb-3">
                                     <label for="service" class="form-label">Service</label>
-                                    <input type="text" 
-                                           class="form-control" 
-                                           id="service" 
-                                           name="service" 
+                                    <input type="text"
+                                           class="form-control"
+                                           id="service"
+                                           name="service"
                                            value="{{ $user->service }}"
                                            disabled>
                                 </div>

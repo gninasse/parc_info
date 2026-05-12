@@ -35,6 +35,8 @@ export class DirectionForm {
         this.resetForm();
         $('#createDirectionModalLabel').text('Nouvelle Direction');
         $('#direction_id').val('');
+        $('#responsable_id').empty();
+        this.initSelect2();
         this.$modal.modal('show');
     }
 
@@ -44,7 +46,14 @@ export class DirectionForm {
         $('#site_id').val(data.site_id);
         $('#code').val(data.code);
         $('#libelle').val(data.libelle);
-        $('#responsable_id').val(data.responsable_id);
+        
+        $('#responsable_id').empty();
+        if (data.responsable) {
+            const opt = new Option(`${data.responsable.full_name} (${data.responsable.matricule})`, data.responsable.id, true, true);
+            $('#responsable_id').append(opt);
+        }
+        this.initSelect2();
+
         $('#description').val(data.description);
         this.$modal.modal('show');
     }
@@ -124,12 +133,43 @@ export class DirectionForm {
         return isValid;
     }
 
+    initSelect2() {
+        if (!$.fn.select2) return;
+        
+        if ($.fn.select2 && $('#responsable_id').data('select2')) {
+            $('#responsable_id').select2('destroy');
+        }
+
+        $('#responsable_id').select2({
+            dropdownParent: this.$modal,
+            placeholder: 'Rechercher un responsable...',
+            allowClear: true,
+            theme: 'bootstrap-5',
+            ajax: {
+                url: window.directionRoutes.responsables,
+                dataType: 'json',
+                delay: 250,
+                data: (params) => ({ q: params.term }),
+                processResults: (data) => ({ results: data }),
+                cache: true,
+            },
+        });
+    }
+
     displayErrors(errors) {
         this.clearErrors();
         $.each(errors, (field, messages) => {
             const $field = $(`#${field}`);
-            $field.addClass('is-invalid');
-            $field.after(`<div class="invalid-feedback d-block">${messages[0]}</div>`);
+            if ($field.length) {
+                $field.addClass('is-invalid');
+                
+                // Pour Select2, insérer après le container
+                if ($field.next('.select2-container').length) {
+                    $field.next('.select2-container').after(`<div class="invalid-feedback d-block">${messages[0]}</div>`);
+                } else {
+                    $field.after(`<div class="invalid-feedback d-block">${messages[0]}</div>`);
+                }
+            }
         });
     }
 

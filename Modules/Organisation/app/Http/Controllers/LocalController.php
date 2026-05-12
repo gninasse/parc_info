@@ -72,6 +72,48 @@ class LocalController extends Controller implements HasMiddleware
         ]);
     }
 
+    public function getApiData(Request $request)
+    {
+        $query = Local::query()->without(['etage.batiment.site'])->with(['etage.batiment.site']);
+
+        if ($request->filled('site_id')) {
+            $query->whereHas('etage.batiment', function ($q) use ($request) {
+                $q->where('site_id', $request->site_id);
+            });
+        }
+        if ($request->filled('batiment_id')) {
+            $query->whereHas('etage', function ($q) use ($request) {
+                $q->where('batiment_id', $request->batiment_id);
+            });
+        }
+        if ($request->filled('etage_id')) {
+            $query->where('etage_id', $request->etage_id);
+        }
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function($q) use ($s) {
+                $q->where('code', 'ilike', "%{$s}%")
+                  ->orWhere('libelle', 'ilike', "%{$s}%");
+            });
+        }
+
+        $locaux = $query->get();
+        
+        return response()->json($locaux->map(function($local) {
+            return [
+                'id' => $local->id,
+                'code' => $local->code ?? '',
+                'libelle' => $local->libelle ?? '',
+                'type' => $local->type_local_label ?? '—',
+                'superficie' => $local->superficie_m2 ?? null,
+                'etage' => $local->etage?->libelle ?? '—',
+                'batiment' => $local->etage?->batiment?->libelle ?? '—',
+                'site' => $local->etage?->batiment?->site?->libelle ?? '—',
+                'statut' => $local->actif ? 'actif' : 'inactif'
+            ];
+        }));
+    }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -133,6 +175,13 @@ class LocalController extends Controller implements HasMiddleware
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Erreur: '.$e->getMessage()], 500);
         }
+    }
+
+    public function getByEtage($etageId)
+    {
+        $locaux = Local::where('etage_id', $etageId)->where('actif', true)->get(['id', 'libelle', 'code']);
+
+        return response()->json($locaux);
     }
 
     public function toggleStatus($id)

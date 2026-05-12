@@ -1,4 +1,4 @@
-@extends('core::layouts.master')
+@extends('grh::layouts.master')
 
 @section('header', 'Tableau de bord GRH')
 
@@ -79,9 +79,9 @@
                     <a href="{{ route('grh.employes.index') }}" class="btn btn-light btn-sm text-start py-2">
                         <i class="fas fa-list me-2"></i> Liste des dossiers
                     </a>
-                    <button type="button" class="btn btn-outline-light btn-sm text-start py-2" onclick="$('#btn-add-employe').click()">
+                    <a href="{{ route('grh.employes.index') }}?action=add" class="btn btn-outline-light btn-sm text-start py-2">
                         <i class="fas fa-user-plus me-2"></i> Nouvel employé
-                    </button>
+                    </a>
                 </div>
             </div>
         </div>
@@ -166,7 +166,7 @@
                                         </div>
                                     </td>
                                     <td class="small">{{ $emp->poste ?: '-' }}</td>
-                                    <td class="text-end px-4 small text-muted">{{ $emp->created_at->format('d/m/Y') }}</td>
+                                    <td class="text-end px-4 small text-muted">{{ $emp->created_at?->format('d/m/Y') ?? '-' }}</td>
                                 </tr>
                             @empty
                                 <tr>

@@ -75,7 +75,7 @@
                     <th data-field="type_service" data-sortable="true" data-formatter="typeServiceFormatter">Type</th>
                     <th data-field="site.libelle" data-sortable="true">Site</th>
                     <th data-field="direction.libelle" data-sortable="true">Direction</th>
-                    <th data-field="chef_service.name" data-sortable="true">Chef Service</th>
+                    <th data-field="chef_service.full_name" data-sortable="true">Chef Service</th>
                     <th data-field="actif" data-sortable="true" data-formatter="statutFormatter">Statut</th>
                 </tr>
             </thead>
@@ -93,6 +93,7 @@
 <script>
     window.serviceRoutes = {
         directionsBySite: "{{ route('organisation.services.directions-by-site', ['siteId' => ':siteId']) }}",
+        chefsService: "{{ route('organisation.services.chefs-service') }}",
         data: "{{ route('organisation.services.data') }}"
     };
 

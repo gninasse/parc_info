@@ -3,15 +3,18 @@
 namespace Modules\Core\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Spatie\Permission\Traits\HasRoles;
 use Modules\Core\Traits\HasModulePermissions;
 use Modules\Core\Traits\LogsActivityWithModule;
+use Modules\Grh\Models\Employe;
 use Spatie\Activitylog\Traits\CausesActivity;
+use Spatie\Permission\Traits\HasRoles;
+
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasRoles, HasModulePermissions, CausesActivity, LogsActivityWithModule {
+    use CausesActivity, HasFactory, HasModulePermissions, HasRoles, LogsActivityWithModule, Notifiable {
         tapActivity as tapActivityLogsActivityWithModule;
     }
 
@@ -26,6 +29,7 @@ class User extends Authenticatable
         'password',
         'is_active',
         'avatar',
+        'dossier_employe_id',
     ];
 
     protected $hidden = [
@@ -34,19 +38,19 @@ class User extends Authenticatable
     ];
 
     // activity fields
-     protected static $activityModule = 'core';
+    protected static $activityModule = 'core';
 
     protected static $recordEvents = ['created', 'updated', 'deleted'];
 
     // Ne pas logger les mots de passe
     protected static $logAttributes = [
-        'name', 'email', 'email_verified_at'
+        'name', 'email', 'email_verified_at',
     ];
 
     protected static $logOnlyDirty = true;
 
     protected static $logAttributesToIgnore = [
-        'password', 'remember_token'
+        'password', 'remember_token',
     ];
 
     protected function casts(): array
@@ -68,15 +72,15 @@ class User extends Authenticatable
     public function getAvatarUrlAttribute(): string
     {
         if ($this->avatar && \Illuminate\Support\Facades\Storage::exists($this->avatar)) {
-             return \Illuminate\Support\Facades\Storage::url($this->avatar);
+            return \Illuminate\Support\Facades\Storage::url($this->avatar);
         }
 
-        return 'https://ui-avatars.com/api/?name=' . urlencode($this->full_name) . '&color=7F9CF5&background=EBF4FF';
+        return 'https://ui-avatars.com/api/?name='.urlencode($this->full_name).'&color=7F9CF5&background=EBF4FF';
     }
 
     // activity functions
 
-     /**
+    /**
      * Logger les connexions
      */
     public function logLogin()
@@ -87,7 +91,7 @@ class User extends Authenticatable
                 'ip' => request()->ip(),
                 'user_agent' => request()->userAgent(),
             ])
-            ->tap(function($activity) {
+            ->tap(function ($activity) {
                 $activity->module = 'core';
                 $activity->ip_address = request()->ip();
                 $activity->user_agent = request()->userAgent();
@@ -102,13 +106,14 @@ class User extends Authenticatable
     {
         activity('auth')
             ->causedBy($this)
-            ->tap(function($activity) {
+            ->tap(function ($activity) {
                 $activity->module = 'core';
                 $activity->ip_address = request()->ip();
                 $activity->user_agent = request()->userAgent();
             })
             ->log('logout');
     }
+
     public function logPermissionToggle(string $permission, string $action = 'given')
     {
         activity('permissions')
@@ -118,15 +123,16 @@ class User extends Authenticatable
                 'permission' => $permission,
                 'action' => $action,
             ])
-            ->tap(function($activity) use ($action) {
+            ->tap(function ($activity) use ($action) {
                 $activity->module = 'core';
-                $activity->description = 'permission_' . $action;
+                $activity->description = 'permission_'.$action;
                 $activity->ip_address = request()->ip();
                 $activity->user_agent = request()->userAgent();
             })
             ->log("permission_{$action}");
     }
-      public function logRoleToggle(string $role, string $action = 'assigned')
+
+    public function logRoleToggle(string $role, string $action = 'assigned')
     {
         activity('roles')
             ->performedOn($this)
@@ -135,15 +141,15 @@ class User extends Authenticatable
                 'role' => $role,
                 'action' => $action,
             ])
-            ->tap(function($activity) use ($action) {
+            ->tap(function ($activity) use ($action) {
                 $activity->module = 'core';
-                $activity->description = 'role_' . $action;
+                $activity->description = 'role_'.$action;
                 $activity->ip_address = request()->ip();
                 $activity->user_agent = request()->userAgent();
             })
-            ->log("role_{$action}");    
+            ->log("role_{$action}");
     }
-    
+
     public function tapActivity($activity, string $eventName)
     {
         // $activity->module = static::$activityModule;
@@ -161,8 +167,8 @@ class User extends Authenticatable
         // $activity->causer_roles = auth()->user()->roles()->pluck('name')->toArray();
 
         $this->tapActivityLogsActivityWithModule($activity, $eventName);
-        
-        // Ajouter des informations contextuelles 
+
+        // Ajouter des informations contextuelles
         if ($eventName === 'updated' && $this->wasChanged('is_active')) {
             $activity->description = $this->is_active ? 'user_activated' : 'user_deactivated';
         }
@@ -171,4 +177,11 @@ class User extends Authenticatable
         }
     }
 
+    /**
+     * Le dossier administratif GRH lié à cet utilisateur.
+     */
+    public function dossierEmploye(): BelongsTo
+    {
+        return $this->belongsTo(Employe::class, 'dossier_employe_id');
+    }
 }

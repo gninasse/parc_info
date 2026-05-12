@@ -11,9 +11,9 @@ export class ServiceForm {
     }
 
     init() {
+        this.initCascading();
         this.initValidation();
         this.initSubmission();
-        this.initCascading();
     }
 
     initValidation() {
@@ -33,25 +33,29 @@ export class ServiceForm {
     }
 
     initCascading() {
-        $('#c_site_id').on('change', () => {
-            this.loadDirectionsForModal();
+        $('#c_site_id').on('change', (e) => {
+            this.loadDirectionsForModal($(e.target).val());
         });
     }
 
-    loadDirectionsForModal(selectedDirectionId = null) {
-        const siteId = $('#c_site_id').val();
+    loadDirectionsForModal(siteId, selectedDirectionId = null) {
+        const $direction = $('#c_direction_id');
+        
         if (!siteId) {
-            $('#c_direction_id').html('<option value="">Sélectionner d\'abord un site</option>').prop('disabled', true);
+            $direction.html('<option value="">Sélectionner d\'abord un site</option>').prop('disabled', true);
             return;
         }
+
+        $direction.prop('disabled', true).html('<option value="">Chargement...</option>');
+        
         const url = window.serviceRoutes.directionsBySite.replace(':siteId', siteId);
         $.get(url, (data) => {
             let options = '<option value="">Sélectionner une direction</option>';
             data.forEach((dir) => {
-                let selected = selectedDirectionId == dir.id ? 'selected' : '';
+                const selected = selectedDirectionId == dir.id ? 'selected' : '';
                 options += `<option value="${dir.id}" ${selected}>${dir.libelle}</option>`;
             });
-            $('#c_direction_id').html(options).prop('disabled', false);
+            $direction.html(options).prop('disabled', false);
         });
     }
 
@@ -59,6 +63,8 @@ export class ServiceForm {
         this.resetForm();
         $('#createServiceModalLabel').text('Nouveau Service');
         $('#service_id').val('');
+        $('#chef_service_id').empty();
+        this.initSelect2();
         this.$modal.modal('show');
     }
 
@@ -69,9 +75,16 @@ export class ServiceForm {
         $('#code').val(data.code);
         $('#libelle').val(data.libelle);
         $('#type_service').val(data.type_service);
-        $('#chef_service_id').val(data.chef_service_id);
+        
+        $('#chef_service_id').empty();
+        if (data.chef_service) {
+            const opt = new Option(`${data.chef_service.full_name} (${data.chef_service.matricule})`, data.chef_service.id, true, true);
+            $('#chef_service_id').append(opt);
+        }
+        this.initSelect2();
 
-        this.loadDirectionsForModal(data.direction_id);
+        $('#c_site_id').val(data.site_id);
+        this.loadDirectionsForModal(data.site_id, data.direction_id);
         this.$modal.modal('show');
     }
 
@@ -151,13 +164,42 @@ export class ServiceForm {
         return isValid;
     }
 
+    initSelect2() {
+        if (!$.fn.select2) return;
+        
+        if ($.fn.select2 && $('#chef_service_id').data('select2')) {
+            $('#chef_service_id').select2('destroy');
+        }
+
+        $('#chef_service_id').select2({
+            dropdownParent: this.$modal,
+            placeholder: 'Rechercher un chef de service...',
+            allowClear: true,
+            theme: 'bootstrap-5',
+            ajax: {
+                url: window.serviceRoutes.chefsService,
+                dataType: 'json',
+                delay: 250,
+                data: (params) => ({ q: params.term }),
+                processResults: (data) => ({ results: data }),
+                cache: true,
+            },
+        });
+    }
+
     displayErrors(errors) {
         this.clearErrors();
         $.each(errors, (field, messages) => {
             const $field = $(`#${field}`);
             if ($field.length) {
                 $field.addClass('is-invalid');
-                $field.after(`<div class="invalid-feedback d-block">${messages[0]}</div>`);
+                
+                // Pour Select2, insérer après le container
+                if ($field.next('.select2-container').length) {
+                    $field.next('.select2-container').after(`<div class="invalid-feedback d-block">${messages[0]}</div>`);
+                } else {
+                    $field.after(`<div class="invalid-feedback d-block">${messages[0]}</div>`);
+                }
             }
         });
     }

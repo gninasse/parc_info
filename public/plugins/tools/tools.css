@@ -2270,3 +2270,16 @@ transform: rotate(-180deg);
 .fa-1.3x {
     font-size: 1.3em;
 }
+/* ===== Modal Header - Blue theme ===== */
+.modal-header {
+    background-color: #007bff;
+    color: #ffffff;
+}
+
+.modal-header .modal-title {
+    color: #ffffff;
+}
+
+.modal-header .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}

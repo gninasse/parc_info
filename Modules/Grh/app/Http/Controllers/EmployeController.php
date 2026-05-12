@@ -28,6 +28,20 @@ class EmployeController extends Controller
     /**
      * Get data for Bootstrap Table.
      */
+    public function getServicesByDirection($directionId)
+    {
+        $services = Service::where('direction_id', $directionId)->where('actif', true)->get();
+
+        return response()->json($services);
+    }
+
+    public function getUnitesByService($serviceId)
+    {
+        $unites = Unite::where('service_id', $serviceId)->where('actif', true)->get();
+
+        return response()->json($unites);
+    }
+
     public function getData(Request $request)
     {
         $query = Employe::with(['direction', 'service', 'unite']);
@@ -85,6 +99,41 @@ class EmployeController extends Controller
         ]);
     }
 
+    public function getApiData(Request $request)
+    {
+        $query = Employe::with(['direction', 'service', 'unite']);
+
+        if ($request->filled('direction_id')) {
+            $query->where('direction_id', $request->direction_id);
+        }
+        if ($request->filled('service_id')) {
+            $query->where('service_id', $request->service_id);
+        }
+        if ($request->filled('statut')) {
+            $query->where('est_actif', $request->statut === 'actif');
+        }
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function($q) use ($s) {
+                $q->where('matricule', 'ilike', "%{$s}%")
+                  ->orWhere('nom', 'ilike', "%{$s}%")
+                  ->orWhere('prenom', 'ilike', "%{$s}%");
+            });
+        }
+
+        return response()->json($query->get()->map(function($emp) {
+            return [
+                'id' => $emp->id,
+                'matricule' => $emp->matricule,
+                'nom_complet' => $emp->full_name,
+                'poste' => $emp->poste,
+                'niveau' => ucfirst($emp->niveau_rattachement),
+                'rattachement' => $emp->organisation,
+                'statut' => $emp->est_actif ? 'actif' : 'inactif'
+            ];
+        }));
+    }
+
     /**
      * Store a newly created resource in storage.
      */
@@ -140,6 +189,15 @@ class EmployeController extends Controller
         try {
             $employe = Employe::findOrFail($id);
             $employe->update($request->validated());
+
+            if ($request->has('contacts')) {
+                $employe->contacts()->delete();
+                foreach ($request->contacts as $contactData) {
+                    if (! empty($contactData['valeur'])) {
+                        $employe->contacts()->create($contactData);
+                    }
+                }
+            }
 
             return response()->json([
                 'success' => true,

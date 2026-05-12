@@ -63,4 +63,71 @@ $(function () {
         $('#btn-edit-unite').prop('disabled', !isSingleSelection);
         $('#btn-delete-unite').prop('disabled', !isSingleSelection);
     });
+
+    // Filters logic
+    $('#filter_site_id').on('change', function () {
+        const siteId = $(this).val();
+        loadDirections(siteId, '#filter_direction_id');
+        refreshTable();
+    });
+
+    $('#filter_direction_id').on('change', function () {
+        const directionId = $(this).val();
+        loadServices(directionId, '#filter_service_id');
+        refreshTable();
+    });
+
+    $('#filter_service_id').on('change', function () {
+        refreshTable();
+    });
+
+    function refreshTable() {
+        const siteId = $('#filter_site_id').val();
+        const directionId = $('#filter_direction_id').val();
+        const serviceId = $('#filter_service_id').val();
+        
+        let url = window.uniteRoutes.data;
+        const params = [];
+        if (siteId) params.push(`site_id=${siteId}`);
+        if (directionId) params.push(`direction_id=${directionId}`);
+        if (serviceId) params.push(`service_id=${serviceId}`);
+        
+        if (params.length > 0) url += '?' + params.join('&');
+        $table.bootstrapTable('refresh', { url: url });
+    }
+
+    function loadDirections(siteId, targetSelect) {
+        const $target = $(targetSelect);
+        if (!siteId) {
+            $target.html('<option value="">Toutes les directions</option>').prop('disabled', true);
+            $('#filter_service_id').html('<option value="">Tous les services</option>').prop('disabled', true);
+            return;
+        }
+
+        const url = window.uniteRoutes.directionsBySite.replace(':siteId', siteId);
+        $.get(url, function (data) {
+            let html = '<option value="">Toutes les directions</option>';
+            data.forEach(item => {
+                html += `<option value="${item.id}">${item.libelle}</option>`;
+            });
+            $target.html(html).prop('disabled', false);
+        });
+    }
+
+    function loadServices(directionId, targetSelect) {
+        const $target = $(targetSelect);
+        if (!directionId) {
+            $target.html('<option value="">Tous les services</option>').prop('disabled', true);
+            return;
+        }
+
+        const url = window.uniteRoutes.servicesByDirection.replace(':directionId', directionId);
+        $.get(url, function (data) {
+            let html = '<option value="">Tous les services</option>';
+            data.forEach(item => {
+                html += `<option value="${item.id}">${item.libelle}</option>`;
+            });
+            $target.html(html).prop('disabled', false);
+        });
+    }
 });

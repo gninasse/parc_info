@@ -3,10 +3,10 @@
 namespace Modules\Organisation\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Modules\Grh\Models\Employe;
 use Modules\Organisation\Models\Direction;
 use Modules\Organisation\Models\Service;
 use Modules\Organisation\Models\Site;
@@ -80,7 +80,7 @@ class UniteController extends Controller implements HasMiddleware
             'service_id' => 'required|exists:organisation_services,id',
             'code' => 'required|unique:organisation_unites,code',
             'libelle' => 'required',
-            'major_id' => 'nullable|exists:users,id',
+            'major_id' => 'nullable|exists:grh_dossiers_employes,id',
         ]);
 
         try {
@@ -96,7 +96,7 @@ class UniteController extends Controller implements HasMiddleware
     public function show($id)
     {
         try {
-            $unite = Unite::with('service.direction.site')->findOrFail($id);
+            $unite = Unite::with(['service.direction.site', 'major'])->findOrFail($id);
 
             return response()->json(['success' => true, 'data' => $unite]);
         } catch (\Exception $e) {
@@ -110,7 +110,7 @@ class UniteController extends Controller implements HasMiddleware
             'service_id' => 'required|exists:organisation_services,id',
             'code' => 'required|unique:organisation_unites,code,'.$id,
             'libelle' => 'required',
-            'major_id' => 'nullable|exists:users,id',
+            'major_id' => 'nullable|exists:grh_dossiers_employes,id',
         ]);
 
         try {
@@ -139,13 +139,28 @@ class UniteController extends Controller implements HasMiddleware
         }
     }
 
-    // LISTE DES MAJORS
-    public function getMajors()
+    // LISTE DES MAJORS (Select2)
+    public function getMajors(Request $request)
     {
-        // Retourne tous les utilisateurs actifs pour l'instant
-        $users = User::where('is_active', true)->get();
+        $search = $request->get('q');
+        $query = Employe::where('est_actif', true);
 
-        return response()->json($users);
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nom', 'like', "%{$search}%")
+                    ->orWhere('prenom', 'like', "%{$search}%")
+                    ->orWhere('matricule', 'like', "%{$search}%");
+            });
+        }
+
+        $employes = $query->limit(20)->get();
+
+        return response()->json($employes->map(function ($emp) {
+            return [
+                'id' => $emp->id,
+                'text' => $emp->full_name." ({$emp->matricule})",
+            ];
+        }));
     }
 
     // Helper cascades

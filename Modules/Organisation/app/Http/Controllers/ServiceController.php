@@ -3,10 +3,10 @@
 namespace Modules\Organisation\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Modules\Grh\Models\Employe;
 use Modules\Organisation\Models\Direction;
 use Modules\Organisation\Models\Service;
 use Modules\Organisation\Models\Site;
@@ -27,9 +27,8 @@ class ServiceController extends Controller implements HasMiddleware
     {
         $sites = Site::actif()->get();
         // Pas de directions chargées initialement, chargées par AJAX selon le site
-        $users = User::where('is_active', true)->get();
 
-        return view('organisation::organisation.services.index', compact('sites', 'users'));
+        return view('organisation::organisation.services.index', compact('sites'));
     }
 
     public function getData(Request $request)
@@ -75,7 +74,7 @@ class ServiceController extends Controller implements HasMiddleware
             'code' => 'required|unique:organisation_services,code',
             'libelle' => 'required',
             'type_service' => 'required|in:administratif,clinique,medico_technique',
-            'chef_service_id' => 'nullable|exists:users,id',
+            'chef_service_id' => 'nullable|exists:grh_dossiers_employes,id',
         ]);
 
         try {
@@ -91,7 +90,7 @@ class ServiceController extends Controller implements HasMiddleware
     public function show($id)
     {
         try {
-            $service = Service::with('direction')->findOrFail($id);
+            $service = Service::with(['direction', 'chefService'])->findOrFail($id);
 
             return response()->json(['success' => true, 'data' => $service]);
         } catch (\Exception $e) {
@@ -106,7 +105,7 @@ class ServiceController extends Controller implements HasMiddleware
             'code' => 'required|unique:organisation_services,code,'.$id,
             'libelle' => 'required',
             'type_service' => 'required|in:administratif,clinique,medico_technique',
-            'chef_service_id' => 'nullable|exists:users,id',
+            'chef_service_id' => 'nullable|exists:grh_dossiers_employes,id',
         ]);
 
         try {
@@ -166,5 +165,29 @@ class ServiceController extends Controller implements HasMiddleware
                 'message' => 'Erreur lors du changement de statut',
             ], 500);
         }
+    }
+
+    // LISTE DES CHEFS DE SERVICE (Select2)
+    public function getChefsService(Request $request)
+    {
+        $search = $request->get('q');
+        $query = Employe::where('est_actif', true);
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nom', 'like', "%{$search}%")
+                    ->orWhere('prenom', 'like', "%{$search}%")
+                    ->orWhere('matricule', 'like', "%{$search}%");
+            });
+        }
+
+        $employes = $query->limit(20)->get();
+
+        return response()->json($employes->map(function ($emp) {
+            return [
+                'id' => $emp->id,
+                'text' => $emp->full_name." ({$emp->matricule})",
+            ];
+        }));
     }
 }

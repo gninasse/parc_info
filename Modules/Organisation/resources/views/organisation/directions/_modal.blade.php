@@ -28,11 +28,8 @@
                     </div>
                     <div class="mb-3">
                         <label for="responsable_id" class="form-label">Responsable</label>
-                        <select class="form-select" id="responsable_id" name="responsable_id">
-                            <option value="">Sélectionner un responsable</option>
-                            @foreach($users as $user)
-                                <option value="{{ $user->id }}">{{ $user->name }}</option>
-                            @endforeach
+                        <select class="form-select select2" id="responsable_id" name="responsable_id">
+                            <option value="">Rechercher un responsable...</option>
                         </select>
                     </div>
                     <div class="mb-3">

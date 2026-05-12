@@ -44,8 +44,8 @@
                     </div>
                     <div class="mb-3">
                         <label for="major_id" class="form-label">Major (Infirmier Chef)</label>
-                        <select class="form-select" id="major_id" name="major_id">
-                            <option value="">Chargement...</option>
+                        <select class="form-select select2" id="major_id" name="major_id">
+                            <option value="">Rechercher un major...</option>
                         </select>
                     </div>
                 </div>

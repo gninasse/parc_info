@@ -22,9 +22,12 @@ class UpdateEmployeRequest extends FormRequest
             'date_embauche' => 'nullable|date',
             'poste' => 'nullable|string|max:255',
             'niveau_rattachement' => 'required|in:direction,service,unite',
-            'direction_id' => 'required_if:niveau_rattachement,direction|nullable|exists:organisation_directions,id',
-            'service_id' => 'required_if:niveau_rattachement,service|nullable|exists:organisation_services,id',
+            'direction_id' => 'required|exists:organisation_directions,id',
+            'service_id' => 'required_if:niveau_rattachement,service,unite|nullable|exists:organisation_services,id',
             'unite_id' => 'required_if:niveau_rattachement,unite|nullable|exists:organisation_unites,id',
+            'contacts' => 'nullable|array',
+            'contacts.*.type_contact' => 'required|string',
+            'contacts.*.valeur' => 'required|string',
         ];
     }
 

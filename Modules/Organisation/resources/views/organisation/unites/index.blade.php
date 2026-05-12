@@ -81,7 +81,7 @@
                     <th data-field="site.libelle" data-sortable="true">Site</th>
                     <th data-field="service.direction.libelle" data-sortable="true">Direction</th>
                     <th data-field="service.libelle" data-sortable="true">Service</th>
-                    <th data-field="major.name" data-sortable="true">Major</th>
+                    <th data-field="major.full_name" data-sortable="true">Major</th>
                     <th data-field="actif" data-sortable="true" data-formatter="statutFormatter">Statut</th>
                 </tr>
             </thead>
