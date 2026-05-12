@@ -57,6 +57,23 @@
                 </div>
             </div>
             <div class="col-auto d-flex gap-2">
+                <div class="dropdown">
+                    <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-arrow-repeat me-1"></i> Statut
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" data-statut="en_stock">En stock</a></li>
+                        <li><a class="dropdown-item" href="#" data-statut="en_service">En service</a></li>
+                        <li><a class="dropdown-item" href="#" data-statut="en_reparation">En réparation</a></li>
+                        <li><a class="dropdown-item" href="#" data-statut="perdu">Perdu</a></li>
+                        <li><a class="dropdown-item" href="#" data-statut="reforme">Réformé</a></li>
+                    </ul>
+                </div>
+                @if($equipement->affectationActive)
+                <button class="btn btn-warning btn-sm" id="btn-desaffecter">
+                    <i class="bi bi-x-circle me-1"></i> Désaffecter
+                </button>
+                @endif
                 <button class="btn btn-outline-secondary btn-sm" id="btn-nouvelle-affectation">
                     <i class="bi bi-person-plus me-1"></i> Affecter
                 </button>
@@ -187,12 +204,15 @@
                     </div>
                     <div class="col-md-4">
                         <label class="field-label">Type CPU</label>
-                        <select class="form-select field-input" name="cpu_type_id" disabled>
-                            <option value="">—</option>
-                            @foreach($typesCpu as $c)
-                            <option value="{{ $c->id }}" {{ $o?->cpu_type_id == $c->id ? 'selected':'' }}>{{ $c->libelle }}</option>
-                            @endforeach
-                        </select>
+                        <div class="input-group">
+                            <select class="form-select field-input" name="cpu_type_id" id="f_cpu_type_id" disabled>
+                                <option value="">—</option>
+                                @foreach($typesCpu as $c)
+                                <option value="{{ $c->id }}" {{ $o?->cpu_type_id == $c->id ? 'selected':'' }}>{{ $c->libelle }}</option>
+                                @endforeach
+                            </select>
+                            <button type="button" class="btn btn-outline-secondary d-none btn-add-ref" id="btn-add-f-cpu" title="Nouveau type CPU"><i class="bi bi-plus"></i></button>
+                        </div>
                     </div>
                     <div class="col-md-3">
                         <label class="field-label">RAM (Go)</label>
@@ -205,12 +225,15 @@
                     </div>
                     <div class="col-md-3">
                         <label class="field-label">Type RAM</label>
-                        <select class="form-select field-input" name="ram_type_id" disabled>
-                            <option value="">—</option>
-                            @foreach($typesRam as $r)
-                            <option value="{{ $r->id }}" {{ $o?->ram_type_id == $r->id ? 'selected':'' }}>{{ $r->libelle }}</option>
-                            @endforeach
-                        </select>
+                        <div class="input-group">
+                            <select class="form-select field-input" name="ram_type_id" id="f_ram_type_id" disabled>
+                                <option value="">—</option>
+                                @foreach($typesRam as $r)
+                                <option value="{{ $r->id }}" {{ $o?->ram_type_id == $r->id ? 'selected':'' }}>{{ $r->libelle }}</option>
+                                @endforeach
+                            </select>
+                            <button type="button" class="btn btn-outline-secondary d-none btn-add-ref" id="btn-add-f-ram" title="Nouveau type RAM"><i class="bi bi-plus"></i></button>
+                        </div>
                     </div>
                     <div class="col-md-3">
                         <label class="field-label">Stockage (Go)</label>
@@ -219,26 +242,37 @@
                     </div>
                     <div class="col-md-3">
                         <label class="field-label">Type Disque</label>
-                        <select class="form-select field-input" name="disque_type_id" disabled>
-                            <option value="">—</option>
-                            @foreach($typesDisque as $d)
-                            <option value="{{ $d->id }}" {{ $o?->disque_type_id == $d->id ? 'selected':'' }}>{{ $d->libelle }}</option>
-                            @endforeach
-                        </select>
+                        <div class="input-group">
+                            <select class="form-select field-input" name="disque_type_id" id="f_disque_type_id" disabled>
+                                <option value="">—</option>
+                                @foreach($typesDisque as $d)
+                                <option value="{{ $d->id }}" {{ $o?->disque_type_id == $d->id ? 'selected':'' }}>{{ $d->libelle }}</option>
+                                @endforeach
+                            </select>
+                            <button type="button" class="btn btn-outline-secondary d-none btn-add-ref" id="btn-add-f-disque" title="Nouveau type Disque"><i class="bi bi-plus"></i></button>
+                        </div>
                     </div>
                     <div class="col-md-6">
                         <label class="field-label">Système d'exploitation</label>
-                        <select class="form-select field-input" name="os_type_id" disabled>
-                            <option value="">—</option>
-                            @foreach($typesOs as $os)
-                            <option value="{{ $os->id }}" {{ $o?->os_type_id == $os->id ? 'selected':'' }}>{{ $os->libelle }}</option>
-                            @endforeach
-                        </select>
+                        <div class="input-group">
+                            <select class="form-select field-input" name="os_type_id" id="f_os_type_id" disabled>
+                                <option value="">—</option>
+                                @foreach($typesOs as $os)
+                                <option value="{{ $os->id }}" {{ $o?->os_type_id == $os->id ? 'selected':'' }}>{{ $os->libelle }}</option>
+                                @endforeach
+                            </select>
+                            <button type="button" class="btn btn-outline-secondary d-none btn-add-ref" id="btn-add-f-os" title="Nouveau système d'exploitation"><i class="bi bi-plus"></i></button>
+                        </div>
                     </div>
                     <div class="col-md-6">
                         <label class="field-label">Nom d'hôte</label>
                         <input type="text" class="form-control field-input" name="nom_hote"
                                value="{{ $o?->nom_hote }}" placeholder="—" disabled>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="field-label">Compte admin local</label>
+                        <input type="text" class="form-control field-input" name="compte_admin_local"
+                               value="{{ $o?->compte_admin_local }}" placeholder="—" disabled>
                     </div>
                     <div class="col-md-4">
                         <label class="field-label">MAC Ethernet</label>
@@ -400,7 +434,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($equipement->affectations->sortByDesc('date_debut') as $a)
+                        @foreach($equipement->affectations->sortByDesc('id') as $a)
                         <tr>
                             <td class="px-4">
                                 <span class="badge bg-light text-dark border small">{{ $a->type_affectation ?? '—' }}</span>
@@ -519,96 +553,98 @@
                         @endforeach
                     </div>
 
-                    {{-- Détail employé --}}
-                    <div id="ma-employe" class="aff-detail d-none">
-                        <div class="row g-3">
-                            <div class="col-md-5">
-                                <label class="field-label">Matricule</label>
-                                <div class="input-group input-group-sm">
-                                    <input type="text" class="form-control field-input" id="ma-employe-search" placeholder="Rechercher...">
-                                    <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                    {{-- Carte récapitulative Employé --}}
+                    <div id="aff-employe-summary" class="aff-summary d-none">
+                        <div class="card border-primary">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="mb-0"><i class="bi bi-person-badge text-primary me-2"></i>Employé sélectionné</h6>
                                 </div>
-                                <input type="hidden" name="dossier_employe_id" id="ma_employe_id">
-                            </div>
-                            <div class="col-md-7">
-                                <label class="field-label">Nom & Prénoms</label>
-                                <input type="text" class="form-control field-input" id="ma-employe-nom" readonly placeholder="—">
+                                <div class="row g-2 mt-2">
+                                    <div class="col-md-6">
+                                        <small class="text-muted d-block">Nom</small>
+                                        <strong id="emp-summary-nom">—</strong>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <small class="text-muted d-block">Matricule</small>
+                                        <strong id="emp-summary-matricule">—</strong>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <small class="text-muted d-block">Poste</small>
+                                        <span id="emp-summary-poste">—</span>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <small class="text-muted d-block">Rattachement</small>
+                                        <span id="emp-summary-rattachement">—</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
+                        <input type="hidden" name="dossier_employe_id" id="dossier_employe_id">
                     </div>
 
-                    {{-- Détail poste --}}
-                    <div id="ma-poste" class="aff-detail d-none">
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <label class="field-label">Recherche du poste</label>
-                                <div class="input-group input-group-sm">
-                                    <input type="text" class="form-control field-input" id="ma-poste-search" placeholder="Code ou libellé...">
-                                    <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                    {{-- Carte récapitulative Poste --}}
+                    <div id="aff-poste-summary" class="aff-summary d-none">
+                        <div class="card border-primary">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="mb-0"><i class="bi bi-pc-display text-primary me-2"></i>Poste sélectionné</h6>
                                 </div>
-                                <input type="hidden" name="poste_travail_id" id="ma_poste_id">
-                            </div>
-                            <div id="ma-poste-detail" class="col-12 d-none">
-                                <div class="row g-2 p-2 bg-light rounded-3">
-                                    <div class="col-3"><div class="text-muted" style="font-size:.7rem">CODE</div><div class="fw-bold small text-primary" id="ma-poste-code">—</div></div>
-                                    <div class="col-3"><div class="text-muted" style="font-size:.7rem">LIBELLÉ</div><div class="small" id="ma-poste-libelle">—</div></div>
-                                    <div class="col-3"><div class="text-muted" style="font-size:.7rem">SERVICE</div><div class="small" id="ma-poste-service">—</div></div>
-                                    <div class="col-3"><div class="text-muted" style="font-size:.7rem">LOCAL</div><div class="small" id="ma-poste-local">—</div></div>
+                                <div class="row g-2 mt-2">
+                                    <div class="col-md-3">
+                                        <small class="text-muted d-block">Code</small>
+                                        <strong id="poste-summary-code">—</strong>
+                                    </div>
+                                    <div class="col-md-5">
+                                        <small class="text-muted d-block">Libellé</small>
+                                        <strong id="poste-summary-libelle">—</strong>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <small class="text-muted d-block">Emplacement</small>
+                                        <span id="poste-summary-emplacement">—</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+                        <input type="hidden" name="poste_travail_id" id="poste_travail_id">
                     </div>
 
-                    {{-- Détail local --}}
-                    <div id="ma-local" class="aff-detail d-none">
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <label class="field-label">Sélectionner un local</label>
-                                <div class="input-group input-group-sm">
-                                    <input type="text" class="form-control field-input" id="ma-local-search" placeholder="Rechercher...">
-                                    <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                    {{-- Carte récapitulative Local --}}
+                    <div id="aff-local-summary" class="aff-summary d-none">
+                        <div class="card border-primary">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="mb-0"><i class="bi bi-door-open text-primary me-2"></i>Local sélectionné</h6>
                                 </div>
-                                <input type="hidden" name="local_id" id="ma_local_id">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="field-label">Niveau rattachement</label>
-                                <select class="form-select field-input" name="niveau_rattachement">
-                                    <option value="">—</option>
-                                    <option value="DIRECTION">Direction</option>
-                                    <option value="SERVICE">Service</option>
-                                    <option value="UNITE">Unité</option>
-                                </select>
-                            </div>
-                            <div class="col-md-8">
-                                <label class="field-label">Structure</label>
-                                <select class="form-select field-input" name="direction_id_aff">
-                                    <option value="">—</option>
-                                    @foreach($directions as $d)
-                                    <option value="{{ $d->id }}">{{ $d->libelle }}</option>
-                                    @endforeach
-                                </select>
+                                <div class="row g-2 mt-2">
+                                    <div class="col-md-2">
+                                        <small class="text-muted d-block">Code</small>
+                                        <strong id="local-summary-code">—</strong>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <small class="text-muted d-block">Libellé</small>
+                                        <strong id="local-summary-libelle">—</strong>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <small class="text-muted d-block">Type</small>
+                                        <span id="local-summary-type">—</span>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <small class="text-muted d-block">Étage</small>
+                                        <span id="local-summary-etage">—</span>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <small class="text-muted d-block">Bâtiment</small>
+                                        <span id="local-summary-batiment">—</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
+                        <input type="hidden" name="local_id" id="local_id">
                     </div>
 
                     {{-- Dates communes --}}
-                    <div class="row g-3 mt-1">
-                        <div class="col-md-4">
-                            <label class="field-label">Type d'affectation</label>
-                            <select class="form-select field-input" name="type_affectation">
-                                <option value="PERMANENTE">Permanente</option>
-                                <option value="TEMPORAIRE">Temporaire</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="field-label">Date de début <span class="text-danger">*</span></label>
-                            <input type="date" class="form-control field-input" name="date_debut" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="field-label">Date de fin (Optionnel)</label>
-                            <input type="date" class="form-control field-input" name="date_fin">
-                        </div>
-                    </div>
+                    {{-- Les champs type_affectation, date_debut et date_fin ont été retirés selon la demande. --}}
                 </div>
                 <div class="modal-footer border-0 px-4 pb-4 pt-0">
                     <button type="button" class="btn btn-link text-dark text-decoration-none" data-bs-dismiss="modal">Annuler</button>
@@ -621,6 +657,7 @@
     </div>
 </div>
 
+@include('parcinfo::informatique.ordinateurs._selection_modals')
 @endsection
 
 @push('css')
@@ -654,6 +691,38 @@ const equipementId = {{ $equipement->id }};
 
 $(function () {
 
+    function quickAdd(title, placeholder, routeName, targetSelectId) {
+        Swal.fire({
+            title: title,
+            input: 'text',
+            inputPlaceholder: placeholder,
+            showCancelButton: true,
+            confirmButtonText: 'Ajouter',
+            cancelButtonText: 'Annuler',
+            showLoaderOnConfirm: true,
+            preConfirm: (val) => {
+                if (!val) return Swal.showValidationMessage('Veuillez saisir une valeur');
+                return $.post(route(routeName), { libelle: val, _token: '{{ csrf_token() }}' })
+                    .then(res => res.data)
+                    .catch(err => {
+                        Swal.showValidationMessage(err.responseJSON?.message || 'Erreur serveur');
+                    });
+            },
+            allowOutsideClick: () => !Swal.isLoading()
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const data = result.value;
+                $(`#${targetSelectId}`).append(new Option(data.libelle, data.id, true, true));
+                Swal.fire({ icon: 'success', title: 'Ajouté !', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+            }
+        });
+    }
+
+    $('#btn-add-f-ram').on('click', () => quickAdd('Nouveau type de RAM', 'Ex: DDR4, DDR5...', 'parc-info.ordinateurs-fixes.store-type-ram', 'f_ram_type_id'));
+    $('#btn-add-f-os').on('click', () => quickAdd("Nouveau système d'exploitation", 'Ex: Windows 11 Pro...', 'parc-info.ordinateurs-fixes.store-type-os', 'f_os_type_id'));
+    $('#btn-add-f-disque').on('click', () => quickAdd('Nouveau type de disque', 'Ex: SSD NVMe...', 'parc-info.ordinateurs-fixes.store-type-disque', 'f_disque_type_id'));
+    $('#btn-add-f-cpu').on('click', () => quickAdd('Nouveau type de CPU', 'Ex: Intel Core i7...', 'parc-info.ordinateurs-fixes.store-type-cpu', 'f_cpu_type_id'));
+
     // ── Mode édition ──────────────────────────────────────────────────────────
     let editMode = false;
 
@@ -663,6 +732,7 @@ $(function () {
         $('#pane-fiche input[type="checkbox"]').prop('disabled', !on);
         $('#pane-fiche input[type="radio"]').prop('disabled', !on);
         $('#fiche-actions').toggleClass('d-none', !on);
+        $('.btn-add-ref').toggleClass('d-none', !on);
         $('#btn-edit-toggle').toggleClass('btn-primary', !on).toggleClass('btn-warning', on)
             .html(on ? '<i class="bi bi-x me-1"></i> Annuler' : '<i class="bi bi-pencil me-1"></i> Modifier');
     }
@@ -701,93 +771,173 @@ $(function () {
     function openAffModal() { $('#affectationModal').modal('show'); }
     $('#btn-nouvelle-affectation, #btn-nouvelle-affectation-2').on('click', openAffModal);
 
-    $(document).on('click', '.aff-type-card', function () {
-        $('.aff-type-card').removeClass('selected');
-        $(this).addClass('selected').find('input[type="radio"]').prop('checked', true);
-        const val = $(this).data('value');
-        $('.aff-detail').addClass('d-none');
-        $(`#ma-${val.toLowerCase()}`).removeClass('d-none');
+    // Écoute des événements de sélection (depuis selection_modals.js)
+    // Ces événements sont émis après confirmation dans les modales de sélection.
+    // Ici on écoute uniquement quand la modale affectationModal est ouverte.
+
+    $(document).on('employe:selected', function (e, emp) {
+        if (!$('#affectationModal').hasClass('show')) return;
+        // Marquer la carte
+        $('#affectationModal .aff-type-card').removeClass('selected');
+        $('#affectationModal .aff-type-card[data-value="EMPLOYE"]').addClass('selected')
+            .find('input[type="radio"]').prop('checked', true);
+        // Populer la carte récapitulative
+        $('#emp-summary-nom').text(emp.nom);
+        $('#emp-summary-matricule').text(emp.matricule);
+        $('#emp-summary-poste').text(emp.poste);
+        $('#emp-summary-rattachement').text(emp.rattachement);
+        // Champ hidden
+        $('#affectationModal #dossier_employe_id').val(emp.id);
+        $('#affectationModal #poste_travail_id, #affectationModal #local_id').val('');
+        // Afficher summary, cacher les autres
+        $('#affectationModal .aff-summary').addClass('d-none');
+        $('#affectationModal #aff-employe-summary').removeClass('d-none');
     });
 
-    // Recherche employé
-    let empT;
-    $('#ma-employe-search').on('input', function () {
-        clearTimeout(empT);
-        const q = $(this).val();
-        if (q.length < 2) return;
-        empT = setTimeout(() => {
-            $.get(route('parc-info.ordinateurs-fixes.search-employes'), { q }, (data) => {
-                if (data.length === 1) {
-                    $('#ma_employe_id').val(data[0].id);
-                    $('#ma-employe-search').val(data[0].matricule);
-                    $('#ma-employe-nom').val(`${data[0].nom} ${data[0].prenom}`);
-                }
-            });
-        }, 300);
+    $(document).on('poste:selected', function (e, poste) {
+        if (!$('#affectationModal').hasClass('show')) return;
+        $('#affectationModal .aff-type-card').removeClass('selected');
+        $('#affectationModal .aff-type-card[data-value="POSTE"]').addClass('selected')
+            .find('input[type="radio"]').prop('checked', true);
+        $('#poste-summary-code').text(poste.code);
+        $('#poste-summary-libelle').text(poste.libelle);
+        $('#poste-summary-emplacement').text(poste.emplacement);
+        $('#affectationModal #poste_travail_id').val(poste.id);
+        $('#affectationModal #dossier_employe_id, #affectationModal #local_id').val('');
+        $('#affectationModal .aff-summary').addClass('d-none');
+        $('#affectationModal #aff-poste-summary').removeClass('d-none');
     });
 
-    // Recherche poste
-    let posteT;
-    $('#ma-poste-search').on('input', function () {
-        clearTimeout(posteT);
-        const q = $(this).val();
-        if (q.length < 2) return;
-        posteT = setTimeout(() => {
-            $.get(route('parc-info.ordinateurs-fixes.search-postes'), { q }, (data) => {
-                if (data.length >= 1) {
-                    const p = data[0];
-                    $('#ma_poste_id').val(p.id);
-                    $('#ma-poste-search').val(p.code);
-                    $('#ma-poste-code').text(p.code);
-                    $('#ma-poste-libelle').text(p.libelle);
-                    $('#ma-poste-service').text(p.service ?? '—');
-                    $('#ma-poste-local').text(p.local ?? '—');
-                    $('#ma-poste-detail').removeClass('d-none');
-                }
-            });
-        }, 300);
-    });
-
-    // Recherche local
-    let localT;
-    $('#ma-local-search').on('input', function () {
-        clearTimeout(localT);
-        const q = $(this).val();
-        if (q.length < 2) return;
-        localT = setTimeout(() => {
-            $.get(route('parc-info.ordinateurs-fixes.search-locaux'), { q }, (data) => {
-                if (data.length >= 1) {
-                    $('#ma_local_id').val(data[0].id);
-                    $('#ma-local-search').val(data[0].text);
-                }
-            });
-        }, 300);
+    $(document).on('local:selected', function (e, local) {
+        if (!$('#affectationModal').hasClass('show')) return;
+        $('#affectationModal .aff-type-card').removeClass('selected');
+        $('#affectationModal .aff-type-card[data-value="LOCAL"]').addClass('selected')
+            .find('input[type="radio"]').prop('checked', true);
+        $('#local-summary-code').text(local.code);
+        $('#local-summary-libelle').text(local.libelle);
+        $('#local-summary-type').text(local.type);
+        $('#local-summary-etage').text(local.etage);
+        $('#local-summary-batiment').text(local.batiment);
+        $('#affectationModal #local_id').val(local.id);
+        $('#affectationModal #dossier_employe_id, #affectationModal #poste_travail_id').val('');
+        $('#affectationModal .aff-summary').addClass('d-none');
+        $('#affectationModal #aff-local-summary').removeClass('d-none');
     });
 
     // Soumission affectation
     $('#affectationForm').on('submit', function (e) {
         e.preventDefault();
-        const $btn = $('#btn-save-affectation').prop('disabled', true);
+
+        // Validation : une cible doit être sélectionnée
+        const hasCible = $('#affectationForm input[name="type_cible"]:checked').val();
+        if (!hasCible) {
+            Swal.fire({ icon: 'warning', title: 'Attention', text: 'Veuillez sélectionner un type d\'affectation.', timer: 2500, showConfirmButton: false });
+            return;
+        }
+
+        const $btn = $('#btn-save-affectation').prop('disabled', true)
+            .html('<i class="bi bi-hourglass-split me-1"></i> Enregistrement...');
         const data = $(this).serialize() + `&equipement_id=${equipementId}`;
         $.post(route('parc-info.ordinateurs-fixes.store-affectation'), data, (res) => {
             if (res.success) {
                 $('#affectationModal').modal('hide');
-                Swal.fire({ icon:'success', title:'Affectation enregistrée', timer:2000, showConfirmButton:false })
+                Swal.fire({ icon: 'success', title: 'Affectation enregistrée', timer: 2000, showConfirmButton: false })
                     .then(() => location.reload());
             }
         }).fail((xhr) => {
-            Swal.fire('Erreur', xhr.responseJSON?.message ?? 'Erreur serveur', 'error');
-        }).always(() => $btn.prop('disabled', false));
+            const msg = xhr.responseJSON?.errors
+                ? Object.values(xhr.responseJSON.errors).flat().join('\n')
+                : (xhr.responseJSON?.message ?? 'Erreur serveur');
+            Swal.fire('Erreur', msg, 'error');
+        }).always(() => $btn.prop('disabled', false).html('<i class="bi bi-check-circle me-1"></i> Enregistrer l\'affectation'));
     });
 
     // Reset modale à la fermeture
     $('#affectationModal').on('hidden.bs.modal', function () {
         $(this).find('form')[0].reset();
-        $('.aff-type-card').removeClass('selected');
-        $('.aff-detail').addClass('d-none');
-        $('#ma-poste-detail').addClass('d-none');
-        $('#ma-employe-nom').val('');
+        $('#affectationModal .aff-type-card').removeClass('selected');
+        $('#affectationModal .aff-summary').addClass('d-none');
+        $('#affectationModal #dossier_employe_id, #affectationModal #poste_travail_id, #affectationModal #local_id').val('');
+    });
+
+    // ── Changement de statut ──────────────────────────────────────────────────
+    $(document).on('click', '.dropdown-item[data-statut]', function(e) {
+        e.preventDefault();
+        const nouveauStatut = $(this).data('statut');
+        
+        Swal.fire({
+            title: 'Changer le statut',
+            input: 'textarea',
+            inputLabel: 'Motif du changement',
+            inputPlaceholder: 'Expliquez la raison du changement de statut...',
+            showCancelButton: true,
+            confirmButtonText: 'Confirmer',
+            cancelButtonText: 'Annuler',
+            preConfirm: (motif) => {
+                if (!motif) {
+                    Swal.showValidationMessage('Le motif est obligatoire');
+                }
+                return motif;
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: `/parc-info/informatique/ordinateurs-fixes/${equipementId}/statut`,
+                    method: 'PATCH',
+                    data: {
+                        statut: nouveauStatut,
+                        motif: result.value,
+                        _token: '{{ csrf_token() }}'
+                    },
+                    success: function(response) {
+                        Swal.fire('Succès', response.message, 'success').then(() => location.reload());
+                    },
+                    error: function(xhr) {
+                        Swal.fire('Erreur', xhr.responseJSON?.message || 'Une erreur est survenue', 'error');
+                    }
+                });
+            }
+        });
+    });
+
+    // ── Désaffectation ────────────────────────────────────────────────────────
+    $('#btn-desaffecter').on('click', function() {
+        Swal.fire({
+            title: 'Désaffecter l\'équipement',
+            text: 'L\'équipement sera mis en stock',
+            input: 'textarea',
+            inputLabel: 'Motif de la désaffectation',
+            inputPlaceholder: 'Expliquez la raison...',
+            showCancelButton: true,
+            confirmButtonText: 'Confirmer',
+            cancelButtonText: 'Annuler',
+            confirmButtonColor: '#dc3545',
+            preConfirm: (motif) => {
+                if (!motif) {
+                    Swal.showValidationMessage('Le motif est obligatoire');
+                }
+                return motif;
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: `/parc-info/informatique/ordinateurs-fixes/${equipementId}/desaffecter`,
+                    method: 'POST',
+                    data: {
+                        motif: result.value,
+                        _token: '{{ csrf_token() }}'
+                    },
+                    success: function(response) {
+                        Swal.fire('Succès', response.message, 'success').then(() => location.reload());
+                    },
+                    error: function(xhr) {
+                        Swal.fire('Erreur', xhr.responseJSON?.message || 'Une erreur est survenue', 'error');
+                    }
+                });
+            }
+        });
     });
 });
 </script>
+<script src="{{ asset('js/modules/parc-info/ordinateurs/selection_modals.js') }}?v={{ time() }}"></script>
 @endpush

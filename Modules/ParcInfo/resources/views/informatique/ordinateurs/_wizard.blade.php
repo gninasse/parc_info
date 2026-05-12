@@ -62,8 +62,8 @@
                         <h6 class="fw-bold mb-3"><i class="bi bi-info-circle text-primary me-2"></i>Informations de l'ordinateur</h6>
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label field-label">Code Inventaire <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control field-input" name="code_inventaire" id="code_inventaire" placeholder="Ex: CHU-PC-2024-001" required>
+                                <label class="form-label field-label">Code Inventaire</label>
+                                <input type="text" class="form-control field-input bg-light" name="code_inventaire" id="code_inventaire" placeholder="Généré automatiquement" readonly>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label field-label">Numéro de Série <span class="text-danger">*</span></label>
@@ -97,7 +97,19 @@
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label field-label">CPU</label>
+                                <label class="form-label field-label">Type CPU</label>
+                                <div class="input-group">
+                                    <select class="form-select field-input" name="cpu_type_id" id="cpu_type_id">
+                                        <option value="">Sélectionner...</option>
+                                        @foreach($typesCpu as $c)
+                                        <option value="{{ $c->id }}">{{ $c->libelle }}</option>
+                                        @endforeach
+                                    </select>
+                                    <button type="button" class="btn btn-outline-secondary" id="btn-add-cpu" title="Nouveau type de CPU"><i class="bi bi-plus"></i></button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label field-label">Modèle CPU</label>
                                 <input type="text" class="form-control field-input" name="processeur_model" id="processeur_model" placeholder="Ex: Intel Core i7-1185G7">
                             </div>
                             <div class="col-md-6">
@@ -161,6 +173,10 @@
                             <div class="col-md-6">
                                 <label class="form-label field-label">Nom d'hôte</label>
                                 <input type="text" class="form-control field-input" name="nom_hote" id="nom_hote" placeholder="Ex: PC-DRH-042">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label field-label">Compte admin local</label>
+                                <input type="text" class="form-control field-input" name="compte_admin_local" id="compte_admin_local" placeholder="Ex: admin, administrateur">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label field-label">État</label>

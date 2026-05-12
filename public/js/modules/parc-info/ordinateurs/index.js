@@ -108,9 +108,12 @@ const Wizard = (() => {
 
     function updateNav() {
         const last = totalSteps();
+        const statut = $('input[name="statut"]:checked').val();
+        
         $('#btn-prev').toggle(currentStep > 1);
         $('#btn-next').toggleClass('d-none', currentStep >= last);
         $('#btn-submit').toggleClass('d-none', currentStep < last);
+        $('#btn-save-reparation').toggleClass('d-none', !(currentStep === 2 && statut === 'en_reparation'));
     }
 
     function validateStep(n) {
@@ -121,7 +124,7 @@ const Wizard = (() => {
             }
         }
         if (n === 2) {
-            const fields = ['code_inventaire', 'numero_serie', 'modele', 'date_acquisition'];
+            const fields = ['numero_serie', 'modele'];
             let ok = true;
             fields.forEach(f => {
                 const $el = $(`#${f}`);
@@ -141,11 +144,11 @@ const Wizard = (() => {
         $('#btn-submit-label').text('Enregistrer l\'actif');
         $('.statut-card').removeClass('selected');
         $('.aff-type-card').removeClass('selected');
-        $('.aff-detail').addClass('d-none');
+        $('.aff-summary').addClass('d-none');
         $('#aff-skip-hint').removeClass('d-none');
-        $('#poste-detail').addClass('d-none');
-        $('#employe-nom').val('');
+        $('#dossier_employe_id, #poste_travail_id, #local_id').val('');
         $form().find('.is-invalid').removeClass('is-invalid');
+        $form().find('.invalid-feedback').remove();
         goTo(1);
     }
 
@@ -182,6 +185,7 @@ const Wizard = (() => {
             $('#stockage_capacite_go').val(o.stockage_capacite_go);
             $('#disque_type_id').val(o.disque_type_id);
             $('#nom_hote').val(o.nom_hote);
+            $('#compte_admin_local').val(o.compte_admin_local);
             $('#etat').val(e.etat);
             $(`#type_pc_${o.type_pc}`).prop('checked', true);
 
@@ -229,93 +233,88 @@ const Wizard = (() => {
             $('.statut-card').removeClass('selected');
             $(this).addClass('selected');
             $(this).find('input[type="radio"]').prop('checked', true);
-            // Recalcule nav et stepper selon en_stock ou non
             updateStepper();
             updateNav();
         });
 
-        // Affectation type cards
-        $(document).on('click', '.aff-type-card', function () {
-            $('.aff-type-card').removeClass('selected');
-            $(this).addClass('selected');
-            $(this).find('input[type="radio"]').prop('checked', true);
-            const val = $(this).data('value');
-            $('.aff-detail').addClass('d-none');
-            $(`#aff-${val.toLowerCase()}`).removeClass('d-none');
-            $('#aff-skip-hint').addClass('d-none');
+        // Bouton Enregistrer en réparation
+        $('#btn-save-reparation').on('click', function(e) {
+            e.preventDefault();
+            if (!validateStep(2)) return;
+            
+            const formData = $form().serialize() + '&skip_affectation=1';
+            submitForm(formData, false);
         });
 
-        // Navigation
+        // Navigation wizard
         $('#btn-next').on('click', () => {
             if (validateStep(currentStep)) goTo(currentStep + 1);
         });
-        $('#btn-prev').on('click', () => goTo(currentStep - 1));
-
-        // Recherche employé (debounce)
-        let empTimer;
-        $('#employe-search').on('input', function () {
-            clearTimeout(empTimer);
-            const q = $(this).val();
-            if (q.length < 2) return;
-            empTimer = setTimeout(() => {
-                $.get(route('parc-info.ordinateurs-fixes.search-employes'), { q }, (data) => {
-                    if (data.length === 1) {
-                        const e = data[0];
-                        $('#dossier_employe_id').val(e.id);
-                        $('#employe-search').val(e.matricule);
-                        $('#employe-nom').val(`${e.nom} ${e.prenom}`);
-                    } else if (data.length > 1) {
-                        // Afficher dropdown simple
-                        showSearchDropdown('#employe-search', data, (e) => {
-                            $('#dossier_employe_id').val(e.id);
-                            $('#employe-search').val(e.matricule);
-                            $('#employe-nom').val(`${e.nom} ${e.prenom}`);
-                        });
-                    }
-                });
-            }, 300);
+        $('#btn-prev').on('click', () => {
+            if (currentStep === 3) {
+                $('input[name="type_cible"]').prop('checked', false);
+                $('.aff-type-card').removeClass('selected');
+                $('.aff-summary').addClass('d-none');
+                $('#aff-skip-hint').removeClass('d-none');
+                $('#dossier_employe_id, #poste_travail_id, #local_id').val('');
+            }
+            goTo(currentStep - 1);
         });
 
-        // Recherche poste
-        let posteTimer;
-        $('#poste-search').on('input', function () {
-            clearTimeout(posteTimer);
-            const q = $(this).val();
-            if (q.length < 2) return;
-            posteTimer = setTimeout(() => {
-                $.get(route('parc-info.ordinateurs-fixes.search-postes'), { q }, (data) => {
-                    if (data.length === 1) {
-                        const p = data[0];
-                        $('#poste_travail_id').val(p.id);
-                        $('#poste-search').val(p.code);
-                        showPosteDetail(p);
-                    } else if (data.length > 1) {
-                        showSearchDropdown('#poste-search', data, (p) => {
-                            $('#poste_travail_id').val(p.id);
-                            $('#poste-search').val(p.code);
-                            showPosteDetail(p);
-                        });
-                    }
-                });
-            }, 300);
+        // ── Écoute des événements de sélection (depuis selection_modals.js) ─────
+        // Ces événements sont émis après confirmation dans les modales de sélection.
+        // Le wizard écoute uniquement quand il est actif (step-3 visible).
+
+        $(document).on('employe:selected', function (e, emp) {
+            if (!$('#step-3').is(':visible')) return; // Ignore si c'est la modale show
+            // Marquer la carte
+            $('.aff-type-card').removeClass('selected');
+            $('.aff-type-card[data-value="EMPLOYE"]').addClass('selected')
+                .find('input[type="radio"]').prop('checked', true);
+            // Mettre à jour summary
+            $('#emp-summary-nom').text(emp.nom);
+            $('#emp-summary-matricule').text(emp.matricule);
+            $('#emp-summary-poste').text(emp.poste);
+            $('#emp-summary-rattachement').text(emp.rattachement);
+            // Champ hidden
+            $('#dossier_employe_id').val(emp.id);
+            $('#poste_travail_id, #local_id').val('');
+            // Afficher summary, cacher les autres
+            $('.aff-summary').addClass('d-none');
+            $('#aff-employe-summary').removeClass('d-none');
+            $('#aff-skip-hint').addClass('d-none');
         });
 
-        // Recherche local
-        let localTimer;
-        $('#local-search').on('input', function () {
-            clearTimeout(localTimer);
-            const q = $(this).val();
-            if (q.length < 2) return;
-            localTimer = setTimeout(() => {
-                $.get(route('parc-info.ordinateurs-fixes.search-locaux'), { q }, (data) => {
-                    if (data.length >= 1) {
-                        showSearchDropdown('#local-search', data, (l) => {
-                            $('#local_id').val(l.id);
-                            $('#local-search').val(l.text);
-                        });
-                    }
-                });
-            }, 300);
+        $(document).on('poste:selected', function (e, poste) {
+            if (!$('#step-3').is(':visible')) return;
+            $('.aff-type-card').removeClass('selected');
+            $('.aff-type-card[data-value="POSTE"]').addClass('selected')
+                .find('input[type="radio"]').prop('checked', true);
+            $('#poste-summary-code').text(poste.code);
+            $('#poste-summary-libelle').text(poste.libelle);
+            $('#poste-summary-emplacement').text(poste.emplacement);
+            $('#poste_travail_id').val(poste.id);
+            $('#dossier_employe_id, #local_id').val('');
+            $('.aff-summary').addClass('d-none');
+            $('#aff-poste-summary').removeClass('d-none');
+            $('#aff-skip-hint').addClass('d-none');
+        });
+
+        $(document).on('local:selected', function (e, local) {
+            if (!$('#step-3').is(':visible')) return;
+            $('.aff-type-card').removeClass('selected');
+            $('.aff-type-card[data-value="LOCAL"]').addClass('selected')
+                .find('input[type="radio"]').prop('checked', true);
+            $('#local-summary-code').text(local.code);
+            $('#local-summary-libelle').text(local.libelle);
+            $('#local-summary-type').text(local.type);
+            $('#local-summary-etage').text(local.etage);
+            $('#local-summary-batiment').text(local.batiment);
+            $('#local_id').val(local.id);
+            $('#dossier_employe_id, #poste_travail_id').val('');
+            $('.aff-summary').addClass('d-none');
+            $('#aff-local-summary').removeClass('d-none');
+            $('#aff-skip-hint').addClass('d-none');
         });
 
         // ── Ajout rapide de nomenclatures ────────────────────────────────────
@@ -395,24 +394,40 @@ const Wizard = (() => {
         $('#btn-add-ram').on('click', () => quickAdd('Nouveau type de RAM', 'Ex: DDR4, DDR5...', 'parc-info.ordinateurs-fixes.store-type-ram', 'ram_type_id'));
         $('#btn-add-os').on('click', () => quickAdd("Nouveau système d'exploitation", 'Ex: Windows 11 Pro, Ubuntu 22.04...', 'parc-info.ordinateurs-fixes.store-type-os', 'os_type_id'));
         $('#btn-add-disque').on('click', () => quickAdd('Nouveau type de disque', 'Ex: SSD NVMe, HDD, SSD SATA...', 'parc-info.ordinateurs-fixes.store-type-disque', 'disque_type_id'));
+        $('#btn-add-cpu').on('click', () => quickAdd('Nouveau type de CPU', 'Ex: Intel Core i7, AMD Ryzen 5...', 'parc-info.ordinateurs-fixes.store-type-cpu', 'cpu_type_id'));
 
         // Soumission
         $form().on('submit', async (e) => {
             e.preventDefault();
+            
+            let formData = $form().serialize();
+            if (!$('input[name="type_cible"]:checked').val()) {
+                formData += '&skip_affectation=1';
+            }
+            
+            submitForm(formData, true);
+        });
 
-            // Nettoyer les erreurs précédentes
+        function submitForm(formData, isFromSubmit) {
             $('.is-invalid').removeClass('is-invalid');
             $('.invalid-feedback').remove();
 
             const id = $('#ord_id').val();
             const url = id ? route('parc-info.ordinateurs-fixes.update', id) : route('parc-info.ordinateurs-fixes.store');
             const method = id ? 'PUT' : 'POST';
-            const $btn = $('#btn-submit');
-            $btn.prop('disabled', true).find('#btn-submit-label').text('Enregistrement...');
+            const $btn = isFromSubmit ? $('#btn-submit') : $('#btn-save-reparation');
+            const originalText = $btn.find('span').text() || $btn.text();
+            
+            $btn.prop('disabled', true);
+            if (isFromSubmit) {
+                $btn.find('#btn-submit-label').text('Enregistrement...');
+            } else {
+                $btn.html('<i class="bi bi-hourglass-split me-1"></i> Enregistrement...');
+            }
 
             $.ajax({
                 url, method,
-                data: $form().serialize(),
+                data: formData,
                 success: (res) => {
                     if (res.success) {
                         $modal().modal('hide');
@@ -435,10 +450,9 @@ const Wizard = (() => {
                             }
                         });
 
-                        // Aller à l'étape contenant la première erreur
                         if (firstErrorField) {
                             const errorStep = firstErrorField.closest('.wizard-step').attr('id').replace('step-', '');
-                            goToStep(parseInt(errorStep));
+                            goTo(parseInt(errorStep));
                             firstErrorField[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
                         }
 
@@ -448,10 +462,15 @@ const Wizard = (() => {
                     }
                 },
                 complete: () => {
-                    $btn.prop('disabled', false).find('#btn-submit-label').text('Enregistrer l\'actif');
+                    $btn.prop('disabled', false);
+                    if (isFromSubmit) {
+                        $btn.find('#btn-submit-label').text(originalText);
+                    } else {
+                        $btn.html('<i class="bi bi-tools me-1"></i> Enregistrer en réparation');
+                    }
                 },
             });
-        });
+        }
 
         // Reset à la fermeture
         $modal().on('hidden.bs.modal', reset);
@@ -514,7 +533,7 @@ $(function () {
 
     $('#btn-edit').on('click', () => {
         const sel = $('#ordinateurs-table').bootstrapTable('getSelections');
-        if (sel.length) Wizard.openEdit(sel[0].id);
+        if (sel.length) window.location.href = `/parc-info/informatique/ordinateurs-fixes/${sel[0].id}`;
     });
 
     $('#btn-delete').on('click', () => {

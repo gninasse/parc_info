@@ -43,7 +43,7 @@ export class PosteTravailActions {
         }).then((result) => {
             if (result.isConfirmed) {
                 $.ajax({
-                    url: route('organisation.postes.destroy', posteId),
+                    url: route('organisation.postes-travail.destroy', posteId),
                     method: 'DELETE',
                     success: (response) => {
                         if (response.success) {

@@ -166,7 +166,7 @@
                                         </div>
                                     </td>
                                     <td class="small">{{ $emp->poste ?: '-' }}</td>
-                                    <td class="text-end px-4 small text-muted">{{ $emp->created_at->format('d/m/Y') }}</td>
+                                    <td class="text-end px-4 small text-muted">{{ $emp->created_at?->format('d/m/Y') ?? '-' }}</td>
                                 </tr>
                             @empty
                                 <tr>

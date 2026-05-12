@@ -32,7 +32,7 @@ export class PosteTravailForm {
             allowClear: true,
             theme: 'bootstrap-5',
             ajax: {
-                url: route('organisation.postes.search-employes'),
+                url: route('organisation.postes-travail.search-employes'),
                 dataType: 'json',
                 delay: 250,
                 data: (p) => ({ q: p.term }),
@@ -78,7 +78,7 @@ export class PosteTravailForm {
             const niveau = $('#niveau_rattachement').val();
             if (niveau === 'service' || niveau === 'unite') {
                 this._loadOptions(
-                    route('organisation.postes.services-by-direction', id),
+                    route('organisation.postes-travail.services-by-direction', id),
                     '#service_id', '#spinner-service',
                     'Sélectionner un service...'
                 );
@@ -90,7 +90,7 @@ export class PosteTravailForm {
             const id = e.target.value;
             if (!id || $('#niveau_rattachement').val() !== 'unite') return;
             this._loadOptions(
-                route('organisation.postes.unites-by-service', id),
+                route('organisation.postes-travail.unites-by-service', id),
                 '#unite_id', '#spinner-unite',
                 'Sélectionner une unité...'
             );
@@ -145,7 +145,7 @@ export class PosteTravailForm {
         this.$form.on('submit', (e) => {
             e.preventDefault();
             const posteId = $('#poste_id').val();
-            const url = posteId ? route('organisation.postes.update', posteId) : route('organisation.postes.store');
+            const url = posteId ? route('organisation.postes-travail.update', posteId) : route('organisation.postes-travail.store');
             const method = posteId ? 'PUT' : 'POST';
             const $btn = $('#btn-save-poste');
             const $label = $('#btn-save-label');
@@ -200,7 +200,7 @@ export class PosteTravailForm {
         $('#btn-save-label').text('Enregistrer');
 
         try {
-            const res = await $.get(route('organisation.postes.show', data.id));
+            const res = await $.get(route('organisation.postes-travail.show', data.id));
             const poste = res.data;
 
             $('#poste_id').val(poste.id);
@@ -218,14 +218,14 @@ export class PosteTravailForm {
 
                 if (poste.service_id) {
                     await this._loadOptions(
-                        route('organisation.postes.services-by-direction', poste.direction_id),
+                        route('organisation.postes-travail.services-by-direction', poste.direction_id),
                         '#service_id', '#spinner-service', 'Sélectionner un service...'
                     );
                     $('#service_id').val(poste.service_id);
 
                     if (poste.unite_id) {
                         await this._loadOptions(
-                            route('organisation.postes.unites-by-service', poste.service_id),
+                            route('organisation.postes-travail.unites-by-service', poste.service_id),
                             '#unite_id', '#spinner-unite', 'Sélectionner une unité...'
                         );
                         $('#unite_id').val(poste.unite_id);

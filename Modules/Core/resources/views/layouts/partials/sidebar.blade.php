@@ -151,7 +151,7 @@
                     </a>
                   </li>
                   <li class="nav-item">
-                    <a href="{{ route('organisation.postes.index') }}" class="nav-link {{ request()->routeIs('organisation.postes.*') ? 'active' : '' }}">
+                    <a href="{{ route('organisation.postes-travail.index') }}" class="nav-link {{ request()->routeIs('organisation.postes-travail.*') ? 'active' : '' }}">
                       <i class="nav-icon bi bi-pc-display"></i>
                       <p>Postes de travail</p>
                     </a>

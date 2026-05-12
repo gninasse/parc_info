@@ -70,7 +70,7 @@
         
         <table id="postes-table"
                data-toggle="table"
-               data-url="{{ route('organisation.postes.data') }}"
+               data-url="{{ route('organisation.postes-travail.data') }}"
                data-pagination="true"
                data-side-pagination="server"
                data-search="true"
