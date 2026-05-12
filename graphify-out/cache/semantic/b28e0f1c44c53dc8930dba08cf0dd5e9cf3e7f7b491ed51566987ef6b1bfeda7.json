@@ -1,0 +1,1 @@
+{"nodes": [{"id": "provider_app", "label": "App Service Provider", "file_type": "code", "source_file": "app/Providers/AppServiceProvider.php"}], "edges": [], "hyperedges": []}

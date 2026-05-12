@@ -1,0 +1,1 @@
+{"nodes": [{"id": "database_jobs_table", "label": "Jobs Table", "file_type": "code", "source_file": "database/migrations/0001_01_01_000002_create_jobs_table.php"}], "edges": [], "hyperedges": []}

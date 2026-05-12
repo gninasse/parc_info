@@ -29,7 +29,7 @@ window.statutFormatter = (val) => {
 
 window.actionsFormatter = (id) =>
     `<div class="d-flex gap-1">
-        <a href="/parc-info/informatique/ordinateurs-fixes/${id}" class="btn btn-sm btn-outline-secondary border-0" title="Voir / Modifier"><i class="bi bi-eye"></i></a>
+        <a href="/parc-info/informatique/ordinateurs/${id}" class="btn btn-sm btn-outline-secondary border-0" title="Voir / Modifier"><i class="bi bi-eye"></i></a>
         <button class="btn btn-sm btn-outline-danger border-0" data-action="delete" data-id="${id}" title="Supprimer"><i class="bi bi-trash"></i></button>
     </div>`;
 
@@ -40,7 +40,7 @@ window.actionsEvents = {
 // ── KPI ───────────────────────────────────────────────────────────────────────
 
 function loadKpis() {
-    $.get(route('parc-info.ordinateurs-fixes.data'), { limit: 9999, offset: 0 }, (res) => {
+    $.get(route('parc-info.ordinateurs.data'), { limit: 9999, offset: 0 }, (res) => {
         const rows = res.rows ?? [];
         $('#kpi-total').text(res.total ?? 0);
         $('#kpi-service').text(rows.filter(r => r.statut === 'en_service').length);
@@ -162,7 +162,7 @@ const Wizard = (() => {
         $('#wizard-title').text('Modifier l\'ordinateur');
         $('#btn-submit-label').text('Enregistrer');
         try {
-            const res = await $.get(route('parc-info.ordinateurs-fixes.show', id));
+            const res = await $.get(route('parc-info.ordinateurs.show', id));
             const e = res.data;
             const o = e.ordinateur ?? {};
             const aff = e.affectation_active;
@@ -379,7 +379,7 @@ const Wizard = (() => {
             }).then((result) => {
                 if (bsModal) bsModal._focustrap?.activate();
                 if (result.isConfirmed && result.value) {
-                    $.post(route('parc-info.ordinateurs-fixes.store-marque'), { libelle: result.value }, (res) => {
+                    $.post(route('parc-info.ordinateurs.store-marque'), { libelle: result.value }, (res) => {
                         if (res.success) {
                             $('#marque_id').append(new Option(res.data.libelle, res.data.id, true, true));
                             Swal.fire({ icon: 'success', title: 'Marque ajoutée', timer: 1500, showConfirmButton: false });
@@ -391,10 +391,10 @@ const Wizard = (() => {
             });
         });
 
-        $('#btn-add-ram').on('click', () => quickAdd('Nouveau type de RAM', 'Ex: DDR4, DDR5...', 'parc-info.ordinateurs-fixes.store-type-ram', 'ram_type_id'));
-        $('#btn-add-os').on('click', () => quickAdd("Nouveau système d'exploitation", 'Ex: Windows 11 Pro, Ubuntu 22.04...', 'parc-info.ordinateurs-fixes.store-type-os', 'os_type_id'));
-        $('#btn-add-disque').on('click', () => quickAdd('Nouveau type de disque', 'Ex: SSD NVMe, HDD, SSD SATA...', 'parc-info.ordinateurs-fixes.store-type-disque', 'disque_type_id'));
-        $('#btn-add-cpu').on('click', () => quickAdd('Nouveau type de CPU', 'Ex: Intel Core i7, AMD Ryzen 5...', 'parc-info.ordinateurs-fixes.store-type-cpu', 'cpu_type_id'));
+        $('#btn-add-ram').on('click', () => quickAdd('Nouveau type de RAM', 'Ex: DDR4, DDR5...', 'parc-info.ordinateurs.store-type-ram', 'ram_type_id'));
+        $('#btn-add-os').on('click', () => quickAdd("Nouveau système d'exploitation", 'Ex: Windows 11 Pro, Ubuntu 22.04...', 'parc-info.ordinateurs.store-type-os', 'os_type_id'));
+        $('#btn-add-disque').on('click', () => quickAdd('Nouveau type de disque', 'Ex: SSD NVMe, HDD, SSD SATA...', 'parc-info.ordinateurs.store-type-disque', 'disque_type_id'));
+        $('#btn-add-cpu').on('click', () => quickAdd('Nouveau type de CPU', 'Ex: Intel Core i7, AMD Ryzen 5...', 'parc-info.ordinateurs.store-type-cpu', 'cpu_type_id'));
 
         // Soumission
         $form().on('submit', async (e) => {
@@ -413,7 +413,7 @@ const Wizard = (() => {
             $('.invalid-feedback').remove();
 
             const id = $('#ord_id').val();
-            const url = id ? route('parc-info.ordinateurs-fixes.update', id) : route('parc-info.ordinateurs-fixes.store');
+            const url = id ? route('parc-info.ordinateurs.update', id) : route('parc-info.ordinateurs.store');
             const method = id ? 'PUT' : 'POST';
             const $btn = isFromSubmit ? $('#btn-submit') : $('#btn-save-reparation');
             const originalText = $btn.find('span').text() || $btn.text();
@@ -509,7 +509,7 @@ function deleteOrdinateur(id) {
     }).then((result) => {
         if (result.isConfirmed) {
             $.ajax({
-                url: route('parc-info.ordinateurs-fixes.destroy', id),
+                url: route('parc-info.ordinateurs.destroy', id),
                 method: 'DELETE',
                 success: (res) => {
                     if (res.success) {
@@ -533,7 +533,7 @@ $(function () {
 
     $('#btn-edit').on('click', () => {
         const sel = $('#ordinateurs-table').bootstrapTable('getSelections');
-        if (sel.length) window.location.href = `/parc-info/informatique/ordinateurs-fixes/${sel[0].id}`;
+        if (sel.length) window.location.href = `/parc-info/informatique/ordinateurs/${sel[0].id}`;
     });
 
     $('#btn-delete').on('click', () => {

@@ -1,0 +1,11 @@
+/home/ibrahim/projets/web/parc_info/config/database.php
+/home/ibrahim/projets/web/parc_info/config/queue.php
+/home/ibrahim/projets/web/parc_info/config/filesystems.php
+/home/ibrahim/projets/web/parc_info/config/services.php
+/home/ibrahim/projets/web/parc_info/config/activitylog.php
+/home/ibrahim/projets/web/parc_info/config/permission.php
+/home/ibrahim/projets/web/parc_info/config/app.php
+/home/ibrahim/projets/web/parc_info/config/auth.php
+/home/ibrahim/projets/web/parc_info/config/session.php
+/home/ibrahim/projets/web/parc_info/config/cache.php
+/home/ibrahim/projets/web/parc_info/config/mail.php

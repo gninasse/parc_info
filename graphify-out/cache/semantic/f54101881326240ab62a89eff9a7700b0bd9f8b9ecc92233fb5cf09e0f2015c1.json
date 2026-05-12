@@ -1,0 +1,1 @@
+{"nodes": [{"id": "parcinfo_view_dashboard", "label": "ParcInfo Dashboard View", "file_type": "code", "source_file": "Modules/ParcInfo/resources/views/dashboard/index.blade.php", "source_location": null, "source_url": null, "captured_at": null, "author": null, "contributor": null}], "edges": [], "hyperedges": []}

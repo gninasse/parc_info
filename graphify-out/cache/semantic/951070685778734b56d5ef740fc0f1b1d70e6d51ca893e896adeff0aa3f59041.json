@@ -1,0 +1,1 @@
+{"nodes": [{"id": "activities_show", "label": "Activity Detail View", "file_type": "code", "source_file": "Modules/Core/resources/views/activities/show.blade.php"}], "edges": [], "hyperedges": []}

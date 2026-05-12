@@ -1,0 +1,1 @@
+{"nodes": [{"id": "add_is_active_migration", "label": "User Activity Status Migration", "file_type": "code", "source_file": "Modules/Core/database/migrations/2025_12_24_151836_add_is_active_to_users_table.php"}], "edges": [], "hyperedges": []}

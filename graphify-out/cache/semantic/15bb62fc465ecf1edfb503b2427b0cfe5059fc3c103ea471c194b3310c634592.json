@@ -1,0 +1,1 @@
+{"nodes": [{"id": "grh_vite_config", "label": "Grh Vite Configuration", "file_type": "code", "source_file": "Modules/Grh/vite.config.js"}], "edges": [{"source": "grh_vite_config", "target": "grh_app_js", "relation": "conceptually_related_to", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "Modules/Grh/vite.config.js"}], "hyperedges": []}

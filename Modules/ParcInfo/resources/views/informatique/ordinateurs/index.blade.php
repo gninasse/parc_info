@@ -1,10 +1,10 @@
 @extends('parcinfo::layouts.master')
 
-@section('header', 'Ordinateurs Fixes')
+@section('header', 'Ordinateurs')
 
 @section('breadcrumb')
     <li class="breadcrumb-item"><a href="{{ route('parc-info.dashboard') }}">Parc Info</a></li>
-    <li class="breadcrumb-item active">Ordinateurs Fixes</li>
+    <li class="breadcrumb-item active">Ordinateurs</li>
 @endsection
 
 @push('css')
@@ -111,7 +111,7 @@
 {{-- ── Table ── --}}
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white border-0 py-3">
-        <h6 class="mb-0 fw-bold">Liste des Ordinateurs Fixes</h6>
+        <h6 class="mb-0 fw-bold">Liste des Ordinateurs</h6>
     </div>
     <div class="card-body p-0">
         <div id="toolbar">
@@ -127,8 +127,7 @@
         </div>
         <table id="ordinateurs-table"
                data-toggle="table"
-               data-url="{{ route('parc-info.ordinateurs-fixes.data') }}"
-               data-pagination="true"
+               data-url="{{ route('parc-info.ordinateurs.data') }}"               data-pagination="true"
                data-side-pagination="server"
                data-search="true"
                data-show-refresh="true"

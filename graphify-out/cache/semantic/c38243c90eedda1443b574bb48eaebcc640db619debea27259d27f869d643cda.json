@@ -1,0 +1,1 @@
+{"nodes": [{"id": "add_description_to_roles_table_up", "label": "Migration: Add Description to Roles", "file_type": "code", "source_file": "database/migrations/2026_01_14_201208_add_description_to_roles_table.php", "source_location": null}], "edges": [], "hyperedges": []}

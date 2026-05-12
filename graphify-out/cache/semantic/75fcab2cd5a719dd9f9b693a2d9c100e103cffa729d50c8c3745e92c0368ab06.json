@@ -1,0 +1,1 @@
+{"nodes": [{"id": "resources_js_app", "label": "Main Application JS", "file_type": "code", "source_file": "resources/js/app.js"}], "edges": [{"source": "resources_js_app", "target": "resources_js_bootstrap", "relation": "calls", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "resources/js/app.js"}], "hyperedges": []}

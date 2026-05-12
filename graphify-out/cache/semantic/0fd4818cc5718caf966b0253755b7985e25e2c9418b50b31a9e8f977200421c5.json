@@ -1,0 +1,1 @@
+{"nodes": [{"id": "core_event_service_provider", "label": "Core Event Service Provider", "file_type": "code", "source_file": "Modules/Core/app/Providers/EventServiceProvider.php"}], "edges": [], "hyperedges": []}

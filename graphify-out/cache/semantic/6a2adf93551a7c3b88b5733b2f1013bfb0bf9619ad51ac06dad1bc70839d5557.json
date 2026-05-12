@@ -1,0 +1,1 @@
+{"nodes": [{"id": "migration_add_module_to_permissions", "label": "Add Module to Permissions Migration", "file_type": "code", "source_file": "database/migrations/2026_01_08_113203_add_module_field_to_permissions_table.php"}], "edges": [], "hyperedges": []}

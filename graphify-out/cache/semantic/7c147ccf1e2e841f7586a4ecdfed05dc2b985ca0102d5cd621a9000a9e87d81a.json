@@ -1,0 +1,1 @@
+{"nodes": [{"id": "vite_module_loader", "label": "Vite Module Loader", "file_type": "code", "source_file": "vite-module-loader.js"}], "edges": [{"source": "vite_module_loader", "target": "vite_config", "relation": "conceptually_related_to", "confidence": "INFERRED", "confidence_score": 0.85, "source_file": "vite-module-loader.js"}], "hyperedges": []}

@@ -1,0 +1,1 @@
+{"nodes": [{"id": "permission_seeder", "label": "Role-based Permission Seeder", "file_type": "code", "source_file": "Modules/Core/database/seeders/PermissionSeeder.php"}], "edges": [], "hyperedges": []}

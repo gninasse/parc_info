@@ -1,0 +1,1 @@
+{"nodes": [{"id": "reset_user_password_command", "label": "User Password Reset Command", "file_type": "code", "source_file": "Modules/Core/app/Console/Commands/ResetUserPassword.php"}], "edges": [], "hyperedges": []}

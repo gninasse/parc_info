@@ -1,0 +1,1 @@
+{"nodes": [{"id": "migration_fix_activity_log", "label": "Fix Activity Log JSON Index Migration", "file_type": "code", "source_file": "database/migrations/2026_01_16_005035_fix_activity_log_json_index.php"}], "edges": [], "hyperedges": []}

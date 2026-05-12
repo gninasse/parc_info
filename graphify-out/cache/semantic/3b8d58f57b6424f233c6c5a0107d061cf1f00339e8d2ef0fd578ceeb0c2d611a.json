@@ -1,0 +1,1 @@
+{"nodes": [], "edges": [{"source": "database_activity_log_table", "target": "database_modules_table", "relation": "references", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "database/migrations/2026_01_15_213029_add_module_to_activity_log_table.php"}], "hyperedges": []}

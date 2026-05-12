@@ -1,0 +1,1 @@
+{"nodes": [{"id": "database_cores_users_table", "label": "Cores Users Table", "file_type": "code", "source_file": "database/migrations/2025_12_24_103711_create_cores_users_table.php"}], "edges": [], "hyperedges": []}

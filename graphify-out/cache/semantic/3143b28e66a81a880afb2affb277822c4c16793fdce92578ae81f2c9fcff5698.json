@@ -1,0 +1,1 @@
+{"nodes": [{"id": "cleanup_permissions_command", "label": "Orphaned Permission Cleanup Command", "file_type": "code", "source_file": "Modules/Core/app/Console/Commands/CleanupPermissionsCommand.php"}], "edges": [], "hyperedges": []}

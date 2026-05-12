@@ -1,0 +1,1 @@
+{"nodes": [{"id": "login_view", "label": "Login Authentication View", "file_type": "code", "source_file": "Modules/Core/resources/views/auth/login.blade.php"}], "edges": [], "hyperedges": []}

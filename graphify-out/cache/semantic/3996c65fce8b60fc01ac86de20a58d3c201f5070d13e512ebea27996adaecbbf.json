@@ -1,0 +1,1 @@
+{"nodes": [{"id": "config_vite_parcinfo", "label": "ParcInfo Vite Config", "file_type": "code", "source_file": "Modules/ParcInfo/vite.config.js"}], "edges": [{"source": "config_vite_parcinfo", "target": "js_app_parcinfo", "relation": "references", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "Modules/ParcInfo/vite.config.js"}], "hyperedges": []}

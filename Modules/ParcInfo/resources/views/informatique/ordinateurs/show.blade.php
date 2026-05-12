@@ -4,7 +4,7 @@
 
 @section('breadcrumb')
     <li class="breadcrumb-item"><a href="{{ route('parc-info.dashboard') }}">Parc Info</a></li>
-    <li class="breadcrumb-item"><a href="{{ route('parc-info.ordinateurs-fixes.index') }}">Ordinateurs Fixes</a></li>
+    <li class="breadcrumb-item"><a href="{{ route('parc-info.ordinateurs.index') }}">Ordinateurs</a></li>
     <li class="breadcrumb-item active">{{ $equipement->code_inventaire }}</li>
 @endsection
 
@@ -718,10 +718,10 @@ $(function () {
         });
     }
 
-    $('#btn-add-f-ram').on('click', () => quickAdd('Nouveau type de RAM', 'Ex: DDR4, DDR5...', 'parc-info.ordinateurs-fixes.store-type-ram', 'f_ram_type_id'));
-    $('#btn-add-f-os').on('click', () => quickAdd("Nouveau système d'exploitation", 'Ex: Windows 11 Pro...', 'parc-info.ordinateurs-fixes.store-type-os', 'f_os_type_id'));
-    $('#btn-add-f-disque').on('click', () => quickAdd('Nouveau type de disque', 'Ex: SSD NVMe...', 'parc-info.ordinateurs-fixes.store-type-disque', 'f_disque_type_id'));
-    $('#btn-add-f-cpu').on('click', () => quickAdd('Nouveau type de CPU', 'Ex: Intel Core i7...', 'parc-info.ordinateurs-fixes.store-type-cpu', 'f_cpu_type_id'));
+    $('#btn-add-f-ram').on('click', () => quickAdd('Nouveau type de RAM', 'Ex: DDR4, DDR5...', 'parc-info.ordinateurs.store-type-ram', 'f_ram_type_id'));
+    $('#btn-add-f-os').on('click', () => quickAdd("Nouveau système d'exploitation", 'Ex: Windows 11 Pro...', 'parc-info.ordinateurs.store-type-os', 'f_os_type_id'));
+    $('#btn-add-f-disque').on('click', () => quickAdd('Nouveau type de disque', 'Ex: SSD NVMe...', 'parc-info.ordinateurs.store-type-disque', 'f_disque_type_id'));
+    $('#btn-add-f-cpu').on('click', () => quickAdd('Nouveau type de CPU', 'Ex: Intel Core i7...', 'parc-info.ordinateurs.store-type-cpu', 'f_cpu_type_id'));
 
     // ── Mode édition ──────────────────────────────────────────────────────────
     let editMode = false;
@@ -745,7 +745,7 @@ $(function () {
         e.preventDefault();
         const $btn = $('#btn-save-fiche').prop('disabled', true).text('Enregistrement...');
         $.ajax({
-            url   : route('parc-info.ordinateurs-fixes.update', equipementId),
+            url   : route('parc-info.ordinateurs.update', equipementId),
             method: 'PUT',
             data  : $(this).serialize(),
             success: (res) => {
@@ -838,7 +838,7 @@ $(function () {
         const $btn = $('#btn-save-affectation').prop('disabled', true)
             .html('<i class="bi bi-hourglass-split me-1"></i> Enregistrement...');
         const data = $(this).serialize() + `&equipement_id=${equipementId}`;
-        $.post(route('parc-info.ordinateurs-fixes.store-affectation'), data, (res) => {
+        $.post(route('parc-info.ordinateurs.store-affectation'), data, (res) => {
             if (res.success) {
                 $('#affectationModal').modal('hide');
                 Swal.fire({ icon: 'success', title: 'Affectation enregistrée', timer: 2000, showConfirmButton: false })
@@ -882,7 +882,7 @@ $(function () {
         }).then((result) => {
             if (result.isConfirmed) {
                 $.ajax({
-                    url: `/parc-info/informatique/ordinateurs-fixes/${equipementId}/statut`,
+                    url: `/parc-info/informatique/ordinateurs/${equipementId}/statut`,
                     method: 'PATCH',
                     data: {
                         statut: nouveauStatut,
@@ -921,7 +921,7 @@ $(function () {
         }).then((result) => {
             if (result.isConfirmed) {
                 $.ajax({
-                    url: `/parc-info/informatique/ordinateurs-fixes/${equipementId}/desaffecter`,
+                    url: `/parc-info/informatique/ordinateurs/${equipementId}/desaffecter`,
                     method: 'POST',
                     data: {
                         motif: result.value,

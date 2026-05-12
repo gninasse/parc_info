@@ -1,0 +1,1 @@
+{"nodes": [{"id": "database_permissions_table", "label": "Permissions Table", "file_type": "code", "source_file": "database/migrations/2025_12_18_214056_create_permission_tables.php"}, {"id": "database_roles_table", "label": "Roles Table", "file_type": "code", "source_file": "database/migrations/2025_12_18_214056_create_permission_tables.php"}], "edges": [], "hyperedges": []}

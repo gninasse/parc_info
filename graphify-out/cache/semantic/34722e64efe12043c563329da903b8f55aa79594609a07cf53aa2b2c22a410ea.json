@@ -1,0 +1,1 @@
+{"nodes": [{"id": "database_users_table", "label": "Users Table", "file_type": "code", "source_file": "database/migrations/0001_01_01_000000_create_users_table.php"}], "edges": [], "hyperedges": []}

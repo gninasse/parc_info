@@ -1,0 +1,1 @@
+{"nodes": [{"id": "grh_index_view", "label": "Grh Index View", "file_type": "code", "source_file": "Modules/Grh/resources/views/index.blade.php"}], "edges": [{"source": "grh_index_view", "target": "grh_master_layout", "relation": "references", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "Modules/Grh/resources/views/index.blade.php"}], "hyperedges": []}

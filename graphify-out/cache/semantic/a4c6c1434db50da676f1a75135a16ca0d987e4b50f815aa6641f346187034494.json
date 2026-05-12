@@ -1,0 +1,1 @@
+{"nodes": [{"id": "core_user_model", "label": "User Model", "file_type": "code", "source_file": "Modules/Core/app/Models/User.php"}], "edges": [{"source": "core_user_model", "target": "grh_employe_model", "relation": "conceptually_related_to", "confidence": "INFERRED", "confidence_score": 0.95, "source_file": "Modules/Core/app/Models/User.php"}], "hyperedges": []}

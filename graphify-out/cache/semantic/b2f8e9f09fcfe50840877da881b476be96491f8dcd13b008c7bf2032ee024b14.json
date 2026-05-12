@@ -1,0 +1,1 @@
+{"nodes": [{"id": "factory_user", "label": "User Factory", "file_type": "code", "source_file": "database/factories/UserFactory.php"}], "edges": [{"source": "factory_user", "target": "model_user", "relation": "implements", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "database/factories/UserFactory.php"}], "hyperedges": []}

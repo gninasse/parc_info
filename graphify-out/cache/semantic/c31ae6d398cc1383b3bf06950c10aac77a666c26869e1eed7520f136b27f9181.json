@@ -1,0 +1,1 @@
+{"nodes": [{"id": "add_batch_uuid_column_to_activity_log_table_up", "label": "Migration: Add Batch UUID to Activity Log", "file_type": "code", "source_file": "database/migrations/2026_01_15_211312_add_batch_uuid_column_to_activity_log_table.php", "source_location": null}], "edges": [], "hyperedges": []}

@@ -1,0 +1,1 @@
+{"nodes": [{"id": "provider_blade", "label": "Blade Service Provider", "file_type": "code", "source_file": "app/Providers/BladeServiceProvider.php"}], "edges": [{"source": "provider_blade", "target": "model_user", "relation": "calls", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "app/Providers/BladeServiceProvider.php"}], "hyperedges": []}

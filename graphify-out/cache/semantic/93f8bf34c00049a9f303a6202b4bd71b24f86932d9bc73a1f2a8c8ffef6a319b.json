@@ -1,0 +1,1 @@
+{"nodes": [], "edges": [{"source": "database_permissions_table", "target": "database_modules_table", "relation": "references", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "database/migrations/2026_01_08_114055_add_modules_fileds_to_permissions.php"}], "hyperedges": []}

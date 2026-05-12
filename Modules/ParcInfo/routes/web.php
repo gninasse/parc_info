@@ -7,8 +7,8 @@ use Modules\ParcInfo\Http\Controllers\ParcInfoController;
 Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(function () {
     Route::get('/dashboard', [ParcInfoController::class, 'dashboard'])->name('dashboard');
 
-    // Ordinateurs fixes
-    Route::prefix('informatique/ordinateurs-fixes')->name('ordinateurs-fixes.')->group(function () {
+    // Ordinateurs
+    Route::prefix('informatique/ordinateurs')->name('ordinateurs.')->group(function () {
         Route::get('/', [OrdinateurController::class, 'index'])->name('index');
         Route::get('/data', [OrdinateurController::class, 'getData'])->name('data');
         Route::post('/', [OrdinateurController::class, 'store'])->name('store');

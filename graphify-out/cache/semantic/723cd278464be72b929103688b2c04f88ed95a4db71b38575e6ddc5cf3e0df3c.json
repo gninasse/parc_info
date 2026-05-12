@@ -1,0 +1,1 @@
+{"nodes": [{"id": "core_useractions", "label": "UserActions JS Module", "file_type": "code", "source_file": "public/js/modules/core/users/UserActions.js"}], "edges": [{"source": "core_useractions", "target": "core_usertable", "relation": "calls", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "public/js/modules/core/users/UserActions.js"}], "hyperedges": []}

@@ -1,0 +1,1 @@
+{"nodes": [{"id": "artisan_bootstraps", "label": "Artisan Bootstrap", "file_type": "code", "source_file": "artisan", "source_location": null}], "edges": [{"source": "artisan_bootstraps", "target": "bootstrap_app", "relation": "references", "confidence": "INFERRED", "confidence_score": 0.9, "source_file": "artisan", "weight": 1.0}], "hyperedges": []}

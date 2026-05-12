@@ -1,0 +1,1 @@
+{"nodes": [{"id": "model_user", "label": "User Model", "file_type": "code", "source_file": "app/Models/User.php"}], "edges": [{"source": "model_user", "target": "factory_user", "relation": "references", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "app/Models/User.php"}], "hyperedges": []}

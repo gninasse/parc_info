@@ -1,0 +1,1 @@
+{"nodes": [{"id": "core_helper", "label": "Core Component Helper", "file_type": "code", "source_file": "Modules/Core/app/Support/CoreHelper.php"}], "edges": [{"source": "core_helper", "target": "helpers", "relation": "conceptually_related_to", "confidence": "INFERRED", "confidence_score": 0.85, "source_file": "Modules/Core/app/Support/CoreHelper.php"}], "hyperedges": []}
