@@ -728,7 +728,7 @@ $(function () {
 
     function setEditMode(on) {
         editMode = on;
-        $('#pane-fiche .field-input').prop('disabled', !on);
+        $('#pane-fiche .field-input').not("#f_code_inventaire").prop('disabled', !on);
         $('#pane-fiche input[type="checkbox"]').prop('disabled', !on);
         $('#pane-fiche input[type="radio"]').prop('disabled', !on);
         $('#fiche-actions').toggleClass('d-none', !on);
