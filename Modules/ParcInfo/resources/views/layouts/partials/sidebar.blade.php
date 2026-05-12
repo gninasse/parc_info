@@ -43,14 +43,16 @@
         </li>
 
         <li class="nav-item">
-          <a href="#" class="nav-link {{ request()->routeIs('parc-info.serveurs.*') ? 'active' : '' }}">
+          <a href="{{ route('parc-info.serveurs.index') }}"
+             class="nav-link {{ request()->routeIs('parc-info.serveurs.*') ? 'active' : '' }}">
             <i class="nav-icon bi bi-server"></i>
             <p>Serveurs</p>
           </a>
         </li>
 
         <li class="nav-item">
-          <a href="#" class="nav-link {{ request()->routeIs('parc-info.mobiles.*') ? 'active' : '' }}">
+          <a href="{{ route('parc-info.mobiles.index') }}"
+             class="nav-link {{ request()->routeIs('parc-info.mobiles.*') ? 'active' : '' }}">
             <i class="nav-icon bi bi-phone-vibrate"></i>
             <p>Tablettes & Mobiles</p>
           </a>
