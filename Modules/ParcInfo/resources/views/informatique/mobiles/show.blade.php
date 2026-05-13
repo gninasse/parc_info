@@ -48,6 +48,11 @@
                 </div>
             </div>
             <div class="col-auto d-flex gap-2">
+                @if($aff)
+                <button class="btn btn-outline-danger btn-sm bg-white" id="btn-desaffecter">
+                    <i class="bi bi-x-circle me-1"></i> Désaffecter
+                </button>
+                @endif
                 <button class="btn btn-primary btn-sm" id="btn-edit-toggle">
                     <i class="bi bi-pencil me-1"></i> Modifier
                 </button>
@@ -200,6 +205,81 @@
 <script>
 $(function () {
     let editMode = false;
+    $('.dropdown-item[data-statut]').on('click', function (e) {
+        e.preventDefault();
+        const statut = $(this).data('statut');
+        const libelle = $(this).text();
+        if (statut === '{{ $equipement->statut }}') return;
+
+        Swal.fire({
+            title: 'Changer le statut',
+            html: `Nouveau statut : <b>${libelle}</b><br><br>Veuillez indiquer un motif :`,
+            input: 'text',
+            inputPlaceholder: 'Motif obligatoire...',
+            showCancelButton: true,
+            confirmButtonText: 'Enregistrer',
+            cancelButtonText: 'Annuler',
+            preConfirm: (value) => {
+                if (!value.trim()) {
+                    Swal.showValidationMessage('Le motif est obligatoire');
+                    return false;
+                }
+                return value;
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: `{{ route('parc-info.mobiles.update-statut', $equipement->id) }}`,
+                    method: 'PATCH',
+                    data: { statut: statut, motif: result.value },
+                    success: (res) => {
+                        if (res.success) {
+                            Swal.fire({ icon: 'success', title: 'Succès', text: res.message, timer: 2000, showConfirmButton: false })
+                                .then(() => window.location.reload());
+                        }
+                    },
+                    error: (xhr) => Swal.fire('Erreur', xhr.responseJSON?.message || 'Une erreur est survenue.', 'error')
+                });
+            }
+        });
+    });
+
+    $('#btn-desaffecter').on('click', function () {
+        Swal.fire({
+            title: 'Désaffecter l\'équipement',
+            html: 'Cette action mettra l\'équipement <b>En stock</b>.<br><br>Veuillez indiquer un motif :',
+            input: 'text',
+            inputPlaceholder: 'Motif obligatoire...',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            confirmButtonText: 'Désaffecter',
+            cancelButtonText: 'Annuler',
+            preConfirm: (value) => {
+                if (!value.trim()) {
+                    Swal.showValidationMessage('Le motif est obligatoire');
+                    return false;
+                }
+                return value;
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: `{{ route('parc-info.mobiles.desaffecter', $equipement->id) }}`,
+                    method: 'POST',
+                    data: { motif: result.value },
+                    success: (res) => {
+                        if (res.success) {
+                            Swal.fire({ icon: 'success', title: 'Succès', text: res.message, timer: 2000, showConfirmButton: false })
+                                .then(() => window.location.reload());
+                        }
+                    },
+                    error: (xhr) => Swal.fire('Erreur', xhr.responseJSON?.message || 'Une erreur est survenue.', 'error')
+                });
+            }
+        });
+    });
+
     $('#btn-edit-toggle').on('click', function() {
         editMode = !editMode;
         $('.field-input').prop('disabled', !editMode);

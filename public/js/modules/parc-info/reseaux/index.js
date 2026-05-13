@@ -1,25 +1,14 @@
-/**
- * index.js — Serveurs (ParcInfo)
- */
+// ── Table config & formatters ───────────────────────────────────────────────────
 
-// ── Formatters Bootstrap Table ────────────────────────────────────────────────
-
-window.serveursQueryParams = function (params) {
+window.reseauxQueryParams = (params) => {
     return Object.assign(params, {
-        type_serveur: $('#filter-type').val(),
+        type_reseau_id: $('#filter-type').val(),
         site_id: $('#filter-site').val(),
         statut: $('#filter-statut').val(),
     });
 };
 
-window.codeFormatter = (val) =>
-    `<span class="fw-bold text-primary small">${val}</span>`;
-
-window.typeFormatter = (val) => {
-    const color = val === 'Physique' ? 'info' : 'purple';
-    const icon = val === 'Physique' ? 'cpu' : 'box';
-    return `<span class="badge bg-${color}-subtle text-${color} border border-${color}-subtle px-2 py-1"><i class="bi bi-${icon} me-1"></i>${val.toUpperCase()}</span>`;
-};
+window.codeFormatter = (val) => `<span class="fw-bold text-primary small">${val}</span>`;
 
 window.statutFormatter = (val) => {
     const map = {
@@ -33,39 +22,41 @@ window.statutFormatter = (val) => {
     return `<span class="badge bg-${color}-subtle text-${color} border border-${color}-subtle px-2 py-1">${label}</span>`;
 };
 
-window.actionsFormatter = (id) =>
-    `<div class="d-flex gap-1">
-        <a href="/parc-info/informatique/serveurs/${id}" class="btn btn-sm btn-outline-secondary border-0" title="Voir / Modifier"><i class="bi bi-eye"></i></a>
+window.actionsFormatter = (id) => `
+    <div class="d-flex gap-1">
+        <a href="/parc-info/informatique/reseaux/${id}" class="btn btn-sm btn-outline-secondary border-0" title="Voir / Modifier"><i class="bi bi-eye"></i></a>
         <button class="btn btn-sm btn-outline-danger border-0" data-action="delete" data-id="${id}" title="Supprimer"><i class="bi bi-trash"></i></button>
     </div>`;
 
 window.actionsEvents = {
-    'click [data-action="delete"]': (e, val, row) => deleteServeur(row.id),
+    'click [data-action="delete"]': function (e, value, row, index) {
+        deleteReseau(row.id);
+    }
 };
 
-// ── KPI ───────────────────────────────────────────────────────────────────────
+// ── KPI ────────────────────────────────────────────────────────────────────────
 
 function loadKpis() {
-    $.get(route('parc-info.serveurs.data'), { limit: 9999, offset: 0 }, (res) => {
+    $.get(route('parc-info.reseaux.data'), { limit: 9999, offset: 0 }, (res) => {
         const rows = res.rows ?? [];
         $('#kpi-total').text(res.total ?? 0);
-        $('#kpi-physique').text(rows.filter(r => r.type_serveur === 'Physique').length);
-        $('#kpi-virtuel').text(rows.filter(r => r.type_serveur === 'Virtuel').length);
-        $('#kpi-alerte').text(rows.filter(r => ['en_reparation', 'perdu', 'reforme'].includes(r.statut)).length);
+        $('#kpi-service').text(rows.filter(r => r.statut === 'en_service').length);
+        $('#kpi-reparation').text(rows.filter(r => r.statut === 'en_reparation').length);
+        $('#kpi-stock').text(rows.filter(r => r.statut === 'en_stock').length);
     });
 }
 
-// ── Wizard ────────────────────────────────────────────────────────────────────
+// ── Wizard Logic ───────────────────────────────────────────────────────────────
 
 const Wizard = (() => {
     let currentStep = 1;
 
-    const $modal = () => $('#serveurModal');
-    const $form = () => $('#serveurForm');
-    const $step = (n) => $(`#step-${n}`);
-    const $circle = (n) => $(`.wizard-step-circle[data-step="${n}"]`);
-    const $label = (n) => $(`.wizard-step-label[data-step="${n}"]`);
-    const $line = (n) => $(`.wizard-step-line[data-after="${n}"]`);
+    const $modal = () => $('#reseauModal');
+    const $form = () => $('#reseauForm');
+    const $step = (n) => $('#step-' + n);
+    const $circle = (n) => $('.wizard-step-circle[data-step="' + n + '"]');
+    const $label = (n) => $('.wizard-step-label[data-step="' + n + '"]');
+    const $line = (n) => $('.wizard-step-line[data-after="' + n + '"]');
 
     function isEnStock() {
         return $('input[name="statut"]:checked').val() === 'en_stock';
@@ -86,6 +77,7 @@ const Wizard = (() => {
     function updateStepper() {
         const stock = isEnStock();
 
+        // Disable/enable step 3 UI
         $circle(3).toggleClass('opacity-25', stock);
         $label(3).toggleClass('opacity-25 text-decoration-line-through', stock);
         $line(2).toggleClass('opacity-25', stock);
@@ -93,10 +85,12 @@ const Wizard = (() => {
         for (let i = 1; i <= 3; i++) {
             const c = $circle(i);
             const l = $label(i);
+
             c.removeClass('active done');
             l.removeClass('text-primary fw-bold').addClass('text-muted');
+
             if (i < currentStep) {
-                c.addClass('done').html('<i class="bi bi-check-lg" style="font-size:.8rem"></i>');
+                c.addClass('done').html('<i class="bi bi-check-lg" style="font-size: .8rem"></i>');
                 $line(i).addClass('done');
             } else if (i === currentStep) {
                 c.addClass('active').text(i);
@@ -118,19 +112,24 @@ const Wizard = (() => {
     function validateStep(n) {
         if (n === 1) {
             if (!$('input[name="statut"]:checked').val()) {
-                Swal.fire({ icon: 'warning', title: 'Attention', text: 'Veuillez sélectionner un statut.', timer: 2000, showConfirmButton: false });
+                Swal.fire({ icon: 'warning', title: 'Attention', text: 'Veuillez sélectionner un statut initial.', timer: 2000, showConfirmButton: false });
                 return false;
             }
-        }
-        if (n === 2) {
-            const fields = ['numero_serie', 'modele', 'type_serveur'];
+
+            const fields = ['numero_serie', 'modele', 'etat'];
             let ok = true;
             fields.forEach(f => {
-                const $el = $(`#${f}`);
-                if (!$el.val()) { $el.addClass('is-invalid'); ok = false; }
-                else $el.removeClass('is-invalid');
+                const $el = $('#' + f);
+                if (!$el.val()) {
+                    $el.addClass('is-invalid');
+                    ok = false;
+                } else {
+                    $el.removeClass('is-invalid');
+                }
             });
-            if (!ok) { Swal.fire({ icon: 'warning', title: 'Champs requis', text: 'Veuillez remplir tous les champs obligatoires.', timer: 2500, showConfirmButton: false }); }
+            if (!ok) {
+                Swal.fire({ icon: 'warning', title: 'Champs requis', text: 'Veuillez remplir tous les champs obligatoires.', timer: 2500, showConfirmButton: false });
+            }
             return ok;
         }
         return true;
@@ -138,16 +137,20 @@ const Wizard = (() => {
 
     function reset() {
         $form()[0].reset();
-        $('#srv_id').val('');
-        $('#wizard-title').text('Ajouter un serveur');
-        $('#btn-submit-label').text('Enregistrer le serveur');
+        $('#res_id').val('');
+        $('#wizard-title').text('Ajouter un équipement réseau');
+        $('#btn-submit-label').text('Enregistrer l\'équipement');
+
         $('.statut-card').removeClass('selected');
         $('.aff-type-card').removeClass('selected');
+
         $('.aff-summary').addClass('d-none');
         $('#aff-skip-hint').removeClass('d-none');
-        $('#poste_travail_id, #local_id').val('');
+
+        $('#local_id').val('');
+
         $form().find('.is-invalid').removeClass('is-invalid');
-        $('#section-vm').addClass('d-none');
+
         goTo(1);
     }
 
@@ -157,19 +160,21 @@ const Wizard = (() => {
     }
 
     function quickAdd(title, placeholder, routeName, selectId) {
-        const bsModal = bootstrap.Modal.getInstance(document.getElementById('serveurModal'));
+        const bsModal = bootstrap.Modal.getInstance(document.getElementById('reseauModal'));
         if (bsModal) bsModal._focustrap?.deactivate();
 
         Swal.fire({
-            title,
+            title: title,
             input: 'text',
             inputPlaceholder: placeholder,
             showCancelButton: true,
             confirmButtonText: 'Ajouter',
             cancelButtonText: 'Annuler',
-            didOpen: () => setTimeout(() => Swal.getInput()?.focus(), 50),
+            didOpen: () => {
+                setTimeout(() => Swal.getInput()?.focus(), 50);
+            },
             preConfirm: (value) => {
-                if (!value?.trim()) {
+                if (!value || !value.trim()) {
                     Swal.showValidationMessage('Le libellé est obligatoire.');
                     return false;
                 }
@@ -180,7 +185,7 @@ const Wizard = (() => {
             if (result.isConfirmed && result.value) {
                 $.post(route(routeName), { libelle: result.value }, (res) => {
                     if (res.success) {
-                        $(`#${selectId}`).append(new Option(res.data.libelle, res.data.id, true, true));
+                        $('#' + selectId).append(new Option(res.data.libelle, res.data.id, true, true));
                         Swal.fire({ icon: 'success', title: 'Ajouté avec succès', timer: 1500, showConfirmButton: false });
                     }
                 }).fail((xhr) => {
@@ -194,6 +199,7 @@ const Wizard = (() => {
     // ── Init events ───────────────────────────────────────────────────────────
 
     function init() {
+        // Sélection statut visuelle
         $(document).on('click', '.statut-card', function () {
             $('.statut-card').removeClass('selected');
             $(this).addClass('selected');
@@ -202,90 +208,76 @@ const Wizard = (() => {
             updateNav();
         });
 
+        // Quick Adds
         $('.btn-add-nomenclature').on('click', function() {
             const type = $(this).data('type');
-            if (type === 'marque') quickAdd('Nouvelle marque', 'Ex: Dell, HP...', 'parc-info.ordinateurs.store-marque', 'marque_id');
-            if (type === 'os') quickAdd('Nouvel OS', 'Ex: Windows Server 2022, Debian...', 'parc-info.ordinateurs.store-type-os', 'os_type_id');
-        });
-
-        $('#type_serveur').on('change', function() {
-            const isVM = $(this).val() === 'Virtuel';
-            $('#section-vm').toggleClass('d-none', !isVM);
-            if (isVM) {
-                loadServeursHotes();
+            if (type === 'marque') {
+                quickAdd('Nouvelle marque', 'Ex: Cisco, HP, Fortinet...', 'parc-info.ordinateurs.store-marque', 'marque_id');
+            } else if (type === 'type_reseau') {
+                quickAdd('Nouveau type d\'équipement', 'Ex: Switch, Routeur...', 'parc-info.reseaux.store-type', 'type_reseau_id');
             }
         });
 
+        // Navigation
         $('#btn-next').on('click', () => {
             if (validateStep(currentStep)) goTo(currentStep + 1);
         });
+
         $('#btn-prev').on('click', () => {
             if (currentStep === 3) {
                 $('input[name="type_cible"]').prop('checked', false);
                 $('.aff-type-card').removeClass('selected');
                 $('.aff-summary').addClass('d-none');
                 $('#aff-skip-hint').removeClass('d-none');
-                $('#poste_travail_id, #local_id').val('');
+                $('#local_id').val('');
             }
             goTo(currentStep - 1);
         });
 
-        // Affectation type cards
+        // Modales de sélection
         $(document).on('click', '.aff-type-card', function () {
             $('.aff-type-card').removeClass('selected');
             $(this).addClass('selected');
             $(this).find('input[type="radio"]').prop('checked', true);
-            
+
             const val = $(this).data('value');
             if (val === 'LOCAL') {
                 $(document).trigger('show:local:modal');
-            } else if (val === 'POSTE') {
-                $(document).trigger('show:poste:modal');
             }
         });
 
+        // Écouteur pour la sélection du local (déclenchée par selection_modals.js)
         $(document).on('local:selected', function (e, local) {
             if (!$('#step-3').is(':visible')) return;
+
             $('.aff-type-card').removeClass('selected');
             $('.aff-type-card[data-value="LOCAL"]').addClass('selected')
                 .find('input[type="radio"]').prop('checked', true);
+
             $('#local-summary-code').text(local.code);
             $('#local-summary-libelle').text(local.libelle);
             $('#local-summary-etage').text(local.etage);
             $('#local_id').val(local.id);
-            $('#poste_travail_id').val('');
+
             $('.aff-summary').addClass('d-none');
             $('#aff-local-summary').removeClass('d-none');
             $('#aff-skip-hint').addClass('d-none');
         });
 
-        $(document).on('poste:selected', function (e, poste) {
-            if (!$('#step-3').is(':visible')) return;
-            $('.aff-type-card').removeClass('selected');
-            $('.aff-type-card[data-value="POSTE"]').addClass('selected')
-                .find('input[type="radio"]').prop('checked', true);
-            $('#poste-summary-code').text(poste.code);
-            $('#poste-summary-emplacement').text(poste.emplacement);
-            $('#poste_travail_id').val(poste.id);
-            $('#local_id').val('');
-            $('.aff-summary').addClass('d-none');
-            $('#aff-poste-summary').removeClass('d-none');
-            $('#aff-skip-hint').addClass('d-none');
-        });
-
+        // Soumission
         $form().on('submit', function (e) {
             e.preventDefault();
-            
+
             let formData = $(this).serialize();
             if (!$('input[name="type_cible"]:checked').val()) {
                 formData += '&skip_affectation=1';
             }
 
-            const id = $('#srv_id').val();
-            const url = id ? route('parc-info.serveurs.update', id) : route('parc-info.serveurs.store');
+            const id = $('#res_id').val();
+            const url = id ? route('parc-info.reseaux.update', id) : route('parc-info.reseaux.store');
             const method = id ? 'PUT' : 'POST';
             const $btn = $('#btn-submit');
-            
+
             $btn.prop('disabled', true).find('#btn-submit-label').text('Enregistrement...');
 
             $.ajax({
@@ -294,7 +286,7 @@ const Wizard = (() => {
                 success: (res) => {
                     if (res.success) {
                         $modal().modal('hide');
-                        $('#serveurs-table').bootstrapTable('refresh');
+                        $('#reseaux-table').bootstrapTable('refresh');
                         loadKpis();
                         Swal.fire({ icon: 'success', title: 'Succès', text: res.message, timer: 2000, showConfirmButton: false });
                     }
@@ -303,15 +295,15 @@ const Wizard = (() => {
                     if (xhr.status === 422) {
                         const errors = xhr.responseJSON?.errors ?? {};
                         Object.entries(errors).forEach(([field, msgs]) => {
-                            $(`#${field}`).addClass('is-invalid').after(`<div class="invalid-feedback d-block">${msgs[0]}</div>`);
+                            $('#' + field).addClass('is-invalid').after(`<div class="invalid-feedback d-block">${msgs[0]}</div>`);
                         });
-                        Swal.fire('Erreur de validation', 'Veuillez corriger les erreurs.', 'error');
+                        Swal.fire('Erreur de validation', 'Veuillez corriger les erreurs en surbrillance.', 'error');
                     } else {
                         Swal.fire('Erreur', xhr.responseJSON?.message ?? 'Une erreur est survenue.', 'error');
                     }
                 },
                 complete: () => {
-                    $btn.prop('disabled', false).find('#btn-submit-label').text('Enregistrer le serveur');
+                    $btn.prop('disabled', false).find('#btn-submit-label').text('Enregistrer l\'équipement');
                 },
             });
         });
@@ -319,22 +311,14 @@ const Wizard = (() => {
         $modal().on('hidden.bs.modal', reset);
     }
 
-    function loadServeursHotes() {
-        $.get(route('parc-info.serveurs.search-hotes'), (data) => {
-            const $select = $('#serveur_hote_id');
-            $select.find('option:not(:first)').remove();
-            data.forEach(s => {
-                $select.append(new Option(s.text, s.id));
-            });
-        });
-    }
-
     return { init, open };
 })();
 
-function deleteServeur(id) {
+// ── Suppression ───────────────────────────────────────────────────────────────
+
+function deleteReseau(id) {
     Swal.fire({
-        title: 'Supprimer ce serveur ?',
+        title: 'Supprimer cet équipement ?',
         text: 'Cette action est irréversible.',
         icon: 'warning',
         showCancelButton: true,
@@ -344,47 +328,51 @@ function deleteServeur(id) {
     }).then((result) => {
         if (result.isConfirmed) {
             $.ajax({
-                url: route('parc-info.serveurs.destroy', id),
+                url: route('parc-info.reseaux.destroy', id),
                 method: 'DELETE',
                 success: (res) => {
                     if (res.success) {
-                        $('#serveurs-table').bootstrapTable('refresh');
+                        $('#reseaux-table').bootstrapTable('refresh');
                         loadKpis();
                         Swal.fire({ icon: 'success', title: 'Supprimé', timer: 1500, showConfirmButton: false });
                     }
                 },
+                error: () => Swal.fire('Erreur', 'Impossible de supprimer.', 'error'),
             });
         }
     });
 }
 
+// ── Init ──────────────────────────────────────────────────────────────────────
+
 $(function () {
     Wizard.init();
+
     $('#btn-add').on('click', () => Wizard.open());
-    
+
     $('#btn-edit').on('click', () => {
-        const sel = $('#serveurs-table').bootstrapTable('getSelections');
-        if (sel.length) window.location.href = `/parc-info/informatique/serveurs/${sel[0].id}`;
+        const sel = $('#reseaux-table').bootstrapTable('getSelections');
+        if (sel.length) window.location.href = `/parc-info/informatique/reseaux/${sel[0].id}`;
     });
 
     $('#btn-delete').on('click', () => {
-        const sel = $('#serveurs-table').bootstrapTable('getSelections');
-        if (sel.length) deleteServeur(sel[0].id);
+        const sel = $('#reseaux-table').bootstrapTable('getSelections');
+        if (sel.length) deleteReseau(sel[0].id);
     });
 
-    $('#serveurs-table').on('check.bs.table uncheck.bs.table', function () {
+    $('#reseaux-table').on('check.bs.table uncheck.bs.table', function () {
         const sel = $(this).bootstrapTable('getSelections');
         $('#btn-edit, #btn-delete').prop('disabled', sel.length === 0);
     });
 
-    $('#serveurs-table').on('load-success.bs.table', () => {
+    $('#reseaux-table').on('load-success.bs.table', () => {
         $('#btn-edit, #btn-delete').prop('disabled', true);
     });
 
-    $('#btn-apply-filters').on('click', () => $('#serveurs-table').bootstrapTable('refresh'));
+    $('#btn-apply-filters').on('click', () => $('#reseaux-table').bootstrapTable('refresh'));
     $('#btn-reset-filters').on('click', () => {
         $('#filter-type, #filter-site, #filter-statut').val('');
-        $('#serveurs-table').bootstrapTable('refresh');
+        $('#reseaux-table').bootstrapTable('refresh');
     });
 
     loadKpis();

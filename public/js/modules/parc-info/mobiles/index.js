@@ -235,6 +235,26 @@ function deleteMobile(id) {
 $(function () {
     Wizard.init();
     $('#btn-add').on('click', () => Wizard.open());
+
+    $('#btn-edit').on('click', () => {
+        const sel = $('#mobiles-table').bootstrapTable('getSelections');
+        if (sel.length) window.location.href = `/parc-info/informatique/mobiles/${sel[0].id}`;
+    });
+
+    $('#btn-delete').on('click', () => {
+        const sel = $('#mobiles-table').bootstrapTable('getSelections');
+        if (sel.length) deleteMobile(sel[0].id);
+    });
+
+    $('#mobiles-table').on('check.bs.table uncheck.bs.table', function () {
+        const sel = $(this).bootstrapTable('getSelections');
+        $('#btn-edit, #btn-delete').prop('disabled', sel.length === 0);
+    });
+
+    $('#mobiles-table').on('load-success.bs.table', () => {
+        $('#btn-edit, #btn-delete').prop('disabled', true);
+    });
+
     $('#btn-apply-filters').on('click', () => $('#mobiles-table').bootstrapTable('refresh'));
     $('#btn-reset-filters').on('click', () => { $('#filter-type, #filter-site, #filter-statut').val(''); $('#mobiles-table').bootstrapTable('refresh'); });
     loadKpis();

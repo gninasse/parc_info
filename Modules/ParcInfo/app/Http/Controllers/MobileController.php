@@ -184,6 +184,107 @@ class MobileController extends Controller
         return response()->json(['success' => true, 'message' => 'Mobile mis à jour avec succès.']);
     }
 
+    public function updateStatut(Request $request, $id)
+    {
+        $request->validate([
+            'statut' => 'required|in:en_stock,en_service,en_reparation,perdu,reforme',
+            'motif' => 'required|string',
+        ]);
+
+        \DB::transaction(function () use ($request, $id) {
+            $equipement = Equipement::findOrFail($id);
+            $ancienStatut = $equipement->statut;
+
+            // Si passage en stock, désaffecter
+            if ($request->statut === 'en_stock' && $equipement->affectationActive) {
+                AffectationEquipement::where('equipement_id', $id)
+                    ->where('statut', true)
+                    ->update(['statut' => false, 'date_fin' => now()]);
+            }
+
+            $equipement->update(['statut' => $request->statut]);
+
+            // Enregistrer dans l'historique
+            HistoriqueChangement::create([
+                'equipement_id' => $id,
+                'date_changement' => now(),
+                'utilisateur_id' => auth()->id(),
+                'type_changement' => 'STATUT',
+                'ancien_statut' => $ancienStatut,
+                'nouveau_statut' => $request->statut,
+                'motif' => $request->motif,
+            ]);
+        });
+
+        return response()->json(['success' => true, 'message' => 'Statut mis à jour avec succès.']);
+    }
+
+    public function updateEtat(Request $request, $id)
+    {
+        $request->validate([
+            'etat' => 'required|in:bon,passable,mauvais,avarie',
+            'motif' => 'required|string',
+        ]);
+
+        \DB::transaction(function () use ($request, $id) {
+            $equipement = Equipement::findOrFail($id);
+            $ancienEtat = $equipement->etat;
+
+            $equipement->update(['etat' => $request->etat]);
+
+            HistoriqueChangement::create([
+                'equipement_id' => $id,
+                'date_changement' => now(),
+                'utilisateur_id' => auth()->id(),
+                'type_changement' => 'ETAT',
+                'ancien_statut' => $ancienEtat,
+                'nouveau_statut' => $request->etat,
+                'motif' => $request->motif,
+            ]);
+        });
+
+        return response()->json(['success' => true, 'message' => 'État mis à jour avec succès.']);
+    }
+
+    public function desaffecter(Request $request, $id)
+    {
+        $request->validate([
+            'motif' => 'required|string|max:255',
+        ]);
+
+        \DB::transaction(function () use ($request, $id) {
+            $equipement = Equipement::findOrFail($id);
+            $ancienStatut = $equipement->statut;
+
+            AffectationEquipement::where('equipement_id', $id)
+                ->where('statut', true)
+                ->update(['statut' => false, 'date_fin' => now()]);
+
+            $equipement->update(['statut' => 'en_stock']);
+
+            HistoriqueChangement::create([
+                'equipement_id' => $id,
+                'date_changement' => now(),
+                'utilisateur_id' => auth()->id(),
+                'type_changement' => 'AFFECTATION',
+                'ancien_statut' => null,
+                'nouveau_statut' => null,
+                'motif' => 'Désaffectation : '.$request->motif,
+            ]);
+
+            HistoriqueChangement::create([
+                'equipement_id' => $id,
+                'date_changement' => now(),
+                'utilisateur_id' => auth()->id(),
+                'type_changement' => 'STATUT',
+                'ancien_statut' => $ancienStatut,
+                'nouveau_statut' => 'en_stock',
+                'motif' => 'Mise en stock automatique suite à désaffectation',
+            ]);
+        });
+
+        return response()->json(['success' => true, 'message' => 'Équipement désaffecté et mis en stock.']);
+    }
     public function destroy($id)
     {
         Equipement::findOrFail($id)->delete();
