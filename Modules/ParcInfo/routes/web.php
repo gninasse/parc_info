@@ -5,6 +5,7 @@ use Modules\ParcInfo\Http\Controllers\OrdinateurController;
 use Modules\ParcInfo\Http\Controllers\ServeurController;
 use Modules\ParcInfo\Http\Controllers\MobileController;
 use Modules\ParcInfo\Http\Controllers\ParcInfoController;
+use Modules\ParcInfo\Http\Controllers\ReseauController;
 
 Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(function () {
     Route::get('/dashboard', [ParcInfoController::class, 'dashboard'])->name('dashboard');
@@ -32,6 +33,19 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::post('/{id}/desaffecter', [OrdinateurController::class, 'desaffecter'])->name('desaffecter');
     });
 
+    // Équipements Réseau
+    Route::prefix('informatique/reseaux')->name('reseaux.')->group(function () {
+        Route::get('/', [ReseauController::class, 'index'])->name('index');
+        Route::get('/data', [ReseauController::class, 'getData'])->name('data');
+        Route::post('/', [ReseauController::class, 'store'])->name('store');
+        Route::get('/{id}', [ReseauController::class, 'show'])->name('show');
+        Route::put('/{id}', [ReseauController::class, 'update'])->name('update');
+        Route::delete('/{id}', [ReseauController::class, 'destroy'])->name('destroy');
+        Route::post('/types', [ReseauController::class, 'storeTypeReseau'])->name('store-type');
+        Route::patch('/{id}/statut', [ReseauController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat', [ReseauController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter', [ReseauController::class, 'desaffecter'])->name('desaffecter');
+    });
     // Serveurs
     Route::prefix('informatique/serveurs')->name('serveurs.')->group(function () {
         Route::get('/', [ServeurController::class, 'index'])->name('index');
@@ -41,6 +55,9 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::put('/{id}', [ServeurController::class, 'update'])->name('update');
         Route::delete('/{id}', [ServeurController::class, 'destroy'])->name('destroy');
         Route::get('/search/hotes', [ServeurController::class, 'searchHotes'])->name('search-hotes');
+        Route::patch('/{id}/statut', [ServeurController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat', [ServeurController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter', [ServeurController::class, 'desaffecter'])->name('desaffecter');
     });
 
     // Mobiles & Tablettes
@@ -52,5 +69,8 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::put('/{id}', [MobileController::class, 'update'])->name('update');
         Route::delete('/{id}', [MobileController::class, 'destroy'])->name('destroy');
         Route::post('/types', [MobileController::class, 'storeTypeMobile'])->name('store-type');
+        Route::patch('/{id}/statut', [MobileController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat', [MobileController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter', [MobileController::class, 'desaffecter'])->name('desaffecter');
     });
 });
