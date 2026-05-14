@@ -4,11 +4,10 @@ use Illuminate\Support\Facades\Route;
 use Modules\ParcInfo\Http\Controllers\OrdinateurController;
 use Modules\ParcInfo\Http\Controllers\ServeurController;
 use Modules\ParcInfo\Http\Controllers\MobileController;
-use Modules\ParcInfo\Http\Controllers\ParcInfoController;
-use Modules\ParcInfo\Http\Controllers\ReseauController;
+use Modules\ParcInfo\Http\Controllers\DashboardController;
 
 Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(function () {
-    Route::get('/dashboard', [ParcInfoController::class, 'dashboard'])->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Ordinateurs
     Route::prefix('informatique/ordinateurs')->name('ordinateurs.')->group(function () {
