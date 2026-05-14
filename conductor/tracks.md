@@ -4,5 +4,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [ ] **Track: Implement central dashboard for IT Asset Management**
+- [ ] ~~**Track: Implement central dashboard for IT Asset Management**~~ (Cancelled)
   *Link: [./tracks/dashboard_20260514/](./tracks/dashboard_20260514/)*
