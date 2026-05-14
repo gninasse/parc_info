@@ -4,7 +4,7 @@
 - [x] Task: Create `DashboardController` in the `ParcInfo` or `Core` module. 4115ace
     - [x] Write Tests for dashboard access (RBAC checking).
     - [x] Implement `index` method returning the dashboard view.
-- [ ] Task: Define routes for the dashboard using Ziggy.
+- [x] Task: Define routes for the dashboard using Ziggy. b356d2f
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Dashboard Controller & Routing' (Protocol in workflow.md)
 
 ## Phase 2: Widget Data Aggregation
