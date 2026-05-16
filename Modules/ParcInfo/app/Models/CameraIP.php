@@ -16,12 +16,17 @@ class CameraIP extends Model
         'adresse_ip',
         'adresse_mac',
         'resolution',
-        'type_camera',
+        'type_camera_id',
         'emplacement',
     ];
 
     public function equipement()
     {
         return $this->belongsTo(Equipement::class, 'equipement_id');
+    }
+
+    public function typeCamera()
+    {
+        return $this->belongsTo(TypeCamera::class, 'type_camera_id');
     }
 }

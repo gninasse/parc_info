@@ -1,10 +1,10 @@
 @extends('parcinfo::layouts.master')
 
-@section('header', 'Brassage')
+@section('header', 'Routeurs')
 
 @section('breadcrumb')
     <li class="breadcrumb-item"><a href="{{ route('parc-info.dashboard') }}">Parc Info</a></li>
-    <li class="breadcrumb-item active">Brassage</li>
+    <li class="breadcrumb-item active">Routeurs</li>
 @endsection
 
 @push('css')
@@ -69,7 +69,7 @@
                 <label class="form-label small fw-semibold mb-1">Type d'équipement</label>
                 <select class="form-select form-select-sm" id="filter-type">
                     <option value="">Tous les types</option>
-                    @foreach($typesInfrastructures as $t)
+                    @foreach($typesReseaux as $t)
                         <option value="{{ $t->id }}">{{ $t->libelle }}</option>
                     @endforeach
                 </select>
@@ -111,7 +111,7 @@
 {{-- ── Table ── --}}
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
-        <h6 class="mb-0 fw-bold">Liste des Brassage</h6>
+        <h6 class="mb-0 fw-bold">Liste des Routeurs</h6>
     </div>
     <div class="card-body p-0">
         <div id="toolbar">
@@ -127,7 +127,7 @@
         </div>
         <table id="reseaux-table"
                data-toggle="table"
-               data-url="{{ route('parc-info.brassage.data') }}"
+               data-url="{{ route('parc-info.routeurs.data') }}"
                data-pagination="true"
                data-side-pagination="server"
                data-search="true"
@@ -165,6 +165,6 @@
 @push('js')
 <script src="{{ asset('plugins/bootstrap-table/bootstrap-table.min.js') }}"></script>
 <script src="{{ asset('plugins/bootstrap-table/locale/bootstrap-table-fr-FR.min.js') }}"></script>
-<script type="module" src="{{ asset('js/modules/parc-info.brassage/index.js') }}?v={{ time() }}"></script>
+<script type="module" src="{{ asset('js/modules/parc-info.routeurs/index.js') }}?v={{ time() }}"></script>
 <script src="{{ asset('js/modules/parc-info/ordinateurs/selection_modals.js') }}?v={{ time() }}"></script>
 @endpush

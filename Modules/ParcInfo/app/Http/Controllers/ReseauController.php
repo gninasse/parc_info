@@ -8,43 +8,62 @@ use Modules\Organisation\Models\Direction;
 use Modules\Organisation\Models\Site;
 use Modules\ParcInfo\Models\AffectationEquipement;
 use Modules\ParcInfo\Models\Equipement;
-use Modules\ParcInfo\Models\Infrastructure;
-use Modules\ParcInfo\Models\HistoriqueChangement;
+use Modules\ParcInfo\Models\EquipementReseau;
 use Modules\ParcInfo\Models\Marque;
-use Modules\ParcInfo\Models\TypeInfrastructure;
+use Modules\ParcInfo\Models\TypeReseau;
+use Modules\ParcInfo\Models\HistoriqueChangement;
 
-class BrassageController extends Controller
+class ReseauController extends Controller
 {
     public function index()
     {
-        $typesInfrastructures = TypeInfrastructure::orderBy('libelle')->get(['id', 'libelle']);
         $sites = Site::orderBy('libelle')->get(['id', 'libelle']);
-        return view('parcinfo::informatique.brassage.index', compact('typesInfrastructures', 'sites'));
+        $directions = Direction::where('actif', true)->orderBy('libelle')->get(['id', 'libelle']);
+        $marques = Marque::orderBy('libelle')->get(['id', 'libelle']);
+        $typesReseaux = TypeReseau::orderBy('libelle')->get(['id', 'libelle']);
+
+        return view('parcinfo::informatique.reseaux.index', compact(
+            'sites', 'directions', 'marques', 'typesReseaux'
+        ));
     }
 
     public function getData(Request $request)
     {
         $query = Equipement::query()
-            ->with(['marque', 'infrastructure.typeInfrastructure', 'affectationActive.local.etage.batiment'])
-            ->whereHas('infrastructure', function ($q) {
-                $q->whereHas('typeInfrastructure', function ($t) {
-                    $t->where('libelle', 'ilike', '%onduleur%');
-                });
-            });
+            ->with(['marque', 'reseau.typeReseau', 'affectationActive.local.etage.batiment'])
+            ->whereHas('reseau');
 
         if ($request->filled('statut')) {
             $query->where('statut', $request->statut);
         }
-        if ($request->filled('type_infra_id')) {
-            $query->whereHas('infrastructure', fn ($q) => $q->where('type_infra_id', $request->type_infra_id));
+        if ($request->filled('type_reseau_id')) {
+            $query->whereHas('reseau', fn ($q) => $q->where('type_reseau_id', $request->type_reseau_id));
         }
         if ($request->filled('site_id')) {
             $query->whereHas('affectationActive.local.etage.batiment', fn ($q) => $q->where('site_id', $request->site_id));
         }
 
+        if ($request->filled('search') && $request->search !== '') {
+            $s = $request->search;
+            $query->where(fn ($q) => $q
+                ->where('code_inventaire', 'ilike', "%{$s}%")
+                ->orWhere('numero_serie', 'ilike', "%{$s}%")
+                ->orWhere('modele', 'ilike', "%{$s}%")
+                ->orWhereHas('marque', fn ($q2) => $q2->where('libelle', 'ilike', "%{$s}%"))
+                ->orWhereHas('reseau', fn ($q2) => $q2->where('adresse_ip', 'ilike', "%{$s}%"))
+            );
+        }
+
+        $sortField = $request->get('sort', 'id');
+        $sortOrder = $request->get('order', 'desc');
+        $query->orderBy($sortField, $sortOrder);
+
+        $total = $query->count();
+        $rows = $query->offset($request->get('offset', 0))->limit($request->get('limit', 25))->get();
+
         return response()->json([
-            'total' => $query->count(),
-            'rows' => $query->get()->map(fn ($e) => $this->formatRow($e)),
+            'total' => $total,
+            'rows' => $rows->map(fn ($e) => $this->formatRow($e)),
         ]);
     }
 
@@ -53,7 +72,7 @@ class BrassageController extends Controller
         if (! $request->filled('code_inventaire')) {
             $lastEquipement = Equipement::orderBy('id', 'desc')->first();
             $nextId = $lastEquipement ? $lastEquipement->id + 1 : 1;
-            $request->merge(['code_inventaire' => 'INF-'.date('Y').'-'.str_pad($nextId, 4, '0', STR_PAD_LEFT)]);
+            $request->merge(['code_inventaire' => 'NET-'.date('Y').'-'.str_pad($nextId, 4, '0', STR_PAD_LEFT)]);
         }
 
         $request->validate([
@@ -63,11 +82,16 @@ class BrassageController extends Controller
             'modele' => 'required|string|max:255',
             'statut' => 'required|in:en_stock,en_service,en_reparation,perdu,reforme',
             'etat' => 'required|in:bon,passable,mauvais,avarie',
-            'type_infra_id' => 'nullable|exists:parc_info_types_infrastructures,id',
-            'puissance_va' => 'nullable|integer',
-            'autonomie_minutes' => 'nullable|integer',
-            'date_dernier_remplacement_batterie' => 'nullable|date',
-            'est_redondant' => 'nullable|boolean',
+            // Reseau
+            'type_reseau_id' => 'nullable|exists:parc_info_types_reseaux,id',
+            'nb_ports' => 'nullable|integer',
+            'vitesse_max_mbps' => 'nullable|integer',
+            'est_poe' => 'nullable|boolean',
+            'version_firmware' => 'nullable|string',
+            'adresse_ip' => 'nullable|ip',
+            'masque_sous_reseau' => 'nullable|ip',
+            'passerelle' => 'nullable|ip',
+            'est_manageable' => 'nullable|boolean',
         ]);
 
         $equipementId = \DB::transaction(function () use ($request) {
@@ -81,13 +105,17 @@ class BrassageController extends Controller
                 'etat' => $request->etat ?? 'bon',
             ]);
 
-            Infrastructure::create([
+            EquipementReseau::create([
                 'equipement_id' => $equipement->id,
-                'type_infra_id' => $request->type_infra_id,
-                'puissance_va' => $request->puissance_va,
-                'autonomie_minutes' => $request->autonomie_minutes,
-                'date_dernier_remplacement_batterie' => $request->date_dernier_remplacement_batterie,
-                'est_redondant' => $request->boolean('est_redondant'),
+                'type_reseau_id' => $request->type_reseau_id,
+                'nb_ports' => $request->nb_ports,
+                'vitesse_max_mbps' => $request->vitesse_max_mbps,
+                'est_poe' => $request->boolean('est_poe'),
+                'version_firmware' => $request->version_firmware,
+                'adresse_ip' => $request->adresse_ip,
+                'masque_sous_reseau' => $request->masque_sous_reseau,
+                'passerelle' => $request->passerelle,
+                'est_manageable' => $request->boolean('est_manageable', true),
             ]);
 
             if (! $request->boolean('skip_affectation') && $request->filled('type_cible')) {
@@ -105,26 +133,26 @@ class BrassageController extends Controller
             return $equipement->id;
         });
 
-        return response()->json(['success' => true, 'message' => 'Brassage enregistré avec succès.', 'equipement_id' => $equipementId]);
+        return response()->json(['success' => true, 'message' => 'Équipement réseau enregistré avec succès.', 'equipement_id' => $equipementId]);
     }
 
     public function show($id)
     {
         $equipement = Equipement::with([
             'marque',
-            'infrastructure.typeInfrastructure',
+            'reseau.typeReseau',
             'affectationActive.local.etage.batiment.site',
             'affectations.local',
             'historique',
         ])->findOrFail($id);
 
         $marques = Marque::orderBy('libelle')->get(['id', 'libelle']);
-        $typesInfrastructures = TypeInfrastructure::orderBy('libelle')->get(['id', 'libelle']);
+        $typesReseaux = TypeReseau::orderBy('libelle')->get(['id', 'libelle']);
         $sites = Site::orderBy('libelle')->get(['id', 'libelle']);
         $directions = Direction::where('actif', true)->orderBy('libelle')->get(['id', 'libelle']);
 
-        return view('parcinfo::informatique.brassage.show', compact(
-            'equipement', 'marques', 'typesInfrastructures', 'sites', 'directions'
+        return view('parcinfo::informatique.reseaux.show', compact(
+            'equipement', 'marques', 'typesReseaux', 'sites', 'directions'
         ));
     }
 
@@ -135,10 +163,9 @@ class BrassageController extends Controller
             'modele' => 'required|string|max:255',
             'statut' => 'required|in:en_stock,en_service,en_reparation,perdu,reforme',
             'etat' => 'required|in:bon,passable,mauvais,avarie',
-            'puissance_va' => 'nullable|integer',
-            'autonomie_minutes' => 'nullable|integer',
-            'date_dernier_remplacement_batterie' => 'nullable|date',
-            'est_redondant' => 'nullable|boolean',
+            'adresse_ip' => 'nullable|ip',
+            'masque_sous_reseau' => 'nullable|ip',
+            'passerelle' => 'nullable|ip',
         ]);
 
         \DB::transaction(function () use ($request, $id) {
@@ -148,16 +175,20 @@ class BrassageController extends Controller
                 'date_acquisition', 'statut', 'etat',
             ]));
 
-            $equipement->infrastructure->update([
-                'type_infra_id' => $request->type_infra_id,
-                'puissance_va' => $request->puissance_va,
-                'autonomie_minutes' => $request->autonomie_minutes,
-                'date_dernier_remplacement_batterie' => $request->date_dernier_remplacement_batterie,
-                'est_redondant' => $request->boolean('est_redondant'),
+            $equipement->reseau->update([
+                'type_reseau_id' => $request->type_reseau_id,
+                'nb_ports' => $request->nb_ports,
+                'vitesse_max_mbps' => $request->vitesse_max_mbps,
+                'est_poe' => $request->boolean('est_poe'),
+                'version_firmware' => $request->version_firmware,
+                'adresse_ip' => $request->adresse_ip,
+                'masque_sous_reseau' => $request->masque_sous_reseau,
+                'passerelle' => $request->passerelle,
+                'est_manageable' => $request->boolean('est_manageable')
             ]);
         });
 
-        return response()->json(['success' => true, 'message' => 'Brassage mis à jour avec succès.']);
+        return response()->json(['success' => true, 'message' => 'Équipement mis à jour avec succès.']);
     }
 
     public function updateStatut(Request $request, $id)
@@ -171,6 +202,7 @@ class BrassageController extends Controller
             $equipement = Equipement::findOrFail($id);
             $ancienStatut = $equipement->statut;
 
+            // Si passage en stock, désaffecter
             if ($request->statut === 'en_stock' && $equipement->affectationActive) {
                 AffectationEquipement::where('equipement_id', $id)
                     ->where('statut', true)
@@ -179,6 +211,7 @@ class BrassageController extends Controller
 
             $equipement->update(['statut' => $request->statut]);
 
+            // Enregistrer dans l'historique
             HistoriqueChangement::create([
                 'equipement_id' => $id,
                 'date_changement' => now(),
@@ -259,17 +292,16 @@ class BrassageController extends Controller
 
         return response()->json(['success' => true, 'message' => 'Équipement désaffecté et mis en stock.']);
     }
-
     public function destroy($id)
     {
         Equipement::findOrFail($id)->delete();
-        return response()->json(['success' => true, 'message' => 'Brassage supprimé.']);
+        return response()->json(['success' => true, 'message' => 'Équipement supprimé.']);
     }
 
-    public function storeTypeInfrastructure(Request $request)
+    public function storeTypeReseau(Request $request)
     {
-        $request->validate(['libelle' => 'required|string|unique:parc_info_types_infrastructures,libelle']);
-        $type = TypeInfrastructure::create(['libelle' => $request->libelle]);
+        $request->validate(['libelle' => 'required|string|unique:parc_info_types_reseaux,libelle']);
+        $type = TypeReseau::create(['libelle' => $request->libelle]);
         return response()->json(['success' => true, 'data' => $type]);
     }
 
@@ -285,8 +317,9 @@ class BrassageController extends Controller
             'id' => $e->id,
             'code_inventaire' => $e->code_inventaire,
             'marque_modele' => ($e->marque?->libelle ?? '—').' '.$e->modele,
-            'type_infrastructure' => $e->infrastructure->typeInfrastructure?->libelle ?? '—',
-            'puissance_va' => $e->infrastructure->puissance_va ?? '—',
+            'type_reseau' => $e->reseau->typeReseau?->libelle ?? '—',
+            'adresse_ip' => $e->reseau->adresse_ip ?? '—',
+            'nb_ports' => $e->reseau->nb_ports ?? '—',
             'statut' => $e->statut,
             'statut_label' => $e->statut_label,
             'affectation' => $affLabel,

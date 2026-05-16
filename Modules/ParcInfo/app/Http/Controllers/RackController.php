@@ -19,7 +19,7 @@ class RackController extends Controller
     {
         $typesInfrastructures = TypeInfrastructure::orderBy('libelle')->get(['id', 'libelle']);
         $sites = Site::orderBy('libelle')->get(['id', 'libelle']);
-        return view('parcinfo::informatique.onduleurs.index', compact('typesInfrastructures', 'sites'));
+        return view('parcinfo::informatique.racks.index', compact('typesInfrastructures', 'sites'));
     }
 
     public function getData(Request $request)
@@ -123,7 +123,7 @@ class RackController extends Controller
         $sites = Site::orderBy('libelle')->get(['id', 'libelle']);
         $directions = Direction::where('actif', true)->orderBy('libelle')->get(['id', 'libelle']);
 
-        return view('parcinfo::informatique.onduleurs.show', compact(
+        return view('parcinfo::informatique.racks.show', compact(
             'equipement', 'marques', 'typesInfrastructures', 'sites', 'directions'
         ));
     }

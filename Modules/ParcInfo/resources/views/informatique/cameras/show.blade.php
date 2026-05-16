@@ -4,7 +4,7 @@
 
 @section('breadcrumb')
     <li class="breadcrumb-item"><a href="{{ route('parc-info.dashboard') }}">Parc Info</a></li>
-    <li class="breadcrumb-item"><a href="{{ route('parc-info.brassage.index') }}">Brassage</a></li>
+    <li class="breadcrumb-item"><a href="{{ route('parc-info.cameras.index') }}">Caméras IP</a></li>
     <li class="breadcrumb-item active">{{ $equipement->code_inventaire }}</li>
 @endsection
 
@@ -341,7 +341,7 @@ $(document).ready(function() {
         $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Enregistrement...');
 
         $.ajax({
-            url: `{{ route('parc-info.brassage.update', $equipement->id) }}`,
+            url: `{{ route('parc-info.cameras.update', $equipement->id) }}`,
             method: 'PUT',
             data: $(this).serialize(),
             success: (res) => {
@@ -382,7 +382,7 @@ $(document).ready(function() {
         }).then((result) => {
             if (result.isConfirmed) {
                 $.ajax({
-                    url: `{{ route('parc-info.brassage.update-statut', $equipement->id) }}`,
+                    url: `{{ route('parc-info.cameras.update-statut', $equipement->id) }}`,
                     method: 'PATCH',
                     data: { statut: statut, motif: result.value },
                     success: (res) => {
@@ -418,7 +418,7 @@ $(document).ready(function() {
         }).then((result) => {
             if (result.isConfirmed) {
                 $.ajax({
-                    url: `{{ route('parc-info.brassage.desaffecter', $equipement->id) }}`,
+                    url: `{{ route('parc-info.cameras.desaffecter', $equipement->id) }}`,
                     method: 'POST',
                     data: { motif: result.value },
                     success: (res) => {

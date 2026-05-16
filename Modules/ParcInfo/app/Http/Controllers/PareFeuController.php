@@ -22,7 +22,7 @@ class PareFeuController extends Controller
         $marques = Marque::orderBy('libelle')->get(['id', 'libelle']);
         $typesReseaux = TypeReseau::orderBy('libelle')->get(['id', 'libelle']);
 
-        return view('parcinfo::informatique.reseaux.index', compact(
+        return view('parcinfo::informatique.parefeux.index', compact(
             'sites', 'directions', 'marques', 'typesReseaux'
         ));
     }
@@ -151,7 +151,7 @@ class PareFeuController extends Controller
         $sites = Site::orderBy('libelle')->get(['id', 'libelle']);
         $directions = Direction::where('actif', true)->orderBy('libelle')->get(['id', 'libelle']);
 
-        return view('parcinfo::informatique.reseaux.show', compact(
+        return view('parcinfo::informatique.parefeux.show', compact(
             'equipement', 'marques', 'typesReseaux', 'sites', 'directions'
         ));
     }

@@ -124,7 +124,7 @@
         {{-- ── SÉCURITÉ ── --}}
         <li class="nav-header text-uppercase small opacity-50">Sécurité</li>
         <li class="nav-item">
-          <a href="#" class="nav-link {{ request()->routeIs('parc-info.cameras.*') ? 'active' : '' }}">
+          <a href="{{ route('parc-info.cameras.index') }}" class="nav-link {{ request()->routeIs('parc-info.cameras.*') ? 'active' : '' }}">
             <i class="nav-icon bi bi-camera-video"></i>
             <p>Caméras IP</p>
           </a>

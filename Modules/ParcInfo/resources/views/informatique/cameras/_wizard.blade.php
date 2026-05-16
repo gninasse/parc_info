@@ -120,11 +120,11 @@
                                         <div class="input-group">
                                             <select class="form-select" id="type_reseau_id" name="type_reseau_id">
                                                 <option value="">Sélectionner...</option>
-                                                @foreach($typesInfrastructures as $t)
+                                                @foreach($typesCameras as $t)
                                                     <option value="{{ $t->id }}">{{ $t->libelle }}</option>
                                                 @endforeach
                                             </select>
-                                            <button class="btn btn-outline-secondary btn-add-nomenclature" type="button" data-type="type_infrastructure"><i class="bi bi-plus-lg"></i></button>
+                                            <button class="btn btn-outline-secondary btn-add-nomenclature" type="button" data-type="type_camera"><i class="bi bi-plus-lg"></i></button>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
