@@ -29,4 +29,9 @@ class HistoriqueChangement extends Model
     {
         return $this->belongsTo(Equipement::class, 'equipement_id');
     }
+
+    public function utilisateur()
+    {
+        return $this->belongsTo(\Modules\Core\Models\User::class, 'utilisateur_id');
+    }
 }

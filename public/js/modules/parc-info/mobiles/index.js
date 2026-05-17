@@ -12,8 +12,8 @@ window.mobilesQueryParams = function (params) {
     });
 };
 
-window.codeFormatter = (val) =>
-    `<span class="fw-bold text-primary small">${val}</span>`;
+window.codeFormatter = (val, row) =>
+    `<a href="${route('parc-info.mobiles.show', row.id)}" class="fw-bold text-primary small text-decoration-none">${val}</a>`;
 
 window.statutFormatter = (val) => {
     const map = {
@@ -29,7 +29,7 @@ window.statutFormatter = (val) => {
 
 window.actionsFormatter = (id) =>
     `<div class="d-flex gap-1">
-        <a href="/parc-info/informatique/mobiles/${id}" class="btn btn-sm btn-outline-secondary border-0" title="Voir / Modifier"><i class="bi bi-eye"></i></a>
+        <a href="${route('parc-info.mobiles.show', id)}" class="btn btn-sm btn-outline-secondary border-0" title="Voir / Modifier"><i class="bi bi-eye"></i></a>
         <button class="btn btn-sm btn-outline-danger border-0" data-action="delete" data-id="${id}" title="Supprimer"><i class="bi bi-trash"></i></button>
     </div>`;
 
@@ -178,6 +178,7 @@ const Wizard = (() => {
             const val = $(this).data('value');
             if (val === 'EMPLOYE') $(document).trigger('show:employe:modal');
             else if (val === 'LOCAL') $(document).trigger('show:local:modal');
+            else if (val === 'POSTE') $(document).trigger('show:poste:modal');
         });
 
         $(document).on('employe:selected', function (e, emp) {
@@ -198,6 +199,16 @@ const Wizard = (() => {
             $('#local_id').val(local.id);
             $('#dossier_employe_id').val('');
             $('.aff-summary').addClass('d-none'); $('#aff-local-summary').removeClass('d-none'); $('#aff-skip-hint').addClass('d-none');
+        });
+
+        $(document).on('poste:selected', function (e, poste) {
+            if (!$('#step-3').is(':visible')) return;
+            $('#poste-summary-code').text(poste.code);
+            $('#poste-summary-libelle').text(poste.libelle);
+            $('#poste_travail_id').val(poste.id);
+            $('#dossier_employe_id').val('');
+            $('#local_id').val('');
+            $('.aff-summary').addClass('d-none'); $('#aff-poste-summary').removeClass('d-none'); $('#aff-skip-hint').addClass('d-none');
         });
 
         $form().on('submit', function (e) {
@@ -238,7 +249,7 @@ $(function () {
 
     $('#btn-edit').on('click', () => {
         const sel = $('#mobiles-table').bootstrapTable('getSelections');
-        if (sel.length) window.location.href = `/parc-info/informatique/mobiles/${sel[0].id}`;
+        if (sel.length) window.location.href = route('parc-info.mobiles.show', sel[0].id);
     });
 
     $('#btn-delete').on('click', () => {

@@ -140,10 +140,14 @@ class MobileController extends Controller
             'marque',
             'mobile.typeMobile',
             'affectationActive.employe',
-            'affectationActive.posteTravail',
+            'affectationActive.posteTravail.local.etage.batiment.site',
             'affectationActive.local.etage.batiment.site',
+            'affectationActive.direction', 'affectationActive.service', 'affectationActive.unite',
             'affectations.employe',
-            'historique',
+            'affectations.posteTravail',
+            'affectations.local',
+            'affectations.direction', 'affectations.service', 'affectations.unite',
+            'historique.utilisateur',
         ])->findOrFail($id);
 
         $marques = Marque::orderBy('libelle')->get(['id', 'libelle']);
@@ -154,6 +158,77 @@ class MobileController extends Controller
         return view('parcinfo::informatique.mobiles.show', compact(
             'equipement', 'marques', 'typesMobiles', 'sites', 'directions'
         ));
+    }
+
+    public function storeAffectation(Request $request)
+    {
+        $request->validate([
+            'equipement_id' => 'required|exists:parc_info_equipements,id',
+            'type_cible' => 'required|in:EMPLOYE,POSTE,LOCAL',
+        ]);
+
+        \DB::transaction(function () use ($request) {
+            $equipement = Equipement::findOrFail($request->equipement_id);
+
+            // Clôturer l'affectation active précédente
+            AffectationEquipement::where('equipement_id', $request->equipement_id)
+                ->where('statut', true)
+                ->update(['statut' => false, 'date_fin' => now()]);
+
+            $niveau_rattachement = null;
+            $direction_id = null;
+            $service_id = null;
+            $unite_id = null;
+
+            if ($request->type_cible === 'EMPLOYE' && $request->dossier_employe_id) {
+                $employe = \Modules\Grh\Models\Employe::find($request->dossier_employe_id);
+                if ($employe) {
+                    $niveau_rattachement = $employe->niveau_rattachement;
+                    $direction_id = $employe->direction_id;
+                    $service_id = $employe->service_id;
+                    $unite_id = $employe->unite_id;
+                }
+            } elseif ($request->type_cible === 'POSTE' && $request->poste_travail_id) {
+                $poste = \Modules\Organisation\Models\PosteTravail::find($request->poste_travail_id);
+                if ($poste) {
+                    $niveau_rattachement = $poste->niveau_rattachement;
+                    $direction_id = $poste->direction_id;
+                    $service_id = $poste->service_id;
+                    $unite_id = $poste->unite_id;
+                }
+            }
+
+            AffectationEquipement::create([
+                'code' => 'AFF-'.strtoupper(uniqid()),
+                'equipement_id' => $request->equipement_id,
+                'statut' => true,
+                'type_cible' => $request->type_cible,
+                'type_affectation' => 'PERMANENTE',
+                'date_debut' => now(),
+                'date_fin' => null,
+                'dossier_employe_id' => $request->dossier_employe_id,
+                'poste_travail_id' => $request->poste_travail_id,
+                'local_id' => $request->local_id,
+                'niveau_rattachement' => $niveau_rattachement,
+                'direction_id' => $direction_id,
+                'service_id' => $service_id,
+                'unite_id' => $unite_id,
+            ]);
+
+            // Mettre à jour le statut de l'équipement
+            $equipement->update(['statut' => 'en_service']);
+
+            // Historique
+            HistoriqueChangement::create([
+                'equipement_id' => $request->equipement_id,
+                'date_changement' => now(),
+                'utilisateur_id' => auth()->id(),
+                'type_changement' => 'AFFECTATION',
+                'motif' => 'Nouvelle affectation via l\'interface show',
+            ]);
+        });
+
+        return response()->json(['success' => true, 'message' => 'Affectation enregistrée avec succès.']);
     }
 
     public function update(Request $request, $id)

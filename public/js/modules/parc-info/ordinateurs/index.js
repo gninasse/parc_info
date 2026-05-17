@@ -12,8 +12,8 @@ window.ordinateursQueryParams = function (params) {
     });
 };
 
-window.codeFormatter = (val) =>
-    `<span class="fw-bold text-primary small">${val}</span>`;
+window.codeFormatter = (val, row) =>
+    `<a href="${route('parc-info.ordinateurs.show', row.id)}" class="fw-bold text-primary small text-decoration-none">${val}</a>`;
 
 window.statutFormatter = (val) => {
     const map = {

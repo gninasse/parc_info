@@ -1,20 +1,20 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\ParcInfo\Http\Controllers\CameraController;
 use Modules\ParcInfo\Http\Controllers\ConsommableController;
 use Modules\ParcInfo\Http\Controllers\ContratMaintenanceController;
 use Modules\ParcInfo\Http\Controllers\FournisseurController;
+use Modules\ParcInfo\Http\Controllers\ImprimanteController;
 use Modules\ParcInfo\Http\Controllers\LicenceController;
 use Modules\ParcInfo\Http\Controllers\LogicielController;
 use Modules\ParcInfo\Http\Controllers\MobileController;
 use Modules\ParcInfo\Http\Controllers\OrdinateurController;
 use Modules\ParcInfo\Http\Controllers\ParcInfoController;
-use Modules\ParcInfo\Http\Controllers\ServeurController;
-use Modules\ParcInfo\Http\Controllers\ImprimanteController;
 use Modules\ParcInfo\Http\Controllers\ScannerController;
+use Modules\ParcInfo\Http\Controllers\ServeurController;
 use Modules\ParcInfo\Http\Controllers\TelephoneController;
 use Modules\ParcInfo\Http\Controllers\TerminalIPController;
-use Modules\ParcInfo\Http\Controllers\CameraController;
 
 Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(function () {
     Route::get('/dashboard', [ParcInfoController::class, 'dashboard'])->name('dashboard');
@@ -131,6 +131,7 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::patch('/{id}/statut', [MobileController::class, 'updateStatut'])->name('update-statut');
         Route::patch('/{id}/etat', [MobileController::class, 'updateEtat'])->name('update-etat');
         Route::post('/{id}/desaffecter', [MobileController::class, 'desaffecter'])->name('desaffecter');
+        Route::post('/affectation', [MobileController::class, 'storeAffectation'])->name('store-affectation');
     });
 
     // Switches
