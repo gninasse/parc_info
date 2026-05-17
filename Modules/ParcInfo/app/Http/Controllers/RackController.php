@@ -8,8 +8,8 @@ use Modules\Organisation\Models\Direction;
 use Modules\Organisation\Models\Site;
 use Modules\ParcInfo\Models\AffectationEquipement;
 use Modules\ParcInfo\Models\Equipement;
-use Modules\ParcInfo\Models\Infrastructure;
 use Modules\ParcInfo\Models\HistoriqueChangement;
+use Modules\ParcInfo\Models\Infrastructure;
 use Modules\ParcInfo\Models\Marque;
 use Modules\ParcInfo\Models\TypeInfrastructure;
 
@@ -19,7 +19,12 @@ class RackController extends Controller
     {
         $typesInfrastructures = TypeInfrastructure::orderBy('libelle')->get(['id', 'libelle']);
         $sites = Site::orderBy('libelle')->get(['id', 'libelle']);
+<<<<<<< HEAD
         return view('parcinfo::informatique.racks.index', compact('typesInfrastructures', 'sites'));
+=======
+
+        return view('parcinfo::informatique.onduleurs.index', compact('typesInfrastructures', 'sites'));
+>>>>>>> feature/gestion-licences-logiciels
     }
 
     public function getData(Request $request)
@@ -263,6 +268,7 @@ class RackController extends Controller
     public function destroy($id)
     {
         Equipement::findOrFail($id)->delete();
+
         return response()->json(['success' => true, 'message' => 'Baie & Rack supprimé.']);
     }
 
@@ -270,6 +276,7 @@ class RackController extends Controller
     {
         $request->validate(['libelle' => 'required|string|unique:parc_info_types_infrastructures,libelle']);
         $type = TypeInfrastructure::create(['libelle' => $request->libelle]);
+
         return response()->json(['success' => true, 'data' => $type]);
     }
 

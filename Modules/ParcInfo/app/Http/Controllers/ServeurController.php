@@ -5,7 +5,6 @@ namespace Modules\ParcInfo\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Modules\Organisation\Models\Direction;
-use Modules\Organisation\Models\Local;
 use Modules\Organisation\Models\Site;
 use Modules\ParcInfo\Models\AffectationEquipement;
 use Modules\ParcInfo\Models\Equipement;
@@ -175,7 +174,7 @@ class ServeurController extends Controller
         $typesDisque = TypeDisque::orderBy('libelle')->get(['id', 'libelle']);
         $sites = Site::orderBy('libelle')->get(['id', 'libelle']);
         $directions = Direction::where('actif', true)->orderBy('libelle')->get(['id', 'libelle']);
-        
+
         $serveursHotes = Serveur::where('type_serveur', 'Physique')->with('equipement')->get();
 
         return view('parcinfo::informatique.serveurs.show', compact(
@@ -313,26 +312,29 @@ class ServeurController extends Controller
 
         return response()->json(['success' => true, 'message' => 'Équipement désaffecté et mis en stock.']);
     }
+
     public function destroy($id)
     {
         Equipement::findOrFail($id)->delete();
+
         return response()->json(['success' => true, 'message' => 'Serveur supprimé.']);
     }
 
     public function searchHotes(Request $request)
     {
         $q = $request->get('q', '');
+
         return response()->json(
             Serveur::where('type_serveur', 'Physique')
-                ->whereHas('equipement', function($query) use ($q) {
+                ->whereHas('equipement', function ($query) use ($q) {
                     $query->where('code_inventaire', 'ilike', "%{$q}%")
-                          ->orWhere('modele', 'ilike', "%{$q}%");
+                        ->orWhere('modele', 'ilike', "%{$q}%");
                 })
                 ->with('equipement')
                 ->limit(20)->get()
                 ->map(fn ($s) => [
                     'id' => $s->equipement_id,
-                    'text' => "{$s->equipement->code_inventaire} — {$s->equipement->modele} (" . ($s->nom_hote ?? 'Sans nom') . ")",
+                    'text' => "{$s->equipement->code_inventaire} — {$s->equipement->modele} (".($s->nom_hote ?? 'Sans nom').')',
                 ])
         );
     }
@@ -350,7 +352,7 @@ class ServeurController extends Controller
             'code_inventaire' => $e->code_inventaire,
             'marque_modele' => ($e->marque?->libelle ?? '—').' '.$e->modele,
             'type_serveur' => $e->serveur->type_serveur,
-            'nom_ip' => ($e->serveur->nom_hote ?? '—') . ' / ' . ($e->serveur->adresse_ip ?? '—'),
+            'nom_ip' => ($e->serveur->nom_hote ?? '—').' / '.($e->serveur->adresse_ip ?? '—'),
             'os' => $e->serveur->typeOs?->libelle ?? '—',
             'config' => implode(' / ', array_filter([
                 $e->serveur->nb_processeurs ? $e->serveur->nb_processeurs.' CPU' : null,

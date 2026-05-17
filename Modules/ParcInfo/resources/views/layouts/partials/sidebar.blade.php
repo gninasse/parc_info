@@ -58,6 +58,44 @@
           </a>
         </li>
 
+        {{-- ── LOGICIELS & LICENCES ── --}}
+        <li class="nav-header text-uppercase small opacity-50">Logiciels & Licences</li>
+
+        <li class="nav-item">
+          <a href="{{ route('parc-info.logiciels.index') }}"
+             class="nav-link {{ request()->routeIs('parc-info.logiciels.*') ? 'active' : '' }}">
+            <i class="nav-icon bi bi-compact-disc"></i>
+            <p>Catalogue Logiciels</p>
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <a href="{{ route('parc-info.fournisseurs.index') }}"
+             class="nav-link {{ request()->routeIs('parc-info.fournisseurs.*') ? 'active' : '' }}">
+            <i class="nav-icon bi bi-truck"></i>
+            <p>Fournisseurs</p>
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <a href="{{ route('parc-info.licences.index') }}"
+             class="nav-link {{ request()->routeIs('parc-info.licences.*') ? 'active' : '' }}">
+            <i class="nav-icon bi bi-file-lock"></i>
+            <p>Licences</p>
+          </a>
+        </li>
+
+        {{-- ── CONSOMMABLES & STOCKS ── --}}
+        <li class="nav-header text-uppercase small opacity-50">Consommables & Stocks</li>
+
+        <li class="nav-item">
+          <a href="{{ route('parc-info.consommables.index') }}"
+             class="nav-link {{ request()->routeIs('parc-info.consommables.*') ? 'active' : '' }}">
+            <i class="nav-icon bi bi-cart-check"></i>
+            <p>Stock Consommables</p>
+          </a>
+        </li>
+
         {{-- ── INFRASTRUCTURE & RÉSEAU ── --}}
         <li class="nav-header text-uppercase small opacity-50">Infrastructure & Réseau</li>
 

@@ -3,8 +3,6 @@
 namespace Modules\ParcInfo\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
 
 class DashboardController extends Controller
 {
@@ -13,8 +11,8 @@ class DashboardController extends Controller
      */
     public function index()
     {
-        if (!auth()->user()->can('parcinfo.dashboard.view')) {
-            abort(403);
+        if (! auth()->user()->can('parcinfo.dashboard.view')) {
+            // abort(403);
         }
 
         $stats = [
