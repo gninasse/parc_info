@@ -118,13 +118,13 @@
                                     <div class="col-md-6">
                                         <label class="form-label fw-semibold">Type d'équipement</label>
                                         <div class="input-group">
-                                            <select class="form-select" id="type_reseau_id" name="type_reseau_id">
+                                            <select class="form-select" id="type_reseau_id" name="infra_id">
                                                 <option value="">Sélectionner...</option>
                                                 @foreach($typesInfrastructures as $t)
-                                                    <option value="{{ $t->id }}">{{ $t->libelle }}</option>
-                                                @endforeach
-                                            </select>
-                                            <button class="btn btn-outline-secondary btn-add-nomenclature" type="button" data-type="type_infrastructure"><i class="bi bi-plus-lg"></i></button>
+                                            <option value="{{ $t->id }}">{{ $t->libelle }}</option>
+                                        @endforeach
+                                    </select>
+                                            <button class="btn btn-outline-secondary btn-add-nomenclature" type="button" data-type="type_reseau"><i class="bi bi-plus-lg"></i></button>
                                         </div>
                                     </div>
                                     <div class="col-md-6">

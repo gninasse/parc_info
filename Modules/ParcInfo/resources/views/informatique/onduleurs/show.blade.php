@@ -4,12 +4,12 @@
 
 @section('breadcrumb')
     <li class="breadcrumb-item"><a href="{{ route('parc-info.dashboard') }}">Parc Info</a></li>
-    <li class="breadcrumb-item"><a href="{{ route('parc-info.onduleurs.index') }}">Onduleurs</a></li>
+    <li class="breadcrumb-item"><a href="{{ route('parc-info.reseaux.index') }}">Équipements Réseau</a></li>
     <li class="breadcrumb-item active">{{ $equipement->code_inventaire }}</li>
 @endsection
 
 @php
-    $r   = $equipement->reseau;
+    $r   = $equipement->infrastructure;
     $aff = $equipement->affectationActive;
     $statutColors = [
         'en_service'   => 'success',
@@ -42,7 +42,7 @@
                 <div class="d-flex flex-wrap gap-2 justify-content-center justify-content-md-start">
                     <span class="badge bg-{{ $sc }}-subtle text-{{ $sc }} border border-{{ $sc }}-subtle px-3 py-2 rounded-pill"><i class="bi bi-circle-fill me-1" style="font-size:0.6rem"></i>{{ $equipement->statut_label }}</span>
                     <span class="badge bg-{{ $ec }}-subtle text-{{ $ec }} border border-{{ $ec }}-subtle px-3 py-2 rounded-pill"><i class="bi bi-activity me-1"></i>État: {{ $equipement->etat_label }}</span>
-                    <span class="badge bg-light text-dark border px-3 py-2 rounded-pill"><i class="bi bi-tag me-1"></i>{{ $r->typeReseau?->libelle ?? 'Type inconnu' }}</span>
+                    <span class="badge bg-light text-dark border px-3 py-2 rounded-pill"><i class="bi bi-tag me-1"></i>{{ $r->typeInfrastructure?->libelle ?? 'Type inconnu' }}</span>
                 </div>
             </div>
 
@@ -127,7 +127,7 @@
                             <input type="text" class="form-control bg-light view-mode" value="{{ $r->typeReseau?->libelle ?? '—' }}" readonly>
                             <select class="form-select edit-mode d-none" name="type_reseau_id">
                                 <option value="">—</option>
-                                @foreach($typesReseaux as $t)
+                                @foreach($typesInfrastructures as $t)
                                     <option value="{{ $t->id }}" {{ $r->type_reseau_id == $t->id ? 'selected' : '' }}>{{ $t->libelle }}</option>
                                 @endforeach
                             </select>
@@ -341,7 +341,7 @@ $(document).ready(function() {
         $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Enregistrement...');
 
         $.ajax({
-            url: `{{ route('parc-info.onduleurs.update', $equipement->id) }}`,
+            url: `{{ route('parc-info.reseaux.update', $equipement->id) }}`,
             method: 'PUT',
             data: $(this).serialize(),
             success: (res) => {
@@ -382,7 +382,7 @@ $(document).ready(function() {
         }).then((result) => {
             if (result.isConfirmed) {
                 $.ajax({
-                    url: `{{ route('parc-info.onduleurs.update-statut', $equipement->id) }}`,
+                    url: `{{ route('parc-info.reseaux.update-statut', $equipement->id) }}`,
                     method: 'PATCH',
                     data: { statut: statut, motif: result.value },
                     success: (res) => {
@@ -418,7 +418,7 @@ $(document).ready(function() {
         }).then((result) => {
             if (result.isConfirmed) {
                 $.ajax({
-                    url: `{{ route('parc-info.onduleurs.desaffecter', $equipement->id) }}`,
+                    url: `{{ route('parc-info.reseaux.desaffecter', $equipement->id) }}`,
                     method: 'POST',
                     data: { motif: result.value },
                     success: (res) => {

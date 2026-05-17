@@ -127,7 +127,7 @@
         </div>
         <table id="reseaux-table"
                data-toggle="table"
-               data-url="{{ route('parc-info.racks.data') }}"
+               data-url="{{ route('parc-info.reseaux.data') }}"
                data-pagination="true"
                data-side-pagination="server"
                data-search="true"
@@ -165,6 +165,6 @@
 @push('js')
 <script src="{{ asset('plugins/bootstrap-table/bootstrap-table.min.js') }}"></script>
 <script src="{{ asset('plugins/bootstrap-table/locale/bootstrap-table-fr-FR.min.js') }}"></script>
-<script type="module" src="{{ asset('js/modules/parc-info.racks/index.js') }}?v={{ time() }}"></script>
+<script type="module" src="{{ asset('js/modules/parc-info/reseaux/index.js') }}?v={{ time() }}"></script>
 <script src="{{ asset('js/modules/parc-info/ordinateurs/selection_modals.js') }}?v={{ time() }}"></script>
 @endpush

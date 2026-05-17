@@ -89,9 +89,6 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::get('/', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'index'])->name('index');
         Route::get('/data', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'getData'])->name('data');
         Route::post('/', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'store'])->name('store');
-        Route::post('/types', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'storeTypeInfrastructure'])->name('store-type');
-        Route::post('/types', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'storeTypeInfrastructure'])->name('store-type');
-        Route::post('/types', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'storeTypeInfrastructure'])->name('store-type');
         Route::get('/{id}', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'show'])->name('show');
         Route::put('/{id}', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'update'])->name('update');
         Route::delete('/{id}', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'destroy'])->name('destroy');
@@ -105,9 +102,6 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::get('/', [Modules\ParcInfo\Http\Controllers\RackController::class, 'index'])->name('index');
         Route::get('/data', [Modules\ParcInfo\Http\Controllers\RackController::class, 'getData'])->name('data');
         Route::post('/', [Modules\ParcInfo\Http\Controllers\RackController::class, 'store'])->name('store');
-        Route::post('/types', [Modules\ParcInfo\Http\Controllers\RackController::class, 'storeTypeInfrastructure'])->name('store-type');
-        Route::post('/types', [Modules\ParcInfo\Http\Controllers\RackController::class, 'storeTypeInfrastructure'])->name('store-type');
-        Route::post('/types', [Modules\ParcInfo\Http\Controllers\RackController::class, 'storeTypeInfrastructure'])->name('store-type');
         Route::get('/{id}', [Modules\ParcInfo\Http\Controllers\RackController::class, 'show'])->name('show');
         Route::put('/{id}', [Modules\ParcInfo\Http\Controllers\RackController::class, 'update'])->name('update');
         Route::delete('/{id}', [Modules\ParcInfo\Http\Controllers\RackController::class, 'destroy'])->name('destroy');
@@ -121,9 +115,6 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::get('/', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'index'])->name('index');
         Route::get('/data', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'getData'])->name('data');
         Route::post('/', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'store'])->name('store');
-        Route::post('/types', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'storeTypeInfrastructure'])->name('store-type');
-        Route::post('/types', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'storeTypeInfrastructure'])->name('store-type');
-        Route::post('/types', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'storeTypeInfrastructure'])->name('store-type');
         Route::get('/{id}', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'show'])->name('show');
         Route::put('/{id}', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'update'])->name('update');
         Route::delete('/{id}', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'destroy'])->name('destroy');
@@ -164,9 +155,6 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::get('/', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'index'])->name('index');
         Route::get('/data', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'getData'])->name('data');
         Route::post('/', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'store'])->name('store');
-        Route::post('/types', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'storeTypeInfrastructure'])->name('store-type');
-        Route::post('/types', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'storeTypeInfrastructure'])->name('store-type');
-        Route::post('/types', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'storeTypeInfrastructure'])->name('store-type');
         Route::get('/{id}', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'show'])->name('show');
         Route::put('/{id}', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'update'])->name('update');
         Route::delete('/{id}', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'destroy'])->name('destroy');
@@ -180,9 +168,6 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::get('/', [Modules\ParcInfo\Http\Controllers\RackController::class, 'index'])->name('index');
         Route::get('/data', [Modules\ParcInfo\Http\Controllers\RackController::class, 'getData'])->name('data');
         Route::post('/', [Modules\ParcInfo\Http\Controllers\RackController::class, 'store'])->name('store');
-        Route::post('/types', [Modules\ParcInfo\Http\Controllers\RackController::class, 'storeTypeInfrastructure'])->name('store-type');
-        Route::post('/types', [Modules\ParcInfo\Http\Controllers\RackController::class, 'storeTypeInfrastructure'])->name('store-type');
-        Route::post('/types', [Modules\ParcInfo\Http\Controllers\RackController::class, 'storeTypeInfrastructure'])->name('store-type');
         Route::get('/{id}', [Modules\ParcInfo\Http\Controllers\RackController::class, 'show'])->name('show');
         Route::put('/{id}', [Modules\ParcInfo\Http\Controllers\RackController::class, 'update'])->name('update');
         Route::delete('/{id}', [Modules\ParcInfo\Http\Controllers\RackController::class, 'destroy'])->name('destroy');
@@ -196,9 +181,6 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::get('/', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'index'])->name('index');
         Route::get('/data', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'getData'])->name('data');
         Route::post('/', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'store'])->name('store');
-        Route::post('/types', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'storeTypeInfrastructure'])->name('store-type');
-        Route::post('/types', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'storeTypeInfrastructure'])->name('store-type');
-        Route::post('/types', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'storeTypeInfrastructure'])->name('store-type');
         Route::get('/{id}', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'show'])->name('show');
         Route::put('/{id}', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'update'])->name('update');
         Route::delete('/{id}', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'destroy'])->name('destroy');
@@ -207,6 +189,59 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::post('/{id}/desaffecter', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'desaffecter'])->name('desaffecter');
     });
 
+
+    // Imprimantes
+    Route::prefix('informatique/imprimantes')->name('imprimantes.')->group(function () {
+        Route::get('/', [Modules\ParcInfo\Http\Controllers\ImprimanteController::class, 'index'])->name('index');
+        Route::get('/data', [Modules\ParcInfo\Http\Controllers\ImprimanteController::class, 'getData'])->name('data');
+        Route::post('/', [Modules\ParcInfo\Http\Controllers\ImprimanteController::class, 'store'])->name('store');
+        Route::post('/types', [Modules\ParcInfo\Http\Controllers\ImprimanteController::class, 'storeTypeImprimante'])->name('store-type');
+        Route::get('/{id}', [Modules\ParcInfo\Http\Controllers\ImprimanteController::class, 'show'])->name('show');
+        Route::put('/{id}', [Modules\ParcInfo\Http\Controllers\ImprimanteController::class, 'update'])->name('update');
+        Route::delete('/{id}', [Modules\ParcInfo\Http\Controllers\ImprimanteController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/statut', [Modules\ParcInfo\Http\Controllers\ImprimanteController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat', [Modules\ParcInfo\Http\Controllers\ImprimanteController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter', [Modules\ParcInfo\Http\Controllers\ImprimanteController::class, 'desaffecter'])->name('desaffecter');
+    });
+
+    // Scanners
+    Route::prefix('informatique/scanners')->name('scanners.')->group(function () {
+        Route::get('/', [Modules\ParcInfo\Http\Controllers\ScannerController::class, 'index'])->name('index');
+        Route::get('/data', [Modules\ParcInfo\Http\Controllers\ScannerController::class, 'getData'])->name('data');
+        Route::post('/', [Modules\ParcInfo\Http\Controllers\ScannerController::class, 'store'])->name('store');
+        Route::get('/{id}', [Modules\ParcInfo\Http\Controllers\ScannerController::class, 'show'])->name('show');
+        Route::put('/{id}', [Modules\ParcInfo\Http\Controllers\ScannerController::class, 'update'])->name('update');
+        Route::delete('/{id}', [Modules\ParcInfo\Http\Controllers\ScannerController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/statut', [Modules\ParcInfo\Http\Controllers\ScannerController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat', [Modules\ParcInfo\Http\Controllers\ScannerController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter', [Modules\ParcInfo\Http\Controllers\ScannerController::class, 'desaffecter'])->name('desaffecter');
+    });
+
+    // Telephones
+    Route::prefix('informatique/telephonie')->name('telephonie.')->group(function () {
+        Route::get('/', [Modules\ParcInfo\Http\Controllers\TelephoneController::class, 'index'])->name('index');
+        Route::get('/data', [Modules\ParcInfo\Http\Controllers\TelephoneController::class, 'getData'])->name('data');
+        Route::post('/', [Modules\ParcInfo\Http\Controllers\TelephoneController::class, 'store'])->name('store');
+        Route::get('/{id}', [Modules\ParcInfo\Http\Controllers\TelephoneController::class, 'show'])->name('show');
+        Route::put('/{id}', [Modules\ParcInfo\Http\Controllers\TelephoneController::class, 'update'])->name('update');
+        Route::delete('/{id}', [Modules\ParcInfo\Http\Controllers\TelephoneController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/statut', [Modules\ParcInfo\Http\Controllers\TelephoneController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat', [Modules\ParcInfo\Http\Controllers\TelephoneController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter', [Modules\ParcInfo\Http\Controllers\TelephoneController::class, 'desaffecter'])->name('desaffecter');
+    });
+
+    // Terminaux IP
+    Route::prefix('informatique/terminaux-ip')->name('terminaux-ip.')->group(function () {
+        Route::get('/', [Modules\ParcInfo\Http\Controllers\TerminalIPController::class, 'index'])->name('index');
+        Route::get('/data', [Modules\ParcInfo\Http\Controllers\TerminalIPController::class, 'getData'])->name('data');
+        Route::post('/', [Modules\ParcInfo\Http\Controllers\TerminalIPController::class, 'store'])->name('store');
+        Route::get('/{id}', [Modules\ParcInfo\Http\Controllers\TerminalIPController::class, 'show'])->name('show');
+        Route::put('/{id}', [Modules\ParcInfo\Http\Controllers\TerminalIPController::class, 'update'])->name('update');
+        Route::delete('/{id}', [Modules\ParcInfo\Http\Controllers\TerminalIPController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/statut', [Modules\ParcInfo\Http\Controllers\TerminalIPController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat', [Modules\ParcInfo\Http\Controllers\TerminalIPController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter', [Modules\ParcInfo\Http\Controllers\TerminalIPController::class, 'desaffecter'])->name('desaffecter');
+    });
 
     // Cameras
     Route::prefix('informatique/cameras')->name('cameras.')->group(function () {
@@ -221,5 +256,4 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::patch('/{id}/etat', [Modules\ParcInfo\Http\Controllers\CameraController::class, 'updateEtat'])->name('update-etat');
         Route::post('/{id}/desaffecter', [Modules\ParcInfo\Http\Controllers\CameraController::class, 'desaffecter'])->name('desaffecter');
     });
-
 });

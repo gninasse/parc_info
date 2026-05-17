@@ -28,7 +28,7 @@ class RackController extends Controller
             ->with(['marque', 'infrastructure.typeInfrastructure', 'affectationActive.local.etage.batiment'])
             ->whereHas('infrastructure', function ($q) {
                 $q->whereHas('typeInfrastructure', function ($t) {
-                    $t->where('libelle', 'ilike', '%onduleur%');
+                    $t->where('libelle', 'ilike', '%baie%')->orWhere('libelle', 'ilike', '%rack%');
                 });
             });
 
@@ -64,9 +64,9 @@ class RackController extends Controller
             'statut' => 'required|in:en_stock,en_service,en_reparation,perdu,reforme',
             'etat' => 'required|in:bon,passable,mauvais,avarie',
             'type_infra_id' => 'nullable|exists:parc_info_types_infrastructures,id',
-            'puissance_va' => 'nullable|integer',
-            'autonomie_minutes' => 'nullable|integer',
-            'date_dernier_remplacement_batterie' => 'nullable|date',
+            'u_capacite_totale' => 'nullable|integer',
+            'nb_prises_pdu' => 'nullable|integer',
+
             'est_redondant' => 'nullable|boolean',
         ]);
 
@@ -84,9 +84,9 @@ class RackController extends Controller
             Infrastructure::create([
                 'equipement_id' => $equipement->id,
                 'type_infra_id' => $request->type_infra_id,
-                'puissance_va' => $request->puissance_va,
-                'autonomie_minutes' => $request->autonomie_minutes,
-                'date_dernier_remplacement_batterie' => $request->date_dernier_remplacement_batterie,
+                'u_capacite_totale' => $request->u_capacite_totale,
+                'nb_prises_pdu' => $request->nb_prises_pdu,
+
                 'est_redondant' => $request->boolean('est_redondant'),
             ]);
 
@@ -135,9 +135,9 @@ class RackController extends Controller
             'modele' => 'required|string|max:255',
             'statut' => 'required|in:en_stock,en_service,en_reparation,perdu,reforme',
             'etat' => 'required|in:bon,passable,mauvais,avarie',
-            'puissance_va' => 'nullable|integer',
-            'autonomie_minutes' => 'nullable|integer',
-            'date_dernier_remplacement_batterie' => 'nullable|date',
+            'u_capacite_totale' => 'nullable|integer',
+            'nb_prises_pdu' => 'nullable|integer',
+
             'est_redondant' => 'nullable|boolean',
         ]);
 
@@ -150,9 +150,9 @@ class RackController extends Controller
 
             $equipement->infrastructure->update([
                 'type_infra_id' => $request->type_infra_id,
-                'puissance_va' => $request->puissance_va,
-                'autonomie_minutes' => $request->autonomie_minutes,
-                'date_dernier_remplacement_batterie' => $request->date_dernier_remplacement_batterie,
+                'u_capacite_totale' => $request->u_capacite_totale,
+                'nb_prises_pdu' => $request->nb_prises_pdu,
+
                 'est_redondant' => $request->boolean('est_redondant'),
             ]);
         });
