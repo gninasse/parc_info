@@ -162,7 +162,7 @@
         {{-- ── SÉCURITÉ ── --}}
         <li class="nav-header text-uppercase small opacity-50">Sécurité</li>
         <li class="nav-item">
-          <a href="#" class="nav-link {{ request()->routeIs('parc-info.cameras.*') ? 'active' : '' }}">
+          <a href="{{ route('parc-info.cameras.index') }}" class="nav-link {{ request()->routeIs('parc-info.cameras.*') ? 'active' : '' }}">
             <i class="nav-icon bi bi-camera-video"></i>
             <p>Caméras IP</p>
           </a>
@@ -172,14 +172,14 @@
         <li class="nav-header text-uppercase small opacity-50">Périphériques & Impression</li>
 
         <li class="nav-item">
-          <a href="#" class="nav-link {{ request()->routeIs('parc-info.imprimantes.*') ? 'active' : '' }}">
+          <a href="{{ route('parc-info.imprimantes.index') }}" class="nav-link {{ request()->routeIs('parc-info.imprimantes.*') ? 'active' : '' }}">
             <i class="nav-icon bi bi-printer"></i>
             <p>Imprimantes & Copieurs</p>
           </a>
         </li>
 
         <li class="nav-item">
-          <a href="#" class="nav-link {{ request()->routeIs('parc-info.scanners.*') ? 'active' : '' }}">
+          <a href="{{ route('parc-info.scanners.index') }}" class="nav-link {{ request()->routeIs('parc-info.scanners.*') ? 'active' : '' }}">
             <i class="nav-icon bi bi-upc-scan"></i>
             <p>Scanners & Lecteurs</p>
           </a>
@@ -189,21 +189,21 @@
         <li class="nav-header text-uppercase small opacity-50">Téléphonie & Comm.</li>
 
         <li class="nav-item">
-          <a href="#" class="nav-link {{ request()->routeIs('parc-info.telephonie.*') ? 'active' : '' }}">
+          <a href="{{ route('parc-info.telephonie.index') }}" class="nav-link {{ request()->routeIs('parc-info.telephonie.*') ? 'active' : '' }}">
             <i class="nav-icon bi bi-telephone"></i>
             <p>Téléphones fixes</p>
           </a>
         </li>
 
         <li class="nav-item">
-          <a href="#" class="nav-link {{ request()->routeIs('parc-info.telephones-mobiles.*') ? 'active' : '' }}">
+          <a href="{{ route('parc-info.mobiles.index') }}" class="nav-link {{ request()->routeIs('parc-info.mobiles.*') ? 'active' : '' }}">
             <i class="nav-icon bi bi-phone"></i>
             <p>Terminaux Mobiles</p>
           </a>
         </li>
 
         <li class="nav-item">
-          <a href="#" class="nav-link {{ request()->routeIs('parc-info.terminaux-ip.*') ? 'active' : '' }}">
+          <a href="{{ route('parc-info.terminaux-ip.index') }}" class="nav-link {{ request()->routeIs('parc-info.terminaux-ip.*') ? 'active' : '' }}">
             <i class="nav-icon bi bi-headset"></i>
             <p>Terminaux IP</p>
           </a>

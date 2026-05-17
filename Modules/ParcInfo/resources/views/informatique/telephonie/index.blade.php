@@ -1,0 +1,110 @@
+@extends('parcinfo::layouts.master')
+
+@section('header', 'Téléphones fixes')
+
+@section('breadcrumb')
+    <li class="breadcrumb-item"><a href="{{ route('parc-info.dashboard') }}">Parc Info</a></li>
+    <li class="breadcrumb-item active">Téléphones fixes</li>
+@endsection
+
+@push('css')
+<link rel="stylesheet" href="{{ asset('plugins/bootstrap-table/bootstrap-table.min.css') }}">
+@endpush
+
+@section('content')
+
+{{-- ── KPIs ── --}}
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-3 bg-primary bg-opacity-10 p-3"><i class="bi bi-telephone fs-4 text-primary"></i></div>
+                <div>
+                    <div class="text-muted small fw-semibold text-uppercase" style="font-size:.7rem;letter-spacing:.5px">Total Actifs</div>
+                    <div class="fw-bold fs-4" id="kpi-total">—</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-3 bg-success bg-opacity-10 p-3"><i class="bi bi-check-circle fs-4 text-success"></i></div>
+                <div>
+                    <div class="text-muted small fw-semibold text-uppercase" style="font-size:.7rem;letter-spacing:.5px">En Service</div>
+                    <div class="fw-bold fs-4 text-success" id="kpi-service">—</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- ── Filtres ── --}}
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-3">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small fw-semibold mb-1">Site</label>
+                <select class="form-select form-select-sm" id="filter-site">
+                    <option value="">Tous les sites</option>
+                    @foreach($sites as $s)
+                        <option value="{{ $s->id }}">{{ $s->libelle }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small fw-semibold mb-1">Statut</label>
+                <select class="form-select form-select-sm" id="filter-statut">
+                    <option value="">Tous les statuts</option>
+                    <option value="en_service">En service</option>
+                    <option value="en_stock">En stock</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-primary btn-sm w-100" id="btn-apply-filters">Filtrer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- ── Table ── --}}
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div id="toolbar">
+            <button id="btn-add" class="btn btn-primary"><i class="fas fa-plus"></i></button>
+        </div>
+        <table id="telephonie-table"
+               data-toggle="table"
+               data-url="{{ route('parc-info.telephonie.data') }}"
+               data-pagination="true"
+               data-side-pagination="server"
+               data-search="true"
+               data-toolbar="#toolbar"
+               data-id-field="id"
+               data-query-params="telephonieQueryParams"
+               class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th data-field="code_inventaire" data-formatter="codeFormatter">Code</th>
+                    <th data-field="marque_modele">Modèle</th>
+                    <th data-field="extension">Extension</th>
+                    <th data-field="est_ip">Type</th>
+                    <th data-field="statut" data-formatter="statutFormatter">Statut</th>
+                    <th data-field="affectation">Emplacement</th>
+                    <th data-field="id" data-formatter="actionsFormatter">Actions</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+@include('parcinfo::informatique.telephonie._wizard')
+@include('parcinfo::informatique.ordinateurs._selection_modals')
+@endsection
+
+@push('js')
+<script>window.routePrefix = "parc-info.telephonie";</script>
+<script src="{{ asset('plugins/bootstrap-table/bootstrap-table.min.js') }}"></script>
+<script type="module" src="{{ asset('js/modules/parc-info/telephonie/index.js') }}?v={{ time() }}"></script>
+<script src="{{ asset('js/modules/parc-info/ordinateurs/selection_modals.js') }}?v={{ time() }}"></script>
+@endpush

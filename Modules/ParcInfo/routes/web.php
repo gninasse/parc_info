@@ -10,6 +10,10 @@ use Modules\ParcInfo\Http\Controllers\MobileController;
 use Modules\ParcInfo\Http\Controllers\OrdinateurController;
 use Modules\ParcInfo\Http\Controllers\ParcInfoController;
 use Modules\ParcInfo\Http\Controllers\ServeurController;
+use Modules\ParcInfo\Http\Controllers\ImprimanteController;
+use Modules\ParcInfo\Http\Controllers\ScannerController;
+use Modules\ParcInfo\Http\Controllers\TelephoneController;
+use Modules\ParcInfo\Http\Controllers\TerminalIPController;
 
 Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(function () {
     Route::get('/dashboard', [ParcInfoController::class, 'dashboard'])->name('dashboard');
@@ -224,6 +228,59 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::patch('/{id}/statut', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'updateStatut'])->name('update-statut');
         Route::patch('/{id}/etat', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'updateEtat'])->name('update-etat');
         Route::post('/{id}/desaffecter', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'desaffecter'])->name('desaffecter');
+    });
+
+    // Imprimantes
+    Route::prefix('informatique/imprimantes')->name('imprimantes.')->group(function () {
+        Route::get('/', [ImprimanteController::class, 'index'])->name('index');
+        Route::get('/data', [ImprimanteController::class, 'getData'])->name('data');
+        Route::post('/', [ImprimanteController::class, 'store'])->name('store');
+        Route::post('/types/quick-add', [ImprimanteController::class, 'storeTypeImprimante'])->name('store-type');
+        Route::get('/{id}', [ImprimanteController::class, 'show'])->name('show');
+        Route::put('/{id}', [ImprimanteController::class, 'update'])->name('update');
+        Route::delete('/{id}', [ImprimanteController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/statut', [ImprimanteController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat', [ImprimanteController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter', [ImprimanteController::class, 'desaffecter'])->name('desaffecter');
+    });
+
+    // Scanners
+    Route::prefix('informatique/scanners')->name('scanners.')->group(function () {
+        Route::get('/', [ScannerController::class, 'index'])->name('index');
+        Route::get('/data', [ScannerController::class, 'getData'])->name('data');
+        Route::post('/', [ScannerController::class, 'store'])->name('store');
+        Route::get('/{id}', [ScannerController::class, 'show'])->name('show');
+        Route::put('/{id}', [ScannerController::class, 'update'])->name('update');
+        Route::delete('/{id}', [ScannerController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/statut', [ScannerController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat', [ScannerController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter', [ScannerController::class, 'desaffecter'])->name('desaffecter');
+    });
+
+    // Telephones
+    Route::prefix('informatique/telephonie')->name('telephonie.')->group(function () {
+        Route::get('/', [TelephoneController::class, 'index'])->name('index');
+        Route::get('/data', [TelephoneController::class, 'getData'])->name('data');
+        Route::post('/', [TelephoneController::class, 'store'])->name('store');
+        Route::get('/{id}', [TelephoneController::class, 'show'])->name('show');
+        Route::put('/{id}', [TelephoneController::class, 'update'])->name('update');
+        Route::delete('/{id}', [TelephoneController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/statut', [TelephoneController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat', [TelephoneController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter', [TelephoneController::class, 'desaffecter'])->name('desaffecter');
+    });
+
+    // Terminaux IP
+    Route::prefix('informatique/terminaux-ip')->name('terminaux-ip.')->group(function () {
+        Route::get('/', [TerminalIPController::class, 'index'])->name('index');
+        Route::get('/data', [TerminalIPController::class, 'getData'])->name('data');
+        Route::post('/', [TerminalIPController::class, 'store'])->name('store');
+        Route::get('/{id}', [TerminalIPController::class, 'show'])->name('show');
+        Route::put('/{id}', [TerminalIPController::class, 'update'])->name('update');
+        Route::delete('/{id}', [TerminalIPController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/statut', [TerminalIPController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat', [TerminalIPController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter', [TerminalIPController::class, 'desaffecter'])->name('desaffecter');
     });
 
 });
