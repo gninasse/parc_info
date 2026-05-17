@@ -127,7 +127,7 @@
         </div>
         <table id="reseaux-table"
                data-toggle="table"
-               data-url="{{ route('parc-info.reseaux.data') }}"
+               data-url="{{ $dataUrl ?? route('parc-info.onduleurs.data') }}"
                data-pagination="true"
                data-side-pagination="server"
                data-search="true"
@@ -146,9 +146,7 @@
                     <th data-field="state" data-radio="true"></th>
                     <th data-field="code_inventaire" data-sortable="true" data-formatter="codeFormatter">Code</th>
                     <th data-field="marque_modele" data-sortable="true">Modèle</th>
-                    <th data-field="type_reseau">Type</th>
-                    <th data-field="adresse_ip" data-sortable="true">Adresse IP</th>
-                    <th data-field="nb_ports">Ports</th>
+                    <th data-field="type_infrastructure">Type</th>
                     <th data-field="statut" data-formatter="statutFormatter">Statut</th>
                     <th data-field="affectation">Emplacement</th>
                     <th data-field="id" data-formatter="actionsFormatter" data-events="actionsEvents">Actions</th>
@@ -163,6 +161,9 @@
 @endsection
 
 @push('js')
+<script>
+    window.routePrefix = "{{ $routePrefix ?? 'parc-info.onduleurs' }}";
+</script>
 <script src="{{ asset('plugins/bootstrap-table/bootstrap-table.min.js') }}"></script>
 <script src="{{ asset('plugins/bootstrap-table/locale/bootstrap-table-fr-FR.min.js') }}"></script>
 <script type="module" src="{{ asset('js/modules/parc-info/reseaux/index.js') }}?v={{ time() }}"></script>

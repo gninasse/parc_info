@@ -4,7 +4,7 @@
 
 @section('breadcrumb')
     <li class="breadcrumb-item"><a href="{{ route('parc-info.dashboard') }}">Parc Info</a></li>
-    <li class="breadcrumb-item"><a href="{{ route('parc-info.reseaux.index') }}">Équipements Réseau</a></li>
+    <li class="breadcrumb-item"><a href="{{ route(($routePrefix ?? 'parc-info.racks') . '.index') }}">Baies & Racks</a></li>
     <li class="breadcrumb-item active">{{ $equipement->code_inventaire }}</li>
 @endsection
 
@@ -315,6 +315,7 @@
 <script>
 $(document).ready(function() {
     let editMode = false;
+    const prefix = "{{ $routePrefix ?? 'parc-info.racks' }}";
 
     // Synchronisation des champs IP du tab 2 vers le form principal
     $('#edit_adresse_ip').on('input', function() { $('.form-sync-ip').val($(this).val()); });
@@ -341,7 +342,7 @@ $(document).ready(function() {
         $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Enregistrement...');
 
         $.ajax({
-            url: `{{ route('parc-info.reseaux.update', $equipement->id) }}`,
+            url: route(prefix + '.update', '{{ $equipement->id }}'),
             method: 'PUT',
             data: $(this).serialize(),
             success: (res) => {
@@ -382,7 +383,7 @@ $(document).ready(function() {
         }).then((result) => {
             if (result.isConfirmed) {
                 $.ajax({
-                    url: `{{ route('parc-info.reseaux.update-statut', $equipement->id) }}`,
+                    url: route(prefix + '.update-statut', '{{ $equipement->id }}'),
                     method: 'PATCH',
                     data: { statut: statut, motif: result.value },
                     success: (res) => {
@@ -418,7 +419,7 @@ $(document).ready(function() {
         }).then((result) => {
             if (result.isConfirmed) {
                 $.ajax({
-                    url: `{{ route('parc-info.reseaux.desaffecter', $equipement->id) }}`,
+                    url: route(prefix + '.desaffecter', '{{ $equipement->id }}'),
                     method: 'POST',
                     data: { motif: result.value },
                     success: (res) => {

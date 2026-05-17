@@ -20,7 +20,13 @@ class RackController extends Controller
         $typesInfrastructures = TypeInfrastructure::orderBy('libelle')->get(['id', 'libelle']);
         $sites = Site::orderBy('libelle')->get(['id', 'libelle']);
 
-        return view('parcinfo::informatique.racks.index', compact('typesInfrastructures', 'sites'));
+        $pageTitle = 'Baies & Racks';
+        $dataUrl = route('parc-info.racks.data');
+        $routePrefix = 'parc-info.racks';
+
+        return view('parcinfo::informatique.racks.index', compact(
+            'typesInfrastructures', 'sites', 'pageTitle', 'dataUrl', 'routePrefix'
+        ));
     }
 
     public function getData(Request $request)
@@ -124,8 +130,10 @@ class RackController extends Controller
         $sites = Site::orderBy('libelle')->get(['id', 'libelle']);
         $directions = Direction::where('actif', true)->orderBy('libelle')->get(['id', 'libelle']);
 
+        $routePrefix = 'parc-info.racks';
+
         return view('parcinfo::informatique.racks.show', compact(
-            'equipement', 'marques', 'typesInfrastructures', 'sites', 'directions'
+            'equipement', 'marques', 'typesInfrastructures', 'sites', 'directions', 'routePrefix'
         ));
     }
 

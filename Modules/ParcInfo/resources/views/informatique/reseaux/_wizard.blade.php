@@ -124,7 +124,7 @@
                                                     <option value="{{ $t->id }}">{{ $t->libelle }}</option>
                                                 @endforeach
                                             </select>
-                                            <button class="btn btn-outline-secondary btn-add-nomenclature" type="button" data-type="type_reseau"><i class="bi bi-plus-lg"></i></button>
+                                            <button class="btn btn-outline-secondary" id="btn-add-type-reseau" type="button"><i class="bi bi-plus-lg"></i></button>
                                         </div>
                                     </div>
                                     <div class="col-md-6">

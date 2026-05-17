@@ -20,7 +20,13 @@ class OnduleurController extends Controller
         $typesInfrastructures = TypeInfrastructure::orderBy('libelle')->get(['id', 'libelle']);
         $sites = Site::orderBy('libelle')->get(['id', 'libelle']);
 
-        return view('parcinfo::informatique.onduleurs.index', compact('typesInfrastructures', 'sites'));
+        $pageTitle = 'Onduleurs & Alimentations';
+        $dataUrl = route('parc-info.onduleurs.data');
+        $routePrefix = 'parc-info.onduleurs';
+
+        return view('parcinfo::informatique.onduleurs.index', compact(
+            'typesInfrastructures', 'sites', 'pageTitle', 'dataUrl', 'routePrefix'
+        ));
     }
 
     public function getData(Request $request)
@@ -124,8 +130,10 @@ class OnduleurController extends Controller
         $sites = Site::orderBy('libelle')->get(['id', 'libelle']);
         $directions = Direction::where('actif', true)->orderBy('libelle')->get(['id', 'libelle']);
 
+        $routePrefix = 'parc-info.onduleurs';
+
         return view('parcinfo::informatique.onduleurs.show', compact(
-            'equipement', 'marques', 'typesInfrastructures', 'sites', 'directions'
+            'equipement', 'marques', 'typesInfrastructures', 'sites', 'directions', 'routePrefix'
         ));
     }
 

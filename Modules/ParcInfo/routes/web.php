@@ -7,8 +7,8 @@ use Modules\ParcInfo\Http\Controllers\FournisseurController;
 use Modules\ParcInfo\Http\Controllers\LicenceController;
 use Modules\ParcInfo\Http\Controllers\LogicielController;
 use Modules\ParcInfo\Http\Controllers\MobileController;
-use Modules\ParcInfo\Http\Controllers\ParcInfoController;
 use Modules\ParcInfo\Http\Controllers\OrdinateurController;
+use Modules\ParcInfo\Http\Controllers\ParcInfoController;
 use Modules\ParcInfo\Http\Controllers\ServeurController;
 
 Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(function () {
@@ -133,6 +133,7 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::get('/', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'index'])->name('index');
         Route::get('/data', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'getData'])->name('data');
         Route::post('/', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'store'])->name('store');
+        Route::post('/types/quick-add', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'storeTypeReseau'])->name('store-type');
         Route::get('/{id}', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'show'])->name('show');
         Route::put('/{id}', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'update'])->name('update');
         Route::delete('/{id}', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'destroy'])->name('destroy');
@@ -146,6 +147,7 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::get('/', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'index'])->name('index');
         Route::get('/data', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'getData'])->name('data');
         Route::post('/', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'store'])->name('store');
+        Route::post('/types/quick-add', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'storeTypeReseau'])->name('store-type');
         Route::get('/{id}', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'show'])->name('show');
         Route::put('/{id}', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'update'])->name('update');
         Route::delete('/{id}', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'destroy'])->name('destroy');
@@ -159,6 +161,7 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::get('/', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'index'])->name('index');
         Route::get('/data', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'getData'])->name('data');
         Route::post('/', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'store'])->name('store');
+        Route::post('/types/quick-add', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'storeTypeReseau'])->name('store-type');
         Route::get('/{id}', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'show'])->name('show');
         Route::put('/{id}', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'update'])->name('update');
         Route::delete('/{id}', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'destroy'])->name('destroy');
@@ -172,6 +175,7 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::get('/', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'index'])->name('index');
         Route::get('/data', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'getData'])->name('data');
         Route::post('/', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'store'])->name('store');
+        Route::post('/types/quick-add', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'storeTypeReseau'])->name('store-type');
         Route::get('/{id}', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'show'])->name('show');
         Route::put('/{id}', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'update'])->name('update');
         Route::delete('/{id}', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'destroy'])->name('destroy');
@@ -185,6 +189,7 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::get('/', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'index'])->name('index');
         Route::get('/data', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'getData'])->name('data');
         Route::post('/', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'store'])->name('store');
+        Route::post('/types/quick-add', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'storeTypeInfrastructure'])->name('store-type');
         Route::get('/{id}', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'show'])->name('show');
         Route::put('/{id}', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'update'])->name('update');
         Route::delete('/{id}', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'destroy'])->name('destroy');
@@ -198,6 +203,7 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::get('/', [Modules\ParcInfo\Http\Controllers\RackController::class, 'index'])->name('index');
         Route::get('/data', [Modules\ParcInfo\Http\Controllers\RackController::class, 'getData'])->name('data');
         Route::post('/', [Modules\ParcInfo\Http\Controllers\RackController::class, 'store'])->name('store');
+        Route::post('/types/quick-add', [Modules\ParcInfo\Http\Controllers\RackController::class, 'storeTypeInfrastructure'])->name('store-type');
         Route::get('/{id}', [Modules\ParcInfo\Http\Controllers\RackController::class, 'show'])->name('show');
         Route::put('/{id}', [Modules\ParcInfo\Http\Controllers\RackController::class, 'update'])->name('update');
         Route::delete('/{id}', [Modules\ParcInfo\Http\Controllers\RackController::class, 'destroy'])->name('destroy');
@@ -211,25 +217,13 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::get('/', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'index'])->name('index');
         Route::get('/data', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'getData'])->name('data');
         Route::post('/', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'store'])->name('store');
+        Route::post('/types/quick-add', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'storeTypeInfrastructure'])->name('store-type');
         Route::get('/{id}', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'show'])->name('show');
         Route::put('/{id}', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'update'])->name('update');
         Route::delete('/{id}', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'destroy'])->name('destroy');
         Route::patch('/{id}/statut', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'updateStatut'])->name('update-statut');
         Route::patch('/{id}/etat', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'updateEtat'])->name('update-etat');
         Route::post('/{id}/desaffecter', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'desaffecter'])->name('desaffecter');
-    });
-
-    // Cameras
-    Route::prefix('informatique/cameras')->name('cameras.')->group(function () {
-        Route::get('/', [Modules\ParcInfo\Http\Controllers\CameraController::class, 'index'])->name('index');
-        Route::get('/data', [Modules\ParcInfo\Http\Controllers\CameraController::class, 'getData'])->name('data');
-        Route::post('/', [Modules\ParcInfo\Http\Controllers\CameraController::class, 'store'])->name('store');
-        Route::get('/{id}', [Modules\ParcInfo\Http\Controllers\CameraController::class, 'show'])->name('show');
-        Route::put('/{id}', [Modules\ParcInfo\Http\Controllers\CameraController::class, 'update'])->name('update');
-        Route::delete('/{id}', [Modules\ParcInfo\Http\Controllers\CameraController::class, 'destroy'])->name('destroy');
-        Route::patch('/{id}/statut', [Modules\ParcInfo\Http\Controllers\CameraController::class, 'updateStatut'])->name('update-statut');
-        Route::patch('/{id}/etat', [Modules\ParcInfo\Http\Controllers\CameraController::class, 'updateEtat'])->name('update-etat');
-        Route::post('/{id}/desaffecter', [Modules\ParcInfo\Http\Controllers\CameraController::class, 'desaffecter'])->name('desaffecter');
     });
 
 });
