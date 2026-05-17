@@ -30,8 +30,11 @@ class CoreServiceProvider extends ServiceProvider
             \Modules\Core\Console\Commands\ModuleStatsCommand::class,
             \Modules\Core\Console\Commands\SyncModulesCommand::class,
             \Modules\Core\Console\Commands\SyncPermissionsCommand::class,
+            \Modules\Core\Console\Commands\SyncCommand::class,
             \Modules\Core\Console\Commands\UserPermissionsCommand::class,
             \Modules\Core\Console\Commands\CleanupExpiredActivitiesCommand::class,
+            \Modules\Core\Console\Commands\ResetUserPassword::class,
+            \Modules\Core\Console\Commands\CreateUserCommand::class,
         ]);
     }
 

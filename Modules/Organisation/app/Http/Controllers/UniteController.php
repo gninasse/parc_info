@@ -17,10 +17,10 @@ class UniteController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:cores.organisation.unites.index', only: ['index', 'getData', 'show']),
-            new Middleware('permission:cores.organisation.unites.store', only: ['store']),
-            new Middleware('permission:cores.organisation.unites.update', only: ['update']),
-            new Middleware('permission:cores.organisation.unites.destroy', only: ['destroy']),
+            new Middleware('permission:organisation.unites.index', only: ['index', 'getData', 'show']),
+            new Middleware('permission:organisation.unites.store', only: ['store']),
+            new Middleware('permission:organisation.unites.update', only: ['update']),
+            new Middleware('permission:organisation.unites.destroy', only: ['destroy']),
         ];
     }
 

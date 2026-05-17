@@ -15,10 +15,10 @@ class BatimentController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:cores.organisation.batiments.index', only: ['index', 'getData', 'show']),
-            new Middleware('permission:cores.organisation.batiments.store', only: ['store']),
-            new Middleware('permission:cores.organisation.batiments.update', only: ['update']),
-            new Middleware('permission:cores.organisation.batiments.destroy', only: ['destroy']),
+            new Middleware('permission:organisation.batiments.index', only: ['index', 'getData', 'show']),
+            new Middleware('permission:organisation.batiments.store', only: ['store']),
+            new Middleware('permission:organisation.batiments.update', only: ['update']),
+            new Middleware('permission:organisation.batiments.destroy', only: ['destroy']),
         ];
     }
 

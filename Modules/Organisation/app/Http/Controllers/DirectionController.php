@@ -16,10 +16,10 @@ class DirectionController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:cores.organisation.directions.index', only: ['index', 'getData', 'show']),
-            new Middleware('permission:cores.organisation.directions.store', only: ['store']),
-            new Middleware('permission:cores.organisation.directions.update', only: ['update']),
-            new Middleware('permission:cores.organisation.directions.destroy', only: ['destroy']),
+            new Middleware('permission:organisation.directions.index', only: ['index', 'getData', 'show']),
+            new Middleware('permission:organisation.directions.store', only: ['store']),
+            new Middleware('permission:organisation.directions.update', only: ['update']),
+            new Middleware('permission:organisation.directions.destroy', only: ['destroy']),
         ];
     }
 

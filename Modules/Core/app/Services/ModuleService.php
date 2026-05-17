@@ -172,9 +172,15 @@ class ModuleService
             $module = Module::updateOrCreate(
                 ['slug' => $slug],
                 [
-                    'name' => $moduleInfo->getName(),
-                    'description' => $moduleInfo->getDescription(),
+                    'name' => $moduleInfo->get('name') ?? $moduleInfo->getName(),
+                    'description' => $moduleInfo->get('description') ?? $moduleInfo->getDescription(),
+                    'version' => $moduleInfo->get('version') ?? '1.0.0',
                     'is_active' => $moduleInfo->isEnabled(),
+                    'is_required' => $moduleInfo->get('requires') ? count($moduleInfo->get('requires')) > 0 : false,
+                    'dependencies' => $moduleInfo->get('requires') ?? [],
+                    'icon' => $moduleInfo->get('icon') ?? 'fas fa-cube',
+                    'sort_order' => $moduleInfo->get('priority') ?? 0,
+                    'installed_at' => $module->installed_at ?? now(),
                 ]
             );
             

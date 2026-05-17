@@ -14,10 +14,10 @@ class EtageController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:cores.organisation.etages.index', only: ['index', 'getData', 'show']),
-            new Middleware('permission:cores.organisation.etages.store', only: ['store']),
-            new Middleware('permission:cores.organisation.etages.update', only: ['update']),
-            new Middleware('permission:cores.organisation.etages.destroy', only: ['destroy']),
+            new Middleware('permission:organisation.etages.index', only: ['index', 'getData', 'show']),
+            new Middleware('permission:organisation.etages.store', only: ['store']),
+            new Middleware('permission:organisation.etages.update', only: ['update']),
+            new Middleware('permission:organisation.etages.destroy', only: ['destroy']),
         ];
     }
 

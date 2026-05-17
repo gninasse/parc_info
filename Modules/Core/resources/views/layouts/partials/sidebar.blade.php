@@ -38,6 +38,7 @@
               id="navigation"
             >
               @php $adminActive = request()->is('core*') || request()->is('profile*') @endphp
+              @canany(['cores.dashboard.view', 'cores.users.index', 'cores.roles.index', 'cores.permissions.index', 'cores.modules.index', 'cores.activities.index'])
               <li class="nav-item {{ $adminActive ? 'menu-open' : '' }}">
                 <a href="#" class="nav-link {{ $adminActive ? 'active' : '' }}">
                   <i class="nav-icon bi bi-speedometer"></i>
@@ -97,8 +98,10 @@
                   @endcan
                 </ul>
               </li>
+              @endcanany
 
               @php $orgActive = request()->is('organisation*') @endphp
+              @canany(['organisation.sites.index', 'organisation.directions.index', 'organisation.services.index', 'organisation.unites.index', 'organisation.batiments.index', 'organisation.etages.index', 'organisation.locaux.index', 'organisation.postes.index'])
               <li class="nav-item {{ $orgActive ? 'menu-open' : '' }}">
                 <a href="#" class="nav-link {{ $orgActive ? 'active' : '' }}">
                   <i class="nav-icon bi bi-diagram-2"></i>
@@ -108,56 +111,73 @@
                   </p>
                 </a>
                 <ul class="nav nav-treeview">
+                  @can('organisation.sites.index')
                   <li class="nav-item">
                     <a href="{{ route('organisation.sites.index') }}" class="nav-link {{ request()->routeIs('organisation.sites.*') ? 'active' : '' }}">
                       <i class="nav-icon bi bi-geo-alt"></i>
                       <p>Sites</p>
                     </a>
                   </li>
+                  @endcan
+                  @can('organisation.directions.index')
                   <li class="nav-item">
                     <a href="{{ route('organisation.directions.index') }}" class="nav-link {{ request()->routeIs('organisation.directions.*') ? 'active' : '' }}">
                       <i class="nav-icon bi bi-building-fill"></i>
                       <p>Directions</p>
                     </a>
                   </li>
+                  @endcan
+                  @can('organisation.services.index')
                   <li class="nav-item">
                     <a href="{{ route('organisation.services.index') }}" class="nav-link {{ request()->routeIs('organisation.services.*') ? 'active' : '' }}">
                       <i class="nav-icon bi bi-people-fill"></i>
                       <p>Services</p>
                     </a>
                   </li>
+                  @endcan
+                  @can('organisation.unites.index')
                   <li class="nav-item">
                     <a href="{{ route('organisation.unites.index') }}" class="nav-link {{ request()->routeIs('organisation.unites.*') ? 'active' : '' }}">
                       <i class="nav-icon bi bi-person-badge"></i>
                       <p>Unités cliniques</p>
                     </a>
                   </li>
+                  @endcan
+                  @can('organisation.batiments.index')
                   <li class="nav-item">
                     <a href="{{ route('organisation.batiments.index') }}" class="nav-link {{ request()->routeIs('organisation.batiments.*') ? 'active' : '' }}">
                       <i class="nav-icon bi bi-buildings"></i>
                       <p>Bâtiments</p>
                     </a>
                   </li>
+                  @endcan
+                  @can('organisation.etages.index')
                   <li class="nav-item">
                     <a href="{{ route('organisation.etages.index') }}" class="nav-link {{ request()->routeIs('organisation.etages.*') ? 'active' : '' }}">
                       <i class="nav-icon bi bi-layers"></i>
                       <p>Étages</p>
                     </a>
                   </li>
+                  @endcan
+                  @can('organisation.locaux.index')
                   <li class="nav-item">
                     <a href="{{ route('organisation.locaux.index') }}" class="nav-link {{ request()->routeIs('organisation.locaux.*') ? 'active' : '' }}">
                       <i class="nav-icon bi bi-door-closed"></i>
                       <p>Locaux</p>
                     </a>
                   </li>
+                  @endcan
+                  @can('organisation.postes.index')
                   <li class="nav-item">
                     <a href="{{ route('organisation.postes-travail.index') }}" class="nav-link {{ request()->routeIs('organisation.postes-travail.*') ? 'active' : '' }}">
                       <i class="nav-icon bi bi-pc-display"></i>
                       <p>Postes de travail</p>
                     </a>
                   </li>
+                  @endcan
                 </ul>
               </li>
+              @endcanany
             
             </ul>
             <!--end::Sidebar Menu-->

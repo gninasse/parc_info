@@ -14,10 +14,10 @@ class SiteController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:cores.organisation.sites.index', only: ['index', 'getData', 'show', 'getArborescence']),
-            new Middleware('permission:cores.organisation.sites.store', only: ['store']),
-            new Middleware('permission:cores.organisation.sites.update', only: ['update']),
-            new Middleware('permission:cores.organisation.sites.destroy', only: ['destroy']),
+            new Middleware('permission:organisation.sites.index', only: ['index', 'getData', 'show', 'getArborescence']),
+            new Middleware('permission:organisation.sites.store', only: ['store']),
+            new Middleware('permission:organisation.sites.update', only: ['update']),
+            new Middleware('permission:organisation.sites.destroy', only: ['destroy']),
         ];
     }
 

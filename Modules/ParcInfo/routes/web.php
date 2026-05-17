@@ -14,6 +14,7 @@ use Modules\ParcInfo\Http\Controllers\ImprimanteController;
 use Modules\ParcInfo\Http\Controllers\ScannerController;
 use Modules\ParcInfo\Http\Controllers\TelephoneController;
 use Modules\ParcInfo\Http\Controllers\TerminalIPController;
+use Modules\ParcInfo\Http\Controllers\CameraController;
 
 Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(function () {
     Route::get('/dashboard', [ParcInfoController::class, 'dashboard'])->name('dashboard');
@@ -281,6 +282,19 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::patch('/{id}/statut', [TerminalIPController::class, 'updateStatut'])->name('update-statut');
         Route::patch('/{id}/etat', [TerminalIPController::class, 'updateEtat'])->name('update-etat');
         Route::post('/{id}/desaffecter', [TerminalIPController::class, 'desaffecter'])->name('desaffecter');
+    });
+
+    // Cameras
+    Route::prefix('informatique/cameras')->name('cameras.')->group(function () {
+        Route::get('/', [CameraController::class, 'index'])->name('index');
+        Route::get('/data', [CameraController::class, 'getData'])->name('data');
+        Route::post('/', [CameraController::class, 'store'])->name('store');
+        Route::get('/{id}', [CameraController::class, 'show'])->name('show');
+        Route::put('/{id}', [CameraController::class, 'update'])->name('update');
+        Route::delete('/{id}', [CameraController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/statut', [CameraController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat', [CameraController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter', [CameraController::class, 'desaffecter'])->name('desaffecter');
     });
 
 });

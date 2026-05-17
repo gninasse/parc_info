@@ -14,10 +14,10 @@ class LocalController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:cores.organisation.locaux.index', only: ['index', 'getData', 'show']),
-            new Middleware('permission:cores.organisation.locaux.store', only: ['store']),
-            new Middleware('permission:cores.organisation.locaux.update', only: ['update']),
-            new Middleware('permission:cores.organisation.locaux.destroy', only: ['destroy']),
+            new Middleware('permission:organisation.locaux.index', only: ['index', 'getData', 'show']),
+            new Middleware('permission:organisation.locaux.store', only: ['store']),
+            new Middleware('permission:organisation.locaux.update', only: ['update']),
+            new Middleware('permission:organisation.locaux.destroy', only: ['destroy']),
         ];
     }
 

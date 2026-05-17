@@ -16,10 +16,10 @@ class ServiceController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:cores.organisation.services.index', only: ['index', 'getData', 'show']),
-            new Middleware('permission:cores.organisation.services.store', only: ['store']),
-            new Middleware('permission:cores.organisation.services.update', only: ['update']),
-            new Middleware('permission:cores.organisation.services.destroy', only: ['destroy']),
+            new Middleware('permission:organisation.services.index', only: ['index', 'getData', 'show']),
+            new Middleware('permission:organisation.services.store', only: ['store']),
+            new Middleware('permission:organisation.services.update', only: ['update']),
+            new Middleware('permission:organisation.services.destroy', only: ['destroy']),
         ];
     }
 

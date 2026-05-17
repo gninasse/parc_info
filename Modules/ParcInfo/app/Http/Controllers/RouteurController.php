@@ -77,6 +77,9 @@ class RouteurController extends Controller
 
     public function store(Request $request)
     {
+        $typeReseau = TypeReseau::firstOrCreate(['libelle' => 'Routeur']);
+        $request->merge(['type_reseau_id' => $typeReseau->id]);
+
         if (! $request->filled('code_inventaire')) {
             $lastEquipement = Equipement::orderBy('id', 'desc')->first();
             $nextId = $lastEquipement ? $lastEquipement->id + 1 : 1;

@@ -37,17 +37,17 @@
         </div>
         
         <div id="toolbar">
-            @can('cores.organisation.services.store')
+            @can('organisation.services.store')
             <button id="btn-add" class="btn btn-primary" data-bs-toggle="tooltip" title="Ajouter">
                 <i class="fas fa-plus"></i>
             </button>
             @endcan
-            @can('cores.organisation.services.update')
+            @can('organisation.services.update')
             <button id="btn-edit" class="btn btn-info" disabled data-bs-toggle="tooltip" title="Modifier">
                 <i class="fas fa-edit"></i>
             </button>
             @endcan
-            @can('cores.organisation.services.destroy')
+            @can('organisation.services.destroy')
             <button id="btn-delete" class="btn btn-danger" disabled data-bs-toggle="tooltip" title="Supprimer">
                 <i class="fas fa-trash"></i>
             </button>

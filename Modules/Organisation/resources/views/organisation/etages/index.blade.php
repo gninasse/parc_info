@@ -111,22 +111,22 @@ $(document).ready(function() {
         </div>
 
         <div id="toolbar">
-            @can('cores.organisation.etages.store')
+            @can('organisation.etages.store')
             <button id="btn-add" class="btn btn-primary" data-bs-toggle="tooltip" title="Ajouter">
                 <i class="fas fa-plus"></i>
             </button>
             @endcan
-            @can('cores.organisation.etages.update')
+            @can('organisation.etages.update')
             <button id="btn-edit" class="btn btn-info" disabled data-bs-toggle="tooltip" title="Modifier">
                 <i class="fas fa-edit"></i>
             </button>
             @endcan
-            @can('cores.organisation.etages.destroy')
+            @can('organisation.etages.destroy')
             <button id="btn-delete" class="btn btn-danger" disabled data-bs-toggle="tooltip" title="Supprimer">
                 <i class="fas fa-trash"></i>
             </button>
             @endcan
-            @can('cores.organisation.etages.toggle-status')
+            @can('organisation.etages.toggle-status')
             <button id="btn-toggle-status" class="btn btn-warning" disabled data-bs-toggle="tooltip" title="Activer/Désactiver">
                 <i class="fas fa-power-off"></i>
             </button>

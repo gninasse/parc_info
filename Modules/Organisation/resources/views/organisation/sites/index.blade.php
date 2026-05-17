@@ -19,17 +19,17 @@
     </div>
     <div class="card-body">
         <div id="toolbar">
-            @can('cores.organisation.sites.store')
+            @can('organisation.sites.store')
             <button id="btn-add" class="btn btn-primary" data-bs-toggle="tooltip" title="Ajouter">
                 <i class="fas fa-plus"></i>
             </button>
             @endcan
-            @can('cores.organisation.sites.update')
+            @can('organisation.sites.update')
             <button id="btn-edit" class="btn btn-info" disabled data-bs-toggle="tooltip" title="Modifier">
                 <i class="fas fa-edit"></i>
             </button>
             @endcan
-            @can('cores.organisation.sites.destroy')
+            @can('organisation.sites.destroy')
             <button id="btn-delete" class="btn btn-danger" disabled data-bs-toggle="tooltip" title="Supprimer">
                 <i class="fas fa-trash"></i>
             </button>

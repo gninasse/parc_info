@@ -124,13 +124,8 @@
 
                         <div class="col-md-4">
                             <label class="form-label text-muted small">Type d'équipement</label>
-                            <input type="text" class="form-control bg-light view-mode" value="{{ $r->typeReseau?->libelle ?? '—' }}" readonly>
-                            <select class="form-select edit-mode d-none" name="type_reseau_id">
-                                <option value="">—</option>
-                                @foreach($typesReseaux as $t)
-                                    <option value="{{ $t->id }}" {{ $r->type_reseau_id == $t->id ? 'selected' : '' }}>{{ $t->libelle }}</option>
-                                @endforeach
-                            </select>
+                            <input type="text" class="form-control bg-light" value="{{ $r->typeReseau?->libelle ?? '—' }}" readonly>
+                            <input type="hidden" name="type_reseau_id" value="{{ $r->type_reseau_id }}">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label text-muted small">Nombre de ports</label>

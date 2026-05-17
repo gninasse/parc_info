@@ -115,7 +115,8 @@
                             <div class="col-12">
                                 <h6 class="fw-bold mb-3 text-primary"><i class="bi bi-diagram-2 me-2"></i>Réseau & IP</h6>
                                 <div class="row g-3">
-                                    <div class="col-md-6">
+                                    {{-- Caché car auto-géré par le contrôleur spécifique (Switch, Routeur, etc.) --}}
+                                    <div class="col-md-6 d-none">
                                         <label class="form-label fw-semibold">Type d'équipement</label>
                                         <div class="input-group">
                                             <select class="form-select" id="type_reseau_id" name="type_reseau_id">
