@@ -1,5 +1,7 @@
 // ── Table config & formatters ───────────────────────────────────────────────────
 
+const prefix = window.routePrefix || 'parc-info.switches';
+
 window.reseauxQueryParams = (params) => {
     return Object.assign(params, {
         type_reseau_id: $('#filter-type').val(),
@@ -8,7 +10,7 @@ window.reseauxQueryParams = (params) => {
     });
 };
 
-window.codeFormatter = (val) => `<span class="fw-bold text-primary small">${val}</span>`;
+window.codeFormatter = (val, row) => `<a href="${route(prefix + '.show', row.id)}" class="fw-bold text-primary small text-decoration-none">${val}</a>`;
 
 window.statutFormatter = (val) => {
     const map = {
@@ -24,7 +26,7 @@ window.statutFormatter = (val) => {
 
 window.actionsFormatter = (id) => `
     <div class="d-flex gap-1">
-        <a href="/parc-info/informatique/reseaux/${id}" class="btn btn-sm btn-outline-secondary border-0" title="Voir / Modifier"><i class="bi bi-eye"></i></a>
+        <a href="${route(prefix + '.show', id)}" class="btn btn-sm btn-outline-secondary border-0" title="Voir / Modifier"><i class="bi bi-eye"></i></a>
         <button class="btn btn-sm btn-outline-danger border-0" data-action="delete" data-id="${id}" title="Supprimer"><i class="bi bi-trash"></i></button>
     </div>`;
 
@@ -37,7 +39,7 @@ window.actionsEvents = {
 // ── KPI ────────────────────────────────────────────────────────────────────────
 
 function loadKpis() {
-    $.get(route('parc-info.reseaux.data'), { limit: 9999, offset: 0 }, (res) => {
+    $.get(route(prefix + '.data'), { limit: 9999, offset: 0 }, (res) => {
         const rows = res.rows ?? [];
         $('#kpi-total').text(res.total ?? 0);
         $('#kpi-service').text(rows.filter(r => r.statut === 'en_service').length);
@@ -77,7 +79,6 @@ const Wizard = (() => {
     function updateStepper() {
         const stock = isEnStock();
 
-        // Disable/enable step 3 UI
         $circle(3).toggleClass('opacity-25', stock);
         $label(3).toggleClass('opacity-25 text-decoration-line-through', stock);
         $line(2).toggleClass('opacity-25', stock);
@@ -196,87 +197,34 @@ const Wizard = (() => {
         });
     }
 
-    // ── Init events ───────────────────────────────────────────────────────────
-
     function init() {
-        // Sélection statut visuelle
         $(document).on('click', '.statut-card', function () {
             $('.statut-card').removeClass('selected');
             $(this).addClass('selected');
-            $(this).find('input[type="radio"]').prop('checked', true);
-            updateStepper();
-            updateNav();
+            $(this).find('input').prop('checked', true);
         });
 
-        // Quick Adds
-        $('.btn-add-nomenclature').on('click', function() {
-            const type = $(this).data('type');
-            if (type === 'marque') {
-                quickAdd('Nouvelle marque', 'Ex: Cisco, HP, Fortinet...', 'parc-info.ordinateurs.store-marque', 'marque_id');
-            } else if (type === 'type_reseau') {
-                quickAdd('Nouveau type d\'équipement', 'Ex: Switch, Routeur...', 'parc-info.reseaux.store-type', 'type_reseau_id');
-            }
+        $(document).on('click', '.aff-type-card', function () {
+            $('.aff-type-card').removeClass('selected');
+            $(this).addClass('selected');
+            $(this).find('input').prop('checked', true);
+            const type = $(this).find('input').val();
+            $('.aff-summary').addClass('d-none');
+            $('#aff-summary-' + type.toLowerCase()).removeClass('d-none');
+            $('#aff-skip-hint').addClass('d-none');
         });
 
-        // Navigation
         $('#btn-next').on('click', () => {
             if (validateStep(currentStep)) goTo(currentStep + 1);
         });
 
-        $('#btn-prev').on('click', () => {
-            if (currentStep === 3) {
-                $('input[name="type_cible"]').prop('checked', false);
-                $('.aff-type-card').removeClass('selected');
-                $('.aff-summary').addClass('d-none');
-                $('#aff-skip-hint').removeClass('d-none');
-                $('#local_id').val('');
-            }
-            goTo(currentStep - 1);
-        });
+        $('#btn-prev').on('click', () => goTo(currentStep - 1));
 
-        // Modales de sélection
-        $(document).on('click', '.aff-type-card', function () {
-            $('.aff-type-card').removeClass('selected');
-            $(this).addClass('selected');
-            $(this).find('input[type="radio"]').prop('checked', true);
-
-            const val = $(this).data('value');
-            if (val === 'LOCAL') {
-                $(document).trigger('show:local:modal');
-            }
-        });
-
-        // Écouteur pour la sélection du local (déclenchée par selection_modals.js)
-        $(document).on('local:selected', function (e, local) {
-            if (!$('#step-3').is(':visible')) return;
-
-            $('.aff-type-card').removeClass('selected');
-            $('.aff-type-card[data-value="LOCAL"]').addClass('selected')
-                .find('input[type="radio"]').prop('checked', true);
-
-            $('#local-summary-code').text(local.code);
-            $('#local-summary-libelle').text(local.libelle);
-            $('#local-summary-etage').text(local.etage);
-            $('#local_id').val(local.id);
-
-            $('.aff-summary').addClass('d-none');
-            $('#aff-local-summary').removeClass('d-none');
-            $('#aff-skip-hint').addClass('d-none');
-        });
-
-        // Soumission
-        $form().on('submit', function (e) {
-            e.preventDefault();
-
-            let formData = $(this).serialize();
-            if (!$('input[name="type_cible"]:checked').val()) {
-                formData += '&skip_affectation=1';
-            }
-
-            const id = $('#res_id').val();
-            const url = id ? route('parc-info.reseaux.update', id) : route('parc-info.reseaux.store');
-            const method = id ? 'PUT' : 'POST';
+        $('#btn-submit').on('click', () => {
             const $btn = $('#btn-submit');
+            const url = route(prefix + '.store');
+            const method = 'POST';
+            const formData = $form().serialize();
 
             $btn.prop('disabled', true).find('#btn-submit-label').text('Enregistrement...');
 
@@ -309,6 +257,8 @@ const Wizard = (() => {
         });
 
         $modal().on('hidden.bs.modal', reset);
+
+        $('#btn-add-type-reseau').on('click', () => quickAdd('Ajouter un type de réseau', 'ex: Fibre optique, WiFi...', prefix + '.store-type', 'type_reseau_id'));
     }
 
     return { init, open };
@@ -328,7 +278,7 @@ function deleteReseau(id) {
     }).then((result) => {
         if (result.isConfirmed) {
             $.ajax({
-                url: route('parc-info.reseaux.destroy', id),
+                url: route(prefix + '.destroy', id),
                 method: 'DELETE',
                 success: (res) => {
                     if (res.success) {
@@ -352,7 +302,7 @@ $(function () {
 
     $('#btn-edit').on('click', () => {
         const sel = $('#reseaux-table').bootstrapTable('getSelections');
-        if (sel.length) window.location.href = `/parc-info/informatique/reseaux/${sel[0].id}`;
+        if (sel.length) window.location.href = route(prefix + '.show', sel[0].id);
     });
 
     $('#btn-delete').on('click', () => {

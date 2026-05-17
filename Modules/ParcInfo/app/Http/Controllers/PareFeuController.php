@@ -22,8 +22,12 @@ class PareFeuController extends Controller
         $marques = Marque::orderBy('libelle')->get(['id', 'libelle']);
         $typesReseaux = TypeReseau::orderBy('libelle')->get(['id', 'libelle']);
 
+        $pageTitle = 'Pare-feux (Firewalls)';
+        $dataUrl = route('parc-info.parefeux.data');
+        $routePrefix = 'parc-info.parefeux';
+
         return view('parcinfo::informatique.reseaux.index', compact(
-            'sites', 'directions', 'marques', 'typesReseaux'
+            'sites', 'directions', 'marques', 'typesReseaux', 'pageTitle', 'dataUrl', 'routePrefix'
         ));
     }
 
@@ -155,8 +159,10 @@ class PareFeuController extends Controller
         $sites = Site::orderBy('libelle')->get(['id', 'libelle']);
         $directions = Direction::where('actif', true)->orderBy('libelle')->get(['id', 'libelle']);
 
+        $routePrefix = 'parc-info.parefeux';
+
         return view('parcinfo::informatique.reseaux.show', compact(
-            'equipement', 'marques', 'typesReseaux', 'sites', 'directions'
+            'equipement', 'marques', 'typesReseaux', 'sites', 'directions', 'routePrefix'
         ));
     }
 

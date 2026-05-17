@@ -22,8 +22,12 @@ class RouteurController extends Controller
         $marques = Marque::orderBy('libelle')->get(['id', 'libelle']);
         $typesReseaux = TypeReseau::orderBy('libelle')->get(['id', 'libelle']);
 
+        $pageTitle = 'Routeurs';
+        $dataUrl = route('parc-info.routeurs.data');
+        $routePrefix = 'parc-info.routeurs';
+
         return view('parcinfo::informatique.reseaux.index', compact(
-            'sites', 'directions', 'marques', 'typesReseaux'
+            'sites', 'directions', 'marques', 'typesReseaux', 'pageTitle', 'dataUrl', 'routePrefix'
         ));
     }
 
@@ -155,8 +159,10 @@ class RouteurController extends Controller
         $sites = Site::orderBy('libelle')->get(['id', 'libelle']);
         $directions = Direction::where('actif', true)->orderBy('libelle')->get(['id', 'libelle']);
 
+        $routePrefix = 'parc-info.routeurs';
+
         return view('parcinfo::informatique.reseaux.show', compact(
-            'equipement', 'marques', 'typesReseaux', 'sites', 'directions'
+            'equipement', 'marques', 'typesReseaux', 'sites', 'directions', 'routePrefix'
         ));
     }
 
