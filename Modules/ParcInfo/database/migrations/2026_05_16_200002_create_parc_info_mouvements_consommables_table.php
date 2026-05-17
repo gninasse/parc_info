@@ -16,22 +16,22 @@ return new class extends Migration
                 'Consommation',
                 'Retour',
                 'Ajustement',
-                'Maintenance'
+                'Maintenance',
             ]);
             $table->unsignedInteger('quantite');
             $table->decimal('prix_unitaire', 10, 2)->nullable();
             $table->dateTime('date_mouvement');
             $table->string('reference_commande')->nullable();
-            
-            $table->foreignId('utilisateur_id')->constrained('core_users')->onDelete('restrict');
+
+            $table->foreignId('utilisateur_id')->constrained('users')->onDelete('restrict');
             $table->foreignId('equipement_id')->nullable()->constrained('parc_info_equipements')->onDelete('set null');
             $table->foreignId('employe_id')->nullable()->constrained('grh_dossiers_employes')->onDelete('set null');
-            
+
             $table->string('raison')->nullable();
             $table->text('notes')->nullable();
-            
+
             $table->timestamps();
-            
+
             $table->index(['consommable_id', 'date_mouvement']);
             $table->index(['type_mouvement']);
             $table->index(['utilisateur_id']);

@@ -7,9 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class TypeConsommable extends Model
 {
     protected $table = 'parc_info_types_consommables';
-    
-    public $timestamps = true;
-    
+
     protected $fillable = [
         'code',
         'nom',
@@ -20,12 +18,12 @@ class TypeConsommable extends Model
         'duree_conservation_jours',
         'description',
     ];
-    
+
     protected $casts = [
         'seul_reapprovisionnement' => 'integer',
         'duree_conservation_jours' => 'integer',
     ];
-    
+
     public function consommables()
     {
         return $this->hasMany(Consommable::class);

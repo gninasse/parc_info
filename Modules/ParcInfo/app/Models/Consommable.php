@@ -3,14 +3,11 @@
 namespace Modules\ParcInfo\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Casts\AsCollection;
 
 class Consommable extends Model
 {
     protected $table = 'parc_info_consommables';
-    
-    public $timestamps = true;
-    
+
     protected $fillable = [
         'code',
         'nom',
@@ -28,7 +25,7 @@ class Consommable extends Model
         'est_actif',
         'notes',
     ];
-    
+
     protected $casts = [
         'compatible_equipements' => 'array',
         'cout_unitaire' => 'decimal:2',
@@ -39,70 +36,61 @@ class Consommable extends Model
         'est_actif' => 'boolean',
         'date_dernier_approvisionnement' => 'date',
     ];
-    
+
     public function typeConsommable()
     {
         return $this->belongsTo(TypeConsommable::class);
     }
-    
+
     public function marque()
     {
         return $this->belongsTo(Marque::class);
     }
-    
+
     public function fournisseur()
     {
         return $this->belongsTo(Fournisseur::class, 'fournisseur_principal_id');
     }
-    
+
     public function mouvementsStock()
     {
         return $this->hasMany(MouvementConsommable::class);
     }
-    
+
     public function affectations()
     {
         return $this->hasMany(AffectationConsommable::class);
     }
-    
+
     // SCOPES
     public function scopeEnRupture($query)
     {
         return $query->whereRaw('quantite_stock_actuel <= quantite_stock_min');
     }
-    
+
     public function scopeActifs($query)
     {
         return $query->where('est_actif', true);
     }
-    
-    public function scopeParCategorie($query, $categorie)
-    {
-        return $query->whereHas('typeConsommable', fn($q) => $q->where('categorie', $categorie));
-    }
-    
+
     // ACCESSEURS
     public function getStatutStockAttribute()
     {
-        if ($this->quantite_stock_actuel <= 0) return 'RUPTURE';
-        if ($this->quantite_stock_actuel <= $this->quantite_stock_min) return 'ALERTE';
-        if ($this->quantite_stock_actuel >= $this->quantite_stock_max) return 'SURSTOCK';
+        if ($this->quantite_stock_actuel <= 0) {
+            return 'RUPTURE';
+        }
+        if ($this->quantite_stock_actuel <= $this->quantite_stock_min) {
+            return 'ALERTE';
+        }
+        if ($this->quantite_stock_actuel >= $this->quantite_stock_max) {
+            return 'SURSTOCK';
+        }
+
         return 'NORMAL';
     }
-    
+
     public function getValeurStockAttribute()
     {
         return $this->quantite_stock_actuel * $this->cout_unitaire;
-    }
-    
-    public function getTauxUtilisationAttribute()
-    {
-        if ($this->quantite_stock_max == 0) return 0;
-        return round(($this->quantite_stock_actuel / $this->quantite_stock_max) * 100, 2);
-    }
-    
-    public function getDisponibilitesAttribute()
-    {
-        return max(0, $this->quantite_stock_max - $this->quantite_stock_actuel);
     }
 }

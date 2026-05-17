@@ -4,10 +4,7 @@ namespace Modules\ParcInfo\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Modules\Grh\Models\Employe;
 use Modules\Organisation\Models\Direction;
-use Modules\Organisation\Models\Local;
-use Modules\Organisation\Models\PosteTravail;
 use Modules\Organisation\Models\Site;
 use Modules\ParcInfo\Models\AffectationEquipement;
 use Modules\ParcInfo\Models\Equipement;
@@ -177,7 +174,7 @@ class MobileController extends Controller
 
             $equipement->mobile->update($request->only([
                 'type_mobile_id', 'imei_1', 'imei_2', 'num_tel_associe',
-                'version_os', 'statut_mdm', 'capacite_batterie_mah', 'etat_ecran', 'a_coque_protection'
+                'version_os', 'statut_mdm', 'capacite_batterie_mah', 'etat_ecran', 'a_coque_protection',
             ]));
         });
 
@@ -285,9 +282,11 @@ class MobileController extends Controller
 
         return response()->json(['success' => true, 'message' => 'Équipement désaffecté et mis en stock.']);
     }
+
     public function destroy($id)
     {
         Equipement::findOrFail($id)->delete();
+
         return response()->json(['success' => true, 'message' => 'Terminal supprimé.']);
     }
 
@@ -295,6 +294,7 @@ class MobileController extends Controller
     {
         $request->validate(['libelle' => 'required|string|unique:parc_info_types_mobiles,libelle']);
         $type = TypeMobile::create(['libelle' => $request->libelle]);
+
         return response()->json(['success' => true, 'data' => $type]);
     }
 

@@ -3,6 +3,8 @@
 namespace Modules\ParcInfo\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Modules\ParcInfo\Models\Equipement;
 
 class ParcInfoController extends Controller
 {
@@ -37,5 +39,34 @@ class ParcInfoController extends Controller
         ];
 
         return view('parcinfo::dashboard.index', compact('stats', 'recentEquipements', 'repartitionParType'));
+    }
+
+    public function searchEquipements(Request $request)
+    {
+        $q = $request->get('q', '');
+
+        $query = Equipement::with(['marque', 'affectationActive.local.etage.batiment'])
+            ->where(function ($query) use ($q) {
+                $query->where('code_inventaire', 'ilike', "%{$q}%")
+                    ->orWhere('modele', 'ilike', "%{$q}%")
+                    ->orWhere('numero_serie', 'ilike', "%{$q}%")
+                    ->orWhereHas('marque', fn ($m) => $m->where('libelle', 'ilike', "%{$q}%"));
+            });
+
+        if ($request->filled('statut')) {
+            $query->where('statut', $request->statut);
+        }
+
+        return response()->json($query->limit(50)->get()->map(function ($e) {
+            return [
+                'id' => $e->id,
+                'code' => $e->code_inventaire,
+                'modele' => $e->modele,
+                'marque' => $e->marque?->libelle ?: 'Générique',
+                'statut' => $e->statut,
+                'statut_label' => $e->statut_label,
+                'emplacement' => $e->affectationActive?->local?->libelle ?? '—',
+            ];
+        }));
     }
 }

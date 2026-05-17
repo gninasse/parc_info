@@ -9,9 +9,9 @@ use Modules\Organisation\Models\Site;
 use Modules\ParcInfo\Models\AffectationEquipement;
 use Modules\ParcInfo\Models\Equipement;
 use Modules\ParcInfo\Models\EquipementReseau;
+use Modules\ParcInfo\Models\HistoriqueChangement;
 use Modules\ParcInfo\Models\Marque;
 use Modules\ParcInfo\Models\TypeReseau;
-use Modules\ParcInfo\Models\HistoriqueChangement;
 
 class PareFeuController extends Controller
 {
@@ -31,7 +31,11 @@ class PareFeuController extends Controller
     {
         $query = Equipement::query()
             ->with(['marque', 'reseau.typeReseau', 'affectationActive.local.etage.batiment'])
-            ->whereHas('reseau', function ($q) { $q->whereHas('typeReseau', function ($t) { $t->where('libelle', 'ilike', '%pare-feu%')->orWhere('libelle', 'ilike', '%firewall%'); }); });
+            ->whereHas('reseau', function ($q) {
+                $q->whereHas('typeReseau', function ($t) {
+                    $t->where('libelle', 'ilike', '%pare-feu%')->orWhere('libelle', 'ilike', '%firewall%');
+                });
+            });
 
         if ($request->filled('statut')) {
             $query->where('statut', $request->statut);
@@ -184,7 +188,7 @@ class PareFeuController extends Controller
                 'adresse_ip' => $request->adresse_ip,
                 'masque_sous_reseau' => $request->masque_sous_reseau,
                 'passerelle' => $request->passerelle,
-                'est_manageable' => $request->boolean('est_manageable')
+                'est_manageable' => $request->boolean('est_manageable'),
             ]);
         });
 
@@ -292,9 +296,11 @@ class PareFeuController extends Controller
 
         return response()->json(['success' => true, 'message' => 'Équipement désaffecté et mis en stock.']);
     }
+
     public function destroy($id)
     {
         Equipement::findOrFail($id)->delete();
+
         return response()->json(['success' => true, 'message' => 'Équipement supprimé.']);
     }
 
@@ -302,6 +308,7 @@ class PareFeuController extends Controller
     {
         $request->validate(['libelle' => 'required|string|unique:parc_info_types_reseaux,libelle']);
         $type = TypeReseau::create(['libelle' => $request->libelle]);
+
         return response()->json(['success' => true, 'data' => $type]);
     }
 

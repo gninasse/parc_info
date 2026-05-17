@@ -8,8 +8,8 @@ use Modules\Organisation\Models\Direction;
 use Modules\Organisation\Models\Site;
 use Modules\ParcInfo\Models\AffectationEquipement;
 use Modules\ParcInfo\Models\Equipement;
-use Modules\ParcInfo\Models\Infrastructure;
 use Modules\ParcInfo\Models\HistoriqueChangement;
+use Modules\ParcInfo\Models\Infrastructure;
 use Modules\ParcInfo\Models\Marque;
 use Modules\ParcInfo\Models\TypeInfrastructure;
 
@@ -19,6 +19,7 @@ class BrassageController extends Controller
     {
         $typesInfrastructures = TypeInfrastructure::orderBy('libelle')->get(['id', 'libelle']);
         $sites = Site::orderBy('libelle')->get(['id', 'libelle']);
+
         return view('parcinfo::informatique.onduleurs.index', compact('typesInfrastructures', 'sites'));
     }
 
@@ -263,6 +264,7 @@ class BrassageController extends Controller
     public function destroy($id)
     {
         Equipement::findOrFail($id)->delete();
+
         return response()->json(['success' => true, 'message' => 'Brassage supprimé.']);
     }
 
@@ -270,6 +272,7 @@ class BrassageController extends Controller
     {
         $request->validate(['libelle' => 'required|string|unique:parc_info_types_infrastructures,libelle']);
         $type = TypeInfrastructure::create(['libelle' => $request->libelle]);
+
         return response()->json(['success' => true, 'data' => $type]);
     }
 
