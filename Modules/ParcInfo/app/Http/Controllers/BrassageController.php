@@ -19,12 +19,8 @@ class BrassageController extends Controller
     {
         $typesInfrastructures = TypeInfrastructure::orderBy('libelle')->get(['id', 'libelle']);
         $sites = Site::orderBy('libelle')->get(['id', 'libelle']);
-<<<<<<< HEAD
-        return view('parcinfo::informatique.brassage.index', compact('typesInfrastructures', 'sites'));
-=======
 
-        return view('parcinfo::informatique.onduleurs.index', compact('typesInfrastructures', 'sites'));
->>>>>>> feature/gestion-licences-logiciels
+        return view('parcinfo::informatique.brassage.index', compact('typesInfrastructures', 'sites'));
     }
 
     public function getData(Request $request)
