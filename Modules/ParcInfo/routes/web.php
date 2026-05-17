@@ -7,8 +7,8 @@ use Modules\ParcInfo\Http\Controllers\FournisseurController;
 use Modules\ParcInfo\Http\Controllers\LicenceController;
 use Modules\ParcInfo\Http\Controllers\LogicielController;
 use Modules\ParcInfo\Http\Controllers\MobileController;
-use Modules\ParcInfo\Http\Controllers\OrdinateurController;
 use Modules\ParcInfo\Http\Controllers\ParcInfoController;
+use Modules\ParcInfo\Http\Controllers\OrdinateurController;
 use Modules\ParcInfo\Http\Controllers\ServeurController;
 
 Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(function () {
@@ -98,6 +98,34 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::patch('/{id}/statut', [OrdinateurController::class, 'updateStatut'])->name('update-statut');
         Route::patch('/{id}/etat', [OrdinateurController::class, 'updateEtat'])->name('update-etat');
         Route::post('/{id}/desaffecter', [OrdinateurController::class, 'desaffecter'])->name('desaffecter');
+    });
+
+    // Serveurs
+    Route::prefix('informatique/serveurs')->name('serveurs.')->group(function () {
+        Route::get('/', [ServeurController::class, 'index'])->name('index');
+        Route::get('/data', [ServeurController::class, 'getData'])->name('data');
+        Route::post('/', [ServeurController::class, 'store'])->name('store');
+        Route::get('/{id}', [ServeurController::class, 'show'])->name('show');
+        Route::put('/{id}', [ServeurController::class, 'update'])->name('update');
+        Route::delete('/{id}', [ServeurController::class, 'destroy'])->name('destroy');
+        Route::get('/search/hotes', [ServeurController::class, 'searchHotes'])->name('search-hotes');
+        Route::patch('/{id}/statut', [ServeurController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat', [ServeurController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter', [ServeurController::class, 'desaffecter'])->name('desaffecter');
+    });
+
+    // Mobiles & Tablettes
+    Route::prefix('informatique/mobiles')->name('mobiles.')->group(function () {
+        Route::get('/', [MobileController::class, 'index'])->name('index');
+        Route::get('/data', [MobileController::class, 'getData'])->name('data');
+        Route::post('/', [MobileController::class, 'store'])->name('store');
+        Route::get('/{id}', [MobileController::class, 'show'])->name('show');
+        Route::put('/{id}', [MobileController::class, 'update'])->name('update');
+        Route::delete('/{id}', [MobileController::class, 'destroy'])->name('destroy');
+        Route::post('/types', [MobileController::class, 'storeTypeMobile'])->name('store-type');
+        Route::patch('/{id}/statut', [MobileController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat', [MobileController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter', [MobileController::class, 'desaffecter'])->name('desaffecter');
     });
 
     // Switches
