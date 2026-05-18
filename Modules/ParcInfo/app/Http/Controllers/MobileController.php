@@ -4,7 +4,11 @@ namespace Modules\ParcInfo\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Modules\Grh\Models\Employe;
 use Modules\Organisation\Models\Direction;
+use Modules\Organisation\Models\Local;
+use Modules\Organisation\Models\PosteTravail;
 use Modules\Organisation\Models\Site;
 use Modules\ParcInfo\Models\AffectationEquipement;
 use Modules\ParcInfo\Models\Equipement;
@@ -30,17 +34,21 @@ class MobileController extends Controller
     public function getData(Request $request)
     {
         $query = Equipement::query()
-            ->with(['marque', 'mobile.typeMobile', 'affectationActive.employe'])
+            ->with(['marque', 'mobile.typeMobile', 'affectationActive.employe', 'affectationActive.posteTravail', 'affectationActive.local'])
             ->whereHas('mobile');
 
         if ($request->filled('statut')) {
             $query->where('statut', $request->statut);
         }
+        if ($request->filled('site_id')) {
+            $query->whereHas('affectationActive.local.etage.batiment', fn ($q) => $q->where('site_id', $request->site_id))
+                ->orWhereHas('affectationActive.posteTravail.local.etage.batiment', fn ($q) => $q->where('site_id', $request->site_id));
+        }
+        if ($request->filled('direction_id')) {
+            $query->whereHas('affectationActive', fn ($q) => $q->where('direction_id', $request->direction_id));
+        }
         if ($request->filled('type_mobile_id')) {
             $query->whereHas('mobile', fn ($q) => $q->where('type_mobile_id', $request->type_mobile_id));
-        }
-        if ($request->filled('site_id')) {
-            $query->whereHas('affectationActive.posteTravail.local.etage.batiment', fn ($q) => $q->where('site_id', $request->site_id));
         }
 
         if ($request->filled('search') && $request->search !== '') {
@@ -83,13 +91,20 @@ class MobileController extends Controller
             'modele' => 'required|string|max:255',
             'statut' => 'required|in:en_stock,en_service,en_reparation,perdu,reforme',
             'etat' => 'required|in:bon,passable,mauvais,avarie',
-            // Mobile
             'type_mobile_id' => 'nullable|exists:parc_info_types_mobiles,id',
-            'imei_1' => 'nullable|string|unique:parc_info_mobiles,imei_1',
-            'num_tel_associe' => 'nullable|string',
+            'imei_1' => 'nullable|string|max:50',
+            'imei_2' => 'nullable|string|max:50',
+            'num_tel_associe' => 'nullable|string|max:20',
+            'version_os' => 'nullable|string|max:50',
+            'statut_mdm' => 'nullable|string|max:50',
+            'capacite_batterie_mah' => 'nullable|integer',
+            'etat_ecran' => 'nullable|string|max:50',
+            'a_coque_protection' => 'nullable|boolean',
+            'type_cible' => 'nullable|in:EMPLOYE,POSTE,LOCAL',
+            'skip_affectation' => 'nullable|boolean',
         ]);
 
-        $equipementId = \DB::transaction(function () use ($request) {
+        $equipementId = DB::transaction(function () use ($request) {
             $equipement = Equipement::create([
                 'code_inventaire' => $request->code_inventaire,
                 'numero_serie' => $request->numero_serie,
@@ -97,8 +112,11 @@ class MobileController extends Controller
                 'modele' => $request->modele,
                 'date_acquisition' => $request->date_acquisition,
                 'date_mise_en_service' => $request->date_mise_en_service,
+                'date_fin_garantie' => $request->date_fin_garantie,
+                'valeur_achat' => $request->valeur_achat,
                 'statut' => $request->statut,
                 'etat' => $request->etat ?? 'bon',
+                'tags' => $request->tags ? (is_array($request->tags) ? $request->tags : explode(',', $request->tags)) : null,
             ]);
 
             Mobile::create([
@@ -115,6 +133,29 @@ class MobileController extends Controller
             ]);
 
             if (! $request->boolean('skip_affectation') && $request->filled('type_cible')) {
+                $niveau_rattachement = null;
+                $direction_id = null;
+                $service_id = null;
+                $unite_id = null;
+
+                if ($request->type_cible === 'EMPLOYE' && $request->dossier_employe_id) {
+                    $employe = Employe::find($request->dossier_employe_id);
+                    if ($employe) {
+                        $niveau_rattachement = $employe->niveau_rattachement;
+                        $direction_id = $employe->direction_id;
+                        $service_id = $employe->service_id;
+                        $unite_id = $employe->unite_id;
+                    }
+                } elseif ($request->type_cible === 'POSTE' && $request->poste_travail_id) {
+                    $poste = PosteTravail::find($request->poste_travail_id);
+                    if ($poste) {
+                        $niveau_rattachement = $poste->niveau_rattachement;
+                        $direction_id = $poste->direction_id;
+                        $service_id = $poste->service_id;
+                        $unite_id = $poste->unite_id;
+                    }
+                }
+
                 AffectationEquipement::create([
                     'code' => 'AFF-'.strtoupper(uniqid()),
                     'equipement_id' => $equipement->id,
@@ -125,8 +166,23 @@ class MobileController extends Controller
                     'dossier_employe_id' => $request->dossier_employe_id,
                     'poste_travail_id' => $request->poste_travail_id,
                     'local_id' => $request->local_id,
+                    'niveau_rattachement' => $niveau_rattachement,
+                    'direction_id' => $direction_id,
+                    'service_id' => $service_id,
+                    'unite_id' => $unite_id,
                 ]);
             }
+
+            // Historique initial
+            HistoriqueChangement::create([
+                'equipement_id' => $equipement->id,
+                'date_changement' => now(),
+                'utilisateur_id' => auth()->id(),
+                'type_changement' => 'STATUT',
+                'ancien_statut' => null,
+                'nouveau_statut' => $request->statut,
+                'motif' => 'Enregistrement initial de l\'équipement mobile',
+            ]);
 
             return $equipement->id;
         });
@@ -160,75 +216,18 @@ class MobileController extends Controller
         ));
     }
 
-    public function storeAffectation(Request $request)
+    public function showJson($id)
     {
-        $request->validate([
-            'equipement_id' => 'required|exists:parc_info_equipements,id',
-            'type_cible' => 'required|in:EMPLOYE,POSTE,LOCAL',
-        ]);
+        $e = Equipement::with([
+            'marque',
+            'mobile.typeMobile',
+            'affectationActive.employe',
+            'affectationActive.posteTravail.local.etage.batiment.site',
+            'affectationActive.local.etage.batiment.site',
+            'affectationActive.direction', 'affectationActive.service', 'affectationActive.unite',
+        ])->findOrFail($id);
 
-        \DB::transaction(function () use ($request) {
-            $equipement = Equipement::findOrFail($request->equipement_id);
-
-            // Clôturer l'affectation active précédente
-            AffectationEquipement::where('equipement_id', $request->equipement_id)
-                ->where('statut', true)
-                ->update(['statut' => false, 'date_fin' => now()]);
-
-            $niveau_rattachement = null;
-            $direction_id = null;
-            $service_id = null;
-            $unite_id = null;
-
-            if ($request->type_cible === 'EMPLOYE' && $request->dossier_employe_id) {
-                $employe = \Modules\Grh\Models\Employe::find($request->dossier_employe_id);
-                if ($employe) {
-                    $niveau_rattachement = $employe->niveau_rattachement;
-                    $direction_id = $employe->direction_id;
-                    $service_id = $employe->service_id;
-                    $unite_id = $employe->unite_id;
-                }
-            } elseif ($request->type_cible === 'POSTE' && $request->poste_travail_id) {
-                $poste = \Modules\Organisation\Models\PosteTravail::find($request->poste_travail_id);
-                if ($poste) {
-                    $niveau_rattachement = $poste->niveau_rattachement;
-                    $direction_id = $poste->direction_id;
-                    $service_id = $poste->service_id;
-                    $unite_id = $poste->unite_id;
-                }
-            }
-
-            AffectationEquipement::create([
-                'code' => 'AFF-'.strtoupper(uniqid()),
-                'equipement_id' => $request->equipement_id,
-                'statut' => true,
-                'type_cible' => $request->type_cible,
-                'type_affectation' => 'PERMANENTE',
-                'date_debut' => now(),
-                'date_fin' => null,
-                'dossier_employe_id' => $request->dossier_employe_id,
-                'poste_travail_id' => $request->poste_travail_id,
-                'local_id' => $request->local_id,
-                'niveau_rattachement' => $niveau_rattachement,
-                'direction_id' => $direction_id,
-                'service_id' => $service_id,
-                'unite_id' => $unite_id,
-            ]);
-
-            // Mettre à jour le statut de l'équipement
-            $equipement->update(['statut' => 'en_service']);
-
-            // Historique
-            HistoriqueChangement::create([
-                'equipement_id' => $request->equipement_id,
-                'date_changement' => now(),
-                'utilisateur_id' => auth()->id(),
-                'type_changement' => 'AFFECTATION',
-                'motif' => 'Nouvelle affectation via l\'interface show',
-            ]);
-        });
-
-        return response()->json(['success' => true, 'message' => 'Affectation enregistrée avec succès.']);
+        return response()->json(['success' => true, 'data' => $e]);
     }
 
     public function update(Request $request, $id)
@@ -240,17 +239,26 @@ class MobileController extends Controller
             'etat' => 'required|in:bon,passable,mauvais,avarie',
         ]);
 
-        \DB::transaction(function () use ($request, $id) {
+        DB::transaction(function () use ($request, $id) {
             $equipement = Equipement::findOrFail($id);
             $equipement->update($request->only([
                 'numero_serie', 'marque_id', 'modele',
-                'date_acquisition', 'statut', 'etat',
+                'date_acquisition', 'date_mise_en_service', 'date_fin_garantie',
+                'valeur_achat', 'statut', 'etat',
             ]));
 
             $equipement->mobile->update($request->only([
                 'type_mobile_id', 'imei_1', 'imei_2', 'num_tel_associe',
                 'version_os', 'statut_mdm', 'capacite_batterie_mah', 'etat_ecran', 'a_coque_protection',
             ]));
+
+            HistoriqueChangement::create([
+                'equipement_id' => $id,
+                'date_changement' => now(),
+                'utilisateur_id' => auth()->id(),
+                'type_changement' => 'TECHNIQUE',
+                'motif' => 'Mise à jour des informations techniques',
+            ]);
         });
 
         return response()->json(['success' => true, 'message' => 'Mobile mis à jour avec succès.']);
@@ -263,11 +271,10 @@ class MobileController extends Controller
             'motif' => 'required|string',
         ]);
 
-        \DB::transaction(function () use ($request, $id) {
+        DB::transaction(function () use ($request, $id) {
             $equipement = Equipement::findOrFail($id);
             $ancienStatut = $equipement->statut;
 
-            // Si passage en stock, désaffecter
             if ($request->statut === 'en_stock' && $equipement->affectationActive) {
                 AffectationEquipement::where('equipement_id', $id)
                     ->where('statut', true)
@@ -276,7 +283,6 @@ class MobileController extends Controller
 
             $equipement->update(['statut' => $request->statut]);
 
-            // Enregistrer dans l'historique
             HistoriqueChangement::create([
                 'equipement_id' => $id,
                 'date_changement' => now(),
@@ -298,7 +304,7 @@ class MobileController extends Controller
             'motif' => 'required|string',
         ]);
 
-        \DB::transaction(function () use ($request, $id) {
+        DB::transaction(function () use ($request, $id) {
             $equipement = Equipement::findOrFail($id);
             $ancienEtat = $equipement->etat;
 
@@ -324,7 +330,7 @@ class MobileController extends Controller
             'motif' => 'required|string|max:255',
         ]);
 
-        \DB::transaction(function () use ($request, $id) {
+        DB::transaction(function () use ($request, $id) {
             $equipement = Equipement::findOrFail($id);
             $ancienStatut = $equipement->statut;
 
@@ -339,8 +345,6 @@ class MobileController extends Controller
                 'date_changement' => now(),
                 'utilisateur_id' => auth()->id(),
                 'type_changement' => 'AFFECTATION',
-                'ancien_statut' => null,
-                'nouveau_statut' => null,
                 'motif' => 'Désaffectation : '.$request->motif,
             ]);
 
@@ -358,11 +362,150 @@ class MobileController extends Controller
         return response()->json(['success' => true, 'message' => 'Équipement désaffecté et mis en stock.']);
     }
 
+    public function storeAffectation(Request $request)
+    {
+        $request->validate([
+            'equipement_id' => 'required|exists:parc_info_equipements,id',
+            'type_cible' => 'required|in:EMPLOYE,POSTE,LOCAL',
+        ]);
+
+        DB::transaction(function () use ($request) {
+            $equipement = Equipement::findOrFail($request->equipement_id);
+
+            AffectationEquipement::where('equipement_id', $request->equipement_id)
+                ->where('statut', true)
+                ->update(['statut' => false, 'date_fin' => now()]);
+
+            $niveau_rattachement = null;
+            $direction_id = null;
+            $service_id = null;
+            $unite_id = null;
+
+            if ($request->type_cible === 'EMPLOYE' && $request->dossier_employe_id) {
+                $employe = Employe::find($request->dossier_employe_id);
+                if ($employe) {
+                    $niveau_rattachement = $employe->niveau_rattachement;
+                    $direction_id = $employe->direction_id;
+                    $service_id = $employe->service_id;
+                    $unite_id = $employe->unite_id;
+                }
+            } elseif ($request->type_cible === 'POSTE' && $request->poste_travail_id) {
+                $poste = PosteTravail::find($request->poste_travail_id);
+                if ($poste) {
+                    $niveau_rattachement = $poste->niveau_rattachement;
+                    $direction_id = $poste->direction_id;
+                    $service_id = $poste->service_id;
+                    $unite_id = $poste->unite_id;
+                }
+            }
+
+            AffectationEquipement::create([
+                'code' => 'AFF-'.strtoupper(uniqid()),
+                'equipement_id' => $request->equipement_id,
+                'statut' => true,
+                'type_cible' => $request->type_cible,
+                'type_affectation' => 'PERMANENTE',
+                'date_debut' => now(),
+                'dossier_employe_id' => $request->dossier_employe_id,
+                'poste_travail_id' => $request->poste_travail_id,
+                'local_id' => $request->local_id,
+                'niveau_rattachement' => $niveau_rattachement,
+                'direction_id' => $direction_id,
+                'service_id' => $service_id,
+                'unite_id' => $unite_id,
+            ]);
+
+            $ancienStatut = $equipement->statut;
+            if ($equipement->statut === 'en_stock') {
+                $equipement->update(['statut' => 'en_service']);
+
+                HistoriqueChangement::create([
+                    'equipement_id' => $request->equipement_id,
+                    'date_changement' => now(),
+                    'utilisateur_id' => auth()->id(),
+                    'type_changement' => 'STATUT',
+                    'ancien_statut' => $ancienStatut,
+                    'nouveau_statut' => 'en_service',
+                    'motif' => 'Mise en service automatique suite à affectation',
+                ]);
+            }
+
+            HistoriqueChangement::create([
+                'equipement_id' => $request->equipement_id,
+                'date_changement' => now(),
+                'utilisateur_id' => auth()->id(),
+                'type_changement' => 'AFFECTATION',
+                'motif' => 'Nouvelle affectation via l\'interface show',
+            ]);
+        });
+
+        return response()->json(['success' => true, 'message' => 'Affectation enregistrée avec succès.']);
+    }
+
     public function destroy($id)
     {
         Equipement::findOrFail($id)->delete();
 
         return response()->json(['success' => true, 'message' => 'Terminal supprimé.']);
+    }
+
+    public function searchEmployes(Request $request)
+    {
+        $q = $request->get('q', '');
+
+        return response()->json(
+            Employe::where('est_actif', true)
+                ->where(fn ($query) => $query
+                    ->where('nom', 'ilike', "%{$q}%")
+                    ->orWhere('prenom', 'ilike', "%{$q}%")
+                    ->orWhere('matricule', 'ilike', "%{$q}%"))
+                ->limit(20)->get(['id', 'matricule', 'nom', 'prenom'])
+                ->map(fn ($e) => ['id' => $e->id, 'text' => "{$e->nom} {$e->prenom} ({$e->matricule})", 'matricule' => $e->matricule, 'nom' => $e->nom, 'prenom' => $e->prenom])
+        );
+    }
+
+    public function searchPostes(Request $request)
+    {
+        $q = $request->get('q', '');
+
+        return response()->json(
+            PosteTravail::with(['service', 'local'])
+                ->where('actif', true)
+                ->where(fn ($query) => $query
+                    ->where('code', 'ilike', "%{$q}%")
+                    ->orWhere('libelle', 'ilike', "%{$q}%"))
+                ->limit(20)->get()
+                ->map(fn ($p) => [
+                    'id' => $p->id,
+                    'text' => "{$p->code} — {$p->libelle}",
+                    'code' => $p->code,
+                    'libelle' => $p->libelle,
+                    'service' => $p->service?->libelle,
+                    'local' => $p->local?->libelle,
+                ])
+        );
+    }
+
+    public function searchLocaux(Request $request)
+    {
+        $q = $request->get('q', '');
+
+        return response()->json(
+            Local::with(['etage.batiment.site'])
+                ->where(fn ($query) => $query
+                    ->where('libelle', 'ilike', "%{$q}%")
+                    ->orWhere('code', 'ilike', "%{$q}%"))
+                ->limit(20)->get()
+                ->map(fn ($l) => ['id' => $l->id, 'text' => $l->nom_complet])
+        );
+    }
+
+    public function storeMarque(Request $request)
+    {
+        $request->validate(['libelle' => 'required|string|unique:parc_info_marques,libelle']);
+        $marque = Marque::create(['libelle' => $request->libelle]);
+
+        return response()->json(['success' => true, 'data' => $marque]);
     }
 
     public function storeTypeMobile(Request $request)
@@ -391,11 +534,12 @@ class MobileController extends Controller
             'code_inventaire' => $e->code_inventaire,
             'marque_modele' => ($e->marque?->libelle ?? '—').' '.$e->modele,
             'type_mobile' => $e->mobile->typeMobile?->libelle ?? '—',
-            'num_tel' => $e->mobile->num_tel_associe ?? '—',
-            'imei' => $e->mobile->imei_1 ?? '—',
+            'num_tel_associe' => $e->mobile->num_tel_associe ?? '—',
+            'imei_1' => $e->mobile->imei_1 ?? '—',
             'statut' => $e->statut,
             'statut_label' => $e->statut_label,
             'affectation' => $affLabel,
+            'etat' => $e->etat,
         ];
     }
 }

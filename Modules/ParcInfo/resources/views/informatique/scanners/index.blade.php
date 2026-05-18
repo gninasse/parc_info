@@ -1,10 +1,10 @@
 @extends('parcinfo::layouts.master')
 
-@section('header', 'Scanners & Lecteurs')
+@section('header', 'Scanners')
 
 @section('breadcrumb')
     <li class="breadcrumb-item"><a href="{{ route('parc-info.dashboard') }}">Parc Info</a></li>
-    <li class="breadcrumb-item active">Scanners & Lecteurs</li>
+    <li class="breadcrumb-item active">Scanners</li>
 @endsection
 
 @push('css')
@@ -13,14 +13,14 @@
 
 @section('content')
 
-{{-- ── KPIs ── --}}
+{{-- ── KPI Cards ── --}}
 <div class="row g-3 mb-4">
     <div class="col-sm-6 col-xl-3">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body d-flex align-items-center gap-3">
                 <div class="rounded-3 bg-primary bg-opacity-10 p-3"><i class="bi bi-upc-scan fs-4 text-primary"></i></div>
                 <div>
-                    <div class="text-muted small fw-semibold text-uppercase" style="font-size:.7rem;letter-spacing:.5px">Total Actifs</div>
+                    <div class="text-muted small fw-semibold text-uppercase" style="font-size:.7rem;letter-spacing:.5px">Total Parc</div>
                     <div class="fw-bold fs-4" id="kpi-total">—</div>
                 </div>
             </div>
@@ -42,7 +42,7 @@
             <div class="card-body d-flex align-items-center gap-3">
                 <div class="rounded-3 bg-warning bg-opacity-10 p-3"><i class="bi bi-tools fs-4 text-warning"></i></div>
                 <div>
-                    <div class="text-muted small fw-semibold text-uppercase" style="font-size:.7rem;letter-spacing:.5px">Maintenance</div>
+                    <div class="text-muted small fw-semibold text-uppercase" style="font-size:.7rem;letter-spacing:.5px">En Réparation</div>
                     <div class="fw-bold fs-4 text-warning" id="kpi-reparation">—</div>
                 </div>
             </div>
@@ -51,7 +51,7 @@
     <div class="col-sm-6 col-xl-3">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body d-flex align-items-center gap-3">
-                <div class="rounded-3 bg-secondary bg-opacity-10 p-3"><i class="bi bi-box fs-4 text-secondary"></i></div>
+                <div class="rounded-3 bg-secondary bg-opacity-10 p-3"><i class="bi bi-archive fs-4 text-secondary"></i></div>
                 <div>
                     <div class="text-muted small fw-semibold text-uppercase" style="font-size:.7rem;letter-spacing:.5px">En Stock</div>
                     <div class="fw-bold fs-4 text-secondary" id="kpi-stock">—</div>
@@ -65,8 +65,8 @@
 <div class="card border-0 shadow-sm mb-3">
     <div class="card-body py-3">
         <div class="row g-2 align-items-end">
-            <div class="col-md-4">
-                <label class="form-label small fw-semibold mb-1">Site</label>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold mb-1">Site géographique</label>
                 <select class="form-select form-select-sm" id="filter-site">
                     <option value="">Tous les sites</option>
                     @foreach($sites as $s)
@@ -74,23 +74,34 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold mb-1">Direction</label>
+                <select class="form-select form-select-sm" id="filter-direction">
+                    <option value="">Toutes les directions</option>
+                    @foreach($directions as $d)
+                        <option value="{{ $d->id }}">{{ $d->libelle }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-2">
                 <label class="form-label small fw-semibold mb-1">Statut</label>
                 <select class="form-select form-select-sm" id="filter-statut">
                     <option value="">Tous les statuts</option>
                     <option value="en_service">En service</option>
                     <option value="en_stock">En stock</option>
                     <option value="en_reparation">En réparation</option>
+                    <option value="perdu">Perdu / Volé</option>
+                    <option value="reforme">Réformé</option>
                 </select>
             </div>
             <div class="col-md-2">
                 <button class="btn btn-primary btn-sm w-100" id="btn-apply-filters">
-                    <i class="bi bi-funnel me-1"></i> Filtrer
+                    <i class="bi bi-funnel me-1"></i> Appliquer
                 </button>
             </div>
             <div class="col-md-2">
                 <button class="btn btn-outline-secondary btn-sm w-100" id="btn-reset-filters">
-                    <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
+                    <i class="bi bi-arrow-counterclockwise me-1"></i> Réinitialiser
                 </button>
             </div>
         </div>
@@ -107,8 +118,8 @@
             <button id="btn-add" class="btn btn-primary" data-bs-toggle="tooltip" title="Ajouter">
                 <i class="fas fa-plus"></i>
             </button>
-            <button id="btn-edit" class="btn btn-info" disabled data-bs-toggle="tooltip" title="Modifier">
-                <i class="fas fa-edit text-white"></i>
+            <button id="btn-edit" class="btn btn-info" disabled data-bs-toggle="tooltip" title="Détails">
+                <i class="fas fa-eye"></i>
             </button>
             <button id="btn-delete" class="btn btn-danger" disabled data-bs-toggle="tooltip" title="Supprimer">
                 <i class="fas fa-trash"></i>
@@ -133,13 +144,13 @@
             <thead class="table-light">
                 <tr>
                     <th data-field="state" data-radio="true"></th>
-                    <th data-field="code_inventaire" data-sortable="true" data-formatter="codeFormatter">Code</th>
-                    <th data-field="marque_modele" data-sortable="true">Modèle / Marque</th>
-                    <th data-field="resolution">Résolution</th>
-                    <th data-field="format_max">Format Max</th>
+                    <th data-field="code_inventaire" data-sortable="true" data-formatter="codeFormatter">Code Inventaire</th>
+                    <th data-field="marque_modele" data-sortable="true">Marque & Modèle</th>
+                    <th data-field="resolution" data-sortable="true">Résolution</th>
+                    <th data-field="format_max" data-sortable="true">Format Max</th>
                     <th data-field="statut" data-formatter="statutFormatter">Statut</th>
-                    <th data-field="affectation">Emplacement</th>
-                    <th data-field="id" data-formatter="actionsFormatter">Actions</th>
+                    <th data-field="affectation">Affectation</th>
+                    <th data-field="id" data-formatter="actionsFormatter" data-events="actionsEvents">Actions</th>
                 </tr>
             </thead>
         </table>

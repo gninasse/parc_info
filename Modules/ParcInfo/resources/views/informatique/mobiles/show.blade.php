@@ -4,7 +4,7 @@
 
 @section('breadcrumb')
     <li class="breadcrumb-item"><a href="{{ route('parc-info.dashboard') }}">Parc Info</a></li>
-    <li class="breadcrumb-item"><a href="{{ route('parc-info.mobiles.index') }}">Mobiles</a></li>
+    <li class="breadcrumb-item"><a href="{{ route('parc-info.mobiles.index') }}">Mobiles & Tablettes</a></li>
     <li class="breadcrumb-item active">{{ $equipement->code_inventaire }}</li>
 @endsection
 
@@ -39,43 +39,45 @@
                 <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
                     <h4 class="fw-bold mb-0">{{ $equipement->marque?->libelle }} {{ $equipement->modele }}</h4>
                     <span class="badge bg-{{ $sc }}-subtle text-{{ $sc }} border border-{{ $sc }}-subtle px-2 py-1">
-                        {{ $equipement->statut_label }}
+                        {!! $equipement->statut_label !!}
                     </span>
                     <span class="badge bg-{{ $ec }}-subtle text-{{ $ec }} border border-{{ $ec }}-subtle px-2 py-1">
                         {{ ucfirst($equipement->etat) }}
                     </span>
-                    @if($m->statut_mdm === 'Enrôlé')
-                    <span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1"><i class="bi bi-shield-check me-1"></i>MDM</span>
-                    @endif
                 </div>
                 <div class="d-flex gap-4 flex-wrap text-muted small">
                     <span><i class="bi bi-upc me-1"></i>{{ $equipement->code_inventaire }}</span>
                     <span><i class="bi bi-hash me-1"></i>{{ $equipement->numero_serie }}</span>
-                    <span><i class="bi bi-telephone me-1"></i>{{ $m->num_tel_associe ?: 'Pas de numéro' }}</span>
+                    @if($m?->imei_1)
+                        <span><i class="bi bi-sim me-1"></i>IMEI: {{ $m->imei_1 }}</span>
+                    @endif
+                    @if($m?->num_tel_associe)
+                        <span><i class="bi bi-telephone me-1"></i>{{ $m->num_tel_associe }}</span>
+                    @endif
                 </div>
             </div>
             <div class="col-auto d-flex gap-2">
                 <div class="dropdown">
-                    <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <button class="btn btn-outline-primary btn-sm dropdown-toggle shadow-none" type="button" data-bs-toggle="dropdown">
                         <i class="bi bi-arrow-repeat me-1"></i> Statut
                     </button>
-                    <ul class="dropdown-menu">
+                    <ul class="dropdown-menu shadow border-0">
                         <li><a class="dropdown-item" href="#" data-statut="en_stock">En stock</a></li>
                         <li><a class="dropdown-item" href="#" data-statut="en_service">En service</a></li>
                         <li><a class="dropdown-item" href="#" data-statut="en_reparation">En réparation</a></li>
-                        <li><a class="dropdown-item" href="#" data-statut="perdu">Perdu</a></li>
+                        <li><a class="dropdown-item" href="#" data-statut="perdu">Perdu / Volé</a></li>
                         <li><a class="dropdown-item" href="#" data-statut="reforme">Réformé</a></li>
                     </ul>
                 </div>
                 @if($equipement->affectationActive)
-                <button class="btn btn-warning btn-sm" id="btn-desaffecter">
+                <button class="btn btn-warning btn-sm shadow-none" id="btn-desaffecter">
                     <i class="bi bi-x-circle me-1"></i> Désaffecter
                 </button>
                 @endif
-                <button class="btn btn-outline-secondary btn-sm" id="btn-nouvelle-affectation">
+                <button class="btn btn-outline-secondary btn-sm shadow-none" id="btn-nouvelle-affectation">
                     <i class="bi bi-person-plus me-1"></i> Affecter
                 </button>
-                <button class="btn btn-primary btn-sm" id="btn-edit-toggle">
+                <button class="btn btn-primary btn-sm shadow-none px-3" id="btn-edit-toggle">
                     <i class="bi bi-pencil me-1"></i> Modifier
                 </button>
             </div>
@@ -85,20 +87,26 @@
 
 {{-- ── TABS ── --}}
 <ul class="nav nav-tabs border-0 mb-3" id="showTabs" role="tablist">
-    @foreach([
-        ['fiche',      'bi-phone',           'Fiche Technique'],
-        ['affectation','bi-person-badge',   'Affectation Actuelle'],
-        ['historique-aff','bi-clock-history','Historique Affectations'],
-        ['historique-chg','bi-journal-text', 'Journal des Changements'],
-    ] as [$id,$icon,$label])
-    <li class="nav-item" role="presentation">
-        <button class="nav-link {{ $loop->first ? 'active' : '' }} fw-semibold small px-3"
-                id="tab-{{ $id }}" data-bs-toggle="tab" data-bs-target="#pane-{{ $id }}"
-                type="button" role="tab">
-            <i class="bi {{ $icon }} me-1"></i>{{ $label }}
+    <li class="nav-item">
+        <button class="nav-link active fw-semibold small px-4" id="tab-fiche" data-bs-toggle="tab" data-bs-target="#pane-fiche" type="button">
+            <i class="bi bi-info-circle me-1"></i> Fiche Technique
         </button>
     </li>
-    @endforeach
+    <li class="nav-item">
+        <button class="nav-link fw-semibold small px-4" id="tab-affectation" data-bs-toggle="tab" data-bs-target="#pane-affectation" type="button">
+            <i class="bi bi-person-badge me-1"></i> Affectation Actuelle
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link fw-semibold small px-4" id="tab-historique-aff" data-bs-toggle="tab" data-bs-target="#pane-historique-aff" type="button">
+            <i class="bi bi-clock-history me-1"></i> Historique Affectations
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link fw-semibold small px-4" id="tab-historique-chg" data-bs-toggle="tab" data-bs-target="#pane-historique-chg" type="button">
+            <i class="bi bi-journal-text me-1"></i> Journal des Changements
+        </button>
+    </li>
 </ul>
 
 <div class="tab-content" id="showTabsContent">
@@ -112,10 +120,10 @@
         {{-- Section 01 — Identification --}}
         <div class="card border-0 shadow-sm mb-3" style="border-radius:12px">
             <div class="card-body p-4">
-                <h6 class="section-title mb-4"><span class="section-num">01</span> Identification</h6>
+                <h6 class="section-title mb-4"><span class="section-num">01</span> Identification & Acquisition</h6>
                 <div class="row g-3">
                     <div class="col-md-4">
-                        <label class="field-label">Code Inventaire <span class="text-danger">*</span></label>
+                        <label class="field-label">Code Inventaire</label>
                         <input type="text" class="form-control field-input" name="code_inventaire"
                                value="{{ $equipement->code_inventaire }}" id="f_code_inventaire" disabled>
                     </div>
@@ -128,8 +136,8 @@
                         <label class="field-label">Marque</label>
                         <select class="form-select field-input" name="marque_id" id="f_marque_id" disabled>
                             <option value="">—</option>
-                            @foreach($marques as $brand)
-                            <option value="{{ $brand->id }}" {{ $equipement->marque_id == $brand->id ? 'selected':'' }}>{{ $brand->libelle }}</option>
+                            @foreach($marques as $mq)
+                            <option value="{{ $mq->id }}" {{ $equipement->marque_id == $mq->id ? 'selected':'' }}>{{ $mq->libelle }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -154,86 +162,96 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-3">
                         <label class="field-label">Date d'acquisition</label>
                         <input type="date" class="form-control field-input" name="date_acquisition"
                                value="{{ $equipement->date_acquisition?->format('Y-m-d') }}" disabled>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-3">
                         <label class="field-label">Mise en service</label>
                         <input type="date" class="form-control field-input" name="date_mise_en_service"
                                value="{{ $equipement->date_mise_en_service?->format('Y-m-d') }}" disabled>
                     </div>
+                    <div class="col-md-3">
+                        <label class="field-label">Fin de garantie</label>
+                        <input type="date" class="form-control field-input" name="date_fin_garantie"
+                               value="{{ $equipement->date_fin_garantie?->format('Y-m-d') }}" disabled>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="field-label">Valeur d'achat (FCFA)</label>
+                        <input type="number" class="form-control field-input" name="valeur_achat"
+                               value="{{ $equipement->valeur_achat }}" disabled>
+                    </div>
                 </div>
             </div>
         </div>
 
-        {{-- Section 02 — Spécifications techniques --}}
+        {{-- Section 02 — Caractéristiques Techniques --}}
         <div class="card border-0 shadow-sm mb-3" style="border-radius:12px">
             <div class="card-body p-4">
-                <h6 class="section-title mb-4"><span class="section-num">02</span> Spécifications techniques</h6>
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h6 class="section-title mb-0"><span class="section-num">02</span> Caractéristiques Techniques</h6>
+                    <button type="button" class="btn btn-sm btn-outline-primary d-none btn-add-ref shadow-none" id="btn-add-type-mobile-show"><i class="bi bi-plus"></i></button>
+                </div>
                 <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="field-label">Type de terminal</label>
+                    <div class="col-md-4">
+                        <label class="field-label">Type de Mobile</label>
                         <select class="form-select field-input" name="type_mobile_id" id="f_type_mobile_id" disabled>
                             <option value="">—</option>
-                            @foreach($typesMobiles as $t)
-                            <option value="{{ $t->id }}" {{ $m->type_mobile_id == $t->id ? 'selected':'' }}>{{ $t->libelle }}</option>
+                            @foreach($typesMobiles as $tm)
+                            <option value="{{ $tm->id }}" {{ $m?->type_mobile_id == $tm->id ? 'selected':'' }}>{{ $tm->libelle }}</option>
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-md-6">
-                        <label class="field-label">N° Téléphone</label>
-                        <input type="text" class="form-control field-input" name="num_tel_associe" value="{{ $m->num_tel_associe }}" disabled>
-                    </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="field-label">IMEI 1</label>
-                        <input type="text" class="form-control field-input" name="imei_1" value="{{ $m->imei_1 }}" disabled>
+                        <input type="text" class="form-control field-input" name="imei_1" value="{{ $m?->imei_1 }}" disabled>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="field-label">IMEI 2</label>
-                        <input type="text" class="form-control field-input" name="imei_2" value="{{ $m->imei_2 }}" disabled>
+                        <input type="text" class="form-control field-input" name="imei_2" value="{{ $m?->imei_2 }}" disabled>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
+                        <label class="field-label">N° Tél associé</label>
+                        <input type="text" class="form-control field-input" name="num_tel_associe" value="{{ $m?->num_tel_associe }}" disabled>
+                    </div>
+                    <div class="col-md-4">
                         <label class="field-label">Version OS</label>
-                        <input type="text" class="form-control field-input" name="version_os" value="{{ $m->version_os }}" disabled>
+                        <input type="text" class="form-control field-input" name="version_os" value="{{ $m?->version_os }}" disabled>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="field-label">Statut MDM</label>
-                        <select class="form-select field-input" name="statut_mdm" disabled>
-                            <option value="Non enrôlé" {{ $m->statut_mdm === 'Non enrôlé' ? 'selected':'' }}>Non enrôlé</option>
-                            <option value="Enrôlé" {{ $m->statut_mdm === 'Enrôlé' ? 'selected':'' }}>Enrôlé</option>
-                        </select>
+                        <input type="text" class="form-control field-input" name="statut_mdm" value="{{ $m?->statut_mdm }}" disabled>
                     </div>
                     <div class="col-md-4">
                         <label class="field-label">Batterie (mAh)</label>
-                        <input type="number" class="form-control field-input" name="capacite_batterie_mah" value="{{ $m->capacite_batterie_mah }}" disabled>
+                        <input type="number" class="form-control field-input" name="capacite_batterie_mah" value="{{ $m?->capacite_batterie_mah }}" disabled>
                     </div>
                     <div class="col-md-4">
-                        <label class="field-label">État écran</label>
+                        <label class="field-label">État de l'écran</label>
                         <select class="form-select field-input" name="etat_ecran" disabled>
-                            @foreach(['Parfait','Micro-rayures','Fissuré','Cassé'] as $e)
-                            <option value="{{ $e }}" {{ $m->etat_ecran === $e ? 'selected':'' }}>{{ $e }}</option>
+                            @foreach(['Intact','Rayé','Fissuré'] as $ee)
+                            <option value="{{ $ee }}" {{ $m?->etat_ecran === $ee ? 'selected':'' }}>{{ $ee }}</option>
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-md-4">
-                        <label class="field-label">Coque protection</label>
-                        <select class="form-select field-input" name="a_coque_protection" disabled>
-                            <option value="1" {{ $m->a_coque_protection ? 'selected':'' }}>Oui</option>
-                            <option value="0" {{ !$m->a_coque_protection ? 'selected':'' }}>Non</option>
-                        </select>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" name="a_coque_protection" id="f_coque"
+                                   value="1" {{ $m?->a_coque_protection ? 'checked':'' }} disabled>
+                            <label class="form-check-label small fw-bold" for="f_coque">Coque / Verre trempé</label>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        {{-- Actions formulaire --}}
+        {{-- Actions --}}
         <div class="d-none" id="fiche-actions">
-            <div class="d-flex justify-content-end gap-2">
-                <button type="button" class="btn btn-link text-dark text-decoration-none" id="btn-cancel-edit">Annuler</button>
-                <button type="submit" class="btn btn-primary px-4" id="btn-save-fiche">
-                    <i class="bi bi-floppy me-1"></i> Enregistrer
+            <div class="d-flex justify-content-end gap-2 p-3">
+                <button type="button" class="btn btn-link text-dark text-decoration-none fw-medium shadow-none" id="btn-cancel-edit">Annuler</button>
+                <button type="submit" class="btn btn-primary px-4 shadow-none" id="btn-save-fiche">
+                    <i class="bi bi-floppy me-1"></i> Enregistrer les modifications
                 </button>
             </div>
         </div>
@@ -289,8 +307,8 @@
             @else
             <div class="text-center py-5">
                 <div class="mb-3"><i class="bi bi-person-x fs-1 text-muted opacity-50"></i></div>
-                <p class="text-muted fw-semibold">Aucune affectation active</p>
-                <button class="btn btn-primary btn-sm" id="btn-nouvelle-affectation-2">
+                <p class="text-muted fw-semibold">Aucune affectation active pour cet équipement</p>
+                <button class="btn btn-primary btn-sm shadow-none px-3" id="btn-nouvelle-affectation-2">
                     <i class="bi bi-person-plus me-1"></i> Créer une affectation
                 </button>
             </div>
@@ -311,8 +329,7 @@
                             <th class="px-4 py-3 small fw-bold text-uppercase text-muted">Type</th>
                             <th class="py-3 small fw-bold text-uppercase text-muted">Cible</th>
                             <th class="py-3 small fw-bold text-uppercase text-muted">Rattachement</th>
-                            <th class="py-3 small fw-bold text-uppercase text-muted">Début</th>
-                            <th class="py-3 small fw-bold text-uppercase text-muted">Fin</th>
+                            <th class="py-3 small fw-bold text-uppercase text-muted">Période</th>
                             <th class="py-3 small fw-bold text-uppercase text-muted">Statut</th>
                         </tr>
                     </thead>
@@ -320,7 +337,7 @@
                         @foreach($equipement->affectations->sortByDesc('id') as $a)
                         <tr>
                             <td class="px-4">
-                                <span class="badge bg-light text-dark border small">{{ $a->type_affectation ?? '—' }}</span>
+                                <span class="badge bg-light text-dark border small shadow-none">{{ $a->type_affectation ?? '—' }}</span>
                             </td>
                             <td>
                                 @if($a->type_cible === 'EMPLOYE' && $a->employe)
@@ -336,10 +353,12 @@
                                 @endif
                             </td>
                             <td class="small text-muted">
-                                {{ $a->direction?->libelle ?? ($a->service?->libelle ?? ($a->unite?->libelle ?? '—')) }}
+                                {{ $a->direction?->libelle ?? ($a->service?->libelle ?? '—') }}
                             </td>
-                            <td class="small">{{ $a->date_debut?->format('d/m/Y') ?? '—' }}</td>
-                            <td class="small">{{ $a->date_fin?->format('d/m/Y') ?? '<span class="text-muted">En cours</span>' }}</td>
+                            <td class="small">
+                                <div><span class="text-muted">Début:</span> {{ $a->date_debut?->format('d/m/Y') }}</div>
+                                <div><span class="text-muted">Fin:</span> {{ $a->date_fin?->format('d/m/Y') ?? 'En cours' }}</div>
+                            </td>
                             <td>
                                 @if($a->statut)
                                 <span class="badge bg-success-subtle text-success border border-success-subtle">Active</span>
@@ -355,7 +374,7 @@
             @else
             <div class="text-center py-5 text-muted">
                 <i class="bi bi-clock-history fs-1 opacity-25 d-block mb-2"></i>
-                Aucun historique d'affectation.
+                Aucun historique d'affectation disponible.
             </div>
             @endif
         </div>
@@ -398,7 +417,7 @@
             @else
             <div class="text-center py-5 text-muted">
                 <i class="bi bi-journal-text fs-1 opacity-25 d-block mb-2"></i>
-                Aucun changement enregistré.
+                Aucun changement enregistré dans le journal.
             </div>
             @endif
         </div>
@@ -423,7 +442,7 @@
                 <div class="modal-body px-4 py-3">
                     <h6 class="fw-bold mb-3 small text-uppercase text-muted" style="letter-spacing:.5px">Mode d'affectation</h6>
                     <div class="row g-3 mb-4">
-                        @foreach([['EMPLOYE','bi-person-badge','Attribuer à un agent'],['POSTE','bi-pc-display','Affecter à un poste'],['LOCAL','bi-door-open','Affecter à un local']] as [$v,$ic,$lb])
+                        @foreach([['EMPLOYE','bi-person-badge','Affecter à un employé'],['POSTE','bi-pc-display','Poste de travail'],['LOCAL','bi-door-open','Local']] as [$v,$ic,$lb])
                         <div class="col-4">
                             <label class="aff-type-card d-flex flex-column align-items-center justify-content-center gap-2 p-3 rounded-3 border cursor-pointer text-center position-relative" data-value="{{ $v }}">
                                 <input type="radio" name="type_cible" value="{{ $v }}" class="d-none">
@@ -435,15 +454,16 @@
                         @endforeach
                     </div>
 
+                    {{-- Résumés --}}
                     <div id="aff-employe-summary" class="aff-summary d-none">
-                        <div class="card border-primary">
-                            <div class="card-body">
-                                <h6 class="mb-2 text-primary fw-bold"><i class="bi bi-person-badge me-2"></i>Agent sélectionné</h6>
-                                <div class="row g-2 small">
-                                    <div class="col-md-6"><span class="text-muted">Nom:</span> <strong id="emp-summary-nom">—</strong></div>
-                                    <div class="col-md-3"><span class="text-muted">Matricule:</span> <strong id="emp-summary-matricule">—</strong></div>
-                                    <div class="col-md-3"><span class="text-muted">Poste:</span> <span id="emp-summary-poste">—</span></div>
-                                    <div class="col-12"><span class="text-muted">Rattachement:</span> <span id="emp-summary-rattachement">—</span></div>
+                        <div class="card border-primary bg-primary bg-opacity-10">
+                            <div class="card-body p-3">
+                                <h6 class="mb-2 fw-bold text-primary"><i class="bi bi-person-badge me-2"></i>Employé sélectionné</h6>
+                                <div class="row g-2">
+                                    <div class="col-md-6"><small class="text-muted d-block">Nom complet</small><strong id="emp-summary-nom">—</strong></div>
+                                    <div class="col-md-3"><small class="text-muted d-block">Matricule</small><strong id="emp-summary-matricule">—</strong></div>
+                                    <div class="col-md-3"><small class="text-muted d-block">Poste</small><span id="emp-summary-poste">—</span></div>
+                                    <div class="col-md-12"><small class="text-muted d-block">Rattachement</small><span id="emp-summary-rattachement">—</span></div>
                                 </div>
                             </div>
                         </div>
@@ -451,13 +471,13 @@
                     </div>
 
                     <div id="aff-poste-summary" class="aff-summary d-none">
-                        <div class="card border-primary">
-                            <div class="card-body">
-                                <h6 class="mb-2 text-primary fw-bold"><i class="bi bi-pc-display me-2"></i>Poste sélectionné</h6>
-                                <div class="row g-2 small">
-                                    <div class="col-md-3"><span class="text-muted">Code:</span> <strong id="poste-summary-code">—</strong></div>
-                                    <div class="col-md-5"><span class="text-muted">Libellé:</span> <strong id="poste-summary-libelle">—</strong></div>
-                                    <div class="col-md-4"><span class="text-muted">Emplacement:</span> <span id="poste-summary-emplacement">—</span></div>
+                        <div class="card border-primary bg-primary bg-opacity-10">
+                            <div class="card-body p-3">
+                                <h6 class="mb-2 fw-bold text-primary"><i class="bi bi-pc-display me-2"></i>Poste sélectionné</h6>
+                                <div class="row g-2">
+                                    <div class="col-md-3"><small class="text-muted d-block">Code</small><strong id="poste-summary-code">—</strong></div>
+                                    <div class="col-md-5"><small class="text-muted d-block">Libellé</small><strong id="poste-summary-libelle">—</strong></div>
+                                    <div class="col-md-4"><small class="text-muted d-block">Emplacement</small><span id="poste-summary-emplacement">—</span></div>
                                 </div>
                             </div>
                         </div>
@@ -465,12 +485,13 @@
                     </div>
 
                     <div id="aff-local-summary" class="aff-summary d-none">
-                        <div class="card border-primary">
-                            <div class="card-body">
-                                <h6 class="mb-2 text-primary fw-bold"><i class="bi bi-door-open me-2"></i>Local sélectionné</h6>
-                                <div class="row g-2 small">
-                                    <div class="col-md-6"><span class="text-muted">Libellé:</span> <strong id="local-summary-libelle">—</strong></div>
-                                    <div class="col-md-6"><span class="text-muted">Emplacement:</span> <span id="local-summary-batiment">—</span> / <span id="local-summary-etage">—</span></div>
+                        <div class="card border-primary bg-primary bg-opacity-10">
+                            <div class="card-body p-3">
+                                <h6 class="mb-2 fw-bold text-primary"><i class="bi bi-door-open me-2"></i>Local sélectionné</h6>
+                                <div class="row g-2">
+                                    <div class="col-md-3"><small class="text-muted d-block">Code</small><strong id="local-summary-code">—</strong></div>
+                                    <div class="col-md-4"><small class="text-muted d-block">Libellé</small><strong id="local-summary-libelle">—</strong></div>
+                                    <div class="col-md-5"><small class="text-muted d-block">Emplacement</small><span id="local-summary-complet">—</span></div>
                                 </div>
                             </div>
                         </div>
@@ -478,8 +499,8 @@
                     </div>
                 </div>
                 <div class="modal-footer border-0 px-4 pb-4 pt-0">
-                    <button type="button" class="btn btn-link text-dark text-decoration-none" data-bs-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-primary px-4" id="btn-save-affectation">
+                    <button type="button" class="btn btn-link text-dark text-decoration-none fw-medium shadow-none" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary px-4 shadow-none" id="btn-save-affectation">
                         <i class="bi bi-check-circle me-1"></i> Enregistrer l'affectation
                     </button>
                 </div>
@@ -502,15 +523,15 @@
 .info-block    { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:.75rem 1rem; }
 .info-label    { font-size:.7rem; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:#94a3b8; margin-bottom:2px; }
 .info-value    { font-size:.875rem; font-weight:600; color:#1e293b; }
-.aff-type-card { cursor:pointer; transition:border-color .15s; position:relative; }
-.aff-type-card:hover { border-color:#0d6efd !important; }
-.aff-type-card.selected { border-color:#0d6efd !important; background:#f0f6ff; }
+.aff-type-card { transition:all .2s ease-in-out; border:1.5px solid #dee2e6 !important; }
+.aff-type-card:hover { border-color:#0d6efd !important; transform:translateY(-2px); }
+.aff-type-card.selected { border-color:#0d6efd !important; background:#f0f6ff; box-shadow:0 4px 12px rgba(13,110,253,.08); }
 .aff-type-card.selected .aff-type-icon { background:#dbeafe !important; }
 .aff-type-card.selected .aff-type-icon i { color:#0d6efd !important; }
 .aff-type-card.selected .check-icon { display:inline !important; }
 .timeline { border-left:2px solid #e2e8f0; padding-left:1.5rem; }
 .timeline-dot { position:relative; left:-1.65rem; }
-.nav-tabs .nav-link { border:none; border-bottom:2px solid transparent; color:#64748b; border-radius:0; }
+.nav-tabs .nav-link { border:none; border-bottom:2px solid transparent; color:#64748b; transition:all .2s; }
 .nav-tabs .nav-link.active { color:#0d6efd; border-bottom-color:#0d6efd; background:transparent; }
 .nav-tabs .nav-link:hover { color:#0d6efd; }
 </style>
@@ -519,6 +540,7 @@
 @push('js')
 <script>
 const equipementId = {{ $equipement->id }};
+const csrfToken = '{{ csrf_token() }}';
 
 $(function () {
     // ── Mode édition ──────────────────────────────────────────────────────────
@@ -527,7 +549,9 @@ $(function () {
     function setEditMode(on) {
         editMode = on;
         $('#pane-fiche .field-input').not("#f_code_inventaire").prop('disabled', !on);
+        $('#pane-fiche input[type="checkbox"], #pane-fiche input[type="radio"]').prop('disabled', !on);
         $('#fiche-actions').toggleClass('d-none', !on);
+        $('.btn-add-ref').toggleClass('d-none', !on);
         $('#btn-edit-toggle').toggleClass('btn-primary', !on).toggleClass('btn-warning', on)
             .html(on ? '<i class="bi bi-x me-1"></i> Annuler' : '<i class="bi bi-pencil me-1"></i> Modifier');
     }
@@ -535,26 +559,103 @@ $(function () {
     $('#btn-edit-toggle').on('click', () => setEditMode(!editMode));
     $('#btn-cancel-edit').on('click', () => { setEditMode(false); location.reload(); });
 
+    // ── Sauvegarde fiche ──────────────────────────────────────────────────────
     $('#ficheForm').on('submit', function (e) {
         e.preventDefault();
         const $btn = $('#btn-save-fiche').prop('disabled', true).text('Enregistrement...');
         $.ajax({
-            url: route('parc-info.mobiles.update', equipementId),
+            url   : route('parc-info.mobiles.update', equipementId),
             method: 'PUT',
-            data: $(this).serialize(),
+            data  : $(this).serialize(),
             success: (res) => {
                 if (res.success) {
-                    Swal.fire({ icon:'success', title:'Mis à jour', timer:1500, showConfirmButton:false }).then(() => location.reload());
+                    setEditMode(false);
+                    Swal.fire({ icon:'success', title:'Enregistré', text: res.message, timer:2000, showConfirmButton:false }).then(() => location.reload());
                 }
             },
             error: (xhr) => {
-                Swal.fire('Erreur', xhr.responseJSON?.message ?? 'Erreur serveur', 'error');
-                $btn.prop('disabled', false).html('<i class="bi bi-floppy me-1"></i> Enregistrer');
-            }
+                if (xhr.status === 422) {
+                    $('.is-invalid').removeClass('is-invalid');
+                    $('.invalid-feedback').remove();
+                    Object.entries(xhr.responseJSON.errors ?? {}).forEach(([f, msgs]) => {
+                        const input = $(`[name="${f}"]`);
+                        input.addClass('is-invalid').after(`<div class="invalid-feedback">${msgs[0]}</div>`);
+                    });
+                } else {
+                    Swal.fire('Erreur', xhr.responseJSON?.message ?? 'Erreur serveur', 'error');
+                }
+            },
+            complete: () => $btn.prop('disabled', false).html('<i class="bi bi-floppy me-1"></i> Enregistrer les modifications'),
         });
     });
 
-    // ── Statut & Désaffectation ──────────────────────────────────────────────
+    // ── Modale affectation ────────────────────────────────────────────────────
+    $('#btn-nouvelle-affectation, #btn-nouvelle-affectation-2').on('click', () => $('#affectationModal').modal('show'));
+
+    $(document).on('employe:selected', function (e, emp) {
+        if (!$('#affectationModal').hasClass('show')) return;
+        $('#affectationModal .aff-type-card').removeClass('selected');
+        $('#affectationModal .aff-type-card[data-value="EMPLOYE"]').addClass('selected')
+            .find('input[type="radio"]').prop('checked', true);
+        $('#emp-summary-nom').text(emp.nom);
+        $('#emp-summary-matricule').text(emp.matricule);
+        $('#emp-summary-poste').text(emp.poste);
+        $('#emp-summary-rattachement').text(emp.rattachement);
+        $('#affectationModal #dossier_employe_id').val(emp.id);
+        $('#affectationModal #poste_travail_id, #affectationModal #local_id').val('');
+        $('#affectationModal .aff-summary').addClass('d-none');
+        $('#affectationModal #aff-employe-summary').removeClass('d-none');
+    });
+
+    $(document).on('poste:selected', function (e, poste) {
+        if (!$('#affectationModal').hasClass('show')) return;
+        $('#affectationModal .aff-type-card').removeClass('selected');
+        $('#affectationModal .aff-type-card[data-value="POSTE"]').addClass('selected')
+            .find('input[type="radio"]').prop('checked', true);
+        $('#poste-summary-code').text(poste.code);
+        $('#poste-summary-libelle').text(poste.libelle);
+        $('#poste-summary-emplacement').text(poste.emplacement);
+        $('#affectationModal #poste_travail_id').val(poste.id);
+        $('#affectationModal #dossier_employe_id, #affectationModal #local_id').val('');
+        $('#affectationModal .aff-summary').addClass('d-none');
+        $('#affectationModal #aff-poste-summary').removeClass('d-none');
+    });
+
+    $(document).on('local:selected', function (e, local) {
+        if (!$('#affectationModal').hasClass('show')) return;
+        $('#affectationModal .aff-type-card').removeClass('selected');
+        $('#affectationModal .aff-type-card[data-value="LOCAL"]').addClass('selected')
+            .find('input[type="radio"]').prop('checked', true);
+        $('#local-summary-code').text(local.code);
+        $('#local-summary-libelle').text(local.libelle);
+        $('#local-summary-complet').text(local.text);
+        $('#affectationModal #local_id').val(local.id);
+        $('#affectationModal #dossier_employe_id, #affectationModal #poste_travail_id').val('');
+        $('#affectationModal .aff-summary').addClass('d-none');
+        $('#affectationModal #aff-local-summary').removeClass('d-none');
+    });
+
+    $('#affectationForm').on('submit', function (e) {
+        e.preventDefault();
+        const hasCible = $(this).find('input[name="type_cible"]:checked').val();
+        if (!hasCible) {
+            Swal.fire({ icon: 'warning', title: 'Attention', text: 'Veuillez sélectionner un type d\'affectation.', timer: 2500, showConfirmButton: false });
+            return;
+        }
+
+        const $btn = $('#btn-save-affectation').prop('disabled', true).html('<i class="bi bi-hourglass-split me-1"></i> Enregistrement...');
+        const data = $(this).serialize() + `&equipement_id=${equipementId}`;
+        $.post(route('parc-info.mobiles.store-affectation'), data, (res) => {
+            if (res.success) {
+                $('#affectationModal').modal('hide');
+                Swal.fire({ icon: 'success', title: 'Affectation enregistrée', timer: 2000, showConfirmButton: false }).then(() => location.reload());
+            }
+        }).fail((xhr) => {
+            Swal.fire('Erreur', xhr.responseJSON?.message ?? 'Erreur serveur', 'error');
+        }).always(() => $btn.prop('disabled', false).html('<i class="bi bi-check-circle me-1"></i> Enregistrer l\'affectation'));
+    });
+
+    // ── Changement de statut ──────────────────────────────────────────────────
     $(document).on('click', '.dropdown-item[data-statut]', function(e) {
         e.preventDefault();
         const nouveauStatut = $(this).data('statut');
@@ -565,90 +666,62 @@ $(function () {
             inputPlaceholder: 'Expliquez la raison...',
             showCancelButton: true,
             confirmButtonText: 'Confirmer',
-            preConfirm: (motif) => motif || Swal.showValidationMessage('Le motif est obligatoire')
+            preConfirm: (motif) => {
+                if (!motif) { Swal.showValidationMessage('Le motif est obligatoire'); }
+                return motif;
+            }
         }).then((result) => {
             if (result.isConfirmed) {
                 $.ajax({
                     url: route('parc-info.mobiles.update-statut', equipementId),
                     method: 'PATCH',
-                    data: { statut: nouveauStatut, motif: result.value, _token: '{{ csrf_token() }}' },
+                    data: { statut: nouveauStatut, motif: result.value, _token: csrfToken },
                     success: (res) => Swal.fire('Succès', res.message, 'success').then(() => location.reload()),
-                    error: (xhr) => Swal.fire('Erreur', xhr.responseJSON?.message || 'Erreur', 'error')
+                    error: (xhr) => Swal.fire('Erreur', xhr.responseJSON?.message || 'Une erreur est survenue', 'error')
                 });
             }
         });
     });
 
+    // ── Désaffectation ────────────────────────────────────────────────────────
     $('#btn-desaffecter').on('click', function() {
         Swal.fire({
             title: 'Désaffecter l\'équipement',
-            text: 'L\'équipement sera mis en stock',
+            text: 'L\'équipement sera remis en stock',
             input: 'textarea',
-            inputLabel: 'Motif',
+            inputLabel: 'Motif de la désaffectation',
             showCancelButton: true,
+            confirmButtonText: 'Confirmer',
             confirmButtonColor: '#dc3545',
-            preConfirm: (motif) => motif || Swal.showValidationMessage('Le motif est obligatoire')
+            preConfirm: (motif) => {
+                if (!motif) { Swal.showValidationMessage('Le motif est obligatoire'); }
+                return motif;
+            }
         }).then((result) => {
             if (result.isConfirmed) {
-                $.ajax({
-                    url: route('parc-info.mobiles.desaffecter', equipementId),
-                    method: 'POST',
-                    data: { motif: result.value, _token: '{{ csrf_token() }}' },
-                    success: (res) => Swal.fire('Succès', res.message, 'success').then(() => location.reload()),
-                    error: (xhr) => Swal.fire('Erreur', xhr.responseJSON?.message || 'Erreur', 'error')
-                });
+                $.post(route('parc-info.mobiles.desaffecter', equipementId), { motif: result.value, _token: csrfToken }, (res) => {
+                    Swal.fire('Succès', res.message, 'success').then(() => location.reload());
+                }).fail((xhr) => Swal.fire('Erreur', xhr.responseJSON?.message || 'Erreur', 'error'));
             }
         });
     });
 
-    // ── Affectation ───────────────────────────────────────────────────────────
-    $('#btn-nouvelle-affectation, #btn-nouvelle-affectation-2').on('click', () => $('#affectationModal').modal('show'));
-
-    $(document).on('click', '.aff-type-card', function () {
-        const val = $(this).data('value');
-        if (val === 'EMPLOYE') $(document).trigger('show:employe:modal');
-        else if (val === 'LOCAL') $(document).trigger('show:local:modal');
-        else if (val === 'POSTE') $(document).trigger('show:poste:modal');
-    });
-
-    $(document).on('employe:selected', function (e, emp) {
-        if (!$('#affectationModal').hasClass('show')) return;
-        $('.aff-type-card').removeClass('selected');
-        $('.aff-type-card[data-value="EMPLOYE"]').addClass('selected').find('input[type="radio"]').prop('checked', true);
-        $('#emp-summary-nom').text(emp.nom);
-        $('#emp-summary-matricule').text(emp.matricule);
-        $('#emp-summary-poste').text(emp.poste);
-        $('#emp-summary-rattachement').text(emp.rattachement);
-        $('#dossier_employe_id').val(emp.id); $('#poste_travail_id, #local_id').val('');
-        $('.aff-summary').addClass('d-none'); $('#aff-employe-summary').removeClass('d-none');
-    });
-
-    $(document).on('poste:selected', function (e, poste) {
-        if (!$('#affectationModal').hasClass('show')) return;
-        $('.aff-type-card').removeClass('selected');
-        $('.aff-type-card[data-value="POSTE"]').addClass('selected').find('input[type="radio"]').prop('checked', true);
-        $('#poste-summary-code').text(poste.code); $('#poste-summary-libelle').text(poste.libelle); $('#poste-summary-emplacement').text(poste.emplacement);
-        $('#poste_travail_id').val(poste.id); $('#dossier_employe_id, #local_id').val('');
-        $('.aff-summary').addClass('d-none'); $('#aff-poste-summary').removeClass('d-none');
-    });
-
-    $(document).on('local:selected', function (e, local) {
-        if (!$('#affectationModal').hasClass('show')) return;
-        $('.aff-type-card').removeClass('selected');
-        $('.aff-type-card[data-value="LOCAL"]').addClass('selected').find('input[type="radio"]').prop('checked', true);
-        $('#local-summary-libelle').text(local.libelle); $('#local-summary-batiment').text(local.batiment); $('#local-summary-etage').text(local.etage);
-        $('#local_id').val(local.id); $('#dossier_employe_id, #poste_travail_id').val('');
-        $('.aff-summary').addClass('d-none'); $('#aff-local-summary').removeClass('d-none');
-    });
-
-    $('#affectationForm').on('submit', function (e) {
-        e.preventDefault();
-        const $btn = $('#btn-save-affectation').prop('disabled', true).text('Enregistrement...');
-        $.post(route('parc-info.mobiles.store-affectation'), $(this).serialize() + `&equipement_id=${equipementId}`, (res) => {
-            if (res.success) Swal.fire({ icon:'success', title:'Affecté', timer:2000, showConfirmButton:false }).then(() => location.reload());
-        }).fail((xhr) => {
-            Swal.fire('Erreur', xhr.responseJSON?.message || 'Erreur', 'error');
-            $btn.prop('disabled', false).text('Enregistrer l\'affectation');
+    // ── Quick Add ─────────────────────────────────────────────────────────────
+    $('#btn-add-type-mobile-show').on('click', function() {
+        Swal.fire({
+            title: 'Nouveau type de mobile',
+            input: 'text',
+            showCancelButton: true,
+            confirmButtonText: 'Ajouter',
+            preConfirm: (libelle) => {
+                if (!libelle) { Swal.showValidationMessage('Le libelle est requis'); return; }
+                return $.post(route('parc-info.mobiles.store-type-mobile'), { libelle, _token: csrfToken });
+            }
+        }).then(res => {
+            if (res.isConfirmed && res.value?.success) {
+                const t = res.value.data;
+                $('#f_type_mobile_id').append(`<option value="${t.id}" selected>${t.libelle}</option>`).val(t.id);
+            }
         });
     });
 });

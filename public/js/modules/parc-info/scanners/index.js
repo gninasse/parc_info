@@ -1,18 +1,19 @@
 /**
- * Gestion des Scanners - Module Parc Info
- * Pattern: AJAX + Bootstrap Table + Wizards
+ * index.js — Scanners (ParcInfo)
  */
 
-const prefix = window.routePrefix || 'parc-info.scanners';
+// ── Formatters Bootstrap Table ────────────────────────────────────────────────
 
-window.scannersQueryParams = (params) => {
+window.scannersQueryParams = function (params) {
     return Object.assign(params, {
         site_id: $('#filter-site').val(),
+        direction_id: $('#filter-direction').val(),
         statut: $('#filter-statut').val(),
     });
 };
 
-window.codeFormatter = (val, row) => `<a href="${route(prefix + '.show', row.id)}" class="fw-bold text-primary small text-decoration-none">${val}</a>`;
+window.codeFormatter = (val, row) =>
+    `<a href="${route('parc-info.scanners.show', row.id)}" class="fw-bold text-primary small text-decoration-none">${val}</a>`;
 
 window.statutFormatter = (val) => {
     const map = {
@@ -23,23 +24,23 @@ window.statutFormatter = (val) => {
         reforme: ['dark', 'RÉFORMÉ'],
     };
     const [color, label] = map[val] ?? ['info', val];
-    return `<span class="badge bg-${color}-subtle text-${color} border border-${color}-subtle px-2 py-1 small">${label}</span>`;
+    return `<span class="badge bg-${color}-subtle text-${color} border border-${color}-subtle px-2 py-1">${label}</span>`;
 };
 
-window.actionsFormatter = (id) => `
-    <div class="d-flex gap-1">
-        <a href="${route(prefix + '.show', id)}" class="btn btn-sm btn-outline-secondary border-0" title="Voir / Modifier"><i class="bi bi-eye"></i></a>
+window.actionsFormatter = (id) =>
+    `<div class="d-flex gap-1">
+        <a href="${route('parc-info.scanners.show', id)}" class="btn btn-sm btn-outline-secondary border-0" title="Voir / Modifier"><i class="bi bi-eye"></i></a>
         <button class="btn btn-sm btn-outline-danger border-0" data-action="delete" data-id="${id}" title="Supprimer"><i class="bi bi-trash"></i></button>
     </div>`;
 
 window.actionsEvents = {
-    'click [data-action="delete"]': function (e, value, row, index) {
-        deleteScanner(row.id);
-    }
+    'click [data-action="delete"]': (e, val, row) => deleteScanner(row.id),
 };
 
+// ── KPI ───────────────────────────────────────────────────────────────────────
+
 function loadKpis() {
-    $.get(route(prefix + '.data'), { limit: 9999, offset: 0 }, (res) => {
+    $.get(route('parc-info.scanners.data'), { limit: 9999, offset: 0 }, (res) => {
         const rows = res.rows ?? [];
         $('#kpi-total').text(res.total ?? 0);
         $('#kpi-service').text(rows.filter(r => r.statut === 'en_service').length);
@@ -48,15 +49,26 @@ function loadKpis() {
     });
 }
 
+// ── Wizard ────────────────────────────────────────────────────────────────────
+
 const Wizard = (() => {
     let currentStep = 1;
-    const $modal = () => $('#reseauModal');
-    const $form = () => $('#reseauForm');
-    const $step = (n) => $('#step-' + n);
-    const $circle = (n) => $('.wizard-step-circle[data-step="' + n + '"]');
+    const TOTAL = 3;
 
-    function isEnStock() { return $('input[name="statut"]:checked').val() === 'en_stock'; }
-    function totalSteps() { return isEnStock() ? 2 : 3; }
+    const $modal = () => $('#scannerModal');
+    const $form = () => $('#scannerForm');
+    const $step = (n) => $(`#step-${n}`);
+    const $circle = (n) => $(`.wizard-step-circle[data-step="${n}"]`);
+    const $label = (n) => $(`.wizard-step-label[data-step="${n}"]`);
+    const $line = (n) => $(`.wizard-step-line[data-after="${n}"]`);
+
+    function isEnStock() {
+        return $('input[name="statut"]:checked').val() === 'en_stock';
+    }
+
+    function totalSteps() {
+        return isEnStock() ? 2 : 3;
+    }
 
     function goTo(n) {
         $step(currentStep).addClass('d-none');
@@ -67,84 +79,360 @@ const Wizard = (() => {
     }
 
     function updateStepper() {
+        const stock = isEnStock();
+
+        $circle(3).toggleClass('opacity-25', stock);
+        $label(3).toggleClass('opacity-25 text-decoration-line-through', stock);
+        $line(2).toggleClass('opacity-25', stock);
+
         for (let i = 1; i <= 3; i++) {
             const c = $circle(i);
+            const l = $label(i);
             c.removeClass('active done');
-            if (i < currentStep) c.addClass('done').html('<i class="bi bi-check-lg"></i>');
-            else if (i === currentStep) c.addClass('active').text(i);
-            else c.text(i);
+            l.removeClass('text-primary fw-bold').addClass('text-muted');
+            if (i < currentStep) {
+                c.addClass('done').html('<i class="bi bi-check-lg" style="font-size:.8rem"></i>');
+                $line(i).addClass('done');
+            } else if (i === currentStep) {
+                c.addClass('active').text(i);
+                l.removeClass('text-muted').addClass('text-primary fw-bold');
+            } else {
+                c.text(i);
+                $line(i).removeClass('done');
+            }
         }
     }
 
     function updateNav() {
         const last = totalSteps();
+        const statut = $('input[name="statut"]:checked').val();
+        
         $('#btn-prev').toggle(currentStep > 1);
         $('#btn-next').toggleClass('d-none', currentStep >= last);
         $('#btn-submit').toggleClass('d-none', currentStep < last);
+        $('#btn-save-reparation').toggleClass('d-none', !(currentStep === 2 && statut === 'en_reparation'));
+    }
+
+    function validateStep(n) {
+        if (n === 1) {
+            if (!$('input[name="statut"]:checked').val()) {
+                Swal.fire({ icon: 'warning', title: 'Attention', text: 'Veuillez sélectionner un statut.', timer: 2000, showConfirmButton: false });
+                return false;
+            }
+        }
+        if (n === 2) {
+            const fields = ['numero_serie', 'modele'];
+            let ok = true;
+            fields.forEach(f => {
+                const $el = $(`#${f}`);
+                if (!$el.val()) { $el.addClass('is-invalid'); ok = false; }
+                else $el.removeClass('is-invalid');
+            });
+            if (!ok) { Swal.fire({ icon: 'warning', title: 'Champs requis', text: 'Veuillez remplir tous les champs obligatoires.', timer: 2500, showConfirmButton: false }); }
+            return ok;
+        }
+        return true;
     }
 
     function reset() {
         $form()[0].reset();
-        $('#res_id').val('');
+        $('#scn_id').val('');
+        $('#wizard-title').text('Ajouter un scanner');
+        $('#btn-submit-label').text('Enregistrer l\'actif');
         $('.statut-card').removeClass('selected');
-        $('#local_id').val('');
-        $('#aff-local-summary').addClass('d-none');
-        $('#btn-select-local-init').removeClass('d-none');
+        $('.aff-type-card').removeClass('selected');
+        $('.aff-summary').addClass('d-none');
+        $('#aff-skip-hint').removeClass('d-none');
+        $('#dossier_employe_id, #poste_travail_id, #local_id').val('');
+        $form().find('.is-invalid').removeClass('is-invalid');
+        $form().find('.invalid-feedback').remove();
         goTo(1);
+    }
+
+    function open() {
+        reset();
+        $modal().modal('show');
+    }
+
+    async function openEdit(id) {
+        reset();
+        $('#wizard-title').text('Modifier le scanner');
+        $('#btn-submit-label').text('Enregistrer');
+        try {
+            const res = await $.get(route('parc-info.scanners.show-json', id));
+            const e = res.data;
+            const s = e.scanner ?? {};
+            const aff = e.affectation_active;
+
+            $('#scn_id').val(e.id);
+            $(`.statut-card[data-value="${e.statut}"]`).trigger('click');
+            goTo(2);
+            $('#code_inventaire').val(e.code_inventaire);
+            $('#numero_serie').val(e.numero_serie);
+            $('#marque_id').val(e.marque_id);
+            $('#modele').val(e.modele);
+            $('#resolution_dpi_max').val(s.resolution_dpi_max);
+            $('#format_max').val(s.format_max);
+            $('#type_capteur').val(s.type_capteur);
+            $('#interface_connexion').val(s.interface_connexion);
+            $('#adresse_ip').val(s.adresse_ip);
+            $('#est_recto_verso').prop('checked', !!s.est_recto_verso);
+            $('#a_chargeur_auto').prop('checked', !!s.a_chargeur_auto);
+            $('#date_acquisition').val(e.date_acquisition?.substring(0, 10));
+            $('#date_fin_garantie').val(e.date_fin_garantie?.substring(0, 10));
+            $('#etat').val(e.etat);
+
+            if (aff && !isEnStock()) {
+                goTo(3);
+                $(`.aff-type-card[data-value="${aff.type_cible}"]`).trigger('click');
+                $(document).trigger(`${aff.type_cible.toLowerCase()}:selected`, [aff[aff.type_cible.toLowerCase()]]);
+            }
+            $modal().modal('show');
+        } catch {
+            Swal.fire('Erreur', 'Impossible de charger les données.', 'error');
+        }
     }
 
     function init() {
         $(document).on('click', '.statut-card', function () {
             $('.statut-card').removeClass('selected');
-            $(this).addClass('selected').find('input').prop('checked', true);
+            $(this).addClass('selected');
+            $(this).find('input[type="radio"]').prop('checked', true);
+            updateStepper();
+            updateNav();
         });
-        $('#btn-next').on('click', () => goTo(currentStep + 1));
-        $('#btn-prev').on('click', () => goTo(currentStep - 1));
-        $form().on('submit', function (e) {
+
+        $('#btn-save-reparation').on('click', function(e) {
             e.preventDefault();
+            if (!validateStep(2)) return;
+            const formData = $form().serialize() + '&skip_affectation=1';
+            submitForm(formData, false);
+        });
+
+        $('#btn-next').on('click', () => {
+            if (validateStep(currentStep)) goTo(currentStep + 1);
+        });
+        $('#btn-prev').on('click', () => {
+            if (currentStep === 3) {
+                $('input[name="type_cible"]').prop('checked', false);
+                $('.aff-type-card').removeClass('selected');
+                $('.aff-summary').addClass('d-none');
+                $('#aff-skip-hint').removeClass('d-none');
+                $('#dossier_employe_id, #poste_travail_id, #local_id').val('');
+            }
+            goTo(currentStep - 1);
+        });
+
+        $(document).on('employe:selected', function (e, emp) {
+            if (!$('#step-3').is(':visible')) return;
+            $('.aff-type-card').removeClass('selected');
+            $('.aff-type-card[data-value="EMPLOYE"]').addClass('selected').find('input[type="radio"]').prop('checked', true);
+            $('#emp-summary-nom').text(emp.nom || `${emp.nom} ${emp.prenom}`);
+            $('#emp-summary-matricule').text(emp.matricule);
+            $('#emp-summary-poste').text(emp.poste || emp.text);
+            $('#emp-summary-rattachement').text(emp.rattachement || '—');
+            $('#dossier_employe_id').val(emp.id);
+            $('#poste_travail_id, #local_id').val('');
+            $('.aff-summary').addClass('d-none');
+            $('#aff-employe-summary').removeClass('d-none');
+            $('#aff-skip-hint').addClass('d-none');
+        });
+
+        $(document).on('poste:selected', function (e, poste) {
+            if (!$('#step-3').is(':visible')) return;
+            $('.aff-type-card').removeClass('selected');
+            $('.aff-type-card[data-value="POSTE"]').addClass('selected').find('input[type="radio"]').prop('checked', true);
+            $('#poste-summary-code').text(poste.code);
+            $('#poste-summary-libelle').text(poste.libelle);
+            $('#poste-summary-emplacement').text(poste.emplacement || poste.local || '—');
+            $('#poste_travail_id').val(poste.id);
+            $('#dossier_employe_id, #local_id').val('');
+            $('.aff-summary').addClass('d-none');
+            $('#aff-poste-summary').removeClass('d-none');
+            $('#aff-skip-hint').addClass('d-none');
+        });
+
+        $(document).on('local:selected', function (e, local) {
+            if (!$('#step-3').is(':visible')) return;
+            $('.aff-type-card').removeClass('selected');
+            $('.aff-type-card[data-value="LOCAL"]').addClass('selected').find('input[type="radio"]').prop('checked', true);
+            $('#local-summary-code').text(local.code || '—');
+            $('#local-summary-libelle').text(local.libelle || local.text);
+            $('#local-summary-complet').text(local.text || local.nom_complet);
+            $('#local_id').val(local.id);
+            $('#dossier_employe_id, #poste_travail_id').val('');
+            $('.aff-summary').addClass('d-none');
+            $('#aff-local-summary').removeClass('d-none');
+            $('#aff-skip-hint').addClass('d-none');
+        });
+
+        $('#btn-add-marque').on('click', () => {
+            const bsModal = bootstrap.Modal.getInstance(document.getElementById('scannerModal'));
+            if (bsModal) bsModal._focustrap?.deactivate();
+
+            Swal.fire({
+                title: 'Nouvelle marque',
+                input: 'text',
+                inputPlaceholder: 'Ex: HP, Epson, Canon...',
+                showCancelButton: true,
+                confirmButtonText: 'Ajouter',
+                cancelButtonText: 'Annuler',
+                didOpen: () => setTimeout(() => Swal.getInput()?.focus(), 50),
+                preConfirm: (value) => {
+                    if (!value || !value.trim()) { Swal.showValidationMessage('Le libellé est obligatoire.'); return false; }
+                    return value.trim();
+                },
+            }).then((result) => {
+                if (bsModal) bsModal._focustrap?.activate();
+                if (result.isConfirmed && result.value) {
+                    $.post(route('parc-info.scanners.store-marque'), { libelle: result.value, _token: $('meta[name="csrf-token"]').attr('content') }, (res) => {
+                        if (res.success) {
+                            $('#marque_id').append(new Option(res.data.libelle, res.data.id, true, true));
+                            Swal.fire({ icon: 'success', title: 'Marque ajoutée', timer: 1500, showConfirmButton: false });
+                        }
+                    }).fail((xhr) => {
+                        Swal.fire('Erreur', xhr.responseJSON?.errors?.libelle?.[0] ?? 'Cette marque existe déjà.', 'error');
+                    });
+                }
+            });
+        });
+
+        $form().on('submit', async (e) => {
+            e.preventDefault();
+            let formData = $form().serialize();
+            if (!$('input[name="type_cible"]:checked').val()) {
+                formData += '&skip_affectation=1';
+            }
+            submitForm(formData, true);
+        });
+
+        function submitForm(formData, isFromSubmit) {
+            $('.is-invalid').removeClass('is-invalid');
+            $('.invalid-feedback').remove();
+
+            const id = $('#scn_id').val();
+            const url = id ? route('parc-info.scanners.update', id) : route('parc-info.scanners.store');
+            const method = id ? 'PUT' : 'POST';
+            const $btn = isFromSubmit ? $('#btn-submit') : $('#btn-save-reparation');
+            const originalText = $btn.find('span').text() || $btn.text();
+            
+            $btn.prop('disabled', true);
+            if (isFromSubmit) { $btn.find('#btn-submit-label').text('Enregistrement...'); }
+            else { $btn.html('<i class="bi bi-hourglass-split me-1"></i> Enregistrement...'); }
+
             $.ajax({
-                url: route(prefix + '.store'),
-                method: 'POST',
-                data: $(this).serialize(),
+                url, method,
+                data: formData,
                 success: (res) => {
                     if (res.success) {
                         $modal().modal('hide');
                         $('#scanners-table').bootstrapTable('refresh');
                         loadKpis();
-                        Swal.fire('Succès', res.message, 'success');
+                        Swal.fire({ icon: 'success', title: 'Succès', text: res.message, timer: 2000, showConfirmButton: false });
                     }
-                }
+                },
+                error: (xhr) => {
+                    if (xhr.status === 422) {
+                        const errors = xhr.responseJSON?.errors ?? {};
+                        let firstErrorField = null;
+
+                        Object.entries(errors).forEach(([field, msgs]) => {
+                            const $field = $(`[name="${field}"]`);
+                            if ($field.length) {
+                                $field.addClass('is-invalid');
+                                $field.after(`<div class="invalid-feedback d-block">${msgs[0]}</div>`);
+                                if (!firstErrorField) firstErrorField = $field;
+                            }
+                        });
+
+                        if (firstErrorField) {
+                            const stepDiv = firstErrorField.closest('.wizard-step');
+                            if (stepDiv.length) {
+                                const errorStep = stepDiv.attr('id').replace('step-', '');
+                                goTo(parseInt(errorStep));
+                            }
+                            firstErrorField[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                        Swal.fire('Erreur de validation', 'Veuillez corriger les erreurs dans le formulaire.', 'error');
+                    } else {
+                        Swal.fire('Erreur', xhr.responseJSON?.message ?? 'Une erreur est survenue.', 'error');
+                    }
+                },
+                complete: () => {
+                    $btn.prop('disabled', false);
+                    if (isFromSubmit) { $btn.find('#btn-submit-label').text(originalText); }
+                    else { $btn.html('<i class="bi bi-tools me-1"></i> Enregistrer en réparation'); }
+                },
             });
-        });
-        $(document).on('local:selected', function(e, local) {
-            $('#local_id').val(local.id);
-            $('#local-summary-libelle').text(local.libelle);
-            $('#aff-local-summary').removeClass('d-none');
-            $('#btn-select-local-init').addClass('d-none');
-        });
+        }
+
+        $modal().on('hidden.bs.modal', reset);
     }
 
-    return { init, open: () => { reset(); $modal().modal('show'); } };
+    return { init, open, openEdit };
 })();
 
+// ── Suppression ───────────────────────────────────────────────────────────────
+
 function deleteScanner(id) {
-    Swal.fire({ title: 'Supprimer ?', icon: 'warning', showCancelButton: true }).then(res => {
-        if (res.isConfirmed) {
-            $.ajax({ url: route(prefix + '.destroy', id), method: 'DELETE', success: () => {
-                $('#scanners-table').bootstrapTable('refresh');
-                loadKpis();
-            }});
+    Swal.fire({
+        title: 'Supprimer ce scanner ?',
+        text: 'Cette action est irréversible.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Supprimer',
+        cancelButtonText: 'Annuler',
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: route('parc-info.scanners.destroy', id),
+                method: 'DELETE',
+                data: { _token: $('meta[name="csrf-token"]').attr('content') },
+                success: (res) => {
+                    if (res.success) {
+                        $('#scanners-table').bootstrapTable('refresh');
+                        loadKpis();
+                        Swal.fire({ icon: 'success', title: 'Supprimé', timer: 1500, showConfirmButton: false });
+                    }
+                },
+                error: () => Swal.fire('Erreur', 'Impossible de supprimer.', 'error'),
+            });
         }
     });
 }
 
+// ── Init ──────────────────────────────────────────────────────────────────────
+
 $(function () {
     Wizard.init();
+
     $('#btn-add').on('click', () => Wizard.open());
+
+    $('#btn-edit').on('click', () => {
+        const sel = $('#scanners-table').bootstrapTable('getSelections');
+        if (sel.length) window.location.href = route('parc-info.scanners.show', sel[0].id);
+    });
+
+    $('#btn-delete').on('click', () => {
+        const sel = $('#scanners-table').bootstrapTable('getSelections');
+        if (sel.length) deleteScanner(sel[0].id);
+    });
+
+    $('#scanners-table').on('check.bs.table uncheck.bs.table', function () {
+        const sel = $(this).bootstrapTable('getSelections');
+        $('#btn-edit, #btn-delete').prop('disabled', sel.length === 0);
+    });
+
     $('#btn-apply-filters').on('click', () => $('#scanners-table').bootstrapTable('refresh'));
     $('#btn-reset-filters').on('click', () => {
-        $('#filter-site, #filter-statut').val('');
+        $('#filter-site, #filter-direction, #filter-statut').val('');
         $('#scanners-table').bootstrapTable('refresh');
     });
+
+    $('#scanners-table').on('load-success.bs.table', () => {
+        $('#btn-edit, #btn-delete').prop('disabled', true);
+    });
+
     loadKpis();
 });

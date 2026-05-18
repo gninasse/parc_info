@@ -125,13 +125,20 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::get('/data', [MobileController::class, 'getData'])->name('data');
         Route::post('/', [MobileController::class, 'store'])->name('store');
         Route::get('/{id}', [MobileController::class, 'show'])->name('show');
+        Route::get('/{id}/json', [MobileController::class, 'showJson'])->name('show-json');
         Route::put('/{id}', [MobileController::class, 'update'])->name('update');
         Route::delete('/{id}', [MobileController::class, 'destroy'])->name('destroy');
-        Route::post('/types', [MobileController::class, 'storeTypeMobile'])->name('store-type');
         Route::patch('/{id}/statut', [MobileController::class, 'updateStatut'])->name('update-statut');
         Route::patch('/{id}/etat', [MobileController::class, 'updateEtat'])->name('update-etat');
         Route::post('/{id}/desaffecter', [MobileController::class, 'desaffecter'])->name('desaffecter');
         Route::post('/affectation', [MobileController::class, 'storeAffectation'])->name('store-affectation');
+        // QuickAdd
+        Route::post('/marques', [MobileController::class, 'storeMarque'])->name('store-marque');
+        Route::post('/types-mobile', [MobileController::class, 'storeTypeMobile'])->name('store-type-mobile');
+        // AJAX search
+        Route::get('/search/employes', [MobileController::class, 'searchEmployes'])->name('search-employes');
+        Route::get('/search/postes', [MobileController::class, 'searchPostes'])->name('search-postes');
+        Route::get('/search/locaux', [MobileController::class, 'searchLocaux'])->name('search-locaux');
     });
 
     // Switches
@@ -195,13 +202,20 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::get('/', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'index'])->name('index');
         Route::get('/data', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'getData'])->name('data');
         Route::post('/', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'store'])->name('store');
-        Route::post('/types/quick-add', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'storeTypeInfrastructure'])->name('store-type');
+        Route::get('/{id}/json', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'showJson'])->name('show-json');
         Route::get('/{id}', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'show'])->name('show');
         Route::put('/{id}', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'update'])->name('update');
         Route::delete('/{id}', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'destroy'])->name('destroy');
         Route::patch('/{id}/statut', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'updateStatut'])->name('update-statut');
         Route::patch('/{id}/etat', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'updateEtat'])->name('update-etat');
         Route::post('/{id}/desaffecter', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'desaffecter'])->name('desaffecter');
+        Route::post('/affectation', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'storeAffectation'])->name('store-affectation');
+        // QuickAdd
+        Route::post('/marques', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'storeMarque'])->name('store-marque');
+        // AJAX search
+        Route::get('/employes/search', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'searchEmployes'])->name('search-employes');
+        Route::get('/postes/search', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'searchPostes'])->name('search-postes');
+        Route::get('/locaux/search', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'searchLocaux'])->name('search-locaux');
     });
 
     // Baies & Racks
@@ -237,13 +251,21 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::get('/', [ImprimanteController::class, 'index'])->name('index');
         Route::get('/data', [ImprimanteController::class, 'getData'])->name('data');
         Route::post('/', [ImprimanteController::class, 'store'])->name('store');
-        Route::post('/types/quick-add', [ImprimanteController::class, 'storeTypeImprimante'])->name('store-type');
         Route::get('/{id}', [ImprimanteController::class, 'show'])->name('show');
+        Route::get('/{id}/json', [ImprimanteController::class, 'showJson'])->name('show-json');
         Route::put('/{id}', [ImprimanteController::class, 'update'])->name('update');
         Route::delete('/{id}', [ImprimanteController::class, 'destroy'])->name('destroy');
         Route::patch('/{id}/statut', [ImprimanteController::class, 'updateStatut'])->name('update-statut');
         Route::patch('/{id}/etat', [ImprimanteController::class, 'updateEtat'])->name('update-etat');
         Route::post('/{id}/desaffecter', [ImprimanteController::class, 'desaffecter'])->name('desaffecter');
+        Route::post('/affectation', [ImprimanteController::class, 'storeAffectation'])->name('store-affectation');
+        // QuickAdd
+        Route::post('/marques', [ImprimanteController::class, 'storeMarque'])->name('store-marque');
+        Route::post('/types-imprimante', [ImprimanteController::class, 'storeTypeImprimante'])->name('store-type-imprimante');
+        // AJAX search
+        Route::get('/employes/search', [ImprimanteController::class, 'searchEmployes'])->name('search-employes');
+        Route::get('/postes/search', [ImprimanteController::class, 'searchPostes'])->name('search-postes');
+        Route::get('/locaux/search', [ImprimanteController::class, 'searchLocaux'])->name('search-locaux');
     });
 
     // Scanners
@@ -251,12 +273,20 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::get('/', [ScannerController::class, 'index'])->name('index');
         Route::get('/data', [ScannerController::class, 'getData'])->name('data');
         Route::post('/', [ScannerController::class, 'store'])->name('store');
+        Route::get('/{id}/json', [ScannerController::class, 'showJson'])->name('show-json');
         Route::get('/{id}', [ScannerController::class, 'show'])->name('show');
         Route::put('/{id}', [ScannerController::class, 'update'])->name('update');
         Route::delete('/{id}', [ScannerController::class, 'destroy'])->name('destroy');
         Route::patch('/{id}/statut', [ScannerController::class, 'updateStatut'])->name('update-statut');
         Route::patch('/{id}/etat', [ScannerController::class, 'updateEtat'])->name('update-etat');
         Route::post('/{id}/desaffecter', [ScannerController::class, 'desaffecter'])->name('desaffecter');
+        Route::post('/affectation', [ScannerController::class, 'storeAffectation'])->name('store-affectation');
+        Route::post('/marques', [ScannerController::class, 'storeMarque'])->name('store-marque');
+
+        // AJAX search
+        Route::get('/employes/search', [ScannerController::class, 'searchEmployes'])->name('search-employes');
+        Route::get('/postes/search', [ScannerController::class, 'searchPostes'])->name('search-postes');
+        Route::get('/locaux/search', [ScannerController::class, 'searchLocaux'])->name('search-locaux');
     });
 
     // Telephones

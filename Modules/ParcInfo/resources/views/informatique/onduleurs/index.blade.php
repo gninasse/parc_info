@@ -1,6 +1,6 @@
 @extends('parcinfo::layouts.master')
 
-@section('header', 'Onduleurs')
+@section('header', 'Onduleurs & Alimentations')
 
 @section('breadcrumb')
     <li class="breadcrumb-item"><a href="{{ route('parc-info.dashboard') }}">Parc Info</a></li>
@@ -18,9 +18,9 @@
     <div class="col-sm-6 col-xl-3">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body d-flex align-items-center gap-3">
-                <div class="rounded-3 bg-primary bg-opacity-10 p-3"><i class="bi bi-hdd-network fs-4 text-primary"></i></div>
+                <div class="rounded-3 bg-primary bg-opacity-10 p-3"><i class="bi bi-lightning-charge fs-4 text-primary"></i></div>
                 <div>
-                    <div class="text-muted small fw-semibold text-uppercase" style="font-size:.7rem;letter-spacing:.5px">Total Équipements</div>
+                    <div class="text-muted small fw-semibold text-uppercase" style="font-size:.7rem;letter-spacing:.5px">Total Parc</div>
                     <div class="fw-bold fs-4" id="kpi-total">—</div>
                 </div>
             </div>
@@ -51,7 +51,7 @@
     <div class="col-sm-6 col-xl-3">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body d-flex align-items-center gap-3">
-                <div class="rounded-3 bg-secondary bg-opacity-10 p-3"><i class="bi bi-box fs-4 text-secondary"></i></div>
+                <div class="rounded-3 bg-secondary bg-opacity-10 p-3"><i class="bi bi-archive fs-4 text-secondary"></i></div>
                 <div>
                     <div class="text-muted small fw-semibold text-uppercase" style="font-size:.7rem;letter-spacing:.5px">En Stock</div>
                     <div class="fw-bold fs-4 text-secondary" id="kpi-stock">—</div>
@@ -66,20 +66,20 @@
     <div class="card-body py-3">
         <div class="row g-2 align-items-end">
             <div class="col-md-3">
-                <label class="form-label small fw-semibold mb-1">Type d'équipement</label>
-                <select class="form-select form-select-sm" id="filter-type">
-                    <option value="">Tous les types</option>
-                    @foreach($typesInfrastructures as $t)
-                        <option value="{{ $t->id }}">{{ $t->libelle }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label small fw-semibold mb-1">Site</label>
+                <label class="form-label small fw-semibold mb-1">Site géographique</label>
                 <select class="form-select form-select-sm" id="filter-site">
                     <option value="">Tous les sites</option>
                     @foreach($sites as $s)
                         <option value="{{ $s->id }}">{{ $s->libelle }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold mb-1">Direction</label>
+                <select class="form-select form-select-sm" id="filter-direction">
+                    <option value="">Toutes les directions</option>
+                    @foreach($directions as $d)
+                        <option value="{{ $d->id }}">{{ $d->libelle }}</option>
                     @endforeach
                 </select>
             </div>
@@ -110,7 +110,7 @@
 
 {{-- ── Table ── --}}
 <div class="card border-0 shadow-sm">
-    <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+    <div class="card-header bg-white border-0 py-3">
         <h6 class="mb-0 fw-bold">Liste des Onduleurs</h6>
     </div>
     <div class="card-body p-0">
@@ -125,9 +125,9 @@
                 <i class="fas fa-trash"></i>
             </button>
         </div>
-        <table id="reseaux-table"
+        <table id="onduleurs-table"
                data-toggle="table"
-               data-url="{{ $dataUrl ?? route('parc-info.onduleurs.data') }}"
+               data-url="{{ route('parc-info.onduleurs.data') }}"
                data-pagination="true"
                data-side-pagination="server"
                data-search="true"
@@ -139,16 +139,17 @@
                data-id-field="id"
                data-page-list="[10,25,50,100]"
                data-page-size="25"
-               data-query-params="reseauxQueryParams"
+               data-query-params="onduleursQueryParams"
                class="table table-hover align-middle mb-0">
             <thead class="table-light">
                 <tr>
                     <th data-field="state" data-radio="true"></th>
-                    <th data-field="code_inventaire" data-sortable="true" data-formatter="codeFormatter">Code</th>
-                    <th data-field="marque_modele" data-sortable="true">Modèle</th>
-                    <th data-field="type_infrastructure">Type</th>
+                    <th data-field="code_inventaire" data-sortable="true" data-formatter="codeFormatter">Code Inventaire</th>
+                    <th data-field="marque_modele" data-sortable="true">Marque & Modèle</th>
+                    <th data-field="puissance_va">Puissance (VA)</th>
+                    <th data-field="autonomie_minutes">Autonomie (min)</th>
                     <th data-field="statut" data-formatter="statutFormatter">Statut</th>
-                    <th data-field="affectation">Emplacement</th>
+                    <th data-field="affectation">Affectation</th>
                     <th data-field="id" data-formatter="actionsFormatter" data-events="actionsEvents">Actions</th>
                 </tr>
             </thead>
@@ -156,16 +157,13 @@
     </div>
 </div>
 
-@include('parcinfo::informatique.reseaux._wizard')
+@include('parcinfo::informatique.onduleurs._wizard')
 @include('parcinfo::informatique.ordinateurs._selection_modals')
 @endsection
 
 @push('js')
-<script>
-    window.routePrefix = "{{ $routePrefix ?? 'parc-info.onduleurs' }}";
-</script>
 <script src="{{ asset('plugins/bootstrap-table/bootstrap-table.min.js') }}"></script>
 <script src="{{ asset('plugins/bootstrap-table/locale/bootstrap-table-fr-FR.min.js') }}"></script>
-<script type="module" src="{{ asset('js/modules/parc-info/reseaux/index.js') }}?v={{ time() }}"></script>
+<script type="module" src="{{ asset('js/modules/parc-info/onduleurs/index.js') }}?v={{ time() }}"></script>
 <script src="{{ asset('js/modules/parc-info/ordinateurs/selection_modals.js') }}?v={{ time() }}"></script>
 @endpush

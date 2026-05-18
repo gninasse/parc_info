@@ -5,7 +5,7 @@
             {{-- Header --}}
             <div class="modal-header border-0 px-4 pt-4 pb-0">
                 <div>
-                    <h5 class="modal-title fw-bold mb-0" id="wizard-title">Ajouter un mobile/tablette</h5>
+                    <h5 class="modal-title fw-bold mb-0" id="wizard-title">Ajouter un équipement mobile</h5>
                     <small class="text-muted" id="wizard-subtitle">Configuration des terminaux mobiles - CHU Yalgado</small>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -32,17 +32,17 @@
                 @csrf
                 <input type="hidden" id="mob_id" name="id">
 
-                <div class="modal-body px-4 py-3" style="min-height:340px">
+                <div class="modal-body px-4 py-3" style="min-height:400px">
 
                     {{-- ── ÉTAPE 1 : STATUT ── --}}
                     <div id="step-1" class="wizard-step">
-                        <h6 class="fw-bold text-center mb-1">Statut du terminal</h6>
-                        <p class="text-muted text-center small mb-4">Définissez l'état actuel de ce mobile dans l'inventaire.</p>
+                        <h6 class="fw-bold text-center mb-1">Statut de l'équipement</h6>
+                        <p class="text-muted text-center small mb-4">Définissez l'état actuel de cet actif dans l'inventaire hospitalier.</p>
                         <div class="d-flex flex-column gap-2" id="statut-options">
                             @foreach([
-                                ['en_stock',      'bi-archive',    'En stock',      'Disponible pour attribution'],
-                                ['en_service',    'bi-phone-vibrate', 'En service',    'Utilisé par un agent ou service'],
-                                ['en_reparation', 'bi-tools',      'En réparation', 'En maintenance ou écran cassé'],
+                                ['en_stock',      'bi-archive',       'En stock',      'Disponible pour déploiement immédiat'],
+                                ['en_service',    'bi-phone-vibrate', 'En service',    'Actuellement utilisé par un membre du personnel'],
+                                ['en_reparation', 'bi-tools',         'En réparation', 'Maintenance technique ou panne signalée'],
                             ] as [$val,$icon,$label,$desc])
                             <label class="statut-card d-flex align-items-center gap-3 p-3 rounded-3 border cursor-pointer" data-value="{{ $val }}">
                                 <input type="radio" name="statut" value="{{ $val }}" class="d-none">
@@ -59,36 +59,17 @@
 
                     {{-- ── ÉTAPE 2 : INFORMATIONS ── --}}
                     <div id="step-2" class="wizard-step d-none">
+                        <h6 class="fw-bold mb-3"><i class="bi bi-info-circle text-primary me-2"></i>Informations techniques</h6>
                         <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label field-label">Type de terminal</label>
-                                <div class="input-group">
-                                    <select class="form-select field-input" name="type_mobile_id" id="type_mobile_id">
-                                        <option value="">Sélectionner...</option>
-                                        @foreach($typesMobiles as $t)
-                                            <option value="{{ $t->id }}">{{ $t->libelle }}</option>
-                                        @endforeach
-                                    </select>
-                                    <button type="button" class="btn btn-outline-secondary" id="btn-add-type-mobile" title="Nouveau type">
-                                        <i class="bi bi-plus"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label field-label">N° Téléphone associé</label>
-                                <input type="text" class="form-control field-input" name="num_tel_associe" id="num_tel_associe" placeholder="Ex: 70 00 00 00">
-                            </div>
-
                             <div class="col-md-6">
                                 <label class="form-label field-label">Code Inventaire</label>
                                 <input type="text" class="form-control field-input bg-light" name="code_inventaire" id="code_inventaire" placeholder="Généré automatiquement" readonly>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label field-label">Numéro de Série <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control field-input" name="numero_serie" id="numero_serie" placeholder="S/N du constructeur" required>
+                                <input type="text" class="form-control field-input" name="numero_serie" id="numero_serie" placeholder="Ex: S/N 987654321" required>
                             </div>
-
-                            <div class="col-md-5">
+                            <div class="col-md-6">
                                 <label class="form-label field-label">Marque</label>
                                 <div class="input-group">
                                     <select class="form-select field-input" name="marque_id" id="marque_id">
@@ -97,60 +78,82 @@
                                             <option value="{{ $m->id }}">{{ $m->libelle }}</option>
                                         @endforeach
                                     </select>
+                                    <button type="button" class="btn btn-outline-secondary shadow-none" id="btn-add-marque" title="Nouvelle marque">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
                                 </div>
                             </div>
-                            <div class="col-md-7">
+                            <div class="col-md-6">
                                 <label class="form-label field-label">Modèle <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control field-input" name="modele" id="modele" placeholder="Ex: Galaxy Tab S9, iPhone 15" required>
                             </div>
-
+                            <div class="col-md-6">
+                                <label class="form-label field-label">Type de Mobile</label>
+                                <div class="input-group">
+                                    <select class="form-select field-input" name="type_mobile_id" id="type_mobile_id">
+                                        <option value="">Sélectionner...</option>
+                                        @foreach($typesMobiles as $t)
+                                            <option value="{{ $t->id }}">{{ $t->libelle }}</option>
+                                        @endforeach
+                                    </select>
+                                    <button type="button" class="btn btn-outline-secondary shadow-none" id="btn-add-type-mobile" title="Nouveau type">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label field-label">Version OS</label>
+                                <input type="text" class="form-control field-input" name="version_os" id="version_os" placeholder="Ex: Android 14, iOS 17.2">
+                            </div>
                             <div class="col-md-6">
                                 <label class="form-label field-label">IMEI 1</label>
-                                <input type="text" class="form-control field-input" name="imei_1" id="imei_1" placeholder="15 chiffres">
+                                <input type="text" class="form-control field-input" name="imei_1" id="imei_1" placeholder="N° IMEI principal">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label field-label">IMEI 2 (Optionnel)</label>
-                                <input type="text" class="form-control field-input" name="imei_2" id="imei_2" placeholder="Second slot SIM">
+                                <input type="text" class="form-control field-input" name="imei_2" id="imei_2" placeholder="N° IMEI secondaire">
                             </div>
-
                             <div class="col-md-6">
-                                <label class="form-label field-label">Version OS</label>
-                                <input type="text" class="form-control field-input" name="version_os" id="version_os" placeholder="Ex: Android 14, iOS 17">
+                                <label class="form-label field-label">N° Tél associé</label>
+                                <input type="text" class="form-control field-input" name="num_tel_associe" id="num_tel_associe" placeholder="Ex: +226 70 00 00 00">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label field-label">Statut MDM</label>
-                                <select class="form-select field-input" name="statut_mdm" id="statut_mdm">
-                                    <option value="Non enrôlé">Non enrôlé</option>
-                                    <option value="Enrôlé">Enrôlé (Géré par l'IT)</option>
-                                </select>
+                                <input type="text" class="form-control field-input" name="statut_mdm" id="statut_mdm" placeholder="Ex: Enrôlé, Non enrôlé">
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label field-label">État de l'équipement <span class="text-danger">*</span></label>
-                                <select class="form-select field-input" name="etat" id="etat" required>
-                                    <option value="bon">Bon</option>
-                                    <option value="passable">Passable</option>
-                                    <option value="mauvais">Mauvais</option>
-                                    <option value="avarie">Avarié / HS</option>
-                                </select>
-                            </div>
-
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="form-label field-label">Batterie (mAh)</label>
                                 <input type="number" class="form-control field-input" name="capacite_batterie_mah" id="capacite_batterie_mah" placeholder="Ex: 5000">
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label field-label">État de l'écran</label>
+                            <div class="col-md-4">
+                                <label class="form-label field-label">État Écran</label>
                                 <select class="form-select field-input" name="etat_ecran" id="etat_ecran">
-                                    <option value="Parfait">Parfait</option>
-                                    <option value="Micro-rayures">Micro-rayures</option>
+                                    <option value="Intact">Intact</option>
+                                    <option value="Rayé">Rayé</option>
                                     <option value="Fissuré">Fissuré</option>
-                                    <option value="Cassé">Cassé / Inexploitable</option>
                                 </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label field-label">État Général</label>
+                                <select class="form-select field-input" name="etat" id="etat">
+                                    <option value="bon">Bon</option>
+                                    <option value="passable">Passable</option>
+                                    <option value="mauvais">Mauvais</option>
+                                    <option value="avarie">Avarié</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label field-label">Date d'acquisition</label>
+                                <input type="date" class="form-control field-input" name="date_acquisition" id="date_acquisition">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label field-label">Fin de garantie</label>
+                                <input type="date" class="form-control field-input" name="date_fin_garantie" id="date_fin_garantie">
                             </div>
                             <div class="col-12">
                                 <div class="form-check form-switch mt-2">
                                     <input class="form-check-input" type="checkbox" name="a_coque_protection" id="a_coque_protection" value="1" checked>
-                                    <label class="form-check-label small fw-bold" for="a_coque_protection">Présence d'une coque/étui de protection</label>
+                                    <label class="form-check-label small fw-semibold" for="a_coque_protection">Possède une coque de protection / verre trempé</label>
                                 </div>
                             </div>
                         </div>
@@ -158,12 +161,12 @@
 
                     {{-- ── ÉTAPE 3 : AFFECTATION ── --}}
                     <div id="step-3" class="wizard-step d-none">
-                        <h6 class="fw-bold mb-3">Attribution du terminal</h6>
+                        <h6 class="fw-bold mb-3">Type d'affectation</h6>
                         <div class="row g-3 mb-4" id="affectation-type-cards">
                             @foreach([
-                                ['EMPLOYE','bi-person-badge','Attribuer à un agent'],
-                                ['POSTE',  'bi-pc-display',  'Attribuer à un poste'],
-                                ['LOCAL',   'bi-door-open',    'Affecter à un local'],
+                                ['EMPLOYE','bi-person-badge','Affecter à un employé'],
+                                ['POSTE',  'bi-pc-display',  'Affecter à un poste'],
+                                ['LOCAL',  'bi-door-open',   'Affecter à un local'],
                             ] as [$val,$icon,$label])
                             <div class="col-4">
                                 <label class="aff-type-card d-flex flex-column align-items-center justify-content-center gap-2 p-3 rounded-3 border cursor-pointer text-center" data-value="{{ $val }}">
@@ -176,15 +179,19 @@
                             @endforeach
                         </div>
 
-                        {{-- Summary cards reuse the same IDs as ordinateurs/serveurs for JS compatibility with selection_modals --}}
+                        {{-- Résumés de sélection --}}
                         <div id="aff-employe-summary" class="aff-summary d-none">
-                            <div class="card border-primary">
-                                <div class="card-body">
-                                    <h6 class="mb-2 fw-bold text-primary"><i class="bi bi-person-badge me-2"></i>Agent bénéficiaire</h6>
-                                    <div class="row g-2 small">
-                                        <div class="col-md-6"><span class="text-muted">Nom:</span> <strong id="emp-summary-nom">—</strong></div>
-                                        <div class="col-md-6"><span class="text-muted">Matricule:</span> <strong id="emp-summary-matricule">—</strong></div>
-                                        <div class="col-12 mt-1"><span class="text-muted">Rattachement:</span> <span id="emp-summary-rattachement">—</span></div>
+                            <div class="card border-primary bg-primary bg-opacity-10">
+                                <div class="card-body p-3">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1 fw-bold text-primary"><i class="bi bi-person-badge me-2"></i>Employé sélectionné</h6>
+                                            <div id="emp-summary-nom" class="fw-bold">—</div>
+                                            <div class="small text-muted">Matricule: <span id="emp-summary-matricule">—</span></div>
+                                            <div class="small text-muted">Poste: <span id="emp-summary-poste">—</span></div>
+                                            <div class="small text-muted">Rattachement: <span id="emp-summary-rattachement">—</span></div>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-outline-primary aff-type-card" data-value="EMPLOYE">Changer</button>
                                     </div>
                                 </div>
                             </div>
@@ -192,13 +199,16 @@
                         </div>
 
                         <div id="aff-poste-summary" class="aff-summary d-none">
-                            <div class="card border-primary">
-                                <div class="card-body">
-                                    <h6 class="mb-2 fw-bold text-primary"><i class="bi bi-pc-display me-2"></i>Poste sélectionné</h6>
-                                    <div class="row g-2 small">
-                                        <div class="col-md-3"><span class="text-muted">Code:</span> <strong id="poste-summary-code">—</strong></div>
-                                        <div class="col-md-5"><span class="text-muted">Libellé:</span> <strong id="poste-summary-libelle">—</strong></div>
-                                        <div class="col-md-4"><span class="text-muted">Emplacement:</span> <span id="poste-summary-emplacement">—</span></div>
+                            <div class="card border-primary bg-primary bg-opacity-10">
+                                <div class="card-body p-3">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1 fw-bold text-primary"><i class="bi bi-pc-display me-2"></i>Poste sélectionné</h6>
+                                            <div id="poste-summary-code" class="fw-bold">—</div>
+                                            <div id="poste-summary-libelle" class="small text-muted">—</div>
+                                            <div class="small text-muted">Emplacement: <span id="poste-summary-emplacement">—</span></div>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-outline-primary aff-type-card" data-value="POSTE">Changer</button>
                                     </div>
                                 </div>
                             </div>
@@ -206,12 +216,16 @@
                         </div>
 
                         <div id="aff-local-summary" class="aff-summary d-none">
-                            <div class="card border-primary">
-                                <div class="card-body">
-                                    <h6 class="mb-2 fw-bold text-primary"><i class="bi bi-door-open me-2"></i>Localisation</h6>
-                                    <div class="row g-2 small">
-                                        <div class="col-12"><span class="text-muted">Local:</span> <strong id="local-summary-libelle">—</strong></div>
-                                        <div class="col-12"><span class="text-muted">Emplacement:</span> <span id="local-summary-batiment">—</span> / <span id="local-summary-etage">—</span></div>
+                            <div class="card border-primary bg-primary bg-opacity-10">
+                                <div class="card-body p-3">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1 fw-bold text-primary"><i class="bi bi-door-open me-2"></i>Local sélectionné</h6>
+                                            <div id="local-summary-code" class="fw-bold">—</div>
+                                            <div id="local-summary-libelle" class="small text-muted">—</div>
+                                            <div class="small text-muted">Emplacement: <span id="local-summary-complet">—</span></div>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-outline-primary aff-type-card" data-value="LOCAL">Changer</button>
                                     </div>
                                 </div>
                             </div>
@@ -219,7 +233,7 @@
                         </div>
 
                         <div class="text-center mt-3" id="aff-skip-hint">
-                            <small class="text-muted">Aucune attribution sélectionnée — le terminal sera mis en stock.</small>
+                            <small class="text-muted">Aucune affectation sélectionnée — l'équipement sera enregistré en stock.</small>
                         </div>
                     </div>
 
@@ -227,16 +241,19 @@
 
                 {{-- Footer --}}
                 <div class="modal-footer border-0 px-4 pb-4 pt-0 d-flex justify-content-between">
-                    <button type="button" class="btn btn-link text-dark text-decoration-none fw-medium shadow-none" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-link text-dark text-decoration-none fw-medium shadow-none px-0" data-bs-dismiss="modal">Annuler</button>
                     <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-outline-secondary px-4" id="btn-prev" style="display:none!important">
+                        <button type="button" class="btn btn-outline-secondary px-4 shadow-none" id="btn-prev" style="display:none!important">
                             <i class="bi bi-chevron-left me-1"></i> Précédent
                         </button>
-                        <button type="button" class="btn btn-primary px-4" id="btn-next">
+                        <button type="button" class="btn btn-success px-4 shadow-none d-none" id="btn-save-reparation">
+                            <i class="bi bi-tools me-1"></i> Enregistrer en réparation
+                        </button>
+                        <button type="button" class="btn btn-primary px-4 shadow-none" id="btn-next">
                             Suivant <i class="bi bi-chevron-right ms-1"></i>
                         </button>
-                        <button type="submit" class="btn btn-primary px-4 d-none" id="btn-submit">
-                            <i class="bi bi-floppy me-1"></i> <span id="btn-submit-label">Enregistrer le terminal</span>
+                        <button type="submit" class="btn btn-primary px-4 shadow-none d-none" id="btn-submit">
+                            <i class="bi bi-floppy me-1"></i> <span id="btn-submit-label">Enregistrer l'actif</span>
                         </button>
                     </div>
                 </div>
@@ -246,7 +263,7 @@
 </div>
 
 <style>
-/* Stepper */
+/* Stepper UI */
 .wizard-step-circle {
     width: 36px; height: 36px;
     border-radius: 50%;
@@ -256,25 +273,25 @@
     font-size: .85rem;
     display: flex; align-items: center; justify-content: center;
     transition: all .2s;
+    border: 2px solid transparent;
 }
-.wizard-step-circle.active  { background: #0d6efd; color: #fff; }
-.wizard-step-circle.done    { background: #0d6efd; color: #fff; }
-.wizard-step-line {
-    height: 2px; background: #dee2e6; transition: background .2s;
-}
+.wizard-step-circle.active  { background: #0d6efd; color: #fff; box-shadow: 0 0 0 4px rgba(13,110,253,.15); }
+.wizard-step-circle.done    { background: #e0eeff; color: #0d6efd; border-color: #0d6efd; }
+.wizard-step-circle.done::before { content: '✓'; }
+.wizard-step-line { height: 2px; background: #dee2e6; transition: background .2s; }
 .wizard-step-line.done { background: #0d6efd; }
 .wizard-step-label { font-size: .68rem; letter-spacing: .5px; text-transform: uppercase; }
 
 /* Statut cards */
-.statut-card { cursor: pointer; transition: border-color .15s, background .15s; }
+.statut-card { cursor: pointer; transition: all .15s ease-in-out; border: 1.5px solid #dee2e6 !important; }
 .statut-card:hover { border-color: #0d6efd !important; background: #f0f6ff; }
-.statut-card.selected { border-color: #0d6efd !important; background: #f0f6ff; }
+.statut-card.selected { border-color: #0d6efd !important; background: #f0f6ff; box-shadow: 0 4px 12px rgba(13,110,253,.08); }
 .statut-card.selected .statut-card-icon { background: #dbeafe !important; }
 .statut-card.selected .statut-card-icon i { color: #0d6efd !important; }
 .statut-card.selected .check-icon { display: inline !important; }
 
 /* Affectation type cards */
-.aff-type-card { cursor: pointer; transition: border-color .15s; position: relative; }
+.aff-type-card { cursor: pointer; transition: all .15s ease-in-out; position: relative; border: 1.5px solid #dee2e6 !important; }
 .aff-type-card:hover { border-color: #0d6efd !important; }
 .aff-type-card.selected { border-color: #0d6efd !important; background: #f0f6ff; }
 .aff-type-card.selected .aff-type-icon { background: #dbeafe !important; }

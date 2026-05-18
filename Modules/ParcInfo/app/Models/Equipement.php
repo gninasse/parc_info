@@ -21,12 +21,21 @@ class Equipement extends Model
         'marque_id',
         'modele',
         'date_acquisition',
+        'date_mise_en_service',
+        'valeur_achat',
+        'duree_vie_probable',
+        'date_fin_garantie',
         'statut',
         'etat',
+        'tags',
     ];
 
     protected $casts = [
         'date_acquisition' => 'date',
+        'date_mise_en_service' => 'date',
+        'date_fin_garantie' => 'date',
+        'valeur_achat' => 'decimal:2',
+        'tags' => 'array',
     ];
 
     // Spécialisations ──

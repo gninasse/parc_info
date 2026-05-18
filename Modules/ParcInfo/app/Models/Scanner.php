@@ -21,12 +21,14 @@ class Scanner extends Model
         'est_recto_verso',
         'a_chargeur_auto',
         'type_capteur',
+        'adresse_ip',
+        'interface_connexion',
     ];
 
     protected $casts = [
-        'est_recto_verso'   => 'boolean',
-        'a_chargeur_auto'   => 'boolean',
-        'resolution_dpi_max'=> 'integer',
+        'est_recto_verso' => 'boolean',
+        'a_chargeur_auto' => 'boolean',
+        'resolution_dpi_max' => 'integer',
     ];
 
     public function equipement()
