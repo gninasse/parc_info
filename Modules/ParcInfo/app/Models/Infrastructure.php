@@ -23,15 +23,22 @@ class Infrastructure extends Model
         'nb_prises_pdu',
         'u_capacite_totale',
         'est_redondant',
+        // Champs spécifiques au brassage
+        'nb_ports',
+        'categorie_cable',
+        'type_connecteur',
+        'u_taille',
     ];
 
     protected $casts = [
-        'est_redondant'                      => 'boolean',
-        'puissance_va'                       => 'integer',
-        'autonomie_minutes'                  => 'integer',
-        'nb_prises_pdu'                      => 'integer',
-        'u_capacite_totale'                  => 'integer',
+        'est_redondant' => 'boolean',
+        'puissance_va' => 'integer',
+        'autonomie_minutes' => 'integer',
+        'nb_prises_pdu' => 'integer',
+        'u_capacite_totale' => 'integer',
         'date_dernier_remplacement_batterie' => 'date',
+        'nb_ports' => 'integer',
+        'u_taille' => 'integer',
     ];
 
     public function equipement()

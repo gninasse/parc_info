@@ -219,25 +219,31 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
     });
 
     // Baies & Racks
-    Route::prefix('informatique/racks')->name('racks.')->group(function () {
+    Route::prefix('informatique/infrastructure/racks')->name('racks.')->group(function () {
         Route::get('/', [Modules\ParcInfo\Http\Controllers\RackController::class, 'index'])->name('index');
         Route::get('/data', [Modules\ParcInfo\Http\Controllers\RackController::class, 'getData'])->name('data');
         Route::post('/', [Modules\ParcInfo\Http\Controllers\RackController::class, 'store'])->name('store');
-        Route::post('/types/quick-add', [Modules\ParcInfo\Http\Controllers\RackController::class, 'storeTypeInfrastructure'])->name('store-type');
         Route::get('/{id}', [Modules\ParcInfo\Http\Controllers\RackController::class, 'show'])->name('show');
+        Route::get('/{id}/json', [Modules\ParcInfo\Http\Controllers\RackController::class, 'showJson'])->name('show-json');
         Route::put('/{id}', [Modules\ParcInfo\Http\Controllers\RackController::class, 'update'])->name('update');
         Route::delete('/{id}', [Modules\ParcInfo\Http\Controllers\RackController::class, 'destroy'])->name('destroy');
         Route::patch('/{id}/statut', [Modules\ParcInfo\Http\Controllers\RackController::class, 'updateStatut'])->name('update-statut');
         Route::patch('/{id}/etat', [Modules\ParcInfo\Http\Controllers\RackController::class, 'updateEtat'])->name('update-etat');
         Route::post('/{id}/desaffecter', [Modules\ParcInfo\Http\Controllers\RackController::class, 'desaffecter'])->name('desaffecter');
+        Route::post('/affectation', [Modules\ParcInfo\Http\Controllers\RackController::class, 'storeAffectation'])->name('store-affectation');
+        Route::post('/marques', [Modules\ParcInfo\Http\Controllers\RackController::class, 'storeMarque'])->name('store-marque');
+        Route::get('/locaux/search', [Modules\ParcInfo\Http\Controllers\RackController::class, 'searchLocaux'])->name('search-locaux');
     });
 
-    // Brassage
-    Route::prefix('informatique/brassage')->name('brassage.')->group(function () {
+    // Brassage & Panneaux de brassage
+    Route::prefix('informatique/infrastructure/brassage')->name('brassage.')->group(function () {
         Route::get('/', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'index'])->name('index');
         Route::get('/data', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'getData'])->name('data');
         Route::post('/', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'store'])->name('store');
-        Route::post('/types/quick-add', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'storeTypeInfrastructure'])->name('store-type');
+        Route::get('/locaux/search', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'searchLocaux'])->name('search-locaux');
+        Route::post('/marques', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'storeMarque'])->name('store-marque');
+        Route::post('/affectation', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'storeAffectation'])->name('store-affectation');
+        Route::get('/{id}/json', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'showJson'])->name('show-json');
         Route::get('/{id}', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'show'])->name('show');
         Route::put('/{id}', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'update'])->name('update');
         Route::delete('/{id}', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'destroy'])->name('destroy');
