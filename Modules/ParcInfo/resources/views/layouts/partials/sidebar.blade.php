@@ -100,36 +100,10 @@
         <li class="nav-header text-uppercase small opacity-50">Infrastructure & Réseau</li>
 
         <li class="nav-item">
-          <a href="#" class="nav-link {{ request()->routeIs('parc-info.switches.*', 'parc-info.routeurs.*', 'parc-info.wifi.*', 'parc-info.parefeux.*') ? 'active' : '' }}">
-            <i class="nav-icon bi bi-diagram-3"></i>
-            <p>Équipements Réseau <i class="nav-arrow bi bi-chevron-right"></i></p>
-          </a>
-          <ul class="nav nav-treeview">
-            <li class="nav-item">
-              <a href="{{ route('parc-info.switches.index') }}" class="nav-link {{ request()->routeIs('parc-info.switches.*') ? 'active' : '' }}">
-                <i class="nav-icon bi bi-circle"></i>
-                <p>Switches</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="{{ route('parc-info.routeurs.index') }}" class="nav-link {{ request()->routeIs('parc-info.routeurs.*') ? 'active' : '' }}">
-                <i class="nav-icon bi bi-circle"></i>
-                <p>Routeurs</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="{{ route('parc-info.wifi.index') }}" class="nav-link {{ request()->routeIs('parc-info.wifi.*') ? 'active' : '' }}">
-                <i class="nav-icon bi bi-circle"></i>
-                <p>Points d'accès WiFi</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="{{ route('parc-info.parefeux.index') }}" class="nav-link {{ request()->routeIs('parc-info.parefeux.*') ? 'active' : '' }}">
-                <i class="nav-icon bi bi-circle"></i>
-                <p>Pare-feux</p>
-              </a>
-            </li>
-          </ul>
+            <a href="{{ route('parc-info.equipements-reseau.index') }}" class="nav-link {{ request()->routeIs('parc-info.equipements-reseau.*') ? 'active' : '' }}">
+                <i class="nav-icon bi bi-router"></i>
+                <p>Équipements Réseau</p>
+            </a>
         </li>
 
         <li class="nav-item">

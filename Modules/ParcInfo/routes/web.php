@@ -141,61 +141,6 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::get('/search/locaux', [MobileController::class, 'searchLocaux'])->name('search-locaux');
     });
 
-    // Switches
-    Route::prefix('informatique/switches')->name('switches.')->group(function () {
-        Route::get('/', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'index'])->name('index');
-        Route::get('/data', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'getData'])->name('data');
-        Route::post('/', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'store'])->name('store');
-        Route::post('/types/quick-add', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'storeTypeReseau'])->name('store-type');
-        Route::get('/{id}', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'show'])->name('show');
-        Route::put('/{id}', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'update'])->name('update');
-        Route::delete('/{id}', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'destroy'])->name('destroy');
-        Route::patch('/{id}/statut', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'updateStatut'])->name('update-statut');
-        Route::patch('/{id}/etat', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'updateEtat'])->name('update-etat');
-        Route::post('/{id}/desaffecter', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'desaffecter'])->name('desaffecter');
-    });
-
-    // Routeurs
-    Route::prefix('informatique/routeurs')->name('routeurs.')->group(function () {
-        Route::get('/', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'index'])->name('index');
-        Route::get('/data', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'getData'])->name('data');
-        Route::post('/', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'store'])->name('store');
-        Route::post('/types/quick-add', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'storeTypeReseau'])->name('store-type');
-        Route::get('/{id}', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'show'])->name('show');
-        Route::put('/{id}', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'update'])->name('update');
-        Route::delete('/{id}', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'destroy'])->name('destroy');
-        Route::patch('/{id}/statut', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'updateStatut'])->name('update-statut');
-        Route::patch('/{id}/etat', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'updateEtat'])->name('update-etat');
-        Route::post('/{id}/desaffecter', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'desaffecter'])->name('desaffecter');
-    });
-
-    // WiFi
-    Route::prefix('informatique/wifi')->name('wifi.')->group(function () {
-        Route::get('/', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'index'])->name('index');
-        Route::get('/data', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'getData'])->name('data');
-        Route::post('/', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'store'])->name('store');
-        Route::post('/types/quick-add', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'storeTypeReseau'])->name('store-type');
-        Route::get('/{id}', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'show'])->name('show');
-        Route::put('/{id}', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'update'])->name('update');
-        Route::delete('/{id}', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'destroy'])->name('destroy');
-        Route::patch('/{id}/statut', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'updateStatut'])->name('update-statut');
-        Route::patch('/{id}/etat', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'updateEtat'])->name('update-etat');
-        Route::post('/{id}/desaffecter', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'desaffecter'])->name('desaffecter');
-    });
-
-    // Pare-feux
-    Route::prefix('informatique/parefeux')->name('parefeux.')->group(function () {
-        Route::get('/', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'index'])->name('index');
-        Route::get('/data', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'getData'])->name('data');
-        Route::post('/', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'store'])->name('store');
-        Route::post('/types/quick-add', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'storeTypeReseau'])->name('store-type');
-        Route::get('/{id}', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'show'])->name('show');
-        Route::put('/{id}', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'update'])->name('update');
-        Route::delete('/{id}', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'destroy'])->name('destroy');
-        Route::patch('/{id}/statut', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'updateStatut'])->name('update-statut');
-        Route::patch('/{id}/etat', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'updateEtat'])->name('update-etat');
-        Route::post('/{id}/desaffecter', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'desaffecter'])->name('desaffecter');
-    });
 
     // Onduleurs
     Route::prefix('informatique/onduleurs')->name('onduleurs.')->group(function () {
@@ -293,6 +238,28 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::get('/employes/search', [ScannerController::class, 'searchEmployes'])->name('search-employes');
         Route::get('/postes/search', [ScannerController::class, 'searchPostes'])->name('search-postes');
         Route::get('/locaux/search', [ScannerController::class, 'searchLocaux'])->name('search-locaux');
+    });
+
+    // Équipements Réseau
+    Route::prefix('informatique/equipements-reseau')->name('equipements-reseau.')->group(function () {
+        Route::get('/', [\Modules\ParcInfo\Http\Controllers\EquipementReseauController::class, 'index'])->name('index');
+        Route::get('/data', [\Modules\ParcInfo\Http\Controllers\EquipementReseauController::class, 'getData'])->name('data');
+        Route::post('/', [\Modules\ParcInfo\Http\Controllers\EquipementReseauController::class, 'store'])->name('store');
+        Route::get('/{id}', [\Modules\ParcInfo\Http\Controllers\EquipementReseauController::class, 'show'])->name('show');
+        Route::get('/{id}/json', [\Modules\ParcInfo\Http\Controllers\EquipementReseauController::class, 'showJson'])->name('show-json');
+        Route::put('/{id}', [\Modules\ParcInfo\Http\Controllers\EquipementReseauController::class, 'update'])->name('update');
+        Route::delete('/{id}', [\Modules\ParcInfo\Http\Controllers\EquipementReseauController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/statut', [\Modules\ParcInfo\Http\Controllers\EquipementReseauController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat', [\Modules\ParcInfo\Http\Controllers\EquipementReseauController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter', [\Modules\ParcInfo\Http\Controllers\EquipementReseauController::class, 'desaffecter'])->name('desaffecter');
+        Route::post('/affectation', [\Modules\ParcInfo\Http\Controllers\EquipementReseauController::class, 'storeAffectation'])->name('store-affectation');
+        // QuickAdd
+        Route::post('/marques', [\Modules\ParcInfo\Http\Controllers\EquipementReseauController::class, 'storeMarque'])->name('store-marque');
+        Route::post('/types-reseau', [\Modules\ParcInfo\Http\Controllers\EquipementReseauController::class, 'storeTypeReseau'])->name('store-type-reseau');
+        // AJAX search
+        Route::get('/employes/search', [\Modules\ParcInfo\Http\Controllers\EquipementReseauController::class, 'searchEmployes'])->name('search-employes');
+        Route::get('/postes/search', [\Modules\ParcInfo\Http\Controllers\EquipementReseauController::class, 'searchPostes'])->name('search-postes');
+        Route::get('/locaux/search', [\Modules\ParcInfo\Http\Controllers\EquipementReseauController::class, 'searchLocaux'])->name('search-locaux');
     });
 
     // Telephones
