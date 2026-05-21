@@ -1,11 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Modules\ParcInfo\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
 use Modules\Organisation\Models\Direction;
+use Modules\Organisation\Models\Local;
 use Modules\Organisation\Models\Site;
 use Modules\ParcInfo\Models\AffectationEquipement;
 use Modules\ParcInfo\Models\Equipement;
@@ -16,25 +20,33 @@ use Modules\ParcInfo\Models\TypeReseau;
 
 class TerminalIPController extends Controller
 {
-    public function index()
+    /**
+     * Display the index view for Terminaux IP.
+     */
+    public function index(): View
     {
         $sites = Site::orderBy('libelle')->get(['id', 'libelle']);
         $directions = Direction::where('actif', true)->orderBy('libelle')->get(['id', 'libelle']);
         $marques = Marque::orderBy('libelle')->get(['id', 'libelle']);
         $typesReseaux = TypeReseau::orderBy('libelle')->get(['id', 'libelle']);
 
+        $pageTitle = 'Terminaux IP';
+        $dataUrl = route('parc-info.terminaux-ip.data');
+        $routePrefix = 'parc-info.terminaux-ip';
+
         return view('parcinfo::informatique.terminaux_ip.index', compact(
-            'sites', 'directions', 'marques', 'typesReseaux'
+            'sites', 'directions', 'marques', 'typesReseaux', 'pageTitle', 'dataUrl', 'routePrefix'
         ));
     }
 
-    public function getData(Request $request)
+    /**
+     * Get JSON data for Bootstrap Table.
+     */
+    public function getData(Request $request): JsonResponse
     {
         $query = Equipement::query()
-            ->with(['marque', 'reseau.typeReseau', 'affectationActive.local.etage.batiment'])
-            ->whereHas('reseau', function($q) {
-                // On peut filtrer ici par des types spécifiques si on veut
-            });
+            ->with(['marque', 'reseau.typeReseau', 'affectationActive.local.etage.batiment.site'])
+            ->whereHas('reseau');
 
         if ($request->filled('statut')) {
             $query->where('statut', $request->statut);
@@ -42,44 +54,81 @@ class TerminalIPController extends Controller
         if ($request->filled('type_reseau_id')) {
             $query->whereHas('reseau', fn ($q) => $q->where('type_reseau_id', $request->type_reseau_id));
         }
+        if ($request->filled('site_id')) {
+            $query->whereHas('affectationActive.local.etage.batiment', fn ($q) => $q->where('site_id', $request->site_id));
+        }
+
+        if ($request->filled('search') && $request->search !== '') {
+            $s = $request->search;
+            $query->where(fn ($q) => $q
+                ->where('code_inventaire', 'ilike', "%{$s}%")
+                ->orWhere('numero_serie', 'ilike', "%{$s}%")
+                ->orWhere('modele', 'ilike', "%{$s}%")
+                ->orWhereHas('marque', fn ($q2) => $q2->where('libelle', 'ilike', "%{$s}%"))
+                ->orWhereHas('reseau', fn ($q2) => $q2->where('adresse_ip', 'ilike', "%{$s}%"))
+            );
+        }
+
+        $sortField = $request->get('sort', 'id');
+        $sortOrder = $request->get('order', 'desc');
+
+        if (in_array($sortField, ['id', 'code_inventaire', 'numero_serie', 'modele', 'statut', 'etat'])) {
+            $query->orderBy($sortField, $sortOrder);
+        } else {
+            $query->orderBy('id', 'desc');
+        }
+
+        $total = $query->count();
+        $rows = $query->offset($request->get('offset', 0))->limit($request->get('limit', 25))->get();
 
         return response()->json([
-            'total' => $query->count(),
-            'rows' => $query->get()->map(fn ($e) => $this->formatRow($e)),
+            'total' => $total,
+            'rows' => $rows->map(fn ($e) => $this->formatRow($e)),
         ]);
     }
 
-    private function formatRow(Equipement $e)
+    /**
+     * Store a newly created Terminal IP.
+     */
+    public function store(Request $request): JsonResponse
     {
-        $aff = $e->affectationActive;
-        return [
-            'id' => $e->id,
-            'code_inventaire' => $e->code_inventaire,
-            'marque_modele' => ($e->marque?->libelle ?? 'N/A').' '.$e->modele,
-            'type_reseau' => $e->reseau->typeReseau?->libelle ?? 'Terminal IP',
-            'adresse_ip' => $e->reseau->adresse_ip ?? '—',
-            'statut' => $e->statut,
-            'statut_label' => $e->statut_label,
-            'affectation' => $aff ? ($aff->local ? $aff->local->libelle : 'Assigné') : 'En stock',
-        ];
-    }
+        if (! $request->filled('code_inventaire')) {
+            $lastEquipement = Equipement::orderBy('id', 'desc')->first();
+            $nextId = $lastEquipement ? $lastEquipement->id + 1 : 1;
+            $request->merge(['code_inventaire' => 'TIP-'.date('Y').'-'.str_pad((string) $nextId, 4, '0', STR_PAD_LEFT)]);
+        }
 
-    public function store(Request $request)
-    {
         $request->validate([
+            'code_inventaire' => 'nullable|string|unique:parc_info_equipements,code_inventaire',
             'numero_serie' => 'required|string|unique:parc_info_equipements,numero_serie',
+            'marque_id' => 'nullable|exists:parc_info_marques,id',
             'modele' => 'required|string|max:255',
+            'statut' => 'required|in:en_stock,en_service,en_reparation,perdu,reforme',
+            'etat' => 'required|in:bon,passable,mauvais,avarie',
+            'date_acquisition' => 'nullable|date',
+            // Technical details
+            'type_reseau_id' => 'required|exists:parc_info_types_reseaux,id',
             'adresse_ip' => 'nullable|ip',
+            'masque_sous_reseau' => 'nullable|string|max:255',
+            'passerelle' => 'nullable|string|max:255',
+            'communaute_snmp' => 'nullable|string|max:255',
+            'est_manageable' => 'nullable|boolean',
+            'vlan_management' => 'nullable|integer|min:0',
+            'version_firmware' => 'nullable|string|max:255',
+            // Affectation target
+            'type_cible' => 'nullable|in:LOCAL',
+            'skip_affectation' => 'nullable|boolean',
+            'local_id' => 'nullable|exists:organisation_locaux,id',
         ]);
 
-        $id = DB::transaction(function () use ($request) {
-            $code = $request->code_inventaire ?: 'TIP-'.date('Y').'-'.rand(1000, 9999);
+        $equipementId = \DB::transaction(function () use ($request) {
             $equipement = Equipement::create([
-                'code_inventaire' => $code,
+                'code_inventaire' => $request->code_inventaire,
                 'numero_serie' => $request->numero_serie,
                 'marque_id' => $request->marque_id,
                 'modele' => $request->modele,
-                'statut' => $request->statut ?? 'en_stock',
+                'date_acquisition' => $request->date_acquisition,
+                'statut' => $request->statut,
                 'etat' => $request->etat ?? 'bon',
             ]);
 
@@ -87,35 +136,334 @@ class TerminalIPController extends Controller
                 'equipement_id' => $equipement->id,
                 'type_reseau_id' => $request->type_reseau_id,
                 'adresse_ip' => $request->adresse_ip,
+                'masque_sous_reseau' => $request->masque_sous_reseau,
+                'passerelle' => $request->passerelle,
+                'communaute_snmp' => $request->communaute_snmp,
+                'est_manageable' => $request->boolean('est_manageable', false),
+                'vlan_management' => $request->vlan_management,
+                'version_firmware' => $request->version_firmware,
             ]);
+
+            if (! $request->boolean('skip_affectation') && $request->type_cible === 'LOCAL' && $request->local_id) {
+                AffectationEquipement::create([
+                    'code' => 'AFF-'.strtoupper(uniqid()),
+                    'equipement_id' => $equipement->id,
+                    'statut' => true,
+                    'type_cible' => 'LOCAL',
+                    'type_affectation' => 'PERMANENTE',
+                    'date_debut' => now()->format('Y-m-d'),
+                    'local_id' => $request->local_id,
+                ]);
+            }
 
             return $equipement->id;
         });
 
-        return response()->json(['success' => true, 'message' => 'Terminal IP enregistré.', 'id' => $id]);
+        return response()->json([
+            'success' => true,
+            'message' => 'Terminal IP enregistré avec succès.',
+            'equipement_id' => $equipementId,
+        ]);
     }
 
-    public function show($id)
+    /**
+     * Show a detailed technical view for Terminal IP.
+     */
+    public function show($id): View
     {
-        $equipement = Equipement::with(['marque', 'reseau.typeReseau', 'affectationActive.local'])->findOrFail($id);
-        if (request()->wantsJson()) return response()->json($equipement);
-        
+        $equipement = Equipement::with([
+            'marque',
+            'reseau.typeReseau',
+            'affectationActive.local.etage.batiment.site',
+            'affectations.local',
+            'historique',
+        ])->findOrFail($id);
+
         $marques = Marque::orderBy('libelle')->get(['id', 'libelle']);
         $typesReseaux = TypeReseau::orderBy('libelle')->get(['id', 'libelle']);
-        return view('parcinfo::informatique.terminaux_ip.show', compact('equipement', 'marques', 'typesReseaux'));
+        $sites = Site::orderBy('libelle')->get(['id', 'libelle']);
+        $directions = Direction::where('actif', true)->orderBy('libelle')->get(['id', 'libelle']);
+
+        $routePrefix = 'parc-info.terminaux-ip';
+
+        return view('parcinfo::informatique.terminaux_ip.show', compact(
+            'equipement', 'marques', 'typesReseaux', 'sites', 'directions', 'routePrefix'
+        ));
     }
 
-    public function update(Request $request, $id)
+    /**
+     * Update an existing Terminal IP.
+     */
+    public function update(Request $request, $id): JsonResponse
     {
-        $e = Equipement::findOrFail($id);
-        $e->update($request->only(['numero_serie', 'modele', 'marque_id']));
-        EquipementReseau::where('equipement_id', $id)->update($request->only(['adresse_ip', 'type_reseau_id']));
-        return response()->json(['success' => true, 'message' => 'Mis à jour.']);
+        $request->validate([
+            'numero_serie' => "required|string|unique:parc_info_equipements,numero_serie,{$id}",
+            'marque_id' => 'nullable|exists:parc_info_marques,id',
+            'modele' => 'required|string|max:255',
+            'statut' => 'required|in:en_stock,en_service,en_reparation,perdu,reforme',
+            'etat' => 'required|in:bon,passable,mauvais,avarie',
+            'date_acquisition' => 'nullable|date',
+            // Technical details
+            'type_reseau_id' => 'required|exists:parc_info_types_reseaux,id',
+            'adresse_ip' => 'nullable|ip',
+            'masque_sous_reseau' => 'nullable|string|max:255',
+            'passerelle' => 'nullable|string|max:255',
+            'communaute_snmp' => 'nullable|string|max:255',
+            'est_manageable' => 'nullable|boolean',
+            'vlan_management' => 'nullable|integer|min:0',
+            'version_firmware' => 'nullable|string|max:255',
+        ]);
+
+        \DB::transaction(function () use ($request, $id) {
+            $equipement = Equipement::findOrFail($id);
+            $equipement->update($request->only([
+                'numero_serie', 'marque_id', 'modele',
+                'date_acquisition', 'statut', 'etat',
+            ]));
+
+            $equipement->reseau->update([
+                'type_reseau_id' => $request->type_reseau_id,
+                'adresse_ip' => $request->adresse_ip,
+                'masque_sous_reseau' => $request->masque_sous_reseau,
+                'passerelle' => $request->passerelle,
+                'communaute_snmp' => $request->communaute_snmp,
+                'est_manageable' => $request->boolean('est_manageable', false),
+                'vlan_management' => $request->vlan_management,
+                'version_firmware' => $request->version_firmware,
+            ]);
+        });
+
+        return response()->json(['success' => true, 'message' => 'Terminal IP mis à jour avec succès.']);
     }
 
-    public function destroy($id)
+    /**
+     * Update only the equipment status.
+     */
+    public function updateStatut(Request $request, $id): JsonResponse
+    {
+        $request->validate([
+            'statut' => 'required|in:en_stock,en_service,en_reparation,perdu,reforme',
+            'motif' => 'required|string',
+        ]);
+
+        \DB::transaction(function () use ($request, $id) {
+            $equipement = Equipement::findOrFail($id);
+            $ancienStatut = $equipement->statut;
+
+            if ($request->statut === 'en_stock' && $equipement->affectationActive) {
+                AffectationEquipement::where('equipement_id', $id)
+                    ->where('statut', true)
+                    ->update(['statut' => false, 'date_fin' => now()]);
+            }
+
+            $equipement->update(['statut' => $request->statut]);
+
+            HistoriqueChangement::create([
+                'equipement_id' => $id,
+                'date_changement' => now(),
+                'utilisateur_id' => auth()->id(),
+                'type_changement' => 'STATUT',
+                'ancien_statut' => $ancienStatut,
+                'nouveau_statut' => $request->statut,
+                'motif' => $request->motif,
+            ]);
+        });
+
+        return response()->json(['success' => true, 'message' => 'Statut mis à jour avec succès.']);
+    }
+
+    /**
+     * Update only the equipment condition.
+     */
+    public function updateEtat(Request $request, $id): JsonResponse
+    {
+        $request->validate([
+            'etat' => 'required|in:bon,passable,mauvais,avarie',
+            'motif' => 'required|string',
+        ]);
+
+        \DB::transaction(function () use ($request, $id) {
+            $equipement = Equipement::findOrFail($id);
+            $ancienEtat = $equipement->etat;
+
+            $equipement->update(['etat' => $request->etat]);
+
+            HistoriqueChangement::create([
+                'equipement_id' => $id,
+                'date_changement' => now(),
+                'utilisateur_id' => auth()->id(),
+                'type_changement' => 'ETAT',
+                'ancien_statut' => $ancienEtat,
+                'nouveau_statut' => $request->etat,
+                'motif' => $request->motif,
+            ]);
+        });
+
+        return response()->json(['success' => true, 'message' => 'État mis à jour avec succès.']);
+    }
+
+    /**
+     * Deallocate active allocation and set status to en_stock.
+     */
+    public function desaffecter(Request $request, $id): JsonResponse
+    {
+        $request->validate([
+            'motif' => 'required|string|max:255',
+        ]);
+
+        \DB::transaction(function () use ($request, $id) {
+            $equipement = Equipement::findOrFail($id);
+            $ancienStatut = $equipement->statut;
+
+            AffectationEquipement::where('equipement_id', $id)
+                ->where('statut', true)
+                ->update(['statut' => false, 'date_fin' => now()]);
+
+            $equipement->update(['statut' => 'en_stock']);
+
+            HistoriqueChangement::create([
+                'equipement_id' => $id,
+                'date_changement' => now(),
+                'utilisateur_id' => auth()->id(),
+                'type_changement' => 'AFFECTATION',
+                'ancien_statut' => null,
+                'nouveau_statut' => null,
+                'motif' => 'Désaffectation : '.$request->motif,
+            ]);
+
+            HistoriqueChangement::create([
+                'equipement_id' => $id,
+                'date_changement' => now(),
+                'utilisateur_id' => auth()->id(),
+                'type_changement' => 'STATUT',
+                'ancien_statut' => $ancienStatut,
+                'nouveau_statut' => 'en_stock',
+                'motif' => 'Mise en stock automatique suite à désaffectation',
+            ]);
+        });
+
+        return response()->json(['success' => true, 'message' => 'Terminal IP désaffecté et mis en stock.']);
+    }
+
+    /**
+     * Delete an existing Terminal IP.
+     */
+    public function destroy($id): JsonResponse
     {
         Equipement::findOrFail($id)->delete();
-        return response()->json(['success' => true]);
+
+        return response()->json(['success' => true, 'message' => 'Terminal IP supprimé.']);
+    }
+
+    /**
+     * Create an allocation manually.
+     */
+    public function storeAffectation(Request $request): JsonResponse
+    {
+        $request->validate([
+            'equipement_id' => 'required|exists:parc_info_equipements,id',
+            'type_cible' => 'required|in:LOCAL',
+            'local_id' => 'required|exists:organisation_locaux,id',
+        ]);
+
+        \DB::transaction(function () use ($request) {
+            $equipement = Equipement::findOrFail($request->equipement_id);
+
+            AffectationEquipement::where('equipement_id', $request->equipement_id)
+                ->where('statut', true)
+                ->update(['statut' => false, 'date_fin' => now()]);
+
+            AffectationEquipement::create([
+                'code' => 'AFF-'.strtoupper(uniqid()),
+                'equipement_id' => $request->equipement_id,
+                'statut' => true,
+                'type_cible' => 'LOCAL',
+                'type_affectation' => 'PERMANENTE',
+                'date_debut' => now(),
+                'local_id' => $request->local_id,
+            ]);
+
+            $ancienStatut = $equipement->statut;
+            if ($equipement->statut === 'en_stock') {
+                $equipement->update(['statut' => 'en_service']);
+
+                HistoriqueChangement::create([
+                    'equipement_id' => $request->equipement_id,
+                    'date_changement' => now(),
+                    'utilisateur_id' => auth()->id(),
+                    'type_changement' => 'STATUT',
+                    'ancien_statut' => $ancienStatut,
+                    'nouveau_statut' => 'en_service',
+                    'motif' => 'Mise en service automatique suite à affectation',
+                ]);
+            }
+
+            HistoriqueChangement::create([
+                'equipement_id' => $request->equipement_id,
+                'date_changement' => now(),
+                'utilisateur_id' => auth()->id(),
+                'type_changement' => 'AFFECTATION',
+                'ancien_statut' => $ancienStatut,
+                'nouveau_statut' => $equipement->statut,
+                'motif' => 'Nouvelle affectation',
+            ]);
+        });
+
+        return response()->json(['success' => true, 'message' => 'Affectation enregistrée avec succès.']);
+    }
+
+    /**
+     * AJAX search for local technical rooms.
+     */
+    public function searchLocaux(Request $request): JsonResponse
+    {
+        $q = $request->get('q', '');
+
+        return response()->json(
+            Local::with(['etage.batiment.site'])
+                ->where(fn ($query) => $query
+                    ->where('libelle', 'ilike', "%{$q}%")
+                    ->orWhere('code', 'ilike', "%{$q}%"))
+                ->limit(20)->get()
+                ->map(fn ($l) => [
+                    'id' => $l->id,
+                    'text' => $l->nom_complet,
+                ])
+        );
+    }
+
+    /**
+     * Create brand dynamically.
+     */
+    public function storeMarque(Request $request): JsonResponse
+    {
+        $request->validate(['libelle' => 'required|string|unique:parc_info_marques,libelle']);
+        $marque = Marque::create(['libelle' => $request->libelle]);
+
+        return response()->json(['success' => true, 'data' => $marque]);
+    }
+
+    /**
+     * Format row database entries into detailed table payloads.
+     */
+    private function formatRow(Equipement $e): array
+    {
+        $aff = $e->affectationActive;
+        $affLabel = '—';
+        if ($aff) {
+            $affLabel = $aff->local?->libelle ?? '—';
+        }
+
+        return [
+            'id' => $e->id,
+            'code_inventaire' => $e->code_inventaire,
+            'marque_modele' => ($e->marque?->libelle ?? '—').' '.$e->modele,
+            'type_reseau' => $e->reseau->typeReseau?->libelle ?? 'Terminal IP',
+            'adresse_ip' => $e->reseau->adresse_ip ?? '—',
+            'statut' => $e->statut,
+            'statut_label' => $e->statut_label,
+            'affectation' => $affLabel,
+            'etat' => $e->etat,
+        ];
     }
 }

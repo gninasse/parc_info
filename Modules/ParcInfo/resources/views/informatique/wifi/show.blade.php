@@ -4,12 +4,12 @@
 
 @section('breadcrumb')
     <li class="breadcrumb-item"><a href="{{ route('parc-info.dashboard') }}">Parc Info</a></li>
-    <li class="breadcrumb-item"><a href="{{ route('parc-info.cameras.index') }}">Caméras IP</a></li>
+    <li class="breadcrumb-item"><a href="{{ route('parc-info.wifi.index') }}">WiFi</a></li>
     <li class="breadcrumb-item active">{{ $equipement->code_inventaire }}</li>
 @endsection
 
 @php
-    $camera = $equipement->camera;
+    $reseau = $equipement->reseau;
     $aff = $equipement->affectationActive;
     $statutColors = [
         'en_service'   => 'success',
@@ -32,7 +32,7 @@
             <div class="col-auto">
                 <div class="rounded-3 d-flex align-items-center justify-content-center bg-primary bg-opacity-10"
                      style="width:72px;height:72px">
-                    <i class="bi bi-camera-video fs-2 text-primary"></i>
+                    <i class="bi bi-wifi fs-2 text-primary"></i>
                 </div>
             </div>
             <div class="col">
@@ -48,11 +48,11 @@
                 <div class="d-flex gap-4 flex-wrap text-muted small">
                     <span><i class="bi bi-upc me-1"></i>{{ $equipement->code_inventaire }}</span>
                     <span><i class="bi bi-hash me-1"></i>{{ $equipement->numero_serie }}</span>
-                    @if($camera?->adresse_ip)
-                    <span><i class="bi bi-globe me-1"></i>{{ $camera->adresse_ip }}</span>
+                    @if($reseau?->adresse_ip)
+                    <span><i class="bi bi-globe me-1"></i>{{ $reseau->adresse_ip }}</span>
                     @endif
-                    @if($camera?->type_camera)
-                    <span><i class="bi bi-tag me-1"></i>{{ $camera->type_camera }}</span>
+                    @if($reseau?->nb_ports)
+                    <span><i class="bi bi-ethernet me-1"></i>{{ $reseau->nb_ports }} Ports</span>
                     @endif
                 </div>
             </div>
@@ -93,8 +93,8 @@
     ] as [$id,$icon,$label])
     <li class="nav-item" role="presentation">
         <button class="nav-link {{ $loop->first ? 'active' : '' }} fw-semibold small px-3"
-                 id="tab-{{ $id }}" data-bs-toggle="tab" data-bs-target="#pane-{{ $id }}"
-                 type="button" role="tab">
+                id="tab-{{ $id }}" data-bs-toggle="tab" data-bs-target="#pane-{{ $id }}"
+                type="button" role="tab">
             <i class="bi {{ $icon }} me-1"></i>{{ $label }}
         </button>
     </li>
@@ -137,31 +137,38 @@
                                     <input type="text" class="form-control" name="modele" value="{{ $equipement->modele }}" disabled id="f_modele">
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label small fw-bold text-muted">Adresse IP</label>
-                                    <input type="text" class="form-control" name="adresse_ip" value="{{ $camera->adresse_ip ?? '' }}" disabled id="f_adresse_ip" placeholder="Ex: 192.168.10.50">
+                                    <label class="form-label small fw-bold text-muted">Adresse IP (Management)</label>
+                                    <input type="text" class="form-control" name="adresse_ip" value="{{ $reseau->adresse_ip ?? '' }}" disabled id="f_adresse_ip" placeholder="Ex: 192.168.1.50">
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label small fw-bold text-muted">Adresse MAC</label>
-                                    <input type="text" class="form-control" name="adresse_mac" value="{{ $camera->adresse_mac ?? '' }}" disabled id="f_adresse_mac" placeholder="Ex: AA:BB:CC:DD:EE:FF">
+                                    <label class="form-label small fw-bold text-muted">Masque sous-réseau</label>
+                                    <input type="text" class="form-control" name="masque_sous_reseau" value="{{ $reseau->masque_sous_reseau ?? '' }}" disabled id="f_masque_sous_reseau" placeholder="Ex: 255.255.255.0">
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label small fw-bold text-muted">Résolution</label>
-                                    <input type="text" class="form-control" name="resolution" value="{{ $camera->resolution ?? '' }}" disabled id="f_resolution" placeholder="Ex: 1080p, 4K (8MP)">
+                                    <label class="form-label small fw-bold text-muted">Passerelle</label>
+                                    <input type="text" class="form-control" name="passerelle" value="{{ $reseau->passerelle ?? '' }}" disabled id="f_passerelle" placeholder="Ex: 192.168.1.254">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small fw-bold text-muted">Ports Ethernet</label>
+                                    <input type="number" class="form-control" name="nb_ports" value="{{ $reseau->nb_ports ?? '' }}" disabled id="f_nb_ports" placeholder="Ex: 1">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small fw-bold text-muted">Vitesse Max (Mbps)</label>
+                                    <input type="number" class="form-control" name="vitesse_max_mbps" value="{{ $reseau->vitesse_max_mbps ?? '' }}" disabled id="f_vitesse_max_mbps" placeholder="Ex: 1300">
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label small fw-bold text-muted">Type de Caméra</label>
-                                    <select class="form-select" name="type_camera" disabled id="f_type_camera">
-                                        <option value="">Sélectionner...</option>
-                                        <option value="Dôme" {{ ($camera->type_camera ?? '') == 'Dôme' ? 'selected' : '' }}>Dôme</option>
-                                        <option value="Tube / Bullet" {{ ($camera->type_camera ?? '') == 'Tube / Bullet' ? 'selected' : '' }}>Tube / Bullet</option>
-                                        <option value="PTZ / Motorisée" {{ ($camera->type_camera ?? '') == 'PTZ / Motorisée' ? 'selected' : '' }}>PTZ / Motorisée</option>
-                                        <option value="Boîtier / Box" {{ ($camera->type_camera ?? '') == 'Boîtier / Box' ? 'selected' : '' }}>Boîtier / Box</option>
-                                        <option value="Autre" {{ ($camera->type_camera ?? '') == 'Autre' ? 'selected' : '' }}>Autre</option>
-                                    </select>
+                                    <label class="form-label small fw-bold text-muted">Version Firmware</label>
+                                    <input type="text" class="form-control" name="version_firmware" value="{{ $reseau->version_firmware ?? '' }}" disabled id="f_version_firmware" placeholder="Ex: v6.5.64">
                                 </div>
-                                <div class="col-12">
-                                    <label class="form-label small fw-bold text-muted">Emplacement descriptif</label>
-                                    <input type="text" class="form-control" name="emplacement" value="{{ $camera->emplacement ?? '' }}" disabled id="f_emplacement" placeholder="Ex: Entrée principale, face au portail d'accueil">
+                                <div class="col-md-6 mt-auto">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="est_poe" id="f_est_poe" value="1" {{ ($reseau->est_poe ?? true) ? 'checked' : '' }} disabled>
+                                        <label class="form-check-label small fw-bold text-muted" for="f_est_poe">Alimentation PoE (Power over Ethernet)</label>
+                                    </div>
+                                    <div class="form-check mt-2">
+                                        <input class="form-check-input" type="checkbox" name="est_manageable" id="f_est_manageable" value="1" {{ ($reseau->est_manageable ?? true) ? 'checked' : '' }} disabled>
+                                        <label class="form-check-label small fw-bold text-muted" for="f_est_manageable">Manageable (SSH/HTTPS/Contrôleur)</label>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -230,8 +237,17 @@
 
                 <div class="row g-3">
                     @if($aff->local)
-                    <div class="col-md-6"><div class="info-block"><div class="info-label">Local / Bureau</div><div class="info-value">{{ $aff->local->libelle }}</div></div></div>
+                    <div class="col-md-6"><div class="info-block"><div class="info-label">Local / Salle</div><div class="info-value">{{ $aff->local->libelle }}</div></div></div>
                     <div class="col-md-6"><div class="info-block"><div class="info-label">Emplacement Complet</div><div class="info-value">{{ $aff->local->nom_complet }}</div></div></div>
+                    @endif
+                    @if($aff->direction)
+                    <div class="col-md-4"><div class="info-block"><div class="info-label">Direction</div><div class="info-value">{{ $aff->direction->libelle }}</div></div></div>
+                    @endif
+                    @if($aff->service)
+                    <div class="col-md-4"><div class="info-block"><div class="info-label">Service</div><div class="info-value">{{ $aff->service->libelle }}</div></div></div>
+                    @endif
+                    @if($aff->unite)
+                    <div class="col-md-4"><div class="info-block"><div class="info-label">Unité</div><div class="info-value">{{ $aff->unite->libelle }}</div></div></div>
                     @endif
                     <div class="col-md-6"><div class="info-block"><div class="info-label">Date début d'affectation</div><div class="info-value">{{ $aff->date_debut?->format('d/m/Y') }}</div></div></div>
                     <div class="col-md-6"><div class="info-block"><div class="info-label">Date de fin</div><div class="info-value">{{ $aff->date_fin?->format('d/m/Y') ?? 'Indéterminée' }}</div></div></div>
@@ -239,7 +255,7 @@
                 @else
                 <div class="text-center py-5">
                     <div class="mb-3"><i class="bi bi-door-closed fs-1 text-muted opacity-50"></i></div>
-                    <p class="text-muted fw-semibold">Cette caméra n'est affectée à aucun local technique</p>
+                    <p class="text-muted fw-semibold">Cette borne WiFi n'est affectée à aucun local</p>
                     <button class="btn btn-primary btn-sm" id="btn-nouvelle-affectation-2">
                         <i class="bi bi-plus-circle me-1"></i> Assigner à un Local
                     </button>
@@ -259,6 +275,7 @@
                             <th class="ps-4">Local d'Affectation</th>
                             <th>Dates</th>
                             <th>Type</th>
+                            <th>Service</th>
                             <th class="text-center">Statut</th>
                         </tr>
                     </thead>
@@ -278,6 +295,7 @@
                                 {{ $a->date_debut?->format('d/m/Y') }} → {{ $a->date_fin?->format('d/m/Y') ?? 'Aujourd\'hui' }}
                             </td>
                             <td><span class="badge bg-light text-dark border small">{{ $a->type_affectation }}</span></td>
+                            <td class="small text-muted">{{ $a->service?->libelle ?? '—' }}</td>
                             <td class="text-center">
                                 @if($a->statut)
                                     <span class="badge bg-success-subtle text-success border border-success-subtle">ACTIF</span>
@@ -287,7 +305,7 @@
                             </td>
                         </tr>
                         @empty
-                        <tr><td colspan="4" class="text-center py-4 text-muted small">Aucun historique d'affectation</td></tr>
+                        <tr><td colspan="5" class="text-center py-4 text-muted small">Aucun historique d'affectation</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -348,7 +366,7 @@
                 <input type="hidden" name="type_cible" value="LOCAL">
                 <div class="modal-body px-4 py-3">
                     <h6 class="fw-bold mb-3 small text-uppercase text-muted" style="letter-spacing:.5px">Local d'installation</h6>
-                    <p class="text-muted small mb-4">Associez cette caméra à un local ou bureau spécifique.</p>
+                    <p class="text-muted small mb-4">Associez ce point d'accès WiFi à un local ou un espace technique spécifique.</p>
 
                     <div class="row justify-content-center mb-4">
                         <div class="col-md-8">
@@ -399,6 +417,7 @@
 @endpush
 
 @push('js')
+<script type="module" src="{{ asset('js/modules/parc-info/wifi/index.js') }}?v={{ time() }}"></script>
 <script src="{{ asset('js/modules/parc-info/ordinateurs/selection_modals.js') }}?v={{ time() }}"></script>
 
 <script>
@@ -420,10 +439,22 @@ $(function(){
         const $btn = $(this);
         $btn.prop('disabled', true).html('<i class="bi bi-hourglass-split me-1"></i> Enregistrement...');
 
+        const formData = $('#ficheForm').serializeArray();
+        ['est_poe', 'est_manageable'].forEach(name => {
+            if (!$(`#f_${name}`).is(':disabled')) {
+                const index = formData.findIndex(item => item.name === name);
+                if (index > -1) {
+                    formData[index].value = $(`#f_${name}`).is(':checked') ? '1' : '0';
+                } else {
+                    formData.push({ name: name, value: $(`#f_${name}`).is(':checked') ? '1' : '0' });
+                }
+            }
+        });
+
         $.ajax({
-            url: route('parc-info.cameras.update', '{{ $equipement->id }}'),
+            url: route('parc-info.wifi.update', '{{ $equipement->id }}'),
             method: 'PUT',
-            data: $('#ficheForm').serialize(),
+            data: $.param(formData),
             success: (res) => {
                 if(res.success){
                     Swal.fire({icon:'success', title:'Succès', text:res.message, timer:2000, showConfirmButton:false})
@@ -445,7 +476,7 @@ $(function(){
             title: 'Changer le statut',
             text: 'Veuillez saisir le motif du changement :',
             input: 'textarea',
-            inputPlaceholder: 'Ex: Déploiement caméra, Maintenance technique...',
+            inputPlaceholder: 'Ex: Déploiement borne WiFi, Maintenance technique...',
             showCancelButton: true,
             confirmButtonText: 'Mettre à jour',
             cancelButtonText: 'Annuler',
@@ -456,7 +487,7 @@ $(function(){
         }).then((result) => {
             if (result.isConfirmed) {
                 $.ajax({
-                    url: route('parc-info.cameras.update-statut', '{{ $equipement->id }}'),
+                    url: route('parc-info.wifi.update-statut', '{{ $equipement->id }}'),
                     method: 'PATCH',
                     data: { _token: '{{ csrf_token() }}', statut: statut, motif: result.value },
                     success: () => location.reload(),
@@ -469,8 +500,8 @@ $(function(){
     // Désaffecter
     $('#btn-desaffecter').on('click', function(){
         Swal.fire({
-            title: 'Désaffecter la Caméra IP ?',
-            text: 'La caméra sera remise en stock. Indiquez le motif :',
+            title: 'Désaffecter la Borne WiFi ?',
+            text: 'La borne sera remise en stock. Indiquez le motif :',
             input: 'textarea',
             showCancelButton: true,
             confirmButtonColor: '#ffc107',
@@ -481,7 +512,7 @@ $(function(){
             }
         }).then((result) => {
             if (result.isConfirmed) {
-                $.post(route('parc-info.cameras.desaffecter', '{{ $equipement->id }}'), {
+                $.post(route('parc-info.wifi.desaffecter', '{{ $equipement->id }}'), {
                     _token: '{{ csrf_token() }}', motif: result.value
                 }, () => location.reload());
             }
@@ -504,6 +535,7 @@ $(function(){
 
         $('#local-summary-code').text(local.code ?? '—');
         $('#local-summary-libelle').text(local.libelle ?? '—');
+        $('#local-summary-emplacement').text(local.nom_complet ?? '—');
 
         $('#affectationModal #local_id').val(local.id);
         $('#affectationModal .aff-summary').removeClass('d-none');
@@ -527,7 +559,7 @@ $(function(){
         const $btn = $('#btn-save-affectation').prop('disabled', true)
             .html('<i class="bi bi-hourglass-split me-1"></i> Enregistrement...');
 
-        $.post(route('parc-info.cameras.store-affectation'), $(this).serialize(), (res) => {
+        $.post(route('parc-info.wifi.store-affectation'), $(this).serialize(), (res) => {
             if (res.success) {
                 $('#affectationModal').modal('hide');
                 Swal.fire({ icon: 'success', title: 'Affectation enregistrée', timer: 2000, showConfirmButton: false })

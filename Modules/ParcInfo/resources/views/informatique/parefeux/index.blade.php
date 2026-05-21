@@ -1,10 +1,10 @@
 @extends('parcinfo::layouts.master')
 
-@section('header', 'Téléphones Fixes')
+@section('header', 'Pare-feux (Firewalls)')
 
 @section('breadcrumb')
     <li class="breadcrumb-item"><a href="{{ route('parc-info.dashboard') }}">Parc Info</a></li>
-    <li class="breadcrumb-item active">Téléphones Fixes</li>
+    <li class="breadcrumb-item active">Pare-feux</li>
 @endsection
 
 @push('css')
@@ -18,9 +18,9 @@
     <div class="col-sm-6 col-xl-3">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body d-flex align-items-center gap-3">
-                <div class="rounded-3 bg-primary bg-opacity-10 p-3"><i class="bi bi-telephone fs-4 text-primary"></i></div>
+                <div class="rounded-3 bg-primary bg-opacity-10 p-3"><i class="bi bi-shield-lock fs-4 text-primary"></i></div>
                 <div>
-                    <div class="text-muted small fw-semibold text-uppercase" style="font-size:.7rem;letter-spacing:.5px">Total Téléphones</div>
+                    <div class="text-muted small fw-semibold text-uppercase" style="font-size:.7rem;letter-spacing:.5px">Total Pare-feux</div>
                     <div class="fw-bold fs-4" id="kpi-total">—</div>
                 </div>
             </div>
@@ -29,7 +29,7 @@
     <div class="col-sm-6 col-xl-3">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body d-flex align-items-center gap-3">
-                <div class="rounded-3 bg-success bg-opacity-10 p-3"><i class="bi bi-telephone-fill fs-4 text-success"></i></div>
+                <div class="rounded-3 bg-success bg-opacity-10 p-3"><i class="bi bi-check-circle fs-4 text-success"></i></div>
                 <div>
                     <div class="text-muted small fw-semibold text-uppercase" style="font-size:.7rem;letter-spacing:.5px">En Service</div>
                     <div class="fw-bold fs-4 text-success" id="kpi-service">—</div>
@@ -102,7 +102,7 @@
 {{-- ── Table ── --}}
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white border-0 py-3">
-        <h6 class="mb-0 fw-bold">Liste des Téléphones Fixes</h6>
+        <h6 class="mb-0 fw-bold">Liste des Pare-feux (Firewalls)</h6>
     </div>
     <div class="card-body p-0">
         <div id="toolbar">
@@ -116,9 +116,9 @@
                 <i class="fas fa-trash"></i>
             </button>
         </div>
-        <table id="telephonie-table"
+        <table id="parefeux-table"
                data-toggle="table"
-               data-url="{{ route('parc-info.telephonie.data') }}"
+               data-url="{{ route('parc-info.parefeux.data') }}"
                data-pagination="true"
                data-side-pagination="server"
                data-search="true"
@@ -130,15 +130,15 @@
                data-id-field="id"
                data-page-list="[10,25,50,100]"
                data-page-size="25"
-               data-query-params="telephonieQueryParams"
+               data-query-params="parefeuxQueryParams"
                class="table table-hover align-middle mb-0">
             <thead class="table-light">
                 <tr>
                     <th data-field="state" data-radio="true"></th>
                     <th data-field="code_inventaire" data-sortable="true" data-formatter="codeFormatter">Code Inventaire</th>
                     <th data-field="marque_modele" data-sortable="true">Marque & Modèle</th>
-                    <th data-field="extension" data-sortable="true">Extension (N°)</th>
-                    <th data-field="est_ip" data-sortable="true">Technologie</th>
+                    <th data-field="adresse_ip" data-sortable="true">Adresse IP (Management)</th>
+                    <th data-field="nb_ports" data-sortable="true">Ports</th>
                     <th data-field="statut" data-formatter="statutFormatter">Statut</th>
                     <th data-field="affectation">Affectation (Local)</th>
                     <th data-field="id" data-formatter="actionsFormatter" data-events="actionsEvents">Actions</th>
@@ -148,13 +148,13 @@
     </div>
 </div>
 
-@include('parcinfo::informatique.telephonie._wizard')
+@include('parcinfo::informatique.parefeux._wizard')
 @include('parcinfo::informatique.ordinateurs._selection_modals')
 @endsection
 
 @push('js')
 <script src="{{ asset('plugins/bootstrap-table/bootstrap-table.min.js') }}"></script>
 <script src="{{ asset('plugins/bootstrap-table/locale/bootstrap-table-fr-FR.min.js') }}"></script>
-<script type="module" src="{{ asset('js/modules/parc-info/telephonie/index.js') }}?v={{ time() }}"></script>
+<script type="module" src="{{ asset('js/modules/parc-info/parefeux/index.js') }}?v={{ time() }}"></script>
 <script src="{{ asset('js/modules/parc-info/ordinateurs/selection_modals.js') }}?v={{ time() }}"></script>
 @endpush

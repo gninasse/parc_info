@@ -3,8 +3,13 @@
 namespace Modules\ParcInfo\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
+use Modules\Grh\Models\Employe;
 use Modules\Organisation\Models\Direction;
+use Modules\Organisation\Models\Local;
+use Modules\Organisation\Models\PosteTravail;
 use Modules\Organisation\Models\Site;
 use Modules\ParcInfo\Models\AffectationEquipement;
 use Modules\ParcInfo\Models\Equipement;
@@ -15,7 +20,7 @@ use Modules\ParcInfo\Models\TypeReseau;
 
 class SwitchController extends Controller
 {
-    public function index()
+    public function index(): View
     {
         $sites = Site::orderBy('libelle')->get(['id', 'libelle']);
         $directions = Direction::where('actif', true)->orderBy('libelle')->get(['id', 'libelle']);
@@ -26,15 +31,15 @@ class SwitchController extends Controller
         $dataUrl = route('parc-info.switches.data');
         $routePrefix = 'parc-info.switches';
 
-        return view('parcinfo::informatique.reseaux.index', compact(
+        return view('parcinfo::informatique.switches.index', compact(
             'sites', 'directions', 'marques', 'typesReseaux', 'pageTitle', 'dataUrl', 'routePrefix'
         ));
     }
 
-    public function getData(Request $request)
+    public function getData(Request $request): JsonResponse
     {
         $query = Equipement::query()
-            ->with(['marque', 'reseau.typeReseau', 'affectationActive.local.etage.batiment'])
+            ->with(['marque', 'reseau.typeReseau', 'affectationActive.employe', 'affectationActive.posteTravail', 'affectationActive.local'])
             ->whereHas('reseau', function ($q) {
                 $q->whereHas('typeReseau', function ($t) {
                     $t->where('libelle', 'ilike', '%switch%');
@@ -48,7 +53,11 @@ class SwitchController extends Controller
             $query->whereHas('reseau', fn ($q) => $q->where('type_reseau_id', $request->type_reseau_id));
         }
         if ($request->filled('site_id')) {
-            $query->whereHas('affectationActive.local.etage.batiment', fn ($q) => $q->where('site_id', $request->site_id));
+            $query->whereHas('affectationActive.local.etage.batiment', fn ($q) => $q->where('site_id', $request->site_id))
+                ->orWhereHas('affectationActive.posteTravail.local.etage.batiment', fn ($q) => $q->where('site_id', $request->site_id));
+        }
+        if ($request->filled('direction_id')) {
+            $query->whereHas('affectationActive', fn ($q) => $q->where('direction_id', $request->direction_id));
         }
 
         if ($request->filled('search') && $request->search !== '') {
@@ -75,7 +84,7 @@ class SwitchController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
         $typeReseau = TypeReseau::firstOrCreate(['libelle' => 'Switch']);
         $request->merge(['type_reseau_id' => $typeReseau->id]);
@@ -87,7 +96,7 @@ class SwitchController extends Controller
         }
 
         $request->validate([
-            'code_inventaire' => 'required|string|unique:parc_info_equipements,code_inventaire',
+            'code_inventaire' => 'nullable|string|unique:parc_info_equipements,code_inventaire',
             'numero_serie' => 'required|string|unique:parc_info_equipements,numero_serie',
             'marque_id' => 'nullable|exists:parc_info_marques,id',
             'modele' => 'required|string|max:255',
@@ -95,7 +104,7 @@ class SwitchController extends Controller
             'etat' => 'required|in:bon,passable,mauvais,avarie',
             // Reseau
             'type_reseau_id' => 'nullable|exists:parc_info_types_reseaux,id',
-            'nb_ports' => 'nullable|integer',
+            'nb_ports' => 'nullable|integer|min:0',
             'vitesse_max_mbps' => 'nullable|integer',
             'est_poe' => 'nullable|boolean',
             'version_firmware' => 'nullable|string',
@@ -103,6 +112,8 @@ class SwitchController extends Controller
             'masque_sous_reseau' => 'nullable|ip',
             'passerelle' => 'nullable|ip',
             'est_manageable' => 'nullable|boolean',
+            'type_cible' => 'nullable|in:EMPLOYE,POSTE,LOCAL',
+            'skip_affectation' => 'nullable|boolean',
         ]);
 
         $equipementId = \DB::transaction(function () use ($request) {
@@ -130,6 +141,29 @@ class SwitchController extends Controller
             ]);
 
             if (! $request->boolean('skip_affectation') && $request->filled('type_cible')) {
+                $niveau_rattachement = null;
+                $direction_id = null;
+                $service_id = null;
+                $unite_id = null;
+
+                if ($request->type_cible === 'EMPLOYE' && $request->dossier_employe_id) {
+                    $employe = Employe::find($request->dossier_employe_id);
+                    if ($employe) {
+                        $niveau_rattachement = $employe->niveau_rattachement;
+                        $direction_id = $employe->direction_id;
+                        $service_id = $employe->service_id;
+                        $unite_id = $employe->unite_id;
+                    }
+                } elseif ($request->type_cible === 'POSTE' && $request->poste_travail_id) {
+                    $poste = PosteTravail::find($request->poste_travail_id);
+                    if ($poste) {
+                        $niveau_rattachement = $poste->niveau_rattachement;
+                        $direction_id = $poste->direction_id;
+                        $service_id = $poste->service_id;
+                        $unite_id = $poste->unite_id;
+                    }
+                }
+
                 AffectationEquipement::create([
                     'code' => 'AFF-'.strtoupper(uniqid()),
                     'equipement_id' => $equipement->id,
@@ -137,7 +171,13 @@ class SwitchController extends Controller
                     'type_cible' => $request->type_cible,
                     'type_affectation' => 'PERMANENTE',
                     'date_debut' => now()->format('Y-m-d'),
+                    'dossier_employe_id' => $request->dossier_employe_id,
+                    'poste_travail_id' => $request->poste_travail_id,
                     'local_id' => $request->local_id,
+                    'niveau_rattachement' => $niveau_rattachement,
+                    'direction_id' => $direction_id,
+                    'service_id' => $service_id,
+                    'unite_id' => $unite_id,
                 ]);
             }
 
@@ -147,14 +187,17 @@ class SwitchController extends Controller
         return response()->json(['success' => true, 'message' => 'Équipement réseau enregistré avec succès.', 'equipement_id' => $equipementId]);
     }
 
-    public function show($id)
+    public function show($id): View
     {
         $equipement = Equipement::with([
             'marque',
             'reseau.typeReseau',
+            'affectationActive.employe',
+            'affectationActive.posteTravail.local.etage.batiment.site',
             'affectationActive.local.etage.batiment.site',
-            'affectations.local',
-            'historique',
+            'affectationActive.direction', 'affectationActive.service', 'affectationActive.unite',
+            'affectations.employe', 'affectations.posteTravail', 'affectations.local',
+            'affectations.direction', 'affectations.service', 'affectations.unite', 'historique',
         ])->findOrFail($id);
 
         $marques = Marque::orderBy('libelle')->get(['id', 'libelle']);
@@ -164,21 +207,26 @@ class SwitchController extends Controller
 
         $routePrefix = 'parc-info.switches';
 
-        return view('parcinfo::informatique.reseaux.show', compact(
+        return view('parcinfo::informatique.switches.show', compact(
             'equipement', 'marques', 'typesReseaux', 'sites', 'directions', 'routePrefix'
         ));
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, $id): JsonResponse
     {
         $request->validate([
             'numero_serie' => "required|string|unique:parc_info_equipements,numero_serie,{$id}",
             'modele' => 'required|string|max:255',
             'statut' => 'required|in:en_stock,en_service,en_reparation,perdu,reforme',
             'etat' => 'required|in:bon,passable,mauvais,avarie',
+            'nb_ports' => 'nullable|integer|min:0',
+            'vitesse_max_mbps' => 'nullable|integer',
+            'est_poe' => 'nullable|boolean',
+            'version_firmware' => 'nullable|string',
             'adresse_ip' => 'nullable|ip',
             'masque_sous_reseau' => 'nullable|ip',
             'passerelle' => 'nullable|ip',
+            'est_manageable' => 'nullable|boolean',
         ]);
 
         \DB::transaction(function () use ($request, $id) {
@@ -189,7 +237,6 @@ class SwitchController extends Controller
             ]));
 
             $equipement->reseau->update([
-                'type_reseau_id' => $request->type_reseau_id,
                 'nb_ports' => $request->nb_ports,
                 'vitesse_max_mbps' => $request->vitesse_max_mbps,
                 'est_poe' => $request->boolean('est_poe'),
@@ -204,7 +251,7 @@ class SwitchController extends Controller
         return response()->json(['success' => true, 'message' => 'Équipement mis à jour avec succès.']);
     }
 
-    public function updateStatut(Request $request, $id)
+    public function updateStatut(Request $request, $id): JsonResponse
     {
         $request->validate([
             'statut' => 'required|in:en_stock,en_service,en_reparation,perdu,reforme',
@@ -215,7 +262,6 @@ class SwitchController extends Controller
             $equipement = Equipement::findOrFail($id);
             $ancienStatut = $equipement->statut;
 
-            // Si passage en stock, désaffecter
             if ($request->statut === 'en_stock' && $equipement->affectationActive) {
                 AffectationEquipement::where('equipement_id', $id)
                     ->where('statut', true)
@@ -224,7 +270,6 @@ class SwitchController extends Controller
 
             $equipement->update(['statut' => $request->statut]);
 
-            // Enregistrer dans l'historique
             HistoriqueChangement::create([
                 'equipement_id' => $id,
                 'date_changement' => now(),
@@ -239,7 +284,7 @@ class SwitchController extends Controller
         return response()->json(['success' => true, 'message' => 'Statut mis à jour avec succès.']);
     }
 
-    public function updateEtat(Request $request, $id)
+    public function updateEtat(Request $request, $id): JsonResponse
     {
         $request->validate([
             'etat' => 'required|in:bon,passable,mauvais,avarie',
@@ -266,7 +311,7 @@ class SwitchController extends Controller
         return response()->json(['success' => true, 'message' => 'État mis à jour avec succès.']);
     }
 
-    public function desaffecter(Request $request, $id)
+    public function desaffecter(Request $request, $id): JsonResponse
     {
         $request->validate([
             'motif' => 'required|string|max:255',
@@ -306,14 +351,14 @@ class SwitchController extends Controller
         return response()->json(['success' => true, 'message' => 'Équipement désaffecté et mis en stock.']);
     }
 
-    public function destroy($id)
+    public function destroy($id): JsonResponse
     {
         Equipement::findOrFail($id)->delete();
 
         return response()->json(['success' => true, 'message' => 'Équipement supprimé.']);
     }
 
-    public function storeTypeReseau(Request $request)
+    public function storeTypeReseau(Request $request): JsonResponse
     {
         $request->validate(['libelle' => 'required|string|unique:parc_info_types_reseaux,libelle']);
         $type = TypeReseau::create(['libelle' => $request->libelle]);
@@ -321,12 +366,161 @@ class SwitchController extends Controller
         return response()->json(['success' => true, 'data' => $type]);
     }
 
+    public function storeAffectation(Request $request): JsonResponse
+    {
+        $request->validate([
+            'equipement_id' => 'required|exists:parc_info_equipements,id',
+            'type_cible' => 'required|in:EMPLOYE,POSTE,LOCAL',
+        ]);
+
+        \DB::transaction(function () use ($request) {
+            $equipement = Equipement::findOrFail($request->equipement_id);
+
+            AffectationEquipement::where('equipement_id', $request->equipement_id)
+                ->where('statut', true)
+                ->update(['statut' => false, 'date_fin' => now()]);
+
+            $niveau_rattachement = null;
+            $direction_id = null;
+            $service_id = null;
+            $unite_id = null;
+
+            if ($request->type_cible === 'EMPLOYE' && $request->dossier_employe_id) {
+                $employe = Employe::find($request->dossier_employe_id);
+                if ($employe) {
+                    $niveau_rattachement = $employe->niveau_rattachement;
+                    $direction_id = $employe->direction_id;
+                    $service_id = $employe->service_id;
+                    $unite_id = $employe->unite_id;
+                }
+            } elseif ($request->type_cible === 'POSTE' && $request->poste_travail_id) {
+                $poste = PosteTravail::find($request->poste_travail_id);
+                if ($poste) {
+                    $niveau_rattachement = $poste->niveau_rattachement;
+                    $direction_id = $poste->direction_id;
+                    $service_id = $poste->service_id;
+                    $unite_id = $poste->unite_id;
+                }
+            }
+
+            AffectationEquipement::create([
+                'code' => 'AFF-'.strtoupper(uniqid()),
+                'equipement_id' => $request->equipement_id,
+                'statut' => true,
+                'type_cible' => $request->type_cible,
+                'type_affectation' => 'PERMANENTE',
+                'date_debut' => now(),
+                'dossier_employe_id' => $request->dossier_employe_id,
+                'poste_travail_id' => $request->poste_travail_id,
+                'local_id' => $request->local_id,
+                'niveau_rattachement' => $niveau_rattachement,
+                'direction_id' => $direction_id,
+                'service_id' => $service_id,
+                'unite_id' => $unite_id,
+            ]);
+
+            $ancienStatut = $equipement->statut;
+            if ($equipement->statut === 'en_stock') {
+                $equipement->update(['statut' => 'en_service']);
+
+                HistoriqueChangement::create([
+                    'equipement_id' => $request->equipement_id,
+                    'date_changement' => now(),
+                    'utilisateur_id' => auth()->id(),
+                    'type_changement' => 'STATUT',
+                    'ancien_statut' => $ancienStatut,
+                    'nouveau_statut' => 'en_service',
+                    'motif' => 'Mise en service automatique suite à affectation',
+                ]);
+            }
+
+            HistoriqueChangement::create([
+                'equipement_id' => $request->equipement_id,
+                'date_changement' => now(),
+                'utilisateur_id' => auth()->id(),
+                'type_changement' => 'AFFECTATION',
+                'ancien_statut' => $ancienStatut,
+                'nouveau_statut' => $equipement->statut,
+                'motif' => 'Nouvelle affectation',
+            ]);
+        });
+
+        return response()->json(['success' => true, 'message' => 'Affectation enregistrée avec succès.']);
+    }
+
+    public function searchEmployes(Request $request): JsonResponse
+    {
+        $q = $request->get('q', '');
+
+        return response()->json(
+            Employe::where('est_actif', true)
+                ->where(fn ($query) => $query
+                    ->where('nom', 'ilike', "%{$q}%")
+                    ->orWhere('prenom', 'ilike', "%{$q}%")
+                    ->orWhere('matricule', 'ilike', "%{$q}%"))
+                ->limit(20)->get(['id', 'matricule', 'nom', 'prenom'])
+                ->map(fn ($e) => ['id' => $e->id, 'text' => "{$e->nom} {$e->prenom} ({$e->matricule})", 'matricule' => $e->matricule, 'nom' => $e->nom, 'prenom' => $e->prenom])
+        );
+    }
+
+    public function searchPostes(Request $request): JsonResponse
+    {
+        $q = $request->get('q', '');
+
+        return response()->json(
+            PosteTravail::with(['service', 'local'])
+                ->where('actif', true)
+                ->where(fn ($query) => $query
+                    ->where('code', 'ilike', "%{$q}%")
+                    ->orWhere('libelle', 'ilike', "%{$q}%"))
+                ->limit(20)->get()
+                ->map(fn ($p) => [
+                    'id' => $p->id,
+                    'text' => "{$p->code} — {$p->libelle}",
+                    'code' => $p->code,
+                    'libelle' => $p->libelle,
+                    'service' => $p->service?->libelle,
+                    'local' => $p->local?->libelle,
+                ])
+        );
+    }
+
+    public function searchLocaux(Request $request): JsonResponse
+    {
+        $q = $request->get('q', '');
+
+        return response()->json(
+            Local::with(['etage.batiment.site'])
+                ->where(fn ($query) => $query
+                    ->where('libelle', 'ilike', "%{$q}%")
+                    ->orWhere('code', 'ilike', "%{$q}%"))
+                ->limit(20)->get()
+                ->map(fn ($l) => [
+                    'id' => $l->id,
+                    'text' => $l->nom_complet,
+                ])
+        );
+    }
+
+    public function storeMarque(Request $request): JsonResponse
+    {
+        $request->validate(['libelle' => 'required|string|unique:parc_info_marques,libelle']);
+        $marque = Marque::create(['libelle' => $request->libelle]);
+
+        return response()->json(['success' => true, 'data' => $marque]);
+    }
+
     private function formatRow(Equipement $e): array
     {
         $aff = $e->affectationActive;
         $affLabel = '—';
         if ($aff) {
-            $affLabel = $aff->local?->libelle ?? '—';
+            $affLabel = match ($aff->type_cible) {
+                'EMPLOYE' => $aff->employe?->full_name ?? '—',
+                'POSTE' => $aff->posteTravail?->code ?? '—',
+                'LOCAL' => $aff->local?->libelle ?? '—',
+                default => '—',
+            };
         }
 
         return [
@@ -336,9 +530,11 @@ class SwitchController extends Controller
             'type_reseau' => $e->reseau->typeReseau?->libelle ?? '—',
             'adresse_ip' => $e->reseau->adresse_ip ?? '—',
             'nb_ports' => $e->reseau->nb_ports ?? '—',
+            'est_poe' => $e->reseau->est_poe,
             'statut' => $e->statut,
             'statut_label' => $e->statut_label,
             'affectation' => $affLabel,
+            'etat' => $e->etat,
         ];
     }
 }

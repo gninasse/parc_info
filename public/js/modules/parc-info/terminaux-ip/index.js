@@ -1,18 +1,19 @@
 /**
- * index.js — Téléphonie Fixe (ParcInfo)
+ * index.js — Terminaux IP (ParcInfo)
  */
 
 // ── Formatters Bootstrap Table ────────────────────────────────────────────────
 
-window.telephonieQueryParams = function (params) {
+window.terminauxQueryParams = function (params) {
     return Object.assign(params, {
         site_id: $('#filter-site').val(),
+        type_reseau_id: $('#filter-type-reseau').val(),
         statut: $('#filter-statut').val(),
     });
 };
 
 window.codeFormatter = (val, row) =>
-    `<a href="${route('parc-info.telephonie.show', row.id)}" class="fw-bold text-primary small text-decoration-none">${val}</a>`;
+    `<a href="${route('parc-info.terminaux-ip.show', row.id)}" class="fw-bold text-primary small text-decoration-none">${val}</a>`;
 
 window.statutFormatter = (val) => {
     const map = {
@@ -28,18 +29,18 @@ window.statutFormatter = (val) => {
 
 window.actionsFormatter = (id) =>
     `<div class="d-flex gap-1">
-        <a href="${route('parc-info.telephonie.show', id)}" class="btn btn-sm btn-outline-secondary border-0" title="Voir / Modifier"><i class="bi bi-eye"></i></a>
+        <a href="${route('parc-info.terminaux-ip.show', id)}" class="btn btn-sm btn-outline-secondary border-0" title="Voir / Modifier"><i class="bi bi-eye"></i></a>
         <button class="btn btn-sm btn-outline-danger border-0" data-action="delete" data-id="${id}" title="Supprimer"><i class="bi bi-trash"></i></button>
     </div>`;
 
 window.actionsEvents = {
-    'click [data-action="delete"]': (e, val, row) => deleteTelephone(row.id),
+    'click [data-action="delete"]': (e, val, row) => deleteTerminal(row.id),
 };
 
 // ── KPI ───────────────────────────────────────────────────────────────────────
 
 function loadKpis() {
-    $.get(route('parc-info.telephonie.data'), { limit: 9999, offset: 0 }, (res) => {
+    $.get(route('parc-info.terminaux-ip.data'), { limit: 9999, offset: 0 }, (res) => {
         const rows = res.rows ?? [];
         $('#kpi-total').text(res.total ?? 0);
         $('#kpi-service').text(rows.filter(r => r.statut === 'en_service').length);
@@ -53,8 +54,8 @@ function loadKpis() {
 const Wizard = (() => {
     let currentStep = 1;
 
-    const $modal = () => $('#telephoneModal');
-    const $form = () => $('#telephoneForm');
+    const $modal = () => $('#terminalModal');
+    const $form = () => $('#terminalForm');
     const $step = (n) => $(`#step-${n}`);
     const $circle = (n) => $(`.wizard-step-circle[data-step="${n}"]`);
     const $label = (n) => $(`.wizard-step-label[data-step="${n}"]`);
@@ -119,7 +120,7 @@ const Wizard = (() => {
             }
         }
         if (n === 2) {
-            const fields = ['numero_serie', 'modele'];
+            const fields = ['numero_serie', 'modele', 'type_reseau_id'];
             let ok = true;
             fields.forEach(f => {
                 const $el = $(`#${f}`);
@@ -135,7 +136,7 @@ const Wizard = (() => {
     function reset() {
         $form()[0].reset();
         $('#wf_id').val('');
-        $('#wizard-title').text('Ajouter un Téléphone Fixe');
+        $('#wizard-title').text('Ajouter un Terminal IP');
         $('.statut-card').removeClass('selected').find('.check-icon').addClass('d-none');
         $('.aff-summary').addClass('d-none');
         $('#aff-skip-hint').removeClass('d-none');
@@ -191,10 +192,10 @@ const Wizard = (() => {
         });
 
         // QuickAdd Marque
-        $('#btn-add-marque').on('click', () => quickAdd('Nouvelle marque', 'Ex: Alcatel-Lucent, Cisco, Yealink...', 'parc-info.telephonie.store-marque', 'marque_id'));
+        $('#btn-add-marque').on('click', () => quickAdd('Nouvelle marque', 'Ex: ZKTeco, Hikvision, Dahua...', 'parc-info.terminaux-ip.store-marque', 'marque_id'));
 
         function quickAdd(title, placeholder, routeName, selectId) {
-            const bsModal = bootstrap.Modal.getInstance(document.getElementById('telephoneModal'));
+            const bsModal = bootstrap.Modal.getInstance(document.getElementById('terminalModal'));
             if (bsModal) bsModal._focustrap?.deactivate();
 
             Swal.fire({
@@ -218,13 +219,13 @@ const Wizard = (() => {
             e.preventDefault();
             const $btn = $('#btn-submit');
             
-            // Custom handling for est_ip checkbox
+            // Custom handling for est_manageable checkbox
             const formData = $form().serializeArray();
-            const estIpIndex = formData.findIndex(item => item.name === 'est_ip');
-            if (estIpIndex > -1) {
-                formData[estIpIndex].value = $('#est_ip').is(':checked') ? '1' : '0';
+            const estManageableIndex = formData.findIndex(item => item.name === 'est_manageable');
+            if (estManageableIndex > -1) {
+                formData[estManageableIndex].value = $('#est_manageable').is(':checked') ? '1' : '0';
             } else {
-                formData.push({ name: 'est_ip', value: $('#est_ip').is(':checked') ? '1' : '0' });
+                formData.push({ name: 'est_manageable', value: $('#est_manageable').is(':checked') ? '1' : '0' });
             }
 
             if (isEnStock()) {
@@ -241,17 +242,17 @@ const Wizard = (() => {
             $btn.prop('disabled', true).find('#btn-submit-label').text('Enregistrement...');
 
             $.ajax({
-                url: route('parc-info.telephonie.store'),
+                url: route('parc-info.terminaux-ip.store'),
                 method: 'POST',
                 data: $.param(formData),
                 success: (res) => {
                     $modal().modal('hide');
-                    $('#telephonie-table').bootstrapTable('refresh');
+                    $('#terminaux-table').bootstrapTable('refresh');
                     loadKpis();
                     Swal.fire({ icon: 'success', title: 'Enregistré', timer: 2000, showConfirmButton: false });
                 },
                 error: (xhr) => {
-                    $btn.prop('disabled', false).find('#btn-submit-label').text('Enregistrer le téléphone');
+                    $btn.prop('disabled', false).find('#btn-submit-label').text('Enregistrer le terminal');
                     $form().find('.is-invalid').removeClass('is-invalid');
                     $form().find('.invalid-feedback').remove();
 
@@ -277,9 +278,9 @@ const Wizard = (() => {
 
 // ── Suppression ───────────────────────────────────────────────────────────────
 
-function deleteTelephone(id) {
+function deleteTerminal(id) {
     Swal.fire({
-        title: 'Supprimer ce téléphone fixe ?',
+        title: 'Supprimer ce terminal IP ?',
         text: 'Cette action est irréversible.',
         icon: 'warning',
         showCancelButton: true,
@@ -288,11 +289,11 @@ function deleteTelephone(id) {
     }).then((res) => {
         if (res.isConfirmed) {
             $.ajax({
-                url: route('parc-info.telephonie.destroy', id),
+                url: route('parc-info.terminaux-ip.destroy', id),
                 method: 'DELETE',
                 data: { _token: $('meta[name="csrf-token"]').attr('content') },
                 success: () => {
-                    $('#telephonie-table').bootstrapTable('refresh');
+                    $('#terminaux-table').bootstrapTable('refresh');
                     loadKpis();
                     Swal.fire({ icon: 'success', title: 'Supprimé', timer: 1500, showConfirmButton: false });
                 }
@@ -308,21 +309,21 @@ $(function () {
     loadKpis();
 
     $('#btn-add').on('click', () => Wizard.open());
-    $('#btn-apply-filters').on('click', () => $('#telephonie-table').bootstrapTable('refresh'));
-    $('#btn-reset-filters').on('click', () => { $('#filter-site, #filter-statut').val(''); $('#telephonie-table').bootstrapTable('refresh'); });
+    $('#btn-apply-filters').on('click', () => $('#terminaux-table').bootstrapTable('refresh'));
+    $('#btn-reset-filters').on('click', () => { $('#filter-site, #filter-type-reseau, #filter-statut').val(''); $('#terminaux-table').bootstrapTable('refresh'); });
 
-    $('#telephonie-table').on('check.bs.table uncheck.bs.table load-success.bs.table', function () {
+    $('#terminaux-table').on('check.bs.table uncheck.bs.table load-success.bs.table', function () {
         const sel = $(this).bootstrapTable('getSelections');
         $('#btn-edit, #btn-delete').prop('disabled', sel.length === 0);
     });
 
     $('#btn-edit').on('click', () => {
-        const sel = $('#telephonie-table').bootstrapTable('getSelections');
-        if(sel.length) window.location.href = route('parc-info.telephonie.show', sel[0].id);
+        const sel = $('#terminaux-table').bootstrapTable('getSelections');
+        if(sel.length) window.location.href = route('parc-info.terminaux-ip.show', sel[0].id);
     });
 
     $('#btn-delete').on('click', () => {
-        const sel = $('#telephonie-table').bootstrapTable('getSelections');
-        if(sel.length) deleteTelephone(sel[0].id);
+        const sel = $('#terminaux-table').bootstrapTable('getSelections');
+        if(sel.length) deleteTerminal(sel[0].id);
     });
 });

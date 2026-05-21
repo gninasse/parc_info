@@ -153,6 +153,11 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::patch('/{id}/statut', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'updateStatut'])->name('update-statut');
         Route::patch('/{id}/etat', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'updateEtat'])->name('update-etat');
         Route::post('/{id}/desaffecter', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'desaffecter'])->name('desaffecter');
+        Route::post('/affectation', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'storeAffectation'])->name('store-affectation');
+        Route::post('/marques', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'storeMarque'])->name('store-marque');
+        Route::get('/employes/search', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'searchEmployes'])->name('search-employes');
+        Route::get('/postes/search', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'searchPostes'])->name('search-postes');
+        Route::get('/locaux/search', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'searchLocaux'])->name('search-locaux');
     });
 
     // Routeurs
@@ -167,6 +172,11 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::patch('/{id}/statut', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'updateStatut'])->name('update-statut');
         Route::patch('/{id}/etat', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'updateEtat'])->name('update-etat');
         Route::post('/{id}/desaffecter', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'desaffecter'])->name('desaffecter');
+        Route::post('/affectation', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'storeAffectation'])->name('store-affectation');
+        Route::post('/marques', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'storeMarque'])->name('store-marque');
+        Route::get('/employes/search', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'searchEmployes'])->name('search-employes');
+        Route::get('/postes/search', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'searchPostes'])->name('search-postes');
+        Route::get('/locaux/search', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'searchLocaux'])->name('search-locaux');
     });
 
     // WiFi
@@ -181,6 +191,9 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::patch('/{id}/statut', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'updateStatut'])->name('update-statut');
         Route::patch('/{id}/etat', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'updateEtat'])->name('update-etat');
         Route::post('/{id}/desaffecter', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'desaffecter'])->name('desaffecter');
+        Route::post('/affectation', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'storeAffectation'])->name('store-affectation');
+        Route::post('/marques', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'storeMarque'])->name('store-marque');
+        Route::get('/locaux/search', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'searchLocaux'])->name('search-locaux');
     });
 
     // Pare-feux
@@ -195,6 +208,9 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::patch('/{id}/statut', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'updateStatut'])->name('update-statut');
         Route::patch('/{id}/etat', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'updateEtat'])->name('update-etat');
         Route::post('/{id}/desaffecter', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'desaffecter'])->name('desaffecter');
+        Route::post('/affectation', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'storeAffectation'])->name('store-affectation');
+        Route::post('/marques', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'storeMarque'])->name('store-marque');
+        Route::get('/locaux/search', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'searchLocaux'])->name('search-locaux');
     });
 
     // Onduleurs
@@ -306,6 +322,9 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::patch('/{id}/statut', [TelephoneController::class, 'updateStatut'])->name('update-statut');
         Route::patch('/{id}/etat', [TelephoneController::class, 'updateEtat'])->name('update-etat');
         Route::post('/{id}/desaffecter', [TelephoneController::class, 'desaffecter'])->name('desaffecter');
+        Route::post('/affectation', [TelephoneController::class, 'storeAffectation'])->name('store-affectation');
+        Route::post('/marques', [TelephoneController::class, 'storeMarque'])->name('store-marque');
+        Route::get('/locaux/search', [TelephoneController::class, 'searchLocaux'])->name('search-locaux');
     });
 
     // Terminaux IP
@@ -319,6 +338,9 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::patch('/{id}/statut', [TerminalIPController::class, 'updateStatut'])->name('update-statut');
         Route::patch('/{id}/etat', [TerminalIPController::class, 'updateEtat'])->name('update-etat');
         Route::post('/{id}/desaffecter', [TerminalIPController::class, 'desaffecter'])->name('desaffecter');
+        Route::post('/affectation', [TerminalIPController::class, 'storeAffectation'])->name('store-affectation');
+        Route::post('/marques', [TerminalIPController::class, 'storeMarque'])->name('store-marque');
+        Route::get('/locaux/search', [TerminalIPController::class, 'searchLocaux'])->name('search-locaux');
     });
 
     // Cameras
@@ -332,6 +354,9 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::patch('/{id}/statut', [CameraController::class, 'updateStatut'])->name('update-statut');
         Route::patch('/{id}/etat', [CameraController::class, 'updateEtat'])->name('update-etat');
         Route::post('/{id}/desaffecter', [CameraController::class, 'desaffecter'])->name('desaffecter');
+        Route::post('/affectation', [CameraController::class, 'storeAffectation'])->name('store-affectation');
+        Route::post('/marques', [CameraController::class, 'storeMarque'])->name('store-marque');
+        Route::get('/locaux/search', [CameraController::class, 'searchLocaux'])->name('search-locaux');
     });
 
 });

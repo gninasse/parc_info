@@ -11,6 +11,12 @@ class OrganisationDatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // $this->call([]);
+        $this->call([
+            DirectionSeeder::class,
+            ServiceSeeder::class,
+            UniteSeeder::class,
+            InfrastructureSeeder::class,
+            PosteTravailSeeder::class,
+        ]);
     }
 }

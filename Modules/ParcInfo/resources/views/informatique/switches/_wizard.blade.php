@@ -1,12 +1,12 @@
-<div class="modal fade" id="telephoneModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="switchModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="border-radius:16px">
 
             {{-- Header --}}
             <div class="modal-header border-0 px-4 pt-4 pb-0">
                 <div>
-                    <h5 class="modal-title fw-bold mb-0" id="wizard-title">Ajouter un Téléphone Fixe</h5>
-                    <small class="text-muted" id="wizard-subtitle">Réseau & Communication - CHU Yalgado</small>
+                    <h5 class="modal-title fw-bold mb-0" id="wizard-title">Ajouter un switch</h5>
+                    <small class="text-muted" id="wizard-subtitle">Réseau & Commutation - CHU Yalgado</small>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
@@ -28,9 +28,9 @@
                 </div>
             </div>
 
-            <form id="telephoneForm" novalidate>
+            <form id="switchForm" novalidate>
                 @csrf
-                <input type="hidden" id="wf_id" name="id">
+                <input type="hidden" id="sw_id" name="id">
 
                 <div class="modal-body px-4 py-3" style="min-height:340px">
 
@@ -41,8 +41,8 @@
                         <div class="d-flex flex-column gap-2" id="statut-options">
                             @foreach([
                                 ['en_stock',      'bi-archive',         'En stock',      'Disponible pour déploiement immédiat'],
-                                ['en_service',    'bi-telephone-fill',  'En service',    'Actuellement déployé et connecté en production'],
-                                ['en_reparation', 'bi-tools',            'En réparation', 'En maintenance technique ou défectueux'],
+                                ['en_service',    'bi-hdd-network',     'En service',    'Actuellement connecté et en production'],
+                                ['en_reparation', 'bi-tools',            'En réparation', 'En maintenance ou défectueux'],
                             ] as [$val,$icon,$label,$desc])
                             <label class="statut-card d-flex align-items-center gap-3 p-3 rounded-3 border cursor-pointer" data-value="{{ $val }}">
                                 <input type="radio" name="statut" value="{{ $val }}" class="d-none">
@@ -59,15 +59,15 @@
 
                     {{-- ── ÉTAPE 2 : SPECIFICATIONS ── --}}
                     <div id="step-2" class="wizard-step d-none">
-                        <h6 class="fw-bold mb-3"><i class="bi bi-info-circle text-primary me-2"></i>Caractéristiques techniques du Téléphone</h6>
+                        <h6 class="fw-bold mb-3"><i class="bi bi-info-circle text-primary me-2"></i>Informations techniques du Switch</h6>
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label field-label">Code Inventaire</label>
-                                <input type="text" class="form-control field-input bg-light" name="code_inventaire" id="code_inventaire" placeholder="Généré automatiquement (TEL-YYYY-NNNN)" readonly>
+                                <input type="text" class="form-control field-input bg-light" name="code_inventaire" id="code_inventaire" placeholder="Généré automatiquement (NET-YYYY-NNNN)" readonly>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label field-label">Numéro de Série <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control field-input" name="numero_serie" id="numero_serie" placeholder="Ex: S/N Alcatel-3210" required>
+                                <input type="text" class="form-control field-input" name="numero_serie" id="numero_serie" placeholder="Ex: S/N 123456789" required>
                             </div>
                             <div class="col-md-5">
                                 <label class="form-label field-label">Marque</label>
@@ -85,37 +85,48 @@
                             </div>
                             <div class="col-md-7">
                                 <label class="form-label field-label">Modèle <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control field-input" name="modele" id="modele" placeholder="Ex: IP Touch 4028" required>
-                            </div>
-
-                            {{-- Telephone specific --}}
-                            <div class="col-md-6">
-                                <label class="form-label field-label">Extension (N° court)</label>
-                                <input type="text" class="form-control field-input" name="extension" id="extension" placeholder="Ex: 405 ou 2100">
+                                <input type="text" class="form-control field-input" name="modele" id="modele" placeholder="Ex: Catalyst 2960" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label field-label">Protocole Réseau</label>
-                                <input type="text" class="form-control field-input" name="protocole" id="protocole" placeholder="Ex: SIP, NOE, H.323">
+                                <label class="form-label field-label">Adresse IP</label>
+                                <input type="text" class="form-control field-input" name="adresse_ip" id="adresse_ip" placeholder="Ex: 192.168.1.10">
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label field-label">Adresse MAC Ethernet</label>
-                                <input type="text" class="form-control field-input" name="adresse_mac_ethernet" id="adresse_mac_ethernet" placeholder="Ex: 00:80:9F:AA:BB:CC">
+                                <label class="form-label field-label">Masque sous-réseau</label>
+                                <input type="text" class="form-control field-input" name="masque_sous_reseau" id="masque_sous_reseau" placeholder="Ex: 255.255.255.0">
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label field-label">Adresse IP (VoIP)</label>
-                                <input type="text" class="form-control field-input" name="adresse_ip" id="adresse_ip" placeholder="Ex: 10.0.50.21">
+                                <label class="form-label field-label">Passerelle</label>
+                                <input type="text" class="form-control field-input" name="passerelle" id="passerelle" placeholder="Ex: 192.168.1.1">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label field-label">Nombre de Ports</label>
+                                <input type="number" class="form-control field-input" name="nb_ports" id="nb_ports" placeholder="Ex: 24" min="0">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label field-label">Vitesse Max (Mbps)</label>
+                                <input type="number" class="form-control field-input" name="vitesse_max_mbps" id="vitesse_max_mbps" placeholder="Ex: 1000" min="0">
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label field-label">Nombre de modules d'extension</label>
-                                <input type="number" class="form-control field-input" name="modele_expansion_count" id="modele_expansion_count" min="0" value="0">
+                                <label class="form-label field-label">Version Firmware</label>
+                                <input type="text" class="form-control field-input" name="version_firmware" id="version_firmware" placeholder="Ex: IOS 15.0">
                             </div>
-                            <div class="col-md-6 d-flex align-items-center pt-3">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" name="est_ip" id="est_ip" value="1" checked>
-                                    <label class="form-check-label small fw-semibold" for="est_ip">Téléphone IP (VoIP)</label>
+                            <div class="col-md-3">
+                                <div class="form-check mt-4">
+                                    <input class="form-check-input" type="checkbox" name="est_poe" id="est_poe" value="1">
+                                    <label class="form-check-label field-label mb-0" for="est_poe">
+                                        Supporte PoE
+                                    </label>
                                 </div>
                             </div>
-
+                            <div class="col-md-3">
+                                <div class="form-check mt-4">
+                                    <input class="form-check-input" type="checkbox" name="est_manageable" id="est_manageable" value="1" checked>
+                                    <label class="form-check-label field-label mb-0" for="est_manageable">
+                                        Manageable
+                                    </label>
+                                </div>
+                            </div>
                             <div class="col-md-6">
                                 <label class="form-label field-label">État</label>
                                 <select class="form-select field-input" name="etat" id="etat">
@@ -134,24 +145,55 @@
 
                     {{-- ── ÉTAPE 3 : AFFECTATION ── --}}
                     <div id="step-3" class="wizard-step d-none">
-                        <h6 class="fw-bold mb-3"><i class="bi bi-door-open text-primary me-2"></i>Sélectionner le Local d'installation</h6>
-                        <p class="text-muted small mb-4">Associez ce téléphone fixe à un local ou un bureau spécifique afin de le localiser géographiquement sur site.</p>
-
-                        <div class="row justify-content-center">
-                            <div class="col-md-8">
-                                <button type="button" class="btn btn-outline-primary w-100 py-4 d-flex flex-column align-items-center justify-content-center gap-2 border-dashed" id="btn-select-local" style="border-style: dashed; border-width: 2px;">
-                                    <div class="rounded-circle bg-primary bg-opacity-10 p-3"><i class="bi bi-door-open fs-3 text-primary"></i></div>
-                                    <span class="fw-semibold">Choisir le Local technique ou Bureau</span>
-                                    <small class="text-muted">Cliquez pour parcourir les sites et locaux</small>
-                                </button>
+                        <h6 class="fw-bold mb-3">Type d'affectation</h6>
+                        <div class="row g-3 mb-4" id="affectation-type-cards">
+                            @foreach([
+                                ['EMPLOYE','bi-person-badge','Employé'],
+                                ['POSTE',  'bi-pc-display',  'Poste de travail'],
+                                ['LOCAL',  'bi-door-open',   'Local technique'],
+                            ] as [$val,$icon,$label])
+                            <div class="col-4">
+                                <label class="aff-type-card d-flex flex-column align-items-center justify-content-center gap-2 p-3 rounded-3 border cursor-pointer text-center" data-value="{{ $val }}">
+                                    <input type="radio" name="type_cible" value="{{ $val }}" class="d-none">
+                                    <div class="aff-type-icon rounded-3 p-3 bg-light"><i class="bi {{ $icon }} fs-3 text-secondary"></i></div>
+                                    <small class="fw-semibold" style="font-size:.78rem">{{ $label }}</small>
+                                    <i class="bi bi-check-circle-fill text-primary position-absolute top-0 end-0 m-2 d-none check-icon" style="font-size:.9rem"></i>
+                                </label>
                             </div>
+                            @endforeach
                         </div>
 
-                        {{-- Récapitulatif du local --}}
-                        <div id="aff-local-summary" class="aff-summary mt-4 d-none">
-                            <div class="card border-primary shadow-sm" style="border-radius:12px">
+                        {{-- Récapitulatifs (mis à jour par selection_modals.js) --}}
+                        <div id="aff-employe-summary" class="aff-summary d-none">
+                            <div class="card border-primary">
                                 <div class="card-body">
-                                    <h6 class="mb-2 text-primary fw-semibold"><i class="bi bi-door-open-fill me-2"></i>Local sélectionné</h6>
+                                    <h6 class="mb-2"><i class="bi bi-person-badge text-primary me-2"></i>Employé sélectionné</h6>
+                                    <div class="row g-2">
+                                        <div class="col-md-6"><small class="text-muted d-block">Nom</small><strong id="emp-summary-nom">—</strong></div>
+                                        <div class="col-md-6"><small class="text-muted d-block">Matricule</small><strong id="emp-summary-matricule">—</strong></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" name="dossier_employe_id" id="dossier_employe_id">
+                        </div>
+
+                        <div id="aff-poste-summary" class="aff-summary d-none">
+                            <div class="card border-primary">
+                                <div class="card-body">
+                                    <h6 class="mb-2"><i class="bi bi-pc-display text-primary me-2"></i>Poste sélectionné</h6>
+                                    <div class="row g-2">
+                                        <div class="col-md-4"><small class="text-muted d-block">Code</small><strong id="poste-summary-code">—</strong></div>
+                                        <div class="col-md-8"><small class="text-muted d-block">Libellé</small><strong id="poste-summary-libelle">—</strong></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" name="poste_travail_id" id="poste_travail_id">
+                        </div>
+
+                        <div id="aff-local-summary" class="aff-summary d-none">
+                            <div class="card border-primary">
+                                <div class="card-body">
+                                    <h6 class="mb-2"><i class="bi bi-door-open text-primary me-2"></i>Local sélectionné</h6>
                                     <div class="row g-2">
                                         <div class="col-md-4"><small class="text-muted d-block">Code</small><strong id="local-summary-code">—</strong></div>
                                         <div class="col-md-8"><small class="text-muted d-block">Libellé</small><strong id="local-summary-libelle">—</strong></div>
@@ -159,11 +201,10 @@
                                 </div>
                             </div>
                             <input type="hidden" name="local_id" id="local_id">
-                            <input type="hidden" name="type_cible" value="LOCAL">
                         </div>
 
-                        <div class="text-center mt-4" id="aff-skip-hint">
-                            <small class="text-muted">Aucune affectation sélectionnée — le téléphone sera enregistré en stock.</small>
+                        <div class="text-center mt-3" id="aff-skip-hint">
+                            <small class="text-muted">Aucune affectation sélectionnée — l'équipement sera enregistré en stock.</small>
                         </div>
                     </div>
 
@@ -183,7 +224,7 @@
                             Suivant <i class="bi bi-chevron-right ms-1"></i>
                         </button>
                         <button type="submit" class="btn btn-primary px-4 d-none" id="btn-submit">
-                            <i class="bi bi-floppy me-1"></i> <span id="btn-submit-label">Enregistrer le téléphone</span>
+                            <i class="bi bi-floppy me-1"></i> <span id="btn-submit-label">Enregistrer le switch</span>
                         </button>
                     </div>
                 </div>
@@ -200,14 +241,13 @@
 .wizard-step-line.done { background: #0d6efd; }
 .wizard-step-label { font-size: .68rem; letter-spacing: .5px; text-transform: uppercase; }
 
-.statut-card { cursor: pointer; transition: all .15s; border: 1px solid #dee2e6; }
-.statut-card:hover { border-color: #0d6efd !important; background: #f0f6ff; }
-.statut-card.selected { border-color: #0d6efd !important; background: #f0f6ff; }
-.statut-card.selected .statut-card-icon { background: #dbeafe !important; }
-.statut-card.selected .check-icon { display: inline !important; }
+.statut-card, .aff-type-card { cursor: pointer; transition: all .15s; border: 1px solid #dee2e6; }
+.statut-card:hover, .aff-type-card:hover { border-color: #0d6efd !important; background: #f0f6ff; }
+.statut-card.selected, .aff-type-card.selected { border-color: #0d6efd !important; background: #f0f6ff; }
+.statut-card.selected .statut-card-icon, .aff-type-card.selected .aff-type-icon { background: #dbeafe !important; }
+.statut-card.selected .check-icon, .aff-type-card.selected .check-icon { display: inline !important; }
 
 .field-label { font-size: .78rem; font-weight: 600; color: #475467; margin-bottom: 4px; }
 .field-input { font-size: .875rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
 .field-input:focus { background: #fff; border-color: #0d6efd; box-shadow: 0 0 0 3px rgba(13,110,253,.1); }
-.border-dashed { border-style: dashed !important; border-width: 2px !important; }
 </style>

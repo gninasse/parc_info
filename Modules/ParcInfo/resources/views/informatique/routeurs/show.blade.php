@@ -4,12 +4,12 @@
 
 @section('breadcrumb')
     <li class="breadcrumb-item"><a href="{{ route('parc-info.dashboard') }}">Parc Info</a></li>
-    <li class="breadcrumb-item"><a href="{{ route('parc-info.cameras.index') }}">Caméras IP</a></li>
+    <li class="breadcrumb-item"><a href="{{ route('parc-info.routeurs.index') }}">Routeurs</a></li>
     <li class="breadcrumb-item active">{{ $equipement->code_inventaire }}</li>
 @endsection
 
 @php
-    $camera = $equipement->camera;
+    $reseau = $equipement->reseau;
     $aff = $equipement->affectationActive;
     $statutColors = [
         'en_service'   => 'success',
@@ -32,7 +32,7 @@
             <div class="col-auto">
                 <div class="rounded-3 d-flex align-items-center justify-content-center bg-primary bg-opacity-10"
                      style="width:72px;height:72px">
-                    <i class="bi bi-camera-video fs-2 text-primary"></i>
+                    <i class="bi bi-hdd-network fs-2 text-primary"></i>
                 </div>
             </div>
             <div class="col">
@@ -48,11 +48,11 @@
                 <div class="d-flex gap-4 flex-wrap text-muted small">
                     <span><i class="bi bi-upc me-1"></i>{{ $equipement->code_inventaire }}</span>
                     <span><i class="bi bi-hash me-1"></i>{{ $equipement->numero_serie }}</span>
-                    @if($camera?->adresse_ip)
-                    <span><i class="bi bi-globe me-1"></i>{{ $camera->adresse_ip }}</span>
+                    @if($reseau?->adresse_ip)
+                    <span><i class="bi bi-globe me-1"></i>{{ $reseau->adresse_ip }}</span>
                     @endif
-                    @if($camera?->type_camera)
-                    <span><i class="bi bi-tag me-1"></i>{{ $camera->type_camera }}</span>
+                    @if($reseau?->nb_ports)
+                    <span><i class="bi bi-ethernet me-1"></i>{{ $reseau->nb_ports }} Ports</span>
                     @endif
                 </div>
             </div>
@@ -73,7 +73,7 @@
                 </button>
                 @endif
                 <button class="btn btn-outline-secondary btn-sm" id="btn-nouvelle-affectation">
-                    <i class="bi bi-door-open me-1"></i> Affecter
+                    <i class="bi bi-person-plus me-1"></i> Affecter
                 </button>
                 <button class="btn btn-primary btn-sm" id="btn-edit-toggle">
                     <i class="bi bi-pencil me-1"></i> Modifier
@@ -87,14 +87,14 @@
 <ul class="nav nav-tabs border-0 mb-3" id="showTabs" role="tablist">
     @foreach([
         ['fiche',      'bi-cpu',           'Fiche Technique'],
-        ['affectation','bi-door-open',     'Affectation Actuelle'],
+        ['affectation','bi-person-badge',   'Affectation Actuelle'],
         ['historique-aff','bi-clock-history','Historique Affectations'],
         ['historique-chg','bi-journal-text', 'Journal des Changements'],
     ] as [$id,$icon,$label])
     <li class="nav-item" role="presentation">
         <button class="nav-link {{ $loop->first ? 'active' : '' }} fw-semibold small px-3"
-                 id="tab-{{ $id }}" data-bs-toggle="tab" data-bs-target="#pane-{{ $id }}"
-                 type="button" role="tab">
+                id="tab-{{ $id }}" data-bs-toggle="tab" data-bs-target="#pane-{{ $id }}"
+                type="button" role="tab">
             <i class="bi {{ $icon }} me-1"></i>{{ $label }}
         </button>
     </li>
@@ -137,31 +137,34 @@
                                     <input type="text" class="form-control" name="modele" value="{{ $equipement->modele }}" disabled id="f_modele">
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label small fw-bold text-muted">Adresse IP</label>
-                                    <input type="text" class="form-control" name="adresse_ip" value="{{ $camera->adresse_ip ?? '' }}" disabled id="f_adresse_ip" placeholder="Ex: 192.168.10.50">
+                                    <label class="form-label small fw-bold text-muted">Adresse IP (Management/WAN)</label>
+                                    <input type="text" class="form-control" name="adresse_ip" value="{{ $reseau->adresse_ip ?? '' }}" disabled id="f_adresse_ip" placeholder="Ex: 192.168.1.1">
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label small fw-bold text-muted">Adresse MAC</label>
-                                    <input type="text" class="form-control" name="adresse_mac" value="{{ $camera->adresse_mac ?? '' }}" disabled id="f_adresse_mac" placeholder="Ex: AA:BB:CC:DD:EE:FF">
+                                    <label class="form-label small fw-bold text-muted">Masque sous-réseau</label>
+                                    <input type="text" class="form-control" name="masque_sous_reseau" value="{{ $reseau->masque_sous_reseau ?? '' }}" disabled id="f_masque_sous_reseau" placeholder="Ex: 255.255.255.0">
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label small fw-bold text-muted">Résolution</label>
-                                    <input type="text" class="form-control" name="resolution" value="{{ $camera->resolution ?? '' }}" disabled id="f_resolution" placeholder="Ex: 1080p, 4K (8MP)">
+                                    <label class="form-label small fw-bold text-muted">Passerelle</label>
+                                    <input type="text" class="form-control" name="passerelle" value="{{ $reseau->passerelle ?? '' }}" disabled id="f_passerelle" placeholder="Ex: 192.168.1.254">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small fw-bold text-muted">Ports RJ45/SFP</label>
+                                    <input type="number" class="form-control" name="nb_ports" value="{{ $reseau->nb_ports ?? '' }}" disabled id="f_nb_ports" placeholder="Ex: 4">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small fw-bold text-muted">Vitesse Max (Mbps)</label>
+                                    <input type="number" class="form-control" name="vitesse_max_mbps" value="{{ $reseau->vitesse_max_mbps ?? '' }}" disabled id="f_vitesse_max_mbps" placeholder="Ex: 1000">
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label small fw-bold text-muted">Type de Caméra</label>
-                                    <select class="form-select" name="type_camera" disabled id="f_type_camera">
-                                        <option value="">Sélectionner...</option>
-                                        <option value="Dôme" {{ ($camera->type_camera ?? '') == 'Dôme' ? 'selected' : '' }}>Dôme</option>
-                                        <option value="Tube / Bullet" {{ ($camera->type_camera ?? '') == 'Tube / Bullet' ? 'selected' : '' }}>Tube / Bullet</option>
-                                        <option value="PTZ / Motorisée" {{ ($camera->type_camera ?? '') == 'PTZ / Motorisée' ? 'selected' : '' }}>PTZ / Motorisée</option>
-                                        <option value="Boîtier / Box" {{ ($camera->type_camera ?? '') == 'Boîtier / Box' ? 'selected' : '' }}>Boîtier / Box</option>
-                                        <option value="Autre" {{ ($camera->type_camera ?? '') == 'Autre' ? 'selected' : '' }}>Autre</option>
-                                    </select>
+                                    <label class="form-label small fw-bold text-muted">Version Firmware</label>
+                                    <input type="text" class="form-control" name="version_firmware" value="{{ $reseau->version_firmware ?? '' }}" disabled id="f_version_firmware" placeholder="Ex: IOS-XE 16.9">
                                 </div>
-                                <div class="col-12">
-                                    <label class="form-label small fw-bold text-muted">Emplacement descriptif</label>
-                                    <input type="text" class="form-control" name="emplacement" value="{{ $camera->emplacement ?? '' }}" disabled id="f_emplacement" placeholder="Ex: Entrée principale, face au portail d'accueil">
+                                <div class="col-md-6 mt-auto">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="est_manageable" id="f_est_manageable" value="1" {{ ($reseau->est_manageable ?? true) ? 'checked' : '' }} disabled>
+                                        <label class="form-check-label small fw-bold text-muted" for="f_est_manageable">Manageable (SSH/HTTPS/SNMP)</label>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -217,31 +220,58 @@
         <div class="card border-0 shadow-sm" style="border-radius:12px">
             <div class="card-body p-4">
                 @if($aff)
+                @php
+                    $cible = match($aff->type_cible) {
+                        'EMPLOYE' => ['icon' => 'bi-person-badge', 'label' => 'Employé', 'color' => 'primary'],
+                        'POSTE' => ['icon' => 'bi-pc-display', 'label' => 'Poste de travail', 'color' => 'info'],
+                        'LOCAL' => ['icon' => 'bi-door-open', 'label' => 'Local technique', 'color' => 'success'],
+                        default => ['icon' => 'bi-question', 'label' => '—', 'color' => 'secondary'],
+                    };
+                @endphp
                 <div class="d-flex align-items-center gap-3 mb-4">
-                    <div class="rounded-3 bg-success bg-opacity-10 p-3">
-                        <i class="bi bi-door-open fs-4 text-success"></i>
+                    <div class="rounded-3 bg-{{ $cible['color'] }} bg-opacity-10 p-3">
+                        <i class="bi {{ $cible['icon'] }} fs-4 text-{{ $cible['color'] }}"></i>
                     </div>
                     <div>
-                        <div class="fw-bold text-dark">Affectation Permanente</div>
+                        <div class="fw-bold text-dark">Affectation {{ $aff->type_affectation === 'PERMANENTE' ? 'Permanente' : 'Temporaire' }}</div>
                         <div class="text-muted small">Depuis le {{ $aff->date_debut?->format('d/m/Y') }}</div>
                     </div>
                     <span class="badge bg-success-subtle text-success border border-success-subtle ms-auto px-3 py-2">Active</span>
                 </div>
 
                 <div class="row g-3">
-                    @if($aff->local)
-                    <div class="col-md-6"><div class="info-block"><div class="info-label">Local / Bureau</div><div class="info-value">{{ $aff->local->libelle }}</div></div></div>
-                    <div class="col-md-6"><div class="info-block"><div class="info-label">Emplacement Complet</div><div class="info-value">{{ $aff->local->nom_complet }}</div></div></div>
+                    @if($aff->type_cible === 'EMPLOYE' && $aff->employe)
+                    <div class="col-md-4"><div class="info-block"><div class="info-label">Matricule</div><div class="info-value">{{ $aff->employe->matricule }}</div></div></div>
+                    <div class="col-md-4"><div class="info-block"><div class="info-label">Nom</div><div class="info-value">{{ $aff->employe->nom }}</div></div></div>
+                    <div class="col-md-4"><div class="info-block"><div class="info-label">Prénom</div><div class="info-value">{{ $aff->employe->prenom }}</div></div></div>
                     @endif
-                    <div class="col-md-6"><div class="info-block"><div class="info-label">Date début d'affectation</div><div class="info-value">{{ $aff->date_debut?->format('d/m/Y') }}</div></div></div>
-                    <div class="col-md-6"><div class="info-block"><div class="info-label">Date de fin</div><div class="info-value">{{ $aff->date_fin?->format('d/m/Y') ?? 'Indéterminée' }}</div></div></div>
+                    @if($aff->type_cible === 'POSTE' && $aff->posteTravail)
+                    <div class="col-md-3"><div class="info-block"><div class="info-label">Code Poste</div><div class="info-value text-primary fw-bold">{{ $aff->posteTravail->code }}</div></div></div>
+                    <div class="col-md-5"><div class="info-block"><div class="info-label">Libellé</div><div class="info-value">{{ $aff->posteTravail->libelle }}</div></div></div>
+                    <div class="col-md-4"><div class="info-block"><div class="info-label">Emplacement</div><div class="info-value">{{ $aff->posteTravail->local?->nom_complet ?? '—' }}</div></div></div>
+                    @endif
+                    @if($aff->type_cible === 'LOCAL' && $aff->local)
+                    <div class="col-md-6"><div class="info-block"><div class="info-label">Local</div><div class="info-value">{{ $aff->local->libelle }}</div></div></div>
+                    <div class="col-md-6"><div class="info-block"><div class="info-label">Emplacement</div><div class="info-value">{{ $aff->local->nom_complet }}</div></div></div>
+                    @endif
+                    @if($aff->direction)
+                    <div class="col-md-4"><div class="info-block"><div class="info-label">Direction</div><div class="info-value">{{ $aff->direction->libelle }}</div></div></div>
+                    @endif
+                    @if($aff->service)
+                    <div class="col-md-4"><div class="info-block"><div class="info-label">Service</div><div class="info-value">{{ $aff->service->libelle }}</div></div></div>
+                    @endif
+                    @if($aff->unite)
+                    <div class="col-md-4"><div class="info-block"><div class="info-label">Unité</div><div class="info-value">{{ $aff->unite->libelle }}</div></div></div>
+                    @endif
+                    <div class="col-md-3"><div class="info-block"><div class="info-label">Date début</div><div class="info-value">{{ $aff->date_debut?->format('d/m/Y') }}</div></div></div>
+                    <div class="col-md-3"><div class="info-block"><div class="info-label">Date fin</div><div class="info-value">{{ $aff->date_fin?->format('d/m/Y') ?? 'Indéterminée' }}</div></div></div>
                 </div>
                 @else
                 <div class="text-center py-5">
-                    <div class="mb-3"><i class="bi bi-door-closed fs-1 text-muted opacity-50"></i></div>
-                    <p class="text-muted fw-semibold">Cette caméra n'est affectée à aucun local technique</p>
+                    <div class="mb-3"><i class="bi bi-person-x fs-1 text-muted opacity-50"></i></div>
+                    <p class="text-muted fw-semibold">Aucune affectation active</p>
                     <button class="btn btn-primary btn-sm" id="btn-nouvelle-affectation-2">
-                        <i class="bi bi-plus-circle me-1"></i> Assigner à un Local
+                        <i class="bi bi-person-plus me-1"></i> Créer une affectation
                     </button>
                 </div>
                 @endif
@@ -256,9 +286,10 @@
                 <table class="table align-middle mb-0">
                     <thead class="table-light">
                         <tr class="small text-muted text-uppercase">
-                            <th class="ps-4">Local d'Affectation</th>
+                            <th class="ps-4">Cible</th>
                             <th>Dates</th>
                             <th>Type</th>
+                            <th>Service</th>
                             <th class="text-center">Statut</th>
                         </tr>
                     </thead>
@@ -267,10 +298,10 @@
                         <tr>
                             <td class="ps-4">
                                 <div class="d-flex align-items-center gap-2">
-                                    <i class="bi bi-door-open text-muted"></i>
+                                    <i class="bi bi-{{ match($a->type_cible){'EMPLOYE'=>'person-badge','POSTE'=>'pc-display','LOCAL'=>'door-open'} }} text-muted"></i>
                                     <div>
-                                        <div class="fw-bold small text-dark">{{ $a->local?->libelle ?? '—' }}</div>
-                                        <div class="text-muted" style="font-size:.7rem">{{ $a->local?->nom_complet ?? '—' }}</div>
+                                        <div class="fw-bold small text-dark">{{ match($a->type_cible){'EMPLOYE'=>$a->employe?->full_name,'POSTE'=>$a->posteTravail?->code,'LOCAL'=>$a->local?->libelle} }}</div>
+                                        <div class="text-muted" style="font-size:.7rem">{{ $a->type_cible }}</div>
                                     </div>
                                 </div>
                             </td>
@@ -278,6 +309,7 @@
                                 {{ $a->date_debut?->format('d/m/Y') }} → {{ $a->date_fin?->format('d/m/Y') ?? 'Aujourd\'hui' }}
                             </td>
                             <td><span class="badge bg-light text-dark border small">{{ $a->type_affectation }}</span></td>
+                            <td class="small text-muted">{{ $a->service?->libelle ?? '—' }}</td>
                             <td class="text-center">
                                 @if($a->statut)
                                     <span class="badge bg-success-subtle text-success border border-success-subtle">ACTIF</span>
@@ -287,7 +319,7 @@
                             </td>
                         </tr>
                         @empty
-                        <tr><td colspan="4" class="text-center py-4 text-muted small">Aucun historique d'affectation</td></tr>
+                        <tr><td colspan="5" class="text-center py-4 text-muted small">Aucun historique d'affectation</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -304,7 +336,7 @@
                     <div class="d-flex gap-3 mb-4">
                         <div class="flex-shrink-0">
                             <div class="rounded-circle bg-{{ match($h->type_changement){'STATUT'=>'primary','ETAT'=>'warning','AFFECTATION'=>'info','TECHNIQUE'=>'dark'} }} bg-opacity-10 d-flex align-items-center justify-content-center" style="width:40px;height:40px">
-                                <i class="bi bi-{{ match($h->type_changement){'STATUT'=>'arrow-repeat','ETAT'=>'activity','AFFECTATION'=>'door-open','TECHNIQUE'=>'gear'} }} text-{{ match($h->type_changement){'STATUT'=>'primary','ETAT'=>'warning','AFFECTATION'=>'info','TECHNIQUE'=>'dark'} }}"></i>
+                                <i class="bi bi-{{ match($h->type_changement){'STATUT'=>'arrow-repeat','ETAT'=>'activity','AFFECTATION'=>'person-plus','TECHNIQUE'=>'gear'} }} text-{{ match($h->type_changement){'STATUT'=>'primary','ETAT'=>'warning','AFFECTATION'=>'info','TECHNIQUE'=>'dark'} }}"></i>
                             </div>
                         </div>
                         <div>
@@ -345,28 +377,102 @@
             <form id="affectationForm">
                 @csrf
                 <input type="hidden" name="equipement_id" value="{{ $equipement->id }}">
-                <input type="hidden" name="type_cible" value="LOCAL">
                 <div class="modal-body px-4 py-3">
-                    <h6 class="fw-bold mb-3 small text-uppercase text-muted" style="letter-spacing:.5px">Local d'installation</h6>
-                    <p class="text-muted small mb-4">Associez cette caméra à un local ou bureau spécifique.</p>
-
-                    <div class="row justify-content-center mb-4">
-                        <div class="col-md-8">
-                            <button type="button" class="btn btn-outline-primary w-100 py-4 d-flex flex-column align-items-center justify-content-center gap-2 border-dashed" id="btn-select-local-modal" style="border-style: dashed; border-width: 2px;">
-                                <div class="rounded-circle bg-primary bg-opacity-10 p-3"><i class="bi bi-door-open fs-3 text-primary"></i></div>
-                                <span class="fw-semibold">Choisir le Local technique ou Bureau</span>
-                                <small class="text-muted">Cliquez pour parcourir la liste des locaux</small>
-                            </button>
+                    <h6 class="fw-bold mb-3 small text-uppercase text-muted" style="letter-spacing:.5px">Mode d'affectation</h6>
+                    <div class="row g-3 mb-4">
+                        @foreach([['EMPLOYE','bi-person-badge','Affecter à un employé'],['POSTE','bi-pc-display','Poste de travail'],['LOCAL','bi-door-open','Local technique']] as [$val,$icon,$label])
+                        <div class="col-4">
+                            <label class="aff-type-card d-flex flex-column align-items-center justify-content-center gap-2 p-3 rounded-3 border cursor-pointer text-center position-relative" data-value="{{ $val }}">
+                                <input type="radio" name="type_cible" value="{{ $val }}" class="d-none">
+                                <div class="aff-type-icon rounded-3 p-3 bg-light"><i class="bi {{ $icon }} fs-3 text-secondary"></i></div>
+                                <small class="fw-semibold text-dark" style="font-size:.78rem">{{ $label }}</small>
+                                <i class="bi bi-check-circle-fill text-primary position-absolute top-0 end-0 m-2 d-none check-icon" style="font-size:.9rem"></i>
+                            </label>
                         </div>
+                        @endforeach
+                    </div>
+
+                    <div id="aff-employe-summary" class="aff-summary d-none">
+                        <div class="card border-primary">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="mb-0 text-dark"><i class="bi bi-person-badge text-primary me-2"></i>Employé sélectionné</h6>
+                                </div>
+                                <div class="row g-2 mt-2">
+                                    <div class="col-md-6">
+                                        <small class="text-muted d-block">Nom</small>
+                                        <strong id="emp-summary-nom" class="text-dark">—</strong>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <small class="text-muted d-block">Matricule</small>
+                                        <strong id="emp-summary-matricule" class="text-dark">—</strong>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <small class="text-muted d-block">Poste</small>
+                                        <span id="emp-summary-poste" class="text-dark">—</span>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <small class="text-muted d-block">Rattachement</small>
+                                        <span id="emp-summary-rattachement" class="text-dark">—</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" name="dossier_employe_id" id="dossier_employe_id">
+                    </div>
+
+                    <div id="aff-poste-summary" class="aff-summary d-none">
+                        <div class="card border-primary">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="mb-0 text-dark"><i class="bi bi-pc-display text-primary me-2"></i>Poste sélectionné</h6>
+                                </div>
+                                <div class="row g-2 mt-2">
+                                    <div class="col-md-3">
+                                        <small class="text-muted d-block">Code</small>
+                                        <strong id="poste-summary-code" class="text-dark">—</strong>
+                                    </div>
+                                    <div class="col-md-5">
+                                        <small class="text-muted d-block">Libellé</small>
+                                        <strong id="poste-summary-libelle" class="text-dark">—</strong>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <small class="text-muted d-block">Emplacement</small>
+                                        <span id="poste-summary-emplacement" class="text-dark">—</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" name="poste_travail_id" id="poste_travail_id">
                     </div>
 
                     <div id="aff-local-summary" class="aff-summary d-none">
-                        <div class="card border-primary shadow-sm" style="border-radius:12px">
+                        <div class="card border-primary">
                             <div class="card-body">
-                                <h6 class="mb-2 text-primary fw-semibold"><i class="bi bi-door-open-fill me-2"></i>Local sélectionné</h6>
-                                <div class="row g-2">
-                                    <div class="col-md-4"><small class="text-muted d-block">Code</small><strong id="local-summary-code" class="text-dark">—</strong></div>
-                                    <div class="col-md-8"><small class="text-muted d-block">Libellé</small><strong id="local-summary-libelle" class="text-dark">—</strong></div>
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="mb-0 text-dark"><i class="bi bi-door-open text-primary me-2"></i>Local sélectionné</h6>
+                                </div>
+                                <div class="row g-2 mt-2">
+                                    <div class="col-md-2">
+                                        <small class="text-muted d-block">Code</small>
+                                        <strong id="local-summary-code" class="text-dark">—</strong>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <small class="text-muted d-block">Libellé</small>
+                                        <strong id="local-summary-libelle" class="text-dark">—</strong>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <small class="text-muted d-block">Type</small>
+                                        <span id="local-summary-type" class="text-dark">—</span>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <small class="text-muted d-block">Étage</small>
+                                        <span id="local-summary-etage" class="text-dark">—</span>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <small class="text-muted d-block">Bâtiment</small>
+                                        <span id="local-summary-batiment" class="text-dark">—</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -394,11 +500,17 @@
 .info-block    { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:.75rem 1rem; }
 .info-label    { font-size:.7rem; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:#94a3b8; margin-bottom:2px; }
 .info-value    { font-size:.875rem; font-weight:600; color:#1e293b; }
-.border-dashed { border-style: dashed !important; border-width: 2px !important; }
+.aff-type-card { cursor:pointer; transition:border-color .15s; }
+.aff-type-card:hover { border-color:#0d6efd !important; }
+.aff-type-card.selected { border-color:#0d6efd !important; background:#f0f6ff; }
+.aff-type-card.selected .aff-type-icon { background:#dbeafe !important; }
+.aff-type-card.selected .aff-type-icon i { color:#0d6efd !important; }
+.aff-type-card.selected .check-icon { display:inline !important; }
 </style>
 @endpush
 
 @push('js')
+<script type="module" src="{{ asset('js/modules/parc-info/routeurs/index.js') }}?v={{ time() }}"></script>
 <script src="{{ asset('js/modules/parc-info/ordinateurs/selection_modals.js') }}?v={{ time() }}"></script>
 
 <script>
@@ -420,10 +532,23 @@ $(function(){
         const $btn = $(this);
         $btn.prop('disabled', true).html('<i class="bi bi-hourglass-split me-1"></i> Enregistrement...');
 
+        // Handle checkbox inputs which serialize poorly when disabled or unchecked
+        const formData = $('#ficheForm').serializeArray();
+        ['est_manageable'].forEach(name => {
+            if (!$(`#f_${name}`).is(':disabled')) {
+                const index = formData.findIndex(item => item.name === name);
+                if (index > -1) {
+                    formData[index].value = $(`#f_${name}`).is(':checked') ? '1' : '0';
+                } else {
+                    formData.push({ name: name, value: $(`#f_${name}`).is(':checked') ? '1' : '0' });
+                }
+            }
+        });
+
         $.ajax({
-            url: route('parc-info.cameras.update', '{{ $equipement->id }}'),
+            url: route('parc-info.routeurs.update', '{{ $equipement->id }}'),
             method: 'PUT',
-            data: $('#ficheForm').serialize(),
+            data: $.param(formData),
             success: (res) => {
                 if(res.success){
                     Swal.fire({icon:'success', title:'Succès', text:res.message, timer:2000, showConfirmButton:false})
@@ -445,7 +570,7 @@ $(function(){
             title: 'Changer le statut',
             text: 'Veuillez saisir le motif du changement :',
             input: 'textarea',
-            inputPlaceholder: 'Ex: Déploiement caméra, Maintenance technique...',
+            inputPlaceholder: 'Ex: Déploiement service réseau, Maintenance technique...',
             showCancelButton: true,
             confirmButtonText: 'Mettre à jour',
             cancelButtonText: 'Annuler',
@@ -456,7 +581,7 @@ $(function(){
         }).then((result) => {
             if (result.isConfirmed) {
                 $.ajax({
-                    url: route('parc-info.cameras.update-statut', '{{ $equipement->id }}'),
+                    url: route('parc-info.routeurs.update-statut', '{{ $equipement->id }}'),
                     method: 'PATCH',
                     data: { _token: '{{ csrf_token() }}', statut: statut, motif: result.value },
                     success: () => location.reload(),
@@ -469,8 +594,8 @@ $(function(){
     // Désaffecter
     $('#btn-desaffecter').on('click', function(){
         Swal.fire({
-            title: 'Désaffecter la Caméra IP ?',
-            text: 'La caméra sera remise en stock. Indiquez le motif :',
+            title: 'Désaffecter l\'équipement ?',
+            text: 'Le routeur sera remis en stock. Indiquez le motif :',
             input: 'textarea',
             showCancelButton: true,
             confirmButtonColor: '#ffc107',
@@ -481,7 +606,7 @@ $(function(){
             }
         }).then((result) => {
             if (result.isConfirmed) {
-                $.post(route('parc-info.cameras.desaffecter', '{{ $equipement->id }}'), {
+                $.post(route('parc-info.routeurs.desaffecter', '{{ $equipement->id }}'), {
                     _token: '{{ csrf_token() }}', motif: result.value
                 }, () => location.reload());
             }
@@ -495,29 +620,69 @@ $(function(){
 
     $('#btn-nouvelle-affectation, #btn-nouvelle-affectation-2').on('click', openAffModal);
 
-    $('#btn-select-local-modal').on('click', function() {
-        $('#localSelectionModal').modal('show');
+    $(document).on('employe:selected', function(e, emp) {
+        if (!$('#affectationModal').hasClass('show')) return;
+
+        $('#affectationModal .aff-type-card').removeClass('selected');
+        $('#affectationModal .aff-type-card[data-value="EMPLOYE"]').addClass('selected')
+            .find('input[type="radio"]').prop('checked', true);
+
+        $('#emp-summary-nom').text(emp.nom ?? '—');
+        $('#emp-summary-matricule').text(emp.matricule ?? '—');
+        $('#emp-summary-poste').text(emp.poste ?? '—');
+        $('#emp-summary-rattachement').text(emp.rattachement ?? '—');
+
+        $('#affectationModal #dossier_employe_id').val(emp.id);
+        $('#affectationModal #poste_travail_id, #affectationModal #local_id').val('');
+        $('#affectationModal .aff-summary').addClass('d-none');
+        $('#affectationModal #aff-employe-summary').removeClass('d-none');
+    });
+
+    $(document).on('poste:selected', function(e, poste) {
+        if (!$('#affectationModal').hasClass('show')) return;
+
+        $('#affectationModal .aff-type-card').removeClass('selected');
+        $('#affectationModal .aff-type-card[data-value="POSTE"]').addClass('selected')
+            .find('input[type="radio"]').prop('checked', true);
+
+        $('#poste-summary-code').text(poste.code ?? '—');
+        $('#poste-summary-libelle').text(poste.libelle ?? '—');
+        $('#poste-summary-emplacement').text(poste.emplacement ?? '—');
+
+        $('#affectationModal #poste_travail_id').val(poste.id);
+        $('#affectationModal #dossier_employe_id, #affectationModal #local_id').val('');
+        $('#affectationModal .aff-summary').addClass('d-none');
+        $('#affectationModal #aff-poste-summary').removeClass('d-none');
     });
 
     $(document).on('local:selected', function(e, local) {
         if (!$('#affectationModal').hasClass('show')) return;
 
+        $('#affectationModal .aff-type-card').removeClass('selected');
+        $('#affectationModal .aff-type-card[data-value="LOCAL"]').addClass('selected')
+            .find('input[type="radio"]').prop('checked', true);
+
         $('#local-summary-code').text(local.code ?? '—');
         $('#local-summary-libelle').text(local.libelle ?? '—');
+        $('#local-summary-type').text(local.type ?? '—');
+        $('#local-summary-etage').text(local.etage ?? '—');
+        $('#local-summary-batiment').text(local.batiment ?? '—');
 
         $('#affectationModal #local_id').val(local.id);
-        $('#affectationModal .aff-summary').removeClass('d-none');
+        $('#affectationModal #dossier_employe_id, #affectationModal #poste_travail_id').val('');
+        $('#affectationModal .aff-summary').addClass('d-none');
+        $('#affectationModal #aff-local-summary').removeClass('d-none');
     });
 
     $('#affectationForm').on('submit', function(e){
         e.preventDefault();
 
-        const localId = $('#affectationModal #local_id').val();
-        if (!localId) {
+        const typeCible = $('#affectationForm input[name="type_cible"]:checked').val();
+        if (!typeCible) {
             Swal.fire({
                 icon: 'warning',
                 title: 'Attention',
-                text: 'Veuillez sélectionner un local d\'installation.',
+                text: 'Veuillez sélectionner un type d\'affectation.',
                 timer: 2500,
                 showConfirmButton: false
             });
@@ -527,7 +692,7 @@ $(function(){
         const $btn = $('#btn-save-affectation').prop('disabled', true)
             .html('<i class="bi bi-hourglass-split me-1"></i> Enregistrement...');
 
-        $.post(route('parc-info.cameras.store-affectation'), $(this).serialize(), (res) => {
+        $.post(route('parc-info.routeurs.store-affectation'), $(this).serialize(), (res) => {
             if (res.success) {
                 $('#affectationModal').modal('hide');
                 Swal.fire({ icon: 'success', title: 'Affectation enregistrée', timer: 2000, showConfirmButton: false })
@@ -545,8 +710,9 @@ $(function(){
 
     $('#affectationModal').on('hidden.bs.modal', function () {
         $(this).find('form')[0].reset();
+        $('#affectationModal .aff-type-card').removeClass('selected');
         $('#affectationModal .aff-summary').addClass('d-none');
-        $('#affectationModal #local_id').val('');
+        $('#affectationModal #dossier_employe_id, #affectationModal #poste_travail_id, #affectationModal #local_id').val('');
     });
 });
 </script>

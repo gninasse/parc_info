@@ -1,10 +1,10 @@
 /**
- * index.js — Téléphonie Fixe (ParcInfo)
+ * index.js — Caméras IP (ParcInfo)
  */
 
 // ── Formatters Bootstrap Table ────────────────────────────────────────────────
 
-window.telephonieQueryParams = function (params) {
+window.camerasQueryParams = function (params) {
     return Object.assign(params, {
         site_id: $('#filter-site').val(),
         statut: $('#filter-statut').val(),
@@ -12,7 +12,7 @@ window.telephonieQueryParams = function (params) {
 };
 
 window.codeFormatter = (val, row) =>
-    `<a href="${route('parc-info.telephonie.show', row.id)}" class="fw-bold text-primary small text-decoration-none">${val}</a>`;
+    `<a href="${route('parc-info.cameras.show', row.id)}" class="fw-bold text-primary small text-decoration-none">${val}</a>`;
 
 window.statutFormatter = (val) => {
     const map = {
@@ -28,18 +28,18 @@ window.statutFormatter = (val) => {
 
 window.actionsFormatter = (id) =>
     `<div class="d-flex gap-1">
-        <a href="${route('parc-info.telephonie.show', id)}" class="btn btn-sm btn-outline-secondary border-0" title="Voir / Modifier"><i class="bi bi-eye"></i></a>
+        <a href="${route('parc-info.cameras.show', id)}" class="btn btn-sm btn-outline-secondary border-0" title="Voir / Modifier"><i class="bi bi-eye"></i></a>
         <button class="btn btn-sm btn-outline-danger border-0" data-action="delete" data-id="${id}" title="Supprimer"><i class="bi bi-trash"></i></button>
     </div>`;
 
 window.actionsEvents = {
-    'click [data-action="delete"]': (e, val, row) => deleteTelephone(row.id),
+    'click [data-action="delete"]': (e, val, row) => deleteCamera(row.id),
 };
 
 // ── KPI ───────────────────────────────────────────────────────────────────────
 
 function loadKpis() {
-    $.get(route('parc-info.telephonie.data'), { limit: 9999, offset: 0 }, (res) => {
+    $.get(route('parc-info.cameras.data'), { limit: 9999, offset: 0 }, (res) => {
         const rows = res.rows ?? [];
         $('#kpi-total').text(res.total ?? 0);
         $('#kpi-service').text(rows.filter(r => r.statut === 'en_service').length);
@@ -53,8 +53,8 @@ function loadKpis() {
 const Wizard = (() => {
     let currentStep = 1;
 
-    const $modal = () => $('#telephoneModal');
-    const $form = () => $('#telephoneForm');
+    const $modal = () => $('#cameraModal');
+    const $form = () => $('#cameraForm');
     const $step = (n) => $(`#step-${n}`);
     const $circle = (n) => $(`.wizard-step-circle[data-step="${n}"]`);
     const $label = (n) => $(`.wizard-step-label[data-step="${n}"]`);
@@ -135,7 +135,7 @@ const Wizard = (() => {
     function reset() {
         $form()[0].reset();
         $('#wf_id').val('');
-        $('#wizard-title').text('Ajouter un Téléphone Fixe');
+        $('#wizard-title').text('Ajouter une Caméra IP');
         $('.statut-card').removeClass('selected').find('.check-icon').addClass('d-none');
         $('.aff-summary').addClass('d-none');
         $('#aff-skip-hint').removeClass('d-none');
@@ -191,10 +191,10 @@ const Wizard = (() => {
         });
 
         // QuickAdd Marque
-        $('#btn-add-marque').on('click', () => quickAdd('Nouvelle marque', 'Ex: Alcatel-Lucent, Cisco, Yealink...', 'parc-info.telephonie.store-marque', 'marque_id'));
+        $('#btn-add-marque').on('click', () => quickAdd('Nouvelle marque', 'Ex: Hikvision, Dahua, Axis...', 'parc-info.cameras.store-marque', 'marque_id'));
 
         function quickAdd(title, placeholder, routeName, selectId) {
-            const bsModal = bootstrap.Modal.getInstance(document.getElementById('telephoneModal'));
+            const bsModal = bootstrap.Modal.getInstance(document.getElementById('cameraModal'));
             if (bsModal) bsModal._focustrap?.deactivate();
 
             Swal.fire({
@@ -217,41 +217,25 @@ const Wizard = (() => {
         $form().on('submit', function(e){
             e.preventDefault();
             const $btn = $('#btn-submit');
-            
-            // Custom handling for est_ip checkbox
-            const formData = $form().serializeArray();
-            const estIpIndex = formData.findIndex(item => item.name === 'est_ip');
-            if (estIpIndex > -1) {
-                formData[estIpIndex].value = $('#est_ip').is(':checked') ? '1' : '0';
-            } else {
-                formData.push({ name: 'est_ip', value: $('#est_ip').is(':checked') ? '1' : '0' });
-            }
-
-            if (isEnStock()) {
-                formData.push({ name: 'skip_affectation', value: '1' });
-            } else {
-                // If in service, validate local selection
-                const localId = $('#local_id').val();
-                if (!localId) {
-                    Swal.fire({ icon: 'warning', title: 'Attention', text: 'Veuillez sélectionner un local d\'installation pour la mise en service.', timer: 3000, showConfirmButton: false });
-                    return;
-                }
-            }
-
             $btn.prop('disabled', true).find('#btn-submit-label').text('Enregistrement...');
 
+            const formData = $form().serializeArray();
+            if (isEnStock()) {
+                formData.push({ name: 'skip_affectation', value: '1' });
+            }
+
             $.ajax({
-                url: route('parc-info.telephonie.store'),
+                url: route('parc-info.cameras.store'),
                 method: 'POST',
                 data: $.param(formData),
                 success: (res) => {
                     $modal().modal('hide');
-                    $('#telephonie-table').bootstrapTable('refresh');
+                    $('#cameras-table').bootstrapTable('refresh');
                     loadKpis();
                     Swal.fire({ icon: 'success', title: 'Enregistré', timer: 2000, showConfirmButton: false });
                 },
                 error: (xhr) => {
-                    $btn.prop('disabled', false).find('#btn-submit-label').text('Enregistrer le téléphone');
+                    $btn.prop('disabled', false).find('#btn-submit-label').text('Enregistrer la caméra');
                     $form().find('.is-invalid').removeClass('is-invalid');
                     $form().find('.invalid-feedback').remove();
 
@@ -277,9 +261,9 @@ const Wizard = (() => {
 
 // ── Suppression ───────────────────────────────────────────────────────────────
 
-function deleteTelephone(id) {
+function deleteCamera(id) {
     Swal.fire({
-        title: 'Supprimer ce téléphone fixe ?',
+        title: 'Supprimer cette caméra IP ?',
         text: 'Cette action est irréversible.',
         icon: 'warning',
         showCancelButton: true,
@@ -288,11 +272,11 @@ function deleteTelephone(id) {
     }).then((res) => {
         if (res.isConfirmed) {
             $.ajax({
-                url: route('parc-info.telephonie.destroy', id),
+                url: route('parc-info.cameras.destroy', id),
                 method: 'DELETE',
                 data: { _token: $('meta[name="csrf-token"]').attr('content') },
                 success: () => {
-                    $('#telephonie-table').bootstrapTable('refresh');
+                    $('#cameras-table').bootstrapTable('refresh');
                     loadKpis();
                     Swal.fire({ icon: 'success', title: 'Supprimé', timer: 1500, showConfirmButton: false });
                 }
@@ -308,21 +292,21 @@ $(function () {
     loadKpis();
 
     $('#btn-add').on('click', () => Wizard.open());
-    $('#btn-apply-filters').on('click', () => $('#telephonie-table').bootstrapTable('refresh'));
-    $('#btn-reset-filters').on('click', () => { $('#filter-site, #filter-statut').val(''); $('#telephonie-table').bootstrapTable('refresh'); });
+    $('#btn-apply-filters').on('click', () => $('#cameras-table').bootstrapTable('refresh'));
+    $('#btn-reset-filters').on('click', () => { $('#filter-site, #filter-statut').val(''); $('#cameras-table').bootstrapTable('refresh'); });
 
-    $('#telephonie-table').on('check.bs.table uncheck.bs.table load-success.bs.table', function () {
+    $('#cameras-table').on('check.bs.table uncheck.bs.table load-success.bs.table', function () {
         const sel = $(this).bootstrapTable('getSelections');
         $('#btn-edit, #btn-delete').prop('disabled', sel.length === 0);
     });
 
     $('#btn-edit').on('click', () => {
-        const sel = $('#telephonie-table').bootstrapTable('getSelections');
-        if(sel.length) window.location.href = route('parc-info.telephonie.show', sel[0].id);
+        const sel = $('#cameras-table').bootstrapTable('getSelections');
+        if(sel.length) window.location.href = route('parc-info.cameras.show', sel[0].id);
     });
 
     $('#btn-delete').on('click', () => {
-        const sel = $('#telephonie-table').bootstrapTable('getSelections');
-        if(sel.length) deleteTelephone(sel[0].id);
+        const sel = $('#cameras-table').bootstrapTable('getSelections');
+        if(sel.length) deleteCamera(sel[0].id);
     });
 });

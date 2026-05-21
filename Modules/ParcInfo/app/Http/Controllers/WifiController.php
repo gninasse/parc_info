@@ -3,8 +3,11 @@
 namespace Modules\ParcInfo\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 use Modules\Organisation\Models\Direction;
+use Modules\Organisation\Models\Local;
 use Modules\Organisation\Models\Site;
 use Modules\ParcInfo\Models\AffectationEquipement;
 use Modules\ParcInfo\Models\Equipement;
@@ -15,7 +18,10 @@ use Modules\ParcInfo\Models\TypeReseau;
 
 class WifiController extends Controller
 {
-    public function index()
+    /**
+     * Display the index view for Bornes WiFi.
+     */
+    public function index(): View
     {
         $sites = Site::orderBy('libelle')->get(['id', 'libelle']);
         $directions = Direction::where('actif', true)->orderBy('libelle')->get(['id', 'libelle']);
@@ -26,18 +32,23 @@ class WifiController extends Controller
         $dataUrl = route('parc-info.wifi.data');
         $routePrefix = 'parc-info.wifi';
 
-        return view('parcinfo::informatique.reseaux.index', compact(
+        return view('parcinfo::informatique.wifi.index', compact(
             'sites', 'directions', 'marques', 'typesReseaux', 'pageTitle', 'dataUrl', 'routePrefix'
         ));
     }
 
-    public function getData(Request $request)
+    /**
+     * Get JSON data for Bootstrap Table.
+     */
+    public function getData(Request $request): JsonResponse
     {
         $query = Equipement::query()
-            ->with(['marque', 'reseau.typeReseau', 'affectationActive.local.etage.batiment'])
+            ->with(['marque', 'reseau.typeReseau', 'affectationActive.local.etage.batiment.site'])
             ->whereHas('reseau', function ($q) {
                 $q->whereHas('typeReseau', function ($t) {
-                    $t->where('libelle', 'ilike', '%wifi%')->orWhere('libelle', 'ilike', '%access point%')->orWhere('libelle', 'ilike', '%point d%');
+                    $t->where('libelle', 'ilike', '%wifi%')
+                        ->orWhere('libelle', 'ilike', '%access point%')
+                        ->orWhere('libelle', 'ilike', '%point d%');
                 });
             });
 
@@ -75,7 +86,10 @@ class WifiController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    /**
+     * Store a newly created WiFi Access Point.
+     */
+    public function store(Request $request): JsonResponse
     {
         $typeReseau = TypeReseau::firstOrCreate(['libelle' => 'Point d\'accès WiFi']);
         $request->merge(['type_reseau_id' => $typeReseau->id]);
@@ -87,7 +101,7 @@ class WifiController extends Controller
         }
 
         $request->validate([
-            'code_inventaire' => 'required|string|unique:parc_info_equipements,code_inventaire',
+            'code_inventaire' => 'nullable|string|unique:parc_info_equipements,code_inventaire',
             'numero_serie' => 'required|string|unique:parc_info_equipements,numero_serie',
             'marque_id' => 'nullable|exists:parc_info_marques,id',
             'modele' => 'required|string|max:255',
@@ -95,14 +109,17 @@ class WifiController extends Controller
             'etat' => 'required|in:bon,passable,mauvais,avarie',
             // Reseau
             'type_reseau_id' => 'nullable|exists:parc_info_types_reseaux,id',
-            'nb_ports' => 'nullable|integer',
+            'nb_ports' => 'nullable|integer|min:0',
             'vitesse_max_mbps' => 'nullable|integer',
-            'est_poe' => 'nullable|boolean',
             'version_firmware' => 'nullable|string',
             'adresse_ip' => 'nullable|ip',
             'masque_sous_reseau' => 'nullable|ip',
             'passerelle' => 'nullable|ip',
+            'est_poe' => 'nullable|boolean',
             'est_manageable' => 'nullable|boolean',
+            'type_cible' => 'nullable|in:LOCAL',
+            'skip_affectation' => 'nullable|boolean',
+            'local_id' => 'nullable|exists:organisation_locaux,id',
         ]);
 
         $equipementId = \DB::transaction(function () use ($request) {
@@ -121,7 +138,7 @@ class WifiController extends Controller
                 'type_reseau_id' => $request->type_reseau_id,
                 'nb_ports' => $request->nb_ports,
                 'vitesse_max_mbps' => $request->vitesse_max_mbps,
-                'est_poe' => $request->boolean('est_poe'),
+                'est_poe' => $request->boolean('est_poe', true),
                 'version_firmware' => $request->version_firmware,
                 'adresse_ip' => $request->adresse_ip,
                 'masque_sous_reseau' => $request->masque_sous_reseau,
@@ -129,12 +146,12 @@ class WifiController extends Controller
                 'est_manageable' => $request->boolean('est_manageable', true),
             ]);
 
-            if (! $request->boolean('skip_affectation') && $request->filled('type_cible')) {
+            if (! $request->boolean('skip_affectation') && $request->type_cible === 'LOCAL' && $request->local_id) {
                 AffectationEquipement::create([
                     'code' => 'AFF-'.strtoupper(uniqid()),
                     'equipement_id' => $equipement->id,
                     'statut' => true,
-                    'type_cible' => $request->type_cible,
+                    'type_cible' => 'LOCAL',
                     'type_affectation' => 'PERMANENTE',
                     'date_debut' => now()->format('Y-m-d'),
                     'local_id' => $request->local_id,
@@ -144,10 +161,17 @@ class WifiController extends Controller
             return $equipement->id;
         });
 
-        return response()->json(['success' => true, 'message' => 'Équipement réseau enregistré avec succès.', 'equipement_id' => $equipementId]);
+        return response()->json([
+            'success' => true,
+            'message' => 'Point d\'accès WiFi enregistré avec succès.',
+            'equipement_id' => $equipementId,
+        ]);
     }
 
-    public function show($id)
+    /**
+     * Show a detailed technical view for WiFi AP.
+     */
+    public function show($id): View
     {
         $equipement = Equipement::with([
             'marque',
@@ -164,21 +188,29 @@ class WifiController extends Controller
 
         $routePrefix = 'parc-info.wifi';
 
-        return view('parcinfo::informatique.reseaux.show', compact(
+        return view('parcinfo::informatique.wifi.show', compact(
             'equipement', 'marques', 'typesReseaux', 'sites', 'directions', 'routePrefix'
         ));
     }
 
-    public function update(Request $request, $id)
+    /**
+     * Update an existing WiFi Access Point.
+     */
+    public function update(Request $request, $id): JsonResponse
     {
         $request->validate([
             'numero_serie' => "required|string|unique:parc_info_equipements,numero_serie,{$id}",
             'modele' => 'required|string|max:255',
             'statut' => 'required|in:en_stock,en_service,en_reparation,perdu,reforme',
             'etat' => 'required|in:bon,passable,mauvais,avarie',
+            'nb_ports' => 'nullable|integer|min:0',
+            'vitesse_max_mbps' => 'nullable|integer',
+            'version_firmware' => 'nullable|string',
             'adresse_ip' => 'nullable|ip',
             'masque_sous_reseau' => 'nullable|ip',
             'passerelle' => 'nullable|ip',
+            'est_poe' => 'nullable|boolean',
+            'est_manageable' => 'nullable|boolean',
         ]);
 
         \DB::transaction(function () use ($request, $id) {
@@ -189,7 +221,6 @@ class WifiController extends Controller
             ]));
 
             $equipement->reseau->update([
-                'type_reseau_id' => $request->type_reseau_id,
                 'nb_ports' => $request->nb_ports,
                 'vitesse_max_mbps' => $request->vitesse_max_mbps,
                 'est_poe' => $request->boolean('est_poe'),
@@ -201,10 +232,13 @@ class WifiController extends Controller
             ]);
         });
 
-        return response()->json(['success' => true, 'message' => 'Équipement mis à jour avec succès.']);
+        return response()->json(['success' => true, 'message' => 'Point d\'accès WiFi mis à jour avec succès.']);
     }
 
-    public function updateStatut(Request $request, $id)
+    /**
+     * Update only the equipment status.
+     */
+    public function updateStatut(Request $request, $id): JsonResponse
     {
         $request->validate([
             'statut' => 'required|in:en_stock,en_service,en_reparation,perdu,reforme',
@@ -215,7 +249,6 @@ class WifiController extends Controller
             $equipement = Equipement::findOrFail($id);
             $ancienStatut = $equipement->statut;
 
-            // Si passage en stock, désaffecter
             if ($request->statut === 'en_stock' && $equipement->affectationActive) {
                 AffectationEquipement::where('equipement_id', $id)
                     ->where('statut', true)
@@ -224,7 +257,6 @@ class WifiController extends Controller
 
             $equipement->update(['statut' => $request->statut]);
 
-            // Enregistrer dans l'historique
             HistoriqueChangement::create([
                 'equipement_id' => $id,
                 'date_changement' => now(),
@@ -239,7 +271,10 @@ class WifiController extends Controller
         return response()->json(['success' => true, 'message' => 'Statut mis à jour avec succès.']);
     }
 
-    public function updateEtat(Request $request, $id)
+    /**
+     * Update only the equipment condition.
+     */
+    public function updateEtat(Request $request, $id): JsonResponse
     {
         $request->validate([
             'etat' => 'required|in:bon,passable,mauvais,avarie',
@@ -266,7 +301,10 @@ class WifiController extends Controller
         return response()->json(['success' => true, 'message' => 'État mis à jour avec succès.']);
     }
 
-    public function desaffecter(Request $request, $id)
+    /**
+     * Deallocate active allocation and set status to en_stock.
+     */
+    public function desaffecter(Request $request, $id): JsonResponse
     {
         $request->validate([
             'motif' => 'required|string|max:255',
@@ -303,17 +341,23 @@ class WifiController extends Controller
             ]);
         });
 
-        return response()->json(['success' => true, 'message' => 'Équipement désaffecté et mis en stock.']);
+        return response()->json(['success' => true, 'message' => 'Borne WiFi désaffectée et mise en stock.']);
     }
 
-    public function destroy($id)
+    /**
+     * Delete an existing WiFi AP.
+     */
+    public function destroy($id): JsonResponse
     {
         Equipement::findOrFail($id)->delete();
 
-        return response()->json(['success' => true, 'message' => 'Équipement supprimé.']);
+        return response()->json(['success' => true, 'message' => 'Point d\'accès WiFi supprimé.']);
     }
 
-    public function storeTypeReseau(Request $request)
+    /**
+     * Create network type dynamically.
+     */
+    public function storeTypeReseau(Request $request): JsonResponse
     {
         $request->validate(['libelle' => 'required|string|unique:parc_info_types_reseaux,libelle']);
         $type = TypeReseau::create(['libelle' => $request->libelle]);
@@ -321,6 +365,97 @@ class WifiController extends Controller
         return response()->json(['success' => true, 'data' => $type]);
     }
 
+    /**
+     * Create an allocation manually.
+     */
+    public function storeAffectation(Request $request): JsonResponse
+    {
+        $request->validate([
+            'equipement_id' => 'required|exists:parc_info_equipements,id',
+            'type_cible' => 'required|in:LOCAL',
+            'local_id' => 'required|exists:organisation_locaux,id',
+        ]);
+
+        \DB::transaction(function () use ($request) {
+            $equipement = Equipement::findOrFail($request->equipement_id);
+
+            AffectationEquipement::where('equipement_id', $request->equipement_id)
+                ->where('statut', true)
+                ->update(['statut' => false, 'date_fin' => now()]);
+
+            AffectationEquipement::create([
+                'code' => 'AFF-'.strtoupper(uniqid()),
+                'equipement_id' => $request->equipement_id,
+                'statut' => true,
+                'type_cible' => 'LOCAL',
+                'type_affectation' => 'PERMANENTE',
+                'date_debut' => now(),
+                'local_id' => $request->local_id,
+            ]);
+
+            $ancienStatut = $equipement->statut;
+            if ($equipement->statut === 'en_stock') {
+                $equipement->update(['statut' => 'en_service']);
+
+                HistoriqueChangement::create([
+                    'equipement_id' => $request->equipement_id,
+                    'date_changement' => now(),
+                    'utilisateur_id' => auth()->id(),
+                    'type_changement' => 'STATUT',
+                    'ancien_statut' => $ancienStatut,
+                    'nouveau_statut' => 'en_service',
+                    'motif' => 'Mise en service automatique suite à affectation',
+                ]);
+            }
+
+            HistoriqueChangement::create([
+                'equipement_id' => $request->equipement_id,
+                'date_changement' => now(),
+                'utilisateur_id' => auth()->id(),
+                'type_changement' => 'AFFECTATION',
+                'ancien_statut' => $ancienStatut,
+                'nouveau_statut' => $equipement->statut,
+                'motif' => 'Nouvelle affectation',
+            ]);
+        });
+
+        return response()->json(['success' => true, 'message' => 'Affectation enregistrée avec succès.']);
+    }
+
+    /**
+     * AJAX search for local technical rooms.
+     */
+    public function searchLocaux(Request $request): JsonResponse
+    {
+        $q = $request->get('q', '');
+
+        return response()->json(
+            Local::with(['etage.batiment.site'])
+                ->where(fn ($query) => $query
+                    ->where('libelle', 'ilike', "%{$q}%")
+                    ->orWhere('code', 'ilike', "%{$q}%"))
+                ->limit(20)->get()
+                ->map(fn ($l) => [
+                    'id' => $l->id,
+                    'text' => $l->nom_complet,
+                ])
+        );
+    }
+
+    /**
+     * Create brand dynamically.
+     */
+    public function storeMarque(Request $request): JsonResponse
+    {
+        $request->validate(['libelle' => 'required|string|unique:parc_info_marques,libelle']);
+        $marque = Marque::create(['libelle' => $request->libelle]);
+
+        return response()->json(['success' => true, 'data' => $marque]);
+    }
+
+    /**
+     * Format row database entries into detailed table payloads.
+     */
     private function formatRow(Equipement $e): array
     {
         $aff = $e->affectationActive;
@@ -339,6 +474,7 @@ class WifiController extends Controller
             'statut' => $e->statut,
             'statut_label' => $e->statut_label,
             'affectation' => $affLabel,
+            'etat' => $e->etat,
         ];
     }
 }

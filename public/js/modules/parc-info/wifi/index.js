@@ -1,10 +1,10 @@
 /**
- * index.js — Téléphonie Fixe (ParcInfo)
+ * index.js — Points d'accès WiFi (ParcInfo)
  */
 
 // ── Formatters Bootstrap Table ────────────────────────────────────────────────
 
-window.telephonieQueryParams = function (params) {
+window.wifiQueryParams = function (params) {
     return Object.assign(params, {
         site_id: $('#filter-site').val(),
         statut: $('#filter-statut').val(),
@@ -12,7 +12,7 @@ window.telephonieQueryParams = function (params) {
 };
 
 window.codeFormatter = (val, row) =>
-    `<a href="${route('parc-info.telephonie.show', row.id)}" class="fw-bold text-primary small text-decoration-none">${val}</a>`;
+    `<a href="${route('parc-info.wifi.show', row.id)}" class="fw-bold text-primary small text-decoration-none">${val}</a>`;
 
 window.statutFormatter = (val) => {
     const map = {
@@ -28,18 +28,18 @@ window.statutFormatter = (val) => {
 
 window.actionsFormatter = (id) =>
     `<div class="d-flex gap-1">
-        <a href="${route('parc-info.telephonie.show', id)}" class="btn btn-sm btn-outline-secondary border-0" title="Voir / Modifier"><i class="bi bi-eye"></i></a>
+        <a href="${route('parc-info.wifi.show', id)}" class="btn btn-sm btn-outline-secondary border-0" title="Voir / Modifier"><i class="bi bi-eye"></i></a>
         <button class="btn btn-sm btn-outline-danger border-0" data-action="delete" data-id="${id}" title="Supprimer"><i class="bi bi-trash"></i></button>
     </div>`;
 
 window.actionsEvents = {
-    'click [data-action="delete"]': (e, val, row) => deleteTelephone(row.id),
+    'click [data-action="delete"]': (e, val, row) => deleteWifi(row.id),
 };
 
 // ── KPI ───────────────────────────────────────────────────────────────────────
 
 function loadKpis() {
-    $.get(route('parc-info.telephonie.data'), { limit: 9999, offset: 0 }, (res) => {
+    $.get(route('parc-info.wifi.data'), { limit: 9999, offset: 0 }, (res) => {
         const rows = res.rows ?? [];
         $('#kpi-total').text(res.total ?? 0);
         $('#kpi-service').text(rows.filter(r => r.statut === 'en_service').length);
@@ -53,16 +53,15 @@ function loadKpis() {
 const Wizard = (() => {
     let currentStep = 1;
 
-    const $modal = () => $('#telephoneModal');
-    const $form = () => $('#telephoneForm');
+    const $modal = () => $('#wifiModal');
+    const $form = () => $('#wifiForm');
     const $step = (n) => $(`#step-${n}`);
     const $circle = (n) => $(`.wizard-step-circle[data-step="${n}"]`);
     const $label = (n) => $(`.wizard-step-label[data-step="${n}"]`);
     const $line = (n) => $(`.wizard-step-line[data-after="${n}"]`);
 
     function isEnStock() {
-        const statut = $('input[name="statut"]:checked').val();
-        return statut === 'en_stock' || statut === 'en_reparation';
+        return $('input[name="statut"]:checked').val() === 'en_stock';
     }
 
     function totalSteps() {
@@ -104,7 +103,7 @@ const Wizard = (() => {
     function updateNav() {
         const last = totalSteps();
         const statut = $('input[name="statut"]:checked').val();
-
+        
         $('#btn-prev').toggle(currentStep > 1);
         $('#btn-next').toggleClass('d-none', currentStep >= last);
         $('#btn-submit').toggleClass('d-none', currentStep < last);
@@ -135,7 +134,7 @@ const Wizard = (() => {
     function reset() {
         $form()[0].reset();
         $('#wf_id').val('');
-        $('#wizard-title').text('Ajouter un Téléphone Fixe');
+        $('#wizard-title').text('Ajouter un point d'accès WiFi');
         $('.statut-card').removeClass('selected').find('.check-icon').addClass('d-none');
         $('.aff-summary').addClass('d-none');
         $('#aff-skip-hint').removeClass('d-none');
@@ -168,33 +167,22 @@ const Wizard = (() => {
         $('#btn-next').on('click', () => { if (validateStep(currentStep)) goTo(currentStep + 1); });
         $('#btn-prev').on('click', () => goTo(currentStep - 1));
 
-        // Save in reparation directly from step 2
-        $('#btn-save-reparation').on('click', function() {
-            if (validateStep(2)) {
-                $form().submit();
-            }
-        });
-
         // Sélection d'affectation
         $(document).on('local:selected', function(e, local){
-            if(!$('#step-3').is(':visible') && !$('#affectationModal').hasClass('show')) return;
-
-            // For wizard step 3
-            if ($('#step-3').is(':visible')) {
-                $('#local-summary-code').text(local.code);
-                $('#local-summary-libelle').text(local.libelle);
-                $('#local_id').val(local.id);
-                $('.aff-summary').addClass('d-none');
-                $('#aff-local-summary').removeClass('d-none');
-                $('#aff-skip-hint').addClass('d-none');
-            }
+            if(!$('#step-3').is(':visible')) return;
+            $('#local-summary-code').text(local.code);
+            $('#local-summary-libelle').text(local.libelle);
+            $('#local_id').val(local.id);
+            $('.aff-summary').addClass('d-none');
+            $('#aff-local-summary').removeClass('d-none');
+            $('#aff-skip-hint').addClass('d-none');
         });
 
         // QuickAdd Marque
-        $('#btn-add-marque').on('click', () => quickAdd('Nouvelle marque', 'Ex: Alcatel-Lucent, Cisco, Yealink...', 'parc-info.telephonie.store-marque', 'marque_id'));
+        $('#btn-add-marque').on('click', () => quickAdd('Nouvelle marque', 'Ex: Ubiquiti, TP-Link, Cisco...', 'parc-info.wifi.store-marque', 'marque_id'));
 
         function quickAdd(title, placeholder, routeName, selectId) {
-            const bsModal = bootstrap.Modal.getInstance(document.getElementById('telephoneModal'));
+            const bsModal = bootstrap.Modal.getInstance(document.getElementById('wifiModal'));
             if (bsModal) bsModal._focustrap?.deactivate();
 
             Swal.fire({
@@ -217,44 +205,37 @@ const Wizard = (() => {
         $form().on('submit', function(e){
             e.preventDefault();
             const $btn = $('#btn-submit');
-            
-            // Custom handling for est_ip checkbox
-            const formData = $form().serializeArray();
-            const estIpIndex = formData.findIndex(item => item.name === 'est_ip');
-            if (estIpIndex > -1) {
-                formData[estIpIndex].value = $('#est_ip').is(':checked') ? '1' : '0';
-            } else {
-                formData.push({ name: 'est_ip', value: $('#est_ip').is(':checked') ? '1' : '0' });
-            }
-
-            if (isEnStock()) {
-                formData.push({ name: 'skip_affectation', value: '1' });
-            } else {
-                // If in service, validate local selection
-                const localId = $('#local_id').val();
-                if (!localId) {
-                    Swal.fire({ icon: 'warning', title: 'Attention', text: 'Veuillez sélectionner un local d\'installation pour la mise en service.', timer: 3000, showConfirmButton: false });
-                    return;
-                }
-            }
-
             $btn.prop('disabled', true).find('#btn-submit-label').text('Enregistrement...');
 
+            // Prepare serialized data including proper booleans for checkboxes
+            const formData = $form().serializeArray();
+            ['est_poe', 'est_manageable'].forEach(name => {
+                const index = formData.findIndex(item => item.name === name);
+                if (index > -1) {
+                    formData[index].value = $(`#${name}`).is(':checked') ? '1' : '0';
+                } else {
+                    formData.push({ name: name, value: $(`#${name}`).is(':checked') ? '1' : '0' });
+                }
+            });
+            if (isEnStock()) {
+                formData.push({ name: 'skip_affectation', value: '1' });
+            }
+
             $.ajax({
-                url: route('parc-info.telephonie.store'),
+                url: route('parc-info.wifi.store'),
                 method: 'POST',
                 data: $.param(formData),
                 success: (res) => {
                     $modal().modal('hide');
-                    $('#telephonie-table').bootstrapTable('refresh');
+                    $('#wifi-table').bootstrapTable('refresh');
                     loadKpis();
                     Swal.fire({ icon: 'success', title: 'Enregistré', timer: 2000, showConfirmButton: false });
                 },
                 error: (xhr) => {
-                    $btn.prop('disabled', false).find('#btn-submit-label').text('Enregistrer le téléphone');
+                    $btn.prop('disabled', false).find('#btn-submit-label').text('Enregistrer le point d\'accès');
                     $form().find('.is-invalid').removeClass('is-invalid');
                     $form().find('.invalid-feedback').remove();
-
+                    
                     if(xhr.status === 422){
                         const errors = xhr.responseJSON.errors;
                         Object.keys(errors).forEach(f => {
@@ -277,9 +258,9 @@ const Wizard = (() => {
 
 // ── Suppression ───────────────────────────────────────────────────────────────
 
-function deleteTelephone(id) {
+function deleteWifi(id) {
     Swal.fire({
-        title: 'Supprimer ce téléphone fixe ?',
+        title: 'Supprimer ce point d\'accès WiFi ?',
         text: 'Cette action est irréversible.',
         icon: 'warning',
         showCancelButton: true,
@@ -288,11 +269,11 @@ function deleteTelephone(id) {
     }).then((res) => {
         if (res.isConfirmed) {
             $.ajax({
-                url: route('parc-info.telephonie.destroy', id),
+                url: route('parc-info.wifi.destroy', id),
                 method: 'DELETE',
                 data: { _token: $('meta[name="csrf-token"]').attr('content') },
                 success: () => {
-                    $('#telephonie-table').bootstrapTable('refresh');
+                    $('#wifi-table').bootstrapTable('refresh');
                     loadKpis();
                     Swal.fire({ icon: 'success', title: 'Supprimé', timer: 1500, showConfirmButton: false });
                 }
@@ -308,21 +289,21 @@ $(function () {
     loadKpis();
 
     $('#btn-add').on('click', () => Wizard.open());
-    $('#btn-apply-filters').on('click', () => $('#telephonie-table').bootstrapTable('refresh'));
-    $('#btn-reset-filters').on('click', () => { $('#filter-site, #filter-statut').val(''); $('#telephonie-table').bootstrapTable('refresh'); });
+    $('#btn-apply-filters').on('click', () => $('#wifi-table').bootstrapTable('refresh'));
+    $('#btn-reset-filters').on('click', () => { $('#filter-site, #filter-statut').val(''); $('#wifi-table').bootstrapTable('refresh'); });
 
-    $('#telephonie-table').on('check.bs.table uncheck.bs.table load-success.bs.table', function () {
+    $('#wifi-table').on('check.bs.table uncheck.bs.table load-success.bs.table', function () {
         const sel = $(this).bootstrapTable('getSelections');
         $('#btn-edit, #btn-delete').prop('disabled', sel.length === 0);
     });
 
     $('#btn-edit').on('click', () => {
-        const sel = $('#telephonie-table').bootstrapTable('getSelections');
-        if(sel.length) window.location.href = route('parc-info.telephonie.show', sel[0].id);
+        const sel = $('#wifi-table').bootstrapTable('getSelections');
+        if(sel.length) window.location.href = route('parc-info.wifi.show', sel[0].id);
     });
 
     $('#btn-delete').on('click', () => {
-        const sel = $('#telephonie-table').bootstrapTable('getSelections');
-        if(sel.length) deleteTelephone(sel[0].id);
+        const sel = $('#wifi-table').bootstrapTable('getSelections');
+        if(sel.length) deleteWifi(sel[0].id);
     });
 });
