@@ -43,11 +43,29 @@
         </li>
 
         <li class="nav-item">
-          <a href="{{ route('parc-info.serveurs.index') }}"
-             class="nav-link {{ request()->routeIs('parc-info.serveurs.*') ? 'active' : '' }}">
+          <a href="#" class="nav-link {{ request()->routeIs('parc-info.serveurs.*', 'parc-info.serveurs-virtuels.*') ? 'active' : '' }}">
             <i class="nav-icon bi bi-server"></i>
-            <p>Serveurs</p>
+            <p>
+              Serveurs & VMs
+              <i class="nav-arrow bi bi-chevron-right"></i>
+            </p>
           </a>
+          <ul class="nav nav-treeview">
+            <li class="nav-item">
+              <a href="{{ route('parc-info.serveurs.index') }}"
+                 class="nav-link {{ request()->routeIs('parc-info.serveurs.*') ? 'active' : '' }}">
+                <i class="nav-icon bi bi-circle"></i>
+                <p>Serveurs Physiques</p>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="{{ route('parc-info.serveurs-virtuels.index') }}"
+                 class="nav-link {{ request()->routeIs('parc-info.serveurs-virtuels.*') ? 'active' : '' }}">
+                <i class="nav-icon bi bi-circle"></i>
+                <p>Machines Virtuelles</p>
+              </a>
+            </li>
+          </ul>
         </li>
 
         <li class="nav-item">

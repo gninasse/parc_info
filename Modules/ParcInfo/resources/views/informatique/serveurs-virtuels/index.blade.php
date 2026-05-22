@@ -1,10 +1,10 @@
 @extends('parcinfo::layouts.master')
 
-@section('header', 'Serveurs Physiques')
+@section('header', 'Machines Virtuelles')
 
 @section('breadcrumb')
     <li class="breadcrumb-item"><a href="{{ route('parc-info.dashboard') }}">Parc Info</a></li>
-    <li class="breadcrumb-item active">Serveurs Physiques</li>
+    <li class="breadcrumb-item active">Machines Virtuelles</li>
 @endsection
 
 @push('css')
@@ -18,10 +18,10 @@
     <div class="col-sm-6 col-xl-3">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body d-flex align-items-center gap-3">
-                <div class="rounded-3 bg-primary bg-opacity-10 p-3"><i class="bi bi-server fs-4 text-primary"></i></div>
+                <div class="rounded-3 bg-purple bg-opacity-10 p-3"><i class="bi bi-box fs-4 text-purple"></i></div>
                 <div>
-                    <div class="text-muted small fw-semibold text-uppercase" style="font-size:.7rem;letter-spacing:.5px">Total Physiques</div>
-                    <div class="fw-bold fs-4" id="kpi-total">—</div>
+                    <div class="text-muted small fw-semibold text-uppercase" style="font-size:.7rem;letter-spacing:.5px">Total VMs</div>
+                    <div class="fw-bold fs-4 text-purple" id="kpi-total">—</div>
                 </div>
             </div>
         </div>
@@ -102,7 +102,7 @@
 {{-- ── Table ── --}}
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
-        <h6 class="mb-0 fw-bold">Liste des Serveurs Physiques</h6>
+        <h6 class="mb-0 fw-bold">Liste des Machines Virtuelles</h6>
     </div>
     <div class="card-body p-0">
         <div id="toolbar">
@@ -118,7 +118,7 @@
         </div>
         <table id="serveurs-table"
                data-toggle="table"
-               data-url="{{ route('parc-info.serveurs.data') }}"
+               data-url="{{ route('parc-info.serveurs-virtuels.data') }}"
                data-pagination="true"
                data-side-pagination="server"
                data-search="true"
@@ -137,7 +137,8 @@
                     <th data-field="state" data-radio="true"></th>
                     <th data-field="code_inventaire" data-sortable="true" data-formatter="codeFormatter">Code</th>
                     <th data-field="marque_modele" data-sortable="true">Modèle</th>
-                    <th data-field="nom_ip" data-sortable="true">Nom / IP</th>
+                    <th data-field="nom_ip" data-sortable="true">Nom d'hôte / IP</th>
+                    <th data-field="hote" data-sortable="true">Serveur Hôte</th>
                     <th data-field="config">Configuration</th>
                     <th data-field="statut" data-formatter="statutFormatter">Statut</th>
                     <th data-field="id" data-formatter="actionsFormatter">Actions</th>
@@ -147,13 +148,13 @@
     </div>
 </div>
 
-@include('parcinfo::informatique.serveurs._wizard')
+@include('parcinfo::informatique.serveurs-virtuels._wizard')
 @include('parcinfo::informatique.ordinateurs._selection_modals')
 @endsection
 
 @push('js')
 <script src="{{ asset('plugins/bootstrap-table/bootstrap-table.min.js') }}"></script>
 <script src="{{ asset('plugins/bootstrap-table/locale/bootstrap-table-fr-FR.min.js') }}"></script>
-<script type="module" src="{{ asset('js/modules/parc-info/serveurs/index.js') }}?v={{ time() }}"></script>
+<script type="module" src="{{ asset('js/modules/parc-info/serveurs-virtuels/index.js') }}?v={{ time() }}"></script>
 <script src="{{ asset('js/modules/parc-info/ordinateurs/selection_modals.js') }}?v={{ time() }}"></script>
 @endpush

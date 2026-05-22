@@ -13,6 +13,7 @@ use Modules\ParcInfo\Http\Controllers\OrdinateurController;
 use Modules\ParcInfo\Http\Controllers\ParcInfoController;
 use Modules\ParcInfo\Http\Controllers\ScannerController;
 use Modules\ParcInfo\Http\Controllers\ServeurController;
+use Modules\ParcInfo\Http\Controllers\ServeurVirtuelController;
 use Modules\ParcInfo\Http\Controllers\TelephoneController;
 use Modules\ParcInfo\Http\Controllers\TerminalIPController;
 
@@ -110,6 +111,7 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::get('/', [ServeurController::class, 'index'])->name('index');
         Route::get('/data', [ServeurController::class, 'getData'])->name('data');
         Route::post('/', [ServeurController::class, 'store'])->name('store');
+        Route::get('/{id}/json', [ServeurController::class, 'showJson'])->name('show-json');
         Route::get('/{id}', [ServeurController::class, 'show'])->name('show');
         Route::put('/{id}', [ServeurController::class, 'update'])->name('update');
         Route::delete('/{id}', [ServeurController::class, 'destroy'])->name('destroy');
@@ -117,6 +119,20 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::patch('/{id}/statut', [ServeurController::class, 'updateStatut'])->name('update-statut');
         Route::patch('/{id}/etat', [ServeurController::class, 'updateEtat'])->name('update-etat');
         Route::post('/{id}/desaffecter', [ServeurController::class, 'desaffecter'])->name('desaffecter');
+    });
+
+    // Serveurs Virtuels
+    Route::prefix('informatique/serveurs-virtuels')->name('serveurs-virtuels.')->group(function () {
+        Route::get('/', [ServeurVirtuelController::class, 'index'])->name('index');
+        Route::get('/data', [ServeurVirtuelController::class, 'getData'])->name('data');
+        Route::post('/', [ServeurVirtuelController::class, 'store'])->name('store');
+        Route::get('/{id}/json', [ServeurVirtuelController::class, 'showJson'])->name('show-json');
+        Route::get('/{id}', [ServeurVirtuelController::class, 'show'])->name('show');
+        Route::put('/{id}', [ServeurVirtuelController::class, 'update'])->name('update');
+        Route::delete('/{id}', [ServeurVirtuelController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/statut', [ServeurVirtuelController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat', [ServeurVirtuelController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter', [ServeurVirtuelController::class, 'desaffecter'])->name('desaffecter');
     });
 
     // Mobiles & Tablettes

@@ -54,6 +54,11 @@ class Equipement extends Model
         return $this->hasOne(Serveur::class, 'equipement_id');
     }
 
+    public function serveurVirtuel(): HasOne
+    {
+        return $this->hasOne(ServeurVirtuel::class, 'equipement_id');
+    }
+
     public function infrastructure(): HasOne
     {
         return $this->hasOne(Infrastructure::class, 'equipement_id');

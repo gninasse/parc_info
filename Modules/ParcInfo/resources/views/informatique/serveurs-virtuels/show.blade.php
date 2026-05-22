@@ -4,12 +4,12 @@
 
 @section('breadcrumb')
     <li class="breadcrumb-item"><a href="{{ route('parc-info.dashboard') }}">Parc Info</a></li>
-    <li class="breadcrumb-item"><a href="{{ route('parc-info.serveurs.index') }}">Serveurs Physiques</a></li>
+    <li class="breadcrumb-item"><a href="{{ route('parc-info.serveurs-virtuels.index') }}">Machines Virtuelles</a></li>
     <li class="breadcrumb-item active">{{ $equipement->code_inventaire }}</li>
 @endsection
 
 @php
-    $s   = $equipement->serveur;
+    $s   = $equipement->serveurVirtuel;
     $aff = $equipement->affectationActive;
     $statutColors = [
         'en_service'   => 'success',
@@ -30,9 +30,9 @@
     <div class="card-body p-4">
         <div class="row align-items-center g-3">
             <div class="col-auto">
-                <div class="rounded-3 d-flex align-items-center justify-content-center bg-primary bg-opacity-10"
+                <div class="rounded-3 d-flex align-items-center justify-content-center bg-purple bg-opacity-10"
                      style="width:72px;height:72px">
-                    <i class="bi bi-cpu fs-2 text-primary"></i>
+                    <i class="bi bi-box fs-2 text-purple"></i>
                 </div>
             </div>
             <div class="col">
@@ -41,8 +41,8 @@
                     <span class="badge bg-{{ $sc }}-subtle text-{{ $sc }} border border-{{ $sc }}-subtle px-2 py-1">
                         {{ $equipement->statut_label }}
                     </span>
-                    <span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1">
-                        SERVEUR PHYSIQUE
+                    <span class="badge bg-purple-subtle text-purple border border-purple-subtle px-2 py-1">
+                        MACHINE VIRTUELLE
                     </span>
                 </div>
                 <div class="d-flex gap-4 flex-wrap text-muted small">
@@ -119,11 +119,20 @@
                                 <input type="text" class="form-control field-input" value="{{ $equipement->code_inventaire }}" disabled>
                             </div>
                             <div class="col-md-6">
-                                <label class="field-label">Numéro de Série <span class="text-danger">*</span></label>
+                                <label class="field-label">Numéro de Série / UUID <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control field-input" name="numero_serie" value="{{ $equipement->numero_serie }}" id="f_numero_serie" disabled required>
                             </div>
                             <div class="col-md-6">
-                                <label class="field-label">Marque</label>
+                                <label class="field-label">Serveur Hôte Physique <span class="text-danger">*</span></label>
+                                <select class="form-select field-input" name="serveur_hote_id" id="f_serveur_hote_id" disabled required>
+                                    <option value="">—</option>
+                                    @foreach($serveursPhysiques as $sp)
+                                    <option value="{{ $sp->equipement_id }}" {{ $s->serveur_hote_id == $sp->equipement_id ? 'selected':'' }}>{{ $sp->equipement->code_inventaire }} — {{ $sp->equipement->modele }} ({{ $sp->nom_hote ?: 'Sans nom' }})</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="field-label">Marque (Hyperviseur)</label>
                                 <select class="form-select field-input" name="marque_id" id="f_marque_id" disabled>
                                     <option value="">—</option>
                                     @foreach($marques as $m)
@@ -132,7 +141,7 @@
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="field-label">Modèle <span class="text-danger">*</span></label>
+                                <label class="field-label">Modèle (Génération) <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control field-input" name="modele" value="{{ $equipement->modele }}" id="f_modele" disabled required>
                             </div>
                             <div class="col-md-6">
@@ -152,8 +161,8 @@
                                 <label class="field-label">Rôle / Fonction</label>
                                 <input type="text" class="form-control field-input" name="role_serveur" value="{{ $s->role_serveur }}" id="f_role_serveur" disabled>
                             </div>
-                            <div class="col-md-6">
-                                <label class="field-label">Hyperviseur (Ex: ESXi, Proxmox)</label>
+                            <div class="col-md-12">
+                                <label class="field-label">Hyperviseur</label>
                                 <input type="text" class="form-control field-input" name="hyperviseur" value="{{ $s->hyperviseur }}" id="f_hyperviseur" disabled>
                             </div>
                         </div>
@@ -162,10 +171,10 @@
 
                 <div class="card border-0 shadow-sm mb-3" style="border-radius:12px">
                     <div class="card-body p-4">
-                        <h6 class="section-title mb-4"><span class="section-num">02</span> Configuration Matérielle & Rack</h6>
+                        <h6 class="section-title mb-4"><span class="section-num">02</span> Configuration Virtuelle (vCPU / RAM / Disque)</h6>
                         <div class="row g-3">
                             <div class="col-md-4">
-                                <label class="field-label">Type CPU</label>
+                                <label class="field-label">Type vCPU</label>
                                 <select class="form-select field-input" name="cpu_type_id" id="f_cpu_type_id" disabled>
                                     <option value="">—</option>
                                     @foreach($typesCpu as $c)
@@ -174,15 +183,15 @@
                                 </select>
                             </div>
                             <div class="col-md-4">
-                                <label class="field-label">Nb Proc.</label>
+                                <label class="field-label">Nb Sockets vCPU</label>
                                 <input type="number" class="form-control field-input" name="nb_processeurs" value="{{ $s->nb_processeurs }}" id="f_nb_processeurs" disabled>
                             </div>
                             <div class="col-md-4">
-                                <label class="field-label">Total Cœurs</label>
+                                <label class="field-label">Total cœurs vCPU</label>
                                 <input type="number" class="form-control field-input" name="nb_coeurs_total" value="{{ $s->nb_coeurs_total }}" id="f_nb_coeurs_total" disabled>
                             </div>
                             <div class="col-md-6">
-                                <label class="field-label">RAM (Go)</label>
+                                <label class="field-label">vRAM (Go)</label>
                                 <div class="input-group">
                                     <input type="number" class="form-control field-input" name="ram_capacite_go" value="{{ $s->ram_capacite_go }}" id="f_ram_capacite_go" disabled>
                                     <select class="form-select field-input" name="ram_type_id" id="f_ram_type_id" disabled>
@@ -194,7 +203,7 @@
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                <label class="field-label">Stockage (Go)</label>
+                                <label class="field-label">Provisioning Disque (Go)</label>
                                 <div class="input-group">
                                     <input type="number" class="form-control field-input" name="stockage_capacite_go" value="{{ $s->stockage_capacite_go }}" id="f_stockage_capacite_go" disabled>
                                     <select class="form-select field-input" name="disque_type_id" id="f_disque_type_id" disabled>
@@ -205,14 +214,6 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-md-6">
-                                <label class="field-label">U de départ (Rack Position)</label>
-                                <input type="number" class="form-control field-input" name="u_position_depart" value="{{ $s->u_position_depart }}" id="f_u_position_depart" disabled>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="field-label">U de fin (Rack Position)</label>
-                                <input type="number" class="form-control field-input" name="u_position_fin" value="{{ $s->u_position_fin }}" id="f_u_position_fin" disabled>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -221,14 +222,14 @@
             <div class="col-md-4">
                 <div class="card border-0 shadow-sm mb-3" style="border-radius:12px">
                     <div class="card-body p-4">
-                        <h6 class="section-title mb-4"><span class="section-num">03</span> Réseau</h6>
+                        <h6 class="section-title mb-4"><span class="section-num">03</span> Réseau Virtuel</h6>
                         <div class="row g-3">
                             <div class="col-12">
                                 <label class="field-label">Adresse IP</label>
                                 <input type="text" class="form-control field-input" name="adresse_ip" value="{{ $s->adresse_ip }}" id="f_adresse_ip" disabled>
                             </div>
                             <div class="col-12">
-                                <label class="field-label">Adresse MAC</label>
+                                <label class="field-label">Adresse MAC vNIC</label>
                                 <input type="text" class="form-control field-input" name="adresse_mac" value="{{ $s->adresse_mac }}" id="f_adresse_mac" disabled>
                             </div>
                             <div class="col-12">
@@ -241,22 +242,15 @@
 
                 <div class="card border-0 shadow-sm mb-3" style="border-radius:12px">
                     <div class="card-body p-4">
-                        <h6 class="section-title mb-4"><span class="section-num">04</span> Acquisition</h6>
+                        <h6 class="section-title mb-4"><span class="section-num">04</span> Cycle de Vie</h6>
                         <div class="row g-3">
                             <div class="col-12">
-                                <label class="field-label">Date acquisition</label>
+                                <label class="field-label">Date de provisionnement</label>
                                 <input type="date" class="form-control field-input" name="date_acquisition" value="{{ $equipement->date_acquisition?->format('Y-m-d') }}" id="f_date_acquisition" disabled>
                             </div>
                             <div class="col-12">
-                                <label class="field-label">Fin de garantie</label>
-                                <input type="date" class="form-control field-input" name="date_fin_garantie" value="{{ $equipement->date_fin_garantie?->format('Y-m-d') }}" id="f_date_fin_garantie" disabled>
-                            </div>
-                            <div class="col-12">
-                                <label class="field-label">Valeur achat</label>
-                                <div class="input-group">
-                                    <input type="number" class="form-control field-input" name="valeur_achat" value="{{ $equipement->valeur_achat }}" id="f_valeur_achat" disabled>
-                                    <span class="input-group-text bg-light border-start-0 small">FCFA</span>
-                                </div>
+                                <label class="field-label">Date mise en service</label>
+                                <input type="date" class="form-control field-input" name="date_mise_en_service" value="{{ $equipement->date_mise_en_service?->format('Y-m-d') }}" id="f_date_mise_en_service" disabled>
                             </div>
                         </div>
                     </div>
@@ -277,47 +271,24 @@
 <div class="tab-pane fade" id="pane-virtua" role="tabpanel">
     <div class="row g-3">
         <div class="col-12">
-            <div class="card border-0 shadow-sm" style="border-radius:12px">
-                <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
-                    <h6 class="fw-bold mb-0"><i class="bi bi-box text-purple me-2"></i>Machines Virtuelles Hébergées ({{ $s->vms->count() }})</h6>
-                </div>
+            <div class="card border-0 shadow-sm h-100" style="border-radius:12px">
                 <div class="card-body p-4">
-                    @if($s->vms->count())
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th class="small fw-bold">Code</th>
-                                    <th class="small fw-bold">Nom / IP</th>
-                                    <th class="small fw-bold">OS</th>
-                                    <th class="small fw-bold text-center">RAM</th>
-                                    <th class="small fw-bold text-center">Statut</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($s->vms as $vm)
-                                <tr>
-                                    <td class="small fw-bold">{{ $vm->equipement->code_inventaire }}</td>
-                                    <td class="small">{{ $vm->nom_hote }} <br> <span class="text-muted" style="font-size:.7rem">{{ $vm->adresse_ip }}</span></td>
-                                    <td class="small">{{ $vm->typeOs?->libelle ?: '—' }}</td>
-                                    <td class="small text-center">{{ $vm->ram_capacite_go }} Go</td>
-                                    <td class="text-center">
-                                        <span class="badge bg-{{ $statutColors[$vm->equipement->statut] ?? 'info' }}-subtle text-{{ $statutColors[$vm->equipement->statut] ?? 'info' }} small" style="font-size:.65rem">
-                                            {{ strtoupper($vm->equipement->statut) }}
-                                        </span>
-                                    </td>
-                                    <td class="text-end">
-                                        <a href="{{ route('parc-info.serveurs-virtuels.show', $vm->equipement_id) }}" class="btn btn-sm btn-light border-0"><i class="bi bi-eye"></i></a>
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+                    <h6 class="fw-bold mb-4"><i class="bi bi-cpu text-primary me-2"></i>Serveur Hôte Physique</h6>
+                    @if($s->serveurHote)
+                    <div class="d-flex align-items-center gap-3 p-3 rounded-3 border bg-light">
+                        <div class="rounded-circle bg-primary bg-opacity-10 p-2"><i class="bi bi-cpu text-primary"></i></div>
+                        <div>
+                            <div class="fw-bold"><a href="{{ route('parc-info.serveurs.show', $s->serveurHote->equipement_id) }}">{{ $s->serveurHote->equipement->code_inventaire }}</a></div>
+                            <div class="small text-muted">{{ $s->serveurHote->equipement->modele }} ({{ $s->serveurHote->nom_hote ?: 'Sans nom' }})</div>
+                        </div>
                     </div>
                     @else
-                    <p class="text-muted small mb-0">Aucune machine virtuelle n'est hébergée sur ce serveur.</p>
+                    <div class="alert alert-warning mb-0 small">Aucun hôte défini pour cette VM.</div>
                     @endif
+                    <div class="mt-4">
+                        <label class="field-label">Hyperviseur d'exécution</label>
+                        <div class="p-2 bg-light rounded border text-dark">{{ $s->hyperviseur ?: '—' }}</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -332,16 +303,16 @@
             <div class="d-flex align-items-center gap-3 mb-4">
                 <div class="rounded-circle bg-success bg-opacity-10 p-3"><i class="bi bi-geo-alt fs-4 text-success"></i></div>
                 <div>
-                    <h6 class="fw-bold mb-0">Emplacement Actuel</h6>
+                    <h6 class="fw-bold mb-0">Emplacement Actuel de la VM</h6>
                     <div class="text-muted small">Depuis le {{ $aff->date_debut?->format('d/m/Y') }}</div>
                 </div>
                 <span class="badge bg-success-subtle text-success border border-success-subtle ms-auto px-3 py-2">Affectation Active</span>
             </div>
 
             <div class="row g-4">
-                <div class="col-md-6">
+                <div class="col-md-12">
                     <div class="p-3 rounded-3 border bg-light">
-                        <div class="text-muted small text-uppercase fw-bold mb-2" style="font-size:.65rem;letter-spacing:.5px">Local / Salle</div>
+                        <div class="text-muted small text-uppercase fw-bold mb-2" style="font-size:.65rem;letter-spacing:.5px">Local / Bureau Responsable</div>
                         @if($aff->local)
                         <div class="fw-bold fs-5 mb-1">{{ $aff->local->libelle }}</div>
                         <div class="small text-muted">
@@ -349,17 +320,6 @@
                         </div>
                         @else
                         <span class="text-muted small italic">Aucun local spécifié</span>
-                        @endif
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="p-3 rounded-3 border bg-light">
-                        <div class="text-muted small text-uppercase fw-bold mb-2" style="font-size:.65rem;letter-spacing:.5px">Rack / Baie</div>
-                        @if($aff->posteTravail)
-                        <div class="fw-bold fs-5 mb-1">{{ $aff->posteTravail->code }}</div>
-                        <div class="small text-muted">{{ $aff->posteTravail->libelle }}</div>
-                        @else
-                        <span class="text-muted small italic">Non racké</span>
                         @endif
                     </div>
                 </div>
@@ -375,7 +335,7 @@
             @else
             <div class="text-center py-5">
                 <div class="mb-3"><i class="bi bi-geo-alt fs-1 text-muted opacity-50"></i></div>
-                <p class="text-muted fw-semibold">Ce serveur n'est pas encore localisé (En Stock)</p>
+                <p class="text-muted fw-semibold">Cette VM n'est pas encore localisée (En Stock)</p>
                 <button class="btn btn-primary btn-sm" onclick="$('#tab-fiche').trigger('click'); Wizard.openEdit({{ $equipement->id }});">
                     <i class="bi bi-geo-alt-fill me-1"></i> Définir l'emplacement
                 </button>
@@ -420,7 +380,7 @@
 
 </div>
 
-@include('parcinfo::informatique.serveurs._wizard')
+@include('parcinfo::informatique.serveurs-virtuels._wizard')
 @include('parcinfo::informatique.ordinateurs._selection_modals')
 
 @endsection
@@ -445,7 +405,7 @@
 @endpush
 
 @push('js')
-<script type="module" src="{{ asset('js/modules/parc-info/serveurs/index.js') }}?v={{ time() }}"></script>
+<script type="module" src="{{ asset('js/modules/parc-info/serveurs-virtuels/index.js') }}?v={{ time() }}"></script>
 <script src="{{ asset('js/modules/parc-info/ordinateurs/selection_modals.js') }}?v={{ time() }}"></script>
 <script>
 const equipementId = {{ $equipement->id }};
@@ -476,7 +436,7 @@ $(function () {
         }).then((result) => {
             if (result.isConfirmed) {
                 $.ajax({
-                    url: `{{ route('parc-info.serveurs.update-statut', $equipement->id) }}`,
+                    url: `{{ route('parc-info.serveurs-virtuels.update-statut', $equipement->id) }}`,
                     method: 'PATCH',
                     data: { statut: statut, motif: result.value },
                     success: (res) => {
@@ -512,7 +472,7 @@ $(function () {
         }).then((result) => {
             if (result.isConfirmed) {
                 $.ajax({
-                    url: `{{ route('parc-info.serveurs.desaffecter', $equipement->id) }}`,
+                    url: `{{ route('parc-info.serveurs-virtuels.desaffecter', $equipement->id) }}`,
                     method: 'POST',
                     data: { motif: result.value },
                     success: (res) => {
@@ -541,7 +501,7 @@ $(function () {
         e.preventDefault();
         const $btn = $('#btn-save-fiche').prop('disabled', true).text('Enregistrement...');
         $.ajax({
-            url: route('parc-info.serveurs.update', equipementId),
+            url: route('parc-info.serveurs-virtuels.update', equipementId),
             method: 'PUT',
             data: $(this).serialize(),
             success: (res) => {

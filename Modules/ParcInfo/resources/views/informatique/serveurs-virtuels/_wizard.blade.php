@@ -5,7 +5,7 @@
             {{-- Header --}}
             <div class="modal-header border-0 px-4 pt-4 pb-0">
                 <div>
-                    <h5 class="modal-title fw-bold mb-0" id="wizard-title">Ajouter un serveur physique</h5>
+                    <h5 class="modal-title fw-bold mb-0" id="wizard-title">Ajouter une machine virtuelle</h5>
                     <small class="text-muted" id="wizard-subtitle">Configuration de l'infrastructure IT - CHU Yalgado</small>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -36,13 +36,13 @@
 
                     {{-- ── ÉTAPE 1 : STATUT ── --}}
                     <div id="step-1" class="wizard-step">
-                        <h6 class="fw-bold text-center mb-1">Statut du serveur</h6>
-                        <p class="text-muted text-center small mb-4">Définissez l'état actuel de cet actif dans l'infrastructure.</p>
+                        <h6 class="fw-bold text-center mb-1">Statut de la VM</h6>
+                        <p class="text-muted text-center small mb-4">Définissez l'état actuel de cette machine virtuelle dans le cluster.</p>
                         <div class="d-flex flex-column gap-2" id="statut-options">
                             @foreach([
-                                ['en_stock',      'bi-archive',    'En stock',      'Prêt pour déploiement ou non installé'],
-                                ['en_service',    'bi-server',     'En service',    'Serveur actif et opérationnel'],
-                                ['en_reparation', 'bi-tools',      'En réparation', 'Maintenance matérielle ou logicielle'],
+                                ['en_stock',      'bi-archive',    'En stock',      'VM provisionnée mais non démarrée ou éteinte'],
+                                ['en_service',    'bi-box',        'En service',    'Machine virtuelle active et opérationnelle'],
+                                ['en_reparation', 'bi-tools',      'En réparation', 'Maintenance système ou corrective'],
                             ] as [$val,$icon,$label,$desc])
                             <label class="statut-card d-flex align-items-center gap-3 p-3 rounded-3 border cursor-pointer" data-value="{{ $val }}">
                                 <input type="radio" name="statut" value="{{ $val }}" class="d-none">
@@ -61,12 +61,17 @@
                     <div id="step-2" class="wizard-step d-none">
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label field-label">Rôle / Fonction</label>
-                                <input type="text" class="form-control field-input" name="role_serveur" id="role_serveur" placeholder="Ex: AD, SQL, Web, App">
+                                <label class="form-label field-label">Serveur Hôte (Physique) <span class="text-danger">*</span></label>
+                                <select class="form-select field-input" name="serveur_hote_id" id="serveur_hote_id" required>
+                                    <option value="">Sélectionner l'hôte...</option>
+                                    @foreach($serveursPhysiques as $sp)
+                                    <option value="{{ $sp->equipement_id }}">{{ $sp->equipement->code_inventaire }} — {{ $sp->equipement->modele }} ({{ $sp->nom_hote ?: 'Sans nom' }})</option>
+                                    @endforeach
+                                </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label field-label">Hyperviseur (Installé)</label>
-                                <input type="text" class="form-control field-input" name="hyperviseur" id="hyperviseur" placeholder="Ex: ESXi 7.0, Hyper-V, Proxmox">
+                                <label class="form-label field-label">Rôle / Fonction</label>
+                                <input type="text" class="form-control field-input" name="role_serveur" id="role_serveur" placeholder="Ex: AD, SQL, Web, App">
                             </div>
 
                             <div class="col-md-6">
@@ -74,12 +79,12 @@
                                 <input type="text" class="form-control field-input bg-light" name="code_inventaire" id="code_inventaire" placeholder="Généré automatiquement" readonly>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label field-label">Numéro de Série <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control field-input" name="numero_serie" id="numero_serie" placeholder="Ex: S/N 987654321" required>
+                                <label class="form-label field-label">Numéro de Série / ID Unique <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control field-input" name="numero_serie" id="numero_serie" placeholder="Ex: VM-UUID-987654" required>
                             </div>
 
                             <div class="col-md-5">
-                                <label class="form-label field-label">Marque</label>
+                                <label class="form-label field-label">Marque (Plateforme VM)</label>
                                 <div class="input-group">
                                     <select class="form-select field-input" name="marque_id" id="marque_id">
                                         <option value="">Sélectionner...</option>
@@ -91,12 +96,16 @@
                                 </div>
                             </div>
                             <div class="col-md-7">
-                                <label class="form-label field-label">Modèle <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control field-input" name="modele" id="modele" placeholder="Ex: PowerEdge R740 / ProLiant DL380" required>
+                                <label class="form-label field-label">Modèle (Génération) <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control field-input" name="modele" id="modele" placeholder="Ex: Virtual Machine v15 / KVM v3" required>
                             </div>
 
                             <div class="col-md-6">
-                                <label class="form-label field-label">OS (Hôte)</label>
+                                <label class="form-label field-label">Hyperviseur (Utilisé)</label>
+                                <input type="text" class="form-control field-input" name="hyperviseur" id="hyperviseur" placeholder="Ex: ESXi 7.0, Hyper-V, Proxmox">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label field-label">OS (Installé)</label>
                                 <div class="input-group">
                                     <select class="form-select field-input" name="os_type_id" id="os_type_id">
                                         <option value="">Sélectionner...</option>
@@ -107,9 +116,10 @@
                                     <button type="button" class="btn btn-outline-secondary btn-add-nomenclature" data-type="os"><i class="bi bi-plus"></i></button>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+
+                            <div class="col-md-12">
                                 <label class="form-label field-label">Nom d'hôte / FQDN</label>
-                                <input type="text" class="form-control field-input" name="nom_hote" id="nom_hote" placeholder="Ex: srv-esxi-01.chu.local">
+                                <input type="text" class="form-control field-input" name="nom_hote" id="nom_hote" placeholder="Ex: vm-db-01.chu.local">
                             </div>
 
                             <div class="col-md-6">
@@ -122,7 +132,7 @@
                             </div>
 
                             <div class="col-md-4">
-                                <label class="form-label field-label">Processeur (CPU)</label>
+                                <label class="form-label field-label">Processeur (vCPU)</label>
                                 <select class="form-select field-input" name="cpu_type_id" id="cpu_type_id">
                                     <option value="">Type...</option>
                                     @foreach($typesCpu as $c)
@@ -131,10 +141,10 @@
                                 </select>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label field-label">Nb Proc / Cœurs</label>
+                                <label class="form-label field-label">Nb Sockets / Coeurs vCPU</label>
                                 <div class="input-group">
-                                    <input type="number" class="form-control field-input" name="nb_processeurs" id="nb_processeurs" placeholder="CPU" title="Nombre de processeurs physiques">
-                                    <input type="number" class="form-control field-input" name="nb_coeurs_total" id="nb_coeurs_total" placeholder="Cœurs" title="Nombre total de cœurs">
+                                    <input type="number" class="form-control field-input" name="nb_processeurs" id="nb_processeurs" placeholder="Sockets" title="Nombre de sockets virtuels">
+                                    <input type="number" class="form-control field-input" name="nb_coeurs_total" id="nb_coeurs_total" placeholder="vCPU" title="Total cœurs vCPU">
                                 </div>
                             </div>
                             <div class="col-md-4">
@@ -149,16 +159,20 @@
                                     </select>
                                 </div>
                             </div>
-
-                            <div class="col-md-6">
-                                <label class="form-label field-label">U de départ (Rack Position)</label>
-                                <input type="number" class="form-control field-input" name="u_position_depart" id="u_position_depart" placeholder="Ex: 10" min="1">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label field-label">U de fin (Rack Position)</label>
-                                <input type="number" class="form-control field-input" name="u_position_fin" id="u_position_fin" placeholder="Ex: 12" min="1">
-                            </div>
                             
+                            <div class="col-md-12">
+                                <label class="form-label field-label">Provisioning Disque (Go)</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control field-input" name="stockage_capacite_go" id="stockage_capacite_go" placeholder="Capacité de stockage">
+                                    <select class="form-select field-input" name="disque_type_id" id="disque_type_id">
+                                        <option value="">Type de stockage</option>
+                                        @foreach($typesDisque as $d)
+                                        <option value="{{ $d->id }}">{{ $d->libelle }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+
                             <div class="col-md-12">
                                 <label class="form-label field-label">État</label>
                                 <select class="form-select field-input" name="etat" id="etat">
@@ -173,11 +187,10 @@
 
                     {{-- ── ÉTAPE 3 : AFFECTATION ── --}}
                     <div id="step-3" class="wizard-step d-none">
-                        <h6 class="fw-bold mb-3 text-center">Affectation du serveur</h6>
+                        <h6 class="fw-bold mb-3 text-center">Affectation logique de la VM</h6>
                         <div class="row g-3 mb-4 justify-content-center" id="affectation-type-cards">
                             @foreach([
-                                ['LOCAL',  'bi-door-open',   'Salle Serveurs / Local'],
-                                ['POSTE',  'bi-diagram-3',   'Rack / Baie'],
+                                ['LOCAL',  'bi-door-open',   'Local / Bureau d\'exploitation'],
                             ] as [$val,$icon,$label])
                             <div class="col-5">
                                 <label class="aff-type-card d-flex flex-column align-items-center justify-content-center gap-2 p-3 rounded-3 border cursor-pointer text-center" data-value="{{ $val }}">
@@ -205,22 +218,8 @@
                             <input type="hidden" name="local_id" id="local_id">
                         </div>
 
-                        {{-- Carte récapitulative Poste (utilisé ici pour Rack) --}}
-                        <div id="aff-poste-summary" class="aff-summary d-none">
-                            <div class="card border-primary">
-                                <div class="card-body">
-                                    <h6 class="mb-3 fw-bold"><i class="bi bi-diagram-3 text-primary me-2"></i>Rack / Baie sélectionné</h6>
-                                    <div class="row g-2">
-                                        <div class="col-md-4"><small class="text-muted d-block">Code</small><strong id="poste-summary-code">—</strong></div>
-                                        <div class="col-md-8"><small class="text-muted d-block">Emplacement</small><span id="poste-summary-emplacement">—</span></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <input type="hidden" name="poste_travail_id" id="poste_travail_id">
-                        </div>
-
                         <div class="text-center mt-3" id="aff-skip-hint">
-                            <small class="text-muted">Aucune affectation sélectionnée — le serveur sera enregistré en stock.</small>
+                            <small class="text-muted">Aucune affectation sélectionnée — la VM sera enregistrée en stock.</small>
                         </div>
                     </div>
 
@@ -237,7 +236,7 @@
                             Suivant <i class="bi bi-chevron-right ms-1"></i>
                         </button>
                         <button type="submit" class="btn btn-primary px-4 d-none" id="btn-submit">
-                            <i class="bi bi-floppy me-1"></i> <span id="btn-submit-label">Enregistrer le serveur</span>
+                            <i class="bi bi-floppy me-1"></i> <span id="btn-submit-label">Enregistrer la VM</span>
                         </button>
                     </div>
                 </div>

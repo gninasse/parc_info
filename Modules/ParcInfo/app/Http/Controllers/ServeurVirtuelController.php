@@ -5,6 +5,7 @@ namespace Modules\ParcInfo\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 use Modules\Organisation\Models\Direction;
 use Modules\Organisation\Models\Site;
 use Modules\ParcInfo\Models\AffectationEquipement;
@@ -12,14 +13,15 @@ use Modules\ParcInfo\Models\Equipement;
 use Modules\ParcInfo\Models\HistoriqueChangement;
 use Modules\ParcInfo\Models\Marque;
 use Modules\ParcInfo\Models\Serveur;
+use Modules\ParcInfo\Models\ServeurVirtuel;
 use Modules\ParcInfo\Models\TypeCpu;
 use Modules\ParcInfo\Models\TypeDisque;
 use Modules\ParcInfo\Models\TypeOs;
 use Modules\ParcInfo\Models\TypeRam;
 
-class ServeurController extends Controller
+class ServeurVirtuelController extends Controller
 {
-    public function index()
+    public function index(): View
     {
         $sites = Site::orderBy('libelle')->get(['id', 'libelle']);
         $directions = Direction::where('actif', true)->orderBy('libelle')->get(['id', 'libelle']);
@@ -28,17 +30,18 @@ class ServeurController extends Controller
         $typesRam = TypeRam::orderBy('libelle')->get(['id', 'libelle']);
         $typesCpu = TypeCpu::orderBy('libelle')->get(['id', 'libelle']);
         $typesDisque = TypeDisque::orderBy('libelle')->get(['id', 'libelle']);
+        $serveursPhysiques = Serveur::with('equipement')->get();
 
-        return view('parcinfo::informatique.serveurs.index', compact(
-            'sites', 'directions', 'marques', 'typesOs', 'typesRam', 'typesCpu', 'typesDisque'
+        return view('parcinfo::informatique.serveurs-virtuels.index', compact(
+            'sites', 'directions', 'marques', 'typesOs', 'typesRam', 'typesCpu', 'typesDisque', 'serveursPhysiques'
         ));
     }
 
-    public function getData(Request $request)
+    public function getData(Request $request): JsonResponse
     {
         $query = Equipement::query()
-            ->with(['marque', 'serveur.typeOs', 'serveur.vms.equipement', 'affectationActive.local', 'affectationActive.service'])
-            ->whereHas('serveur');
+            ->with(['marque', 'serveurVirtuel.typeOs', 'serveurVirtuel.serveurHote.equipement', 'affectationActive.local', 'affectationActive.service'])
+            ->whereHas('serveurVirtuel');
 
         if ($request->filled('statut')) {
             $query->where('statut', $request->statut);
@@ -54,8 +57,8 @@ class ServeurController extends Controller
                 ->orWhere('numero_serie', 'ilike', "%{$s}%")
                 ->orWhere('modele', 'ilike', "%{$s}%")
                 ->orWhereHas('marque', fn ($q2) => $q2->where('libelle', 'ilike', "%{$s}%"))
-                ->orWhereHas('serveur', fn ($q2) => $q2->where('nom_hote', 'ilike', "%{$s}%"))
-                ->orWhereHas('serveur', fn ($q2) => $q2->where('adresse_ip', 'ilike', "%{$s}%"))
+                ->orWhereHas('serveurVirtuel', fn ($q2) => $q2->where('nom_hote', 'ilike', "%{$s}%"))
+                ->orWhereHas('serveurVirtuel', fn ($q2) => $q2->where('adresse_ip', 'ilike', "%{$s}%"))
             );
         }
 
@@ -72,12 +75,12 @@ class ServeurController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
         if (! $request->filled('code_inventaire')) {
             $lastEquipement = Equipement::orderBy('id', 'desc')->first();
             $nextId = $lastEquipement ? $lastEquipement->id + 1 : 1;
-            $request->merge(['code_inventaire' => 'SRV-'.date('Y').'-'.str_pad($nextId, 4, '0', STR_PAD_LEFT)]);
+            $request->merge(['code_inventaire' => 'VM-'.date('Y').'-'.str_pad($nextId, 4, '0', STR_PAD_LEFT)]);
         }
 
         $request->validate([
@@ -87,12 +90,13 @@ class ServeurController extends Controller
             'modele' => 'required|string|max:255',
             'statut' => 'required|in:en_stock,en_service,en_reparation,perdu,reforme',
             'etat' => 'required|in:bon,passable,mauvais,avarie',
-            // Serveur
+            // VM
             'ram_capacite_go' => 'nullable|integer',
             'stockage_capacite_go' => 'nullable|integer',
             'os_type_id' => 'nullable|exists:parc_info_types_os,id',
             'ram_type_id' => 'nullable|exists:parc_info_types_rams,id',
             'cpu_type_id' => 'nullable|exists:parc_info_types_cpus,id',
+            'serveur_hote_id' => 'nullable|exists:parc_info_serveurs,equipement_id',
         ]);
 
         $equipementId = \DB::transaction(function () use ($request) {
@@ -110,7 +114,7 @@ class ServeurController extends Controller
                 'tags' => $request->tags ? explode(',', $request->tags) : null,
             ]);
 
-            Serveur::create([
+            ServeurVirtuel::create([
                 'equipement_id' => $equipement->id,
                 'role_serveur' => $request->role_serveur,
                 'ram_type_id' => $request->ram_type_id,
@@ -126,8 +130,7 @@ class ServeurController extends Controller
                 'adresse_ip' => $request->adresse_ip,
                 'adresse_mac' => $request->adresse_mac,
                 'hyperviseur' => $request->hyperviseur,
-                'u_position_depart' => $request->u_position_depart,
-                'u_position_fin' => $request->u_position_fin,
+                'serveur_hote_id' => $request->serveur_hote_id,
             ]);
 
             if (! $request->boolean('skip_affectation') && $request->filled('type_cible')) {
@@ -139,7 +142,6 @@ class ServeurController extends Controller
                     'type_affectation' => 'PERMANENTE',
                     'date_debut' => now()->format('Y-m-d'),
                     'local_id' => $request->local_id,
-                    'poste_travail_id' => $request->poste_travail_id,
                     'service_id' => $request->service_id_aff,
                     'direction_id' => $request->direction_id_aff,
                 ]);
@@ -148,14 +150,14 @@ class ServeurController extends Controller
             return $equipement->id;
         });
 
-        return response()->json(['success' => true, 'message' => 'Serveur enregistré avec succès.', 'equipement_id' => $equipementId]);
+        return response()->json(['success' => true, 'message' => 'Serveur virtuel enregistré avec succès.', 'equipement_id' => $equipementId]);
     }
 
-    public function show($id)
+    public function show(int $id): View
     {
         $equipement = Equipement::with([
             'marque',
-            'serveur.typeOs', 'serveur.typeRam', 'serveur.typeCpu', 'serveur.typeDisque', 'serveur.vms.equipement',
+            'serveurVirtuel.typeOs', 'serveurVirtuel.typeRam', 'serveurVirtuel.typeCpu', 'serveurVirtuel.typeDisque', 'serveurVirtuel.serveurHote.equipement',
             'affectationActive.local.etage.batiment.site',
             'affectationActive.direction', 'affectationActive.service',
             'affectations.local', 'affectations.service',
@@ -169,9 +171,10 @@ class ServeurController extends Controller
         $typesDisque = TypeDisque::orderBy('libelle')->get(['id', 'libelle']);
         $sites = Site::orderBy('libelle')->get(['id', 'libelle']);
         $directions = Direction::where('actif', true)->orderBy('libelle')->get(['id', 'libelle']);
+        $serveursPhysiques = Serveur::with('equipement')->get();
 
-        return view('parcinfo::informatique.serveurs.show', compact(
-            'equipement', 'marques', 'typesOs', 'typesRam', 'typesCpu', 'typesDisque', 'sites', 'directions'
+        return view('parcinfo::informatique.serveurs-virtuels.show', compact(
+            'equipement', 'marques', 'typesOs', 'typesRam', 'typesCpu', 'typesDisque', 'sites', 'directions', 'serveursPhysiques'
         ));
     }
 
@@ -179,7 +182,7 @@ class ServeurController extends Controller
     {
         $e = Equipement::with([
             'marque',
-            'serveur.typeOs', 'serveur.typeRam', 'serveur.typeCpu', 'serveur.typeDisque',
+            'serveurVirtuel.typeOs', 'serveurVirtuel.typeRam', 'serveurVirtuel.typeCpu', 'serveurVirtuel.typeDisque', 'serveurVirtuel.serveurHote.equipement',
             'affectationActive.local.etage.batiment.site',
             'affectationActive.direction', 'affectationActive.service',
         ])->findOrFail($id);
@@ -187,13 +190,14 @@ class ServeurController extends Controller
         return response()->json(['success' => true, 'data' => $e]);
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, int $id): JsonResponse
     {
         $request->validate([
             'numero_serie' => "required|string|unique:parc_info_equipements,numero_serie,{$id}",
             'modele' => 'required|string|max:255',
             'statut' => 'required|in:en_stock,en_service,en_reparation,perdu,reforme',
             'etat' => 'required|in:bon,passable,mauvais,avarie',
+            'serveur_hote_id' => 'nullable|exists:parc_info_serveurs,equipement_id',
         ]);
 
         \DB::transaction(function () use ($request, $id) {
@@ -204,19 +208,19 @@ class ServeurController extends Controller
                 'valeur_achat', 'statut', 'etat',
             ]));
 
-            $equipement->serveur->update($request->only([
+            $equipement->serveurVirtuel->update($request->only([
                 'role_serveur', 'ram_type_id', 'ram_capacite_go',
                 'cpu_type_id', 'nb_processeurs', 'nb_coeurs_total',
                 'disque_type_id', 'stockage_capacite_go', 'os_type_id',
                 'nom_hote', 'domaine', 'adresse_ip', 'adresse_mac',
-                'hyperviseur', 'u_position_depart', 'u_position_fin',
+                'hyperviseur', 'serveur_hote_id',
             ]));
         });
 
-        return response()->json(['success' => true, 'message' => 'Serveur physique mis à jour avec succès.']);
+        return response()->json(['success' => true, 'message' => 'Serveur virtuel mis à jour avec succès.']);
     }
 
-    public function updateStatut(Request $request, $id)
+    public function updateStatut(Request $request, int $id): JsonResponse
     {
         $request->validate([
             'statut' => 'required|in:en_stock,en_service,en_reparation,perdu,reforme',
@@ -249,7 +253,7 @@ class ServeurController extends Controller
         return response()->json(['success' => true, 'message' => 'Statut mis à jour avec succès.']);
     }
 
-    public function updateEtat(Request $request, $id)
+    public function updateEtat(Request $request, int $id): JsonResponse
     {
         $request->validate([
             'etat' => 'required|in:bon,passable,mauvais,avarie',
@@ -276,7 +280,7 @@ class ServeurController extends Controller
         return response()->json(['success' => true, 'message' => 'État mis à jour avec succès.']);
     }
 
-    public function desaffecter(Request $request, $id)
+    public function desaffecter(Request $request, int $id): JsonResponse
     {
         $request->validate([
             'motif' => 'required|string|max:255',
@@ -316,29 +320,11 @@ class ServeurController extends Controller
         return response()->json(['success' => true, 'message' => 'Équipement désaffecté et mis en stock.']);
     }
 
-    public function destroy($id)
+    public function destroy(int $id): JsonResponse
     {
         Equipement::findOrFail($id)->delete();
 
-        return response()->json(['success' => true, 'message' => 'Serveur physique supprimé.']);
-    }
-
-    public function searchHotes(Request $request)
-    {
-        $q = $request->get('q', '');
-
-        return response()->json(
-            Serveur::whereHas('equipement', function ($query) use ($q) {
-                $query->where('code_inventaire', 'ilike', "%{$q}%")
-                    ->orWhere('modele', 'ilike', "%{$q}%");
-            })
-                ->with('equipement')
-                ->limit(20)->get()
-                ->map(fn ($s) => [
-                    'id' => $s->equipement_id,
-                    'text' => "{$s->equipement->code_inventaire} — {$s->equipement->modele} (".($s->nom_hote ?? 'Sans nom').')',
-                ])
-        );
+        return response()->json(['success' => true, 'message' => 'Serveur virtuel supprimé.']);
     }
 
     private function formatRow(Equipement $e): array
@@ -349,22 +335,27 @@ class ServeurController extends Controller
             $affLabel = $aff->local?->libelle ?? $aff->service?->libelle ?? '—';
         }
 
+        $hote = '—';
+        if ($e->serveurVirtuel?->serveurHote?->equipement) {
+            $hote = $e->serveurVirtuel->serveurHote->equipement->code_inventaire.' ('.($e->serveurVirtuel->serveurHote->nom_hote ?? 'Sans nom').')';
+        }
+
         return [
             'id' => $e->id,
             'code_inventaire' => $e->code_inventaire,
             'marque_modele' => ($e->marque?->libelle ?? '—').' '.$e->modele,
-            'type_serveur' => 'Physique',
-            'nom_ip' => ($e->serveur->nom_hote ?? '—').' / '.($e->serveur->adresse_ip ?? '—'),
-            'os' => $e->serveur->typeOs?->libelle ?? '—',
+            'type_serveur' => 'Virtuel',
+            'nom_ip' => ($e->serveurVirtuel->nom_hote ?? '—').' / '.($e->serveurVirtuel->adresse_ip ?? '—'),
+            'os' => $e->serveurVirtuel->typeOs?->libelle ?? '—',
             'config' => implode(' / ', array_filter([
-                $e->serveur->nb_processeurs ? $e->serveur->nb_processeurs.' CPU' : null,
-                $e->serveur->ram_capacite_go ? $e->serveur->ram_capacite_go.'Go RAM' : null,
-                $e->serveur->stockage_capacite_go ? $e->serveur->stockage_capacite_go.'Go' : null,
+                $e->serveurVirtuel->nb_processeurs ? $e->serveurVirtuel->nb_processeurs.' CPU' : null,
+                $e->serveurVirtuel->ram_capacite_go ? $e->serveurVirtuel->ram_capacite_go.'Go RAM' : null,
+                $e->serveurVirtuel->stockage_capacite_go ? $e->serveurVirtuel->stockage_capacite_go.'Go' : null,
             ])) ?: '—',
             'statut' => $e->statut,
             'statut_label' => $e->statut_label,
             'affectation' => $affLabel,
-            'hote' => '—',
+            'hote' => $hote,
         ];
     }
 }

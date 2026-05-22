@@ -4,9 +4,9 @@ namespace Modules\ParcInfo\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Serveur extends Model
+class ServeurVirtuel extends Model
 {
-    protected $table = 'parc_info_serveurs';
+    protected $table = 'parc_info_serveurs_virtuels';
 
     public $timestamps = false;
 
@@ -30,8 +30,7 @@ class Serveur extends Model
         'adresse_ip',
         'adresse_mac',
         'hyperviseur',
-        'u_position_depart',
-        'u_position_fin',
+        'serveur_hote_id',
     ];
 
     protected $casts = [
@@ -39,8 +38,6 @@ class Serveur extends Model
         'nb_processeurs' => 'integer',
         'nb_coeurs_total' => 'integer',
         'stockage_capacite_go' => 'integer',
-        'u_position_depart' => 'integer',
-        'u_position_fin' => 'integer',
     ];
 
     public function equipement()
@@ -68,9 +65,9 @@ class Serveur extends Model
         return $this->belongsTo(TypeOs::class, 'os_type_id');
     }
 
-    /** VMs hébergées sur ce serveur physique */
-    public function vms()
+    /** Serveur physique hôte */
+    public function serveurHote()
     {
-        return $this->hasMany(ServeurVirtuel::class, 'serveur_hote_id', 'equipement_id');
+        return $this->belongsTo(Serveur::class, 'serveur_hote_id', 'equipement_id');
     }
 }
