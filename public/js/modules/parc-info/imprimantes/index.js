@@ -239,24 +239,48 @@ const Wizard = (() => {
             submitForm(data, true);
         });
 
-        // Quick Adds
-        function setupQuickAdd(btnId, title, placeholder, routeName, selectId) {
-            $(btnId).on('click', () => {
-                Swal.fire({
-                    title, input: 'text', inputPlaceholder: placeholder, showCancelButton: true,
-                    preConfirm: (v) => v ? v.trim() : Swal.showValidationMessage('Obligatoire')
-                }).then((res) => {
-                    if (res.isConfirmed) {
-                        $.post(route(routeName), { libelle: res.value }, (d) => {
-                            $(`#${selectId}`).append(new Option(d.data.libelle, d.data.id, true, true));
-                            Swal.fire({ icon:'success', title:'Ajouté', timer:1500, showConfirmButton:false });
-                        }).fail(() => Swal.fire('Erreur', 'Ce libellé existe déjà.', 'error'));
+        // ── Ajout rapide de nomenclatures ────────────────────────────────────
+
+        function quickAdd(title, placeholder, routeName, selectId) {
+            const bsModal = bootstrap.Modal.getInstance(document.getElementById('imprimanteModal'));
+            if (bsModal) bsModal._focustrap?.deactivate();
+
+            Swal.fire({
+                title,
+                input: 'text',
+                inputPlaceholder: placeholder,
+                showCancelButton: true,
+                confirmButtonText: 'Ajouter',
+                cancelButtonText: 'Annuler',
+                didOpen: () => setTimeout(() => Swal.getInput()?.focus(), 50),
+                preConfirm: (value) => {
+                    if (!value?.trim()) {
+                        Swal.showValidationMessage('Le libellé est obligatoire.');
+                        return false;
                     }
-                });
+                    return value.trim();
+                },
+            }).then((result) => {
+                if (bsModal) bsModal._focustrap?.activate();
+                if (result.isConfirmed && result.value) {
+                    $.post(route(routeName), { libelle: result.value }, (res) => {
+                        if (res.success) {
+                            $(`#${selectId}`).append(new Option(res.data.libelle, res.data.id, true, true));
+                            Swal.fire({ icon: 'success', title: 'Ajouté avec succès', timer: 1500, showConfirmButton: false });
+                        }
+                    }).fail((xhr) => {
+                        if (bsModal) bsModal._focustrap?.activate();
+                        Swal.fire('Erreur', xhr.responseJSON?.errors?.libelle?.[0] ?? 'Ce libellé existe déjà.', 'error');
+                    });
+                }
             });
         }
-        setupQuickAdd('#btn-add-marque', 'Nouvelle marque', 'Ex: HP, Epson...', 'parc-info.imprimantes.store-marque', 'marque_id');
-        setupQuickAdd('#btn-add-type-imprimante', 'Nouvelle technologie', 'Ex: Laser, Jet d\'encre...', 'parc-info.imprimantes.store-type-imprimante', 'type_imprimante_id');
+
+        // Ajout marque rapide
+        $('#btn-add-marque').on('click', () => quickAdd('Nouvelle marque', 'Ex: HP, Epson...', 'parc-info.imprimantes.store-marque', 'marque_id'));
+
+        // Ajout technologie rapide
+        $('#btn-add-type-imprimante').on('click', () => quickAdd('Nouvelle technologie', "Ex: Laser, Jet d'encre...", 'parc-info.imprimantes.store-type-imprimante', 'type_imprimante_id'));
 
         // Selection Handlers (Step 3)
         $(document).on('employe:selected', function (e, emp) {

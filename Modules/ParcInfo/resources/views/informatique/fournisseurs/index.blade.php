@@ -64,8 +64,6 @@
     </div>
 </div>
 
-@include('parcinfo::informatique.fournisseurs._modal')
-
 @endsection
 
 @push('js')

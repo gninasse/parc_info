@@ -4,7 +4,7 @@ namespace Modules\ParcInfo\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreContactRequest extends FormRequest
+class UpdateContactRequest extends FormRequest
 {
     public function authorize(): bool
     {

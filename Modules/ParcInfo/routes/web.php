@@ -53,12 +53,15 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
     Route::prefix('informatique/fournisseurs')->group(function () {
         Route::get('/', [FournisseurController::class, 'index'])->name('fournisseurs.index');
         Route::get('/data', [FournisseurController::class, 'getData'])->name('fournisseurs.data');
+        Route::get('/create', [FournisseurController::class, 'create'])->name('fournisseurs.create');
         Route::post('/', [FournisseurController::class, 'store'])->name('fournisseurs.store');
         Route::get('/{id}', [FournisseurController::class, 'show'])->name('fournisseurs.show');
         Route::put('/{id}', [FournisseurController::class, 'update'])->name('fournisseurs.update');
         Route::patch('/{id}/toggle', [FournisseurController::class, 'toggleStatus'])->name('fournisseurs.toggle');
         Route::delete('/{id}', [FournisseurController::class, 'destroy'])->name('fournisseurs.destroy');
         Route::post('/{id}/contacts', [FournisseurController::class, 'storeContact'])->name('fournisseurs.store-contact');
+        Route::put('/{id}/contacts/{contactId}', [FournisseurController::class, 'updateContact'])->name('fournisseurs.update-contact');
+        Route::delete('/{id}/contacts/{contactId}', [FournisseurController::class, 'deleteContact'])->name('fournisseurs.delete-contact');
     });
 
     // Contrats de Maintenance

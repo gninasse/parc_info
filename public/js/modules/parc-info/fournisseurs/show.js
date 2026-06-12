@@ -1,172 +1,298 @@
 /**
- * Fiche Fournisseur - Module Parc Info
- * Pattern: Show & Edit mode "In-place" + Management of associated contacts & contracts
+ * Gestion du détail des Fournisseurs - Module Parc Info
+ * Pattern: Inline Editing + Contacts CRUD (AJAX)
  */
 
-document.addEventListener('DOMContentLoaded', function() {
-    const $form = $('#form-edit-fournisseur');
-    const $viewActions = $('#view-actions');
-    const $formActions = $('#form-actions');
-    const $btnEnableEdit = $('#btn-enable-edit');
-    const $btnSaveEdit = $('#btn-save-edit');
+$(function () {
+    let isEditMode = false;
+    const $formFiche = $('#ficheForm');
+    const $btnEditToggle = $('#btn-edit-toggle');
+    const $ficheActions = $('#fiche-actions');
+    const contactModal = new bootstrap.Modal('#contactModal');
+    const $contactForm = $('#contactForm');
 
-    const $modalContact = new bootstrap.Modal('#modal-quickadd-contact');
-    const $formContact = $('#form-quickadd-contact');
+    // Cache fields
+    const $fields = $formFiche.find('.field-input');
 
-    const $modalContrat = new bootstrap.Modal('#modal-contrat');
-    const $formContrat = $('#form-contrat');
-    const $btnSaveContrat = $('#btn-save-contrat');
+    // ── MODE EDITION INLINE ──
+    function setEditMode(on) {
+        isEditMode = on;
+        $fields.each(function () {
+            // Do not enable code field if it shouldn't be edited (usually code remains immutable, but let's follow the standard rule)
+            // if ($(this).attr('name') === 'code') {
+            //     return;
+            // }
+            $(this).prop('disabled', !on);
+        });
 
-    const fournisseurId = window.location.pathname.split('/').filter(Boolean).pop();
+        if (on) {
+            $btnEditToggle.removeClass('btn-primary').addClass('btn-outline-secondary')
+                .html('<i class="bi bi-x-circle me-1"></i> Annuler');
+            $ficheActions.removeClass('d-none').addClass('d-flex');
+        } else {
+            $btnEditToggle.removeClass('btn-outline-secondary').addClass('btn-primary')
+                .html('<i class="bi bi-pencil me-1"></i> Modifier');
+            $ficheActions.removeClass('d-flex').addClass('d-none');
+            // Reset form to initial state
+            $formFiche[0].reset();
+        }
+    }
 
-    // ── GESTION DU MODE ÉDITION DU FOURNISSEUR ──
-    $btnEnableEdit.on('click', function() {
-        $form.find('input, select, textarea').prop('disabled', false);
-        $viewActions.addClass('d-none');
-        $formActions.removeClass('d-none');
+    $btnEditToggle.on('click', function () {
+        setEditMode(!isEditMode);
     });
 
-    $btnSaveEdit.on('click', function() {
-        console.log('Tentative d\'enregistrement pour le fournisseur:', fournisseurId);
-        $btnSaveEdit.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Enregistrement...');
-        
+    $('#btn-cancel-edit').on('click', function () {
+        setEditMode(false);
+    });
+
+    // ── ENREGISTREMENT DE LA FICHE INFO ──
+    $formFiche.on('submit', function (e) {
+        e.preventDefault();
+        const $btnSave = $('#btn-save-fiche');
+        $btnSave.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Enregistrement...');
+
         $.ajax({
-            url: route('parc-info.fournisseurs.update', fournisseurId),
-            method: 'POST',
-            data: $form.serialize() + '&_method=PUT',
-            success: function(res) {
+            url: `/parc-info/informatique/fournisseurs/${fournisseurId}`,
+            method: 'PUT',
+            data: $formFiche.serialize(),
+            success: function (res) {
                 if (res.success) {
-                    Swal.fire({ icon: 'success', title: 'Mis à jour !', text: res.message, timer: 1500 }).then(() => window.location.reload());
+                    Swal.fire({ icon: 'success', title: 'Succès', text: res.message, timer: 1500 });
+
+                    // Update header display
+                    $('#header-nom').text(res.data.nom);
+                    $('#header-code').text(res.data.code);
+                    $('#header-email').text(res.data.email || '—');
+                    $('#header-telephone').text(res.data.telephone || '—');
+
+                    if (res.data.type) {
+                        $('#header-badge-type').text(res.data.type).show();
+                    } else {
+                        $('#header-badge-type').hide();
+                    }
+
+                    // Disable edit mode without resetting inputs
+                    isEditMode = false;
+                    $fields.prop('disabled', true);
+                    $btnEditToggle.removeClass('btn-outline-secondary').addClass('btn-primary')
+                        .html('<i class="bi bi-pencil me-1"></i> Modifier');
+                    $ficheActions.removeClass('d-flex').addClass('d-none');
                 }
             },
-            error: function(xhr) {
+            error: function (xhr) {
                 const errors = xhr.responseJSON?.errors || {};
                 let msg = '';
                 Object.values(errors).forEach(e => msg += e[0] + '<br>');
-                Swal.fire('Erreur', msg || 'Erreur', 'error');
-                $btnSaveEdit.prop('disabled', false).html('<i class="fas fa-save me-2"></i>Enregistrer');
+                Swal.fire('Erreur de validation', msg || 'Une erreur est survenue', 'error');
+            },
+            complete: function () {
+                $btnSave.prop('disabled', false).html('<i class="bi bi-check-circle me-1"></i> Enregistrer');
             }
         });
     });
 
-    // ── GESTION DES CONTACTS ──
-    $('#btn-add-contact').on('click', function() {
-        $formContact[0].reset();
-        $modalContact.show();
-    });
-
-    $formContact.on('submit', function(e) {
-        e.preventDefault();
-        const $btn = $('#btn-save-quick-contact');
-        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>...');
-
+    // ── TOGGLE STATUT ──
+    $('#btn-toggle-status').on('click', function () {
         $.ajax({
-            url: route('parc-info.fournisseurs.store-contact', fournisseurId),
-            method: 'POST',
-            data: $(this).serialize(),
-            success: function(res) {
+            url: `/parc-info/informatique/fournisseurs/${fournisseurId}/toggle`,
+            method: 'PATCH',
+            data: { _token: csrfToken },
+            success: function (res) {
                 if (res.success) {
-                    $modalContact.hide();
-                    Swal.fire('Succès', res.message, 'success').then(() => window.location.reload());
+                    Swal.fire({ icon: 'success', title: 'Succès', text: res.message, timer: 1500 });
+                    const statusText = res.est_actif ? 'Actif' : 'Inactif';
+                    const badgeClass = res.est_actif ? 'success' : 'danger';
+
+                    $('#badge-status')
+                        .text(statusText)
+                        .removeClass('bg-success-subtle text-success border-success-subtle bg-danger-subtle text-danger border-danger-subtle')
+                        .addClass(`bg-${badgeClass}-subtle text-${badgeClass} border-${badgeClass}-subtle`);
                 }
             },
-            error: function(xhr) {
-                const errors = xhr.responseJSON?.errors || {};
-                let msg = '';
-                Object.values(errors).forEach(e => msg += e[0] + '<br>');
-                Swal.fire('Erreur', msg || 'Erreur', 'error');
-            },
-            complete: () => $btn.prop('disabled', false).html('<i class="fas fa-save me-2"></i>Enregistrer')
-        });
-    });
-
-    // ── GESTION DES CONTRATS ──
-    $('#btn-add-contrat').on('click', function() {
-        $formContrat[0].reset();
-        $('#contrat-id').val('');
-        $('#contrat-fournisseur-id').val(fournisseurId).trigger('change');
-        $('#modalContratLabel span').text('Nouveau Contrat Maintenance');
-        $modalContrat.show();
-    });
-
-    $(document).on('click', '.btn-edit-contrat', function() {
-        const id = $(this).data('id');
-        $.ajax({
-            url: route('parc-info.contrats.show', id),
-            method: 'GET',
-            success: function(ct) {
-                $('#contrat-id').val(ct.id);
-                $formContrat.find('[name="reference"]').val(ct.reference);
-                $formContrat.find('[name="nom"]').val(ct.nom);
-                $formContrat.find('[name="fournisseur_id"]').val(ct.fournisseur_id).trigger('change');
-                $formContrat.find('[name="date_debut"]').val(ct.date_debut ? ct.date_debut.split('T')[0] : '');
-                $formContrat.find('[name="date_fin"]').val(ct.date_fin ? ct.date_fin.split('T')[0] : '');
-                $formContrat.find('[name="cout"]').val(ct.cout);
-                $formContrat.find('[name="notes"]').val(ct.notes);
-                
-                $('#modalContratLabel span').text('Modifier le Contrat');
-                $modalContrat.show();
+            error: function (xhr) {
+                Swal.fire('Erreur', xhr.responseJSON?.message || 'Impossible de changer le statut', 'error');
             }
         });
     });
 
-    $formContrat.on('submit', function(e) {
-        e.preventDefault();
-        const id = $('#contrat-id').val();
-        const url = id ? route('parc-info.contrats.update', id) : route('parc-info.contrats.store');
-        const method = id ? 'PUT' : 'POST';
-        
-        $btnSaveContrat.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>...');
-
-        $.ajax({
-            url: url,
-            method: id ? 'POST' : 'POST',
-            data: $formContrat.serialize() + (id ? '&_method=PUT' : ''),
-            success: function(res) {
-                if (res.success) {
-                    $modalContrat.hide();
-                    Swal.fire('Succès', res.message, 'success').then(() => window.location.reload());
-                }
-            },
-            error: function(xhr) {
-                const errors = xhr.responseJSON?.errors || {};
-                let msg = '';
-                Object.values(errors).forEach(e => msg += e[0] + '<br>');
-                Swal.fire('Erreur', msg || 'Erreur', 'error');
-            },
-            complete: () => $btnSaveContrat.prop('disabled', false).html('<i class="fas fa-save me-2"></i>Enregistrer')
-        });
-    });
-
-    $(document).on('click', '.btn-delete-contrat', function() {
-        const id = $(this).data('id');
+    // ── SUPPRESSION FOURNISSEUR ──
+    $('#btn-delete').on('click', function () {
         Swal.fire({
-            title: 'Supprimer ce contrat ?',
-            text: "Cette action est irréversible et ne peut être faite que si aucune licence n'est rattachée.",
+            title: 'Supprimer ce fournisseur ?',
+            text: "Cette action est irréversible et impossible si des licences y sont liées.",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#dc3545',
-            confirmButtonText: 'Oui, supprimer'
+            confirmButtonText: 'Oui, supprimer',
+            cancelButtonText: 'Annuler'
         }).then((result) => {
             if (result.isConfirmed) {
                 $.ajax({
-                    url: route('parc-info.contrats.destroy', id),
+                    url: `/parc-info/informatique/fournisseurs/${fournisseurId}`,
                     method: 'DELETE',
-                    success: function(res) {
-                        Swal.fire('Supprimé !', res.message, 'success').then(() => window.location.reload());
+                    data: { _token: csrfToken },
+                    success: function (res) {
+                        if (res.success) {
+                            Swal.fire('Supprimé !', res.message, 'success').then(() => {
+                                window.location.href = '/parc-info/informatique/fournisseurs';
+                            });
+                        }
                     },
-                    error: function(xhr) {
-                        Swal.fire('Erreur', xhr.responseJSON?.message || 'Erreur', 'error');
+                    error: function (xhr) {
+                        Swal.fire('Erreur', xhr.responseJSON?.message || 'Une erreur est survenue', 'error');
                     }
                 });
             }
         });
     });
 
-    $(document).on('click', '.btn-delete-contact', function() {
-        const id = $(this).data('id');
-        Swal.fire('Information', 'La suppression de contact sera implémentée prochainement.', 'info');
+    // ── CRUD CONTACTS ──
+
+    // Ouvre la modale
+    function openContactModal(contact = null) {
+        $contactForm[0].reset();
+        if (contact) {
+            $('#modalTitle').find('span').text('Modifier le contact');
+            $('#contact_id').val(contact.id);
+            $('#c_nom').val(contact.nom);
+            $('#c_prenom').val(contact.prenom);
+            $('#c_fonction').val(contact.fonction);
+            $('#c_email').val(contact.email);
+            $('#c_telephone').val(contact.telephone);
+        } else {
+            $('#modalTitle').find('span').text('Ajouter un contact');
+            $('#contact_id').val('');
+        }
+        contactModal.show();
+    }
+
+    $('#btn-add-contact').on('click', function () {
+        openContactModal();
     });
 
-    $('.select2-modal').select2({ theme: 'bootstrap-5' });
+    // Edit contact click
+    $(document).on('click', '.btn-edit-contact', function () {
+        const id = $(this).data('id');
+        const $tr = $(`tr[data-contact-id="${id}"]`);
+
+        const contact = {
+            id: id,
+            nom: $tr.find('.fw-bold').text().split(' ')[0] || '',
+            prenom: $tr.find('.fw-bold').text().split(' ').slice(1).join(' ') || '',
+            fonction: $tr.find('td:nth-child(2)').text().trim() === '—' ? '' : $tr.find('td:nth-child(2)').text().trim(),
+            email: $tr.find('td:nth-child(3) a').text().trim(),
+            telephone: $tr.find('td:nth-child(4)').text().trim() === '—' ? '' : $tr.find('td:nth-child(4)').text().trim()
+        };
+
+        openContactModal(contact);
+    });
+
+    // Save contact (Create or Update)
+    $contactForm.on('submit', function (e) {
+        e.preventDefault();
+        const contactId = $('#contact_id').val();
+        const isEdit = !!contactId;
+        const url = isEdit
+            ? `/parc-info/informatique/fournisseurs/${fournisseurId}/contacts/${contactId}`
+            : `/parc-info/informatique/fournisseurs/${fournisseurId}/contacts`;
+        const method = isEdit ? 'PUT' : 'POST';
+
+        const $btn = $('#btn-save-contact');
+        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>...');
+
+        $.ajax({
+            url: url,
+            method: method,
+            data: $contactForm.serialize(),
+            success: function (res) {
+                if (res.success) {
+                    contactModal.hide();
+                    Swal.fire({ icon: 'success', title: 'Succès', text: res.message, timer: 1500 });
+
+                    const c = res.data;
+                    const emailHtml = c.email
+                        ? `<a href="mailto:${c.email}" class="text-decoration-none"><i class="bi bi-envelope me-1"></i>${c.email}</a>`
+                        : '—';
+                    const telText = c.telephone || '—';
+                    const fonctionText = c.fonction || '—';
+                    const nomComplet = `${c.nom} ${c.prenom || ''}`.trim();
+
+                    const rowHtml = `
+                        <tr data-contact-id="${c.id}">
+                            <td><div class="fw-bold">${nomComplet}</div></td>
+                            <td>${fonctionText}</td>
+                            <td>${emailHtml}</td>
+                            <td>${telText}</td>
+                            <td class="text-end">
+                                <button type="button" class="btn btn-outline-info btn-sm btn-edit-contact" data-id="${c.id}">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-sm btn-delete-contact" data-id="${c.id}">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+
+                    if (isEdit) {
+                        $(`tr[data-contact-id="${c.id}"]`).replaceWith(rowHtml);
+                    } else {
+                        $('#contacts-empty-row').remove();
+                        $('#contacts-tbody').append(rowHtml);
+                    }
+                }
+            },
+            error: function (xhr) {
+                const errors = xhr.responseJSON?.errors || {};
+                let msg = '';
+                Object.values(errors).forEach(e => msg += e[0] + '<br>');
+                Swal.fire('Erreur', msg || 'Une erreur est survenue', 'error');
+            },
+            complete: function () {
+                $btn.prop('disabled', false).html('<i class="bi bi-check-circle me-1"></i>Enregistrer');
+            }
+        });
+    });
+
+    // Delete contact
+    $(document).on('click', '.btn-delete-contact', function () {
+        const contactId = $(this).data('id');
+        Swal.fire({
+            title: 'Supprimer ce contact ?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            confirmButtonText: 'Oui, supprimer',
+            cancelButtonText: 'Annuler'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: `/parc-info/informatique/fournisseurs/${fournisseurId}/contacts/${contactId}`,
+                    method: 'DELETE',
+                    data: { _token: csrfToken },
+                    success: function (res) {
+                        if (res.success) {
+                            Swal.fire('Supprimé !', res.message, 'success');
+                            $(`tr[data-contact-id="${contactId}"]`).remove();
+
+                            if ($('#contacts-tbody tr').length === 0) {
+                                $('#contacts-tbody').html(`
+                                    <tr id="contacts-empty-row">
+                                        <td colspan="5" class="text-center py-5 text-muted">
+                                            <i class="bi bi-person-x fs-1 opacity-50 d-block mb-2"></i>
+                                            Aucun contact enregistré
+                                        </td>
+                                    </tr>
+                                `);
+                            }
+                        }
+                    },
+                    error: function (xhr) {
+                        Swal.fire('Erreur', xhr.responseJSON?.message || 'Une erreur est survenue', 'error');
+                    }
+                });
+            }
+        });
+    });
 });

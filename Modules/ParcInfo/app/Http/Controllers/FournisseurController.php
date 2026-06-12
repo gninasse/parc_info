@@ -3,20 +3,22 @@
 namespace Modules\ParcInfo\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 use Modules\ParcInfo\Http\Requests\StoreContactRequest;
 use Modules\ParcInfo\Http\Requests\StoreFournisseurRequest;
-use Modules\ParcInfo\Models\Contact;
+use Modules\ParcInfo\Http\Requests\UpdateContactRequest;
 use Modules\ParcInfo\Models\Fournisseur;
 
 class FournisseurController extends Controller
 {
-    public function index()
+    public function index(): View
     {
         return view('parcinfo::informatique.fournisseurs.index');
     }
 
-    public function getData(Request $request)
+    public function getData(Request $request): JsonResponse
     {
         $query = Fournisseur::query();
 
@@ -42,7 +44,12 @@ class FournisseurController extends Controller
         ]);
     }
 
-    public function store(StoreFournisseurRequest $request)
+    public function create(): View
+    {
+        return view('parcinfo::informatique.fournisseurs.create');
+    }
+
+    public function store(StoreFournisseurRequest $request): JsonResponse
     {
         $fournisseur = Fournisseur::create($request->validated());
 
@@ -51,10 +58,14 @@ class FournisseurController extends Controller
             ->causedBy(auth()->user())
             ->log('Création de fournisseur');
 
-        return response()->json(['success' => true, 'message' => 'Fournisseur créé avec succès.']);
+        return response()->json([
+            'success' => true,
+            'message' => 'Fournisseur créé avec succès.',
+            'redirect' => route('parc-info.fournisseurs.show', $fournisseur->id),
+        ]);
     }
 
-    public function show($id)
+    public function show(int $id): View|JsonResponse
     {
         $fournisseur = Fournisseur::with(['contacts', 'contrats', 'licences.logiciel'])->findOrFail($id);
 
@@ -62,34 +73,45 @@ class FournisseurController extends Controller
             return response()->json($fournisseur);
         }
 
-        $fournisseurs = Fournisseur::where('est_actif', true)->orderBy('nom')->get();
-
-        return view('parcinfo::informatique.fournisseurs.show', compact('fournisseur', 'fournisseurs'));
+        return view('parcinfo::informatique.fournisseurs.show', compact('fournisseur'));
     }
 
-    public function update(StoreFournisseurRequest $request, $id)
+    public function update(StoreFournisseurRequest $request, int $id): JsonResponse
     {
         $fournisseur = Fournisseur::findOrFail($id);
-        $fournisseur->update($request->all());
+        $fournisseur->update($request->validated());
 
         activity('fournisseur')
             ->performedOn($fournisseur)
             ->causedBy(auth()->user())
             ->log('Mise à jour de fournisseur');
 
-        return response()->json(['success' => true, 'message' => 'Fournisseur mis à jour avec succès.']);
+        return response()->json([
+            'success' => true,
+            'message' => 'Fournisseur mis à jour avec succès.',
+            'data' => $fournisseur,
+        ]);
     }
 
-    public function toggleStatus($id)
+    public function toggleStatus(int $id): JsonResponse
     {
         $fournisseur = Fournisseur::findOrFail($id);
         $fournisseur->est_actif = ! $fournisseur->est_actif;
         $fournisseur->save();
 
-        return response()->json(['success' => true, 'message' => 'Statut mis à jour.']);
+        activity('fournisseur')
+            ->performedOn($fournisseur)
+            ->causedBy(auth()->user())
+            ->log('Changement de statut du fournisseur');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Statut mis à jour.',
+            'est_actif' => $fournisseur->est_actif,
+        ]);
     }
 
-    public function destroy($id)
+    public function destroy(int $id): JsonResponse
     {
         $fournisseur = Fournisseur::findOrFail($id);
         if ($fournisseur->licences()->count() > 0) {
@@ -101,21 +123,57 @@ class FournisseurController extends Controller
     }
 
     // Gestion des Contacts associés
-    public function storeContact(StoreContactRequest $request, $fournisseurId)
+    public function storeContact(StoreContactRequest $request, int $fournisseurId): JsonResponse
     {
         $fournisseur = Fournisseur::findOrFail($fournisseurId);
 
-        $contact = Contact::create($request->validated());
+        $contact = $fournisseur->contacts()->create($request->validated());
 
-        // Lier le contact au fournisseur (si votre modèle de données le permet via une FK)
-        // Dans le schéma actuel, Contact appartient à Fournisseur ?
-        // Vérifions le modèle Fournisseur.php: il a hasMany(Contact)
-        // Vérifions le modèle Contact.php: il a table parc_info_contacts
+        activity('fournisseur')
+            ->performedOn($fournisseur)
+            ->causedBy(auth()->user())
+            ->log('Ajout d\'un contact pour le fournisseur');
 
-        $contact->fournisseur_id = $fournisseur->id; // Assumons que la colonne existe ou qu'on doit l'ajouter
-        $contact->save();
+        return response()->json([
+            'success' => true,
+            'message' => 'Contact ajouté avec succès.',
+            'data' => $contact,
+        ]);
+    }
 
-        return response()->json(['success' => true, 'message' => 'Contact ajouté avec succès.']);
+    public function updateContact(UpdateContactRequest $request, int $fournisseurId, int $contactId): JsonResponse
+    {
+        $fournisseur = Fournisseur::findOrFail($fournisseurId);
+        $contact = $fournisseur->contacts()->findOrFail($contactId);
+        $contact->update($request->validated());
+
+        activity('fournisseur')
+            ->performedOn($fournisseur)
+            ->causedBy(auth()->user())
+            ->log('Mise à jour d\'un contact du fournisseur');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Contact mis à jour avec succès.',
+            'data' => $contact,
+        ]);
+    }
+
+    public function deleteContact(int $fournisseurId, int $contactId): JsonResponse
+    {
+        $fournisseur = Fournisseur::findOrFail($fournisseurId);
+        $contact = $fournisseur->contacts()->findOrFail($contactId);
+        $contact->delete();
+
+        activity('fournisseur')
+            ->performedOn($fournisseur)
+            ->causedBy(auth()->user())
+            ->log('Suppression d\'un contact du fournisseur');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Contact supprimé avec succès.',
+        ]);
     }
 
     private function formatRow(Fournisseur $f): array
