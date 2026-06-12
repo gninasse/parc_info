@@ -195,7 +195,6 @@ class ServeurVirtuelController extends Controller
         $request->validate([
             'numero_serie' => "required|string|unique:parc_info_equipements,numero_serie,{$id}",
             'modele' => 'required|string|max:255',
-            'statut' => 'required|in:en_stock,en_service,en_reparation,perdu,reforme',
             'etat' => 'required|in:bon,passable,mauvais,avarie',
             'serveur_hote_id' => 'nullable|exists:parc_info_serveurs,equipement_id',
         ]);

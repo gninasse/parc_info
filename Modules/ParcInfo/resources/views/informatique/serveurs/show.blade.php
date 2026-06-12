@@ -39,7 +39,7 @@
                 <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
                     <h4 class="fw-bold mb-0">{{ $equipement->marque?->libelle }} {{ $equipement->modele }}</h4>
                     <span class="badge bg-{{ $sc }}-subtle text-{{ $sc }} border border-{{ $sc }}-subtle px-2 py-1">
-                        {{ $equipement->statut_label }}
+                        {!! $equipement->statut_label !!}
                     </span>
                     <span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1">
                         SERVEUR PHYSIQUE
@@ -72,6 +72,13 @@
                 <button class="btn btn-outline-danger btn-sm bg-white" id="btn-desaffecter">
                     <i class="bi bi-x-circle me-1"></i> Désaffecter
                 </button>
+                <button class="btn btn-outline-secondary btn-sm" id="btn-nouvelle-affectation">
+                    <i class="bi bi-geo-alt me-1"></i> Changer d'emplacement
+                </button>
+                @else
+                <button class="btn btn-outline-secondary btn-sm" id="btn-nouvelle-affectation">
+                    <i class="bi bi-geo-alt me-1"></i> Affecter
+                </button>
                 @endif
                 <button class="btn btn-primary btn-sm" id="btn-edit-toggle">
                     <i class="bi bi-pencil me-1"></i> Modifier
@@ -100,7 +107,6 @@
 </ul>
 
 <div class="tab-content" id="showTabsContent">
-
 {{-- ══ TAB 1 : FICHE TECHNIQUE ══ --}}
 <div class="tab-pane fade show active" id="pane-fiche" role="tabpanel">
     <form id="ficheForm">
@@ -108,7 +114,7 @@
         @method('PUT')
 
         <div class="row g-3">
-            {{-- Identification --}}
+            {{-- Identification & Système --}}
             <div class="col-md-8">
                 <div class="card border-0 shadow-sm mb-3" style="border-radius:12px">
                     <div class="card-body p-4">
@@ -116,7 +122,7 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="field-label">Code Inventaire</label>
-                                <input type="text" class="form-control field-input" value="{{ $equipement->code_inventaire }}" disabled>
+                                <input type="text" class="form-control field-input" id="f_code_inventaire" value="{{ $equipement->code_inventaire }}" disabled>
                             </div>
                             <div class="col-md-6">
                                 <label class="field-label">Numéro de Série <span class="text-danger">*</span></label>
@@ -124,12 +130,15 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="field-label">Marque</label>
-                                <select class="form-select field-input" name="marque_id" id="f_marque_id" disabled>
-                                    <option value="">—</option>
-                                    @foreach($marques as $m)
-                                    <option value="{{ $m->id }}" {{ $equipement->marque_id == $m->id ? 'selected':'' }}>{{ $m->libelle }}</option>
-                                    @endforeach
-                                </select>
+                                <div class="input-group">
+                                    <select class="form-select field-input" name="marque_id" id="f_marque_id" disabled>
+                                        <option value="">—</option>
+                                        @foreach($marques as $m)
+                                        <option value="{{ $m->id }}" {{ $equipement->marque_id == $m->id ? 'selected':'' }}>{{ $m->libelle }}</option>
+                                        @endforeach
+                                    </select>
+                                    <button type="button" class="btn btn-outline-secondary d-none btn-add-ref" id="btn-add-f-marque" title="Nouvelle marque"><i class="bi bi-plus"></i></button>
+                                </div>
                             </div>
                             <div class="col-md-6">
                                 <label class="field-label">Modèle <span class="text-danger">*</span></label>
@@ -141,12 +150,15 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="field-label">Système d'exploitation</label>
-                                <select class="form-select field-input" name="os_type_id" id="f_os_type_id" disabled>
-                                    <option value="">—</option>
-                                    @foreach($typesOs as $o)
-                                    <option value="{{ $o->id }}" {{ $s->os_type_id == $o->id ? 'selected':'' }}>{{ $o->libelle }}</option>
-                                    @endforeach
-                                </select>
+                                <div class="input-group">
+                                    <select class="form-select field-input" name="os_type_id" id="f_os_type_id" disabled>
+                                        <option value="">—</option>
+                                        @foreach($typesOs as $o)
+                                        <option value="{{ $o->id }}" {{ $s->os_type_id == $o->id ? 'selected':'' }}>{{ $o->libelle }}</option>
+                                        @endforeach
+                                    </select>
+                                    <button type="button" class="btn btn-outline-secondary d-none btn-add-ref" id="btn-add-f-os" title="Nouveau système d'exploitation"><i class="bi bi-plus"></i></button>
+                                </div>
                             </div>
                             <div class="col-md-6">
                                 <label class="field-label">Rôle / Fonction</label>
@@ -160,18 +172,22 @@
                     </div>
                 </div>
 
+                {{-- Configuration Matérielle --}}
                 <div class="card border-0 shadow-sm mb-3" style="border-radius:12px">
                     <div class="card-body p-4">
-                        <h6 class="section-title mb-4"><span class="section-num">02</span> Configuration Matérielle & Rack</h6>
+                        <h6 class="section-title mb-4"><span class="section-num">02</span> Configuration Matérielle</h6>
                         <div class="row g-3">
                             <div class="col-md-4">
                                 <label class="field-label">Type CPU</label>
-                                <select class="form-select field-input" name="cpu_type_id" id="f_cpu_type_id" disabled>
-                                    <option value="">—</option>
-                                    @foreach($typesCpu as $c)
-                                    <option value="{{ $c->id }}" {{ $s->cpu_type_id == $c->id ? 'selected':'' }}>{{ $c->libelle }}</option>
-                                    @endforeach
-                                </select>
+                                <div class="input-group">
+                                    <select class="form-select field-input" name="cpu_type_id" id="f_cpu_type_id" disabled>
+                                        <option value="">—</option>
+                                        @foreach($typesCpu as $c)
+                                        <option value="{{ $c->id }}" {{ $s->cpu_type_id == $c->id ? 'selected':'' }}>{{ $c->libelle }}</option>
+                                        @endforeach
+                                    </select>
+                                    <button type="button" class="btn btn-outline-secondary d-none btn-add-ref" id="btn-add-f-cpu" title="Nouveau type CPU"><i class="bi bi-plus"></i></button>
+                                </div>
                             </div>
                             <div class="col-md-4">
                                 <label class="field-label">Nb Proc.</label>
@@ -191,6 +207,7 @@
                                         <option value="{{ $r->id }}" {{ $s->ram_type_id == $r->id ? 'selected':'' }}>{{ $r->libelle }}</option>
                                         @endforeach
                                     </select>
+                                    <button type="button" class="btn btn-outline-secondary d-none btn-add-ref" id="btn-add-f-ram" title="Nouveau type RAM"><i class="bi bi-plus"></i></button>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -203,25 +220,20 @@
                                         <option value="{{ $d->id }}" {{ $s->disque_type_id == $d->id ? 'selected':'' }}>{{ $d->libelle }}</option>
                                         @endforeach
                                     </select>
+                                    <button type="button" class="btn btn-outline-secondary d-none btn-add-ref" id="btn-add-f-disque" title="Nouveau type Disque"><i class="bi bi-plus"></i></button>
                                 </div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="field-label">U de départ (Rack Position)</label>
-                                <input type="number" class="form-control field-input" name="u_position_depart" value="{{ $s->u_position_depart }}" id="f_u_position_depart" disabled>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="field-label">U de fin (Rack Position)</label>
-                                <input type="number" class="form-control field-input" name="u_position_fin" value="{{ $s->u_position_fin }}" id="f_u_position_fin" disabled>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
+            {{-- Réseau & Rack + Acquisition & Cycle de vie --}}
             <div class="col-md-4">
+                {{-- Réseau & Rack --}}
                 <div class="card border-0 shadow-sm mb-3" style="border-radius:12px">
                     <div class="card-body p-4">
-                        <h6 class="section-title mb-4"><span class="section-num">03</span> Réseau</h6>
+                        <h6 class="section-title mb-4"><span class="section-num">03</span> Réseau & Rack</h6>
                         <div class="row g-3">
                             <div class="col-12">
                                 <label class="field-label">Adresse IP</label>
@@ -235,17 +247,30 @@
                                 <label class="field-label">Domaine</label>
                                 <input type="text" class="form-control field-input" name="domaine" value="{{ $s->domaine }}" id="f_domaine" disabled>
                             </div>
+                            <div class="col-md-6">
+                                <label class="field-label">U de départ (Rack)</label>
+                                <input type="number" class="form-control field-input" name="u_position_depart" value="{{ $s->u_position_depart }}" id="f_u_position_depart" disabled>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="field-label">U de fin (Rack)</label>
+                                <input type="number" class="form-control field-input" name="u_position_fin" value="{{ $s->u_position_fin }}" id="f_u_position_fin" disabled>
+                            </div>
                         </div>
                     </div>
                 </div>
 
+                {{-- Acquisition & Cycle de vie --}}
                 <div class="card border-0 shadow-sm mb-3" style="border-radius:12px">
                     <div class="card-body p-4">
-                        <h6 class="section-title mb-4"><span class="section-num">04</span> Acquisition</h6>
+                        <h6 class="section-title mb-4"><span class="section-num">04</span> Acquisition & Cycle de vie</h6>
                         <div class="row g-3">
                             <div class="col-12">
-                                <label class="field-label">Date acquisition</label>
+                                <label class="field-label">Date d'acquisition</label>
                                 <input type="date" class="form-control field-input" name="date_acquisition" value="{{ $equipement->date_acquisition?->format('Y-m-d') }}" id="f_date_acquisition" disabled>
+                            </div>
+                            <div class="col-12">
+                                <label class="field-label">Date de mise en service</label>
+                                <input type="date" class="form-control field-input" name="date_mise_en_service" value="{{ $equipement->date_mise_en_service?->format('Y-m-d') }}" id="f_date_mise_en_service" disabled>
                             </div>
                             <div class="col-12">
                                 <label class="field-label">Fin de garantie</label>
@@ -257,6 +282,14 @@
                                     <input type="number" class="form-control field-input" name="valeur_achat" value="{{ $equipement->valeur_achat }}" id="f_valeur_achat" disabled>
                                     <span class="input-group-text bg-light border-start-0 small">FCFA</span>
                                 </div>
+                            </div>
+                            <div class="col-12">
+                                <label class="field-label">État <span class="text-danger">*</span></label>
+                                <select class="form-select field-input" name="etat" id="f_etat" disabled required>
+                                    @foreach(['bon' => 'Bon', 'passable' => 'Passable', 'mauvais' => 'Mauvais', 'avarie' => 'Avarié'] as $k => $v)
+                                    <option value="{{ $k }}" {{ $equipement->etat === $k ? 'selected':'' }}>{{ $v }}</option>
+                                    @endforeach
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -376,9 +409,9 @@
             <div class="text-center py-5">
                 <div class="mb-3"><i class="bi bi-geo-alt fs-1 text-muted opacity-50"></i></div>
                 <p class="text-muted fw-semibold">Ce serveur n'est pas encore localisé (En Stock)</p>
-                <button class="btn btn-primary btn-sm" onclick="$('#tab-fiche').trigger('click'); Wizard.openEdit({{ $equipement->id }});">
+                <button class="btn btn-primary btn-sm" id="btn-def-emplacement">
                     <i class="bi bi-geo-alt-fill me-1"></i> Définir l'emplacement
-                </button>
+                </button> 
             </div>
             @endif
         </div>
@@ -421,6 +454,79 @@
 </div>
 
 @include('parcinfo::informatique.serveurs._wizard')
+
+{{-- ── MODALE AFFECTATION ── --}}
+<div class="modal fade" id="affectationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:14px">
+            <div class="modal-header border-0 px-4 pt-4 pb-0">
+                <div>
+                    <h5 class="modal-title fw-bold mb-0">Nouvel Emplacement (Hébergement)</h5>
+                    <small class="text-muted">{{ $equipement->code_inventaire }} — {{ $equipement->marque?->libelle }} {{ $equipement->modele }}</small>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="affectationForm">
+                @csrf
+                <div class="modal-body px-4 py-3">
+                    <h6 class="fw-bold mb-3 small text-uppercase text-muted" style="letter-spacing:.5px">Type d'emplacement</h6>
+                    <div class="row g-3 mb-4 justify-content-center">
+                        <div class="col-8">
+                            <label class="aff-type-card d-flex flex-column align-items-center justify-content-center gap-2 p-4 rounded-3 border cursor-pointer text-center position-relative" data-value="LOCAL">
+                                <input type="radio" name="type_cible" value="LOCAL" class="d-none" checked>
+                                <div class="aff-type-icon rounded-3 p-3 bg-light"><i class="bi bi-door-open fs-3 text-secondary"></i></div>
+                                <h6 class="fw-bold mb-1">Sélectionner un local / salle</h6>
+                                <small class="text-muted">Rechercher et associer un local de l'infrastructure</small>
+                                <i class="bi bi-check-circle-fill text-primary position-absolute top-0 end-0 m-2 d-none check-icon" style="font-size:.9rem"></i>
+                            </label>
+                        </div>
+                    </div>
+
+                    {{-- Carte récapitulative Local --}}
+                    <div id="aff-local-summary" class="aff-summary d-none">
+                        <div class="card border-primary">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="mb-0"><i class="bi bi-door-open text-primary me-2"></i>Local sélectionné</h6>
+                                </div>
+                                <div class="row g-2 mt-2">
+                                    <div class="col-md-2">
+                                        <small class="text-muted d-block">Code</small>
+                                        <strong id="local-summary-code">—</strong>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <small class="text-muted d-block">Libellé</small>
+                                        <strong id="local-summary-libelle">—</strong>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <small class="text-muted d-block">Type</small>
+                                        <span id="local-summary-type">—</span>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <small class="text-muted d-block">Étage</small>
+                                        <span id="local-summary-etage">—</span>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <small class="text-muted d-block">Bâtiment</small>
+                                        <span id="local-summary-batiment">—</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" name="local_id" id="local_id">
+                    </div>
+                </div>
+                <div class="modal-footer border-0 px-4 pb-4 pt-0">
+                    <button type="button" class="btn btn-link text-dark text-decoration-none" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary px-4" id="btn-save-affectation">
+                        <i class="bi bi-check-circle me-1"></i> Enregistrer l'emplacement
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @include('parcinfo::informatique.ordinateurs._selection_modals')
 
 @endsection
@@ -527,15 +633,17 @@ $(function () {
         });
     });
 
-    $('#btn-edit-toggle').on('click', function() {
-        editMode = !editMode;
-        $('.field-input').not('.bg-light').prop('disabled', !editMode);
-        $('#fiche-actions').toggleClass('d-none', !editMode);
-        $(this).toggleClass('btn-primary btn-warning')
-               .html(editMode ? '<i class="bi bi-x me-1"></i> Annuler' : '<i class="bi bi-pencil me-1"></i> Modifier');
-    });
+    function setEditMode(on) {
+        editMode = on;
+        $('.field-input').not('#f_code_inventaire').prop('disabled', !on);
+        $('#fiche-actions').toggleClass('d-none', !on);
+        $('.btn-add-ref').toggleClass('d-none', !on);
+        $('#btn-edit-toggle').toggleClass('btn-primary', !on).toggleClass('btn-warning', on)
+               .html(on ? '<i class="bi bi-x me-1"></i> Annuler' : '<i class="bi bi-pencil me-1"></i> Modifier');
+    }
 
-    $('#btn-cancel-edit').on('click', () => location.reload());
+    $('#btn-edit-toggle').on('click', () => setEditMode(!editMode));
+    $('#btn-cancel-edit').on('click', () => { setEditMode(false); location.reload(); });
 
     $('#ficheForm').on('submit', function(e) {
         e.preventDefault();
@@ -556,6 +664,95 @@ $(function () {
             }
         });
     });
+
+    // ── Modale affectation ────────────────────────────────────────────────────
+    function openAffModal() { $('#affectationModal').modal('show'); }
+    $('#btn-nouvelle-affectation').on('click', openAffModal);
+    $('#btn-def-emplacement').on('click', openAffModal);
+
+    // Écoute de l'événement de sélection du local
+    $(document).on('local:selected', function (e, local) {
+        if (!$('#affectationModal').hasClass('show')) return;
+        $('#affectationModal .aff-type-card').removeClass('selected');
+        $('#affectationModal .aff-type-card[data-value="LOCAL"]').addClass('selected');
+        $('#local-summary-code').text(local.code);
+        $('#local-summary-libelle').text(local.libelle);
+        $('#local-summary-type').text(local.type);
+        $('#local-summary-etage').text(local.etage);
+        $('#local-summary-batiment').text(local.batiment);
+        $('#affectationModal #local_id').val(local.id);
+        $('#affectationModal .aff-summary').addClass('d-none');
+        $('#affectationModal #aff-local-summary').removeClass('d-none');
+    });
+
+    // Soumission du formulaire d'affectation
+    $('#affectationForm').on('submit', function (e) {
+        e.preventDefault();
+
+        const localId = $('#affectationModal #local_id').val();
+        if (!localId) {
+            Swal.fire({ icon: 'warning', title: 'Attention', text: 'Veuillez sélectionner un local.', timer: 2500, showConfirmButton: false });
+            return;
+        }
+
+        const $btn = $('#btn-save-affectation').prop('disabled', true)
+            .html('<i class="bi bi-hourglass-split me-1"></i> Enregistrement...');
+        const data = $(this).serialize() + `&equipement_id=${equipementId}`;
+        $.post(route('parc-info.serveurs.store-affectation'), data, (res) => {
+            if (res.success) {
+                $('#affectationModal').modal('hide');
+                Swal.fire({ icon: 'success', title: 'Emplacement enregistré', timer: 2000, showConfirmButton: false })
+                    .then(() => location.reload());
+            }
+        }).fail((xhr) => {
+            const msg = xhr.responseJSON?.errors
+                ? Object.values(xhr.responseJSON.errors).flat().join('\n')
+                : (xhr.responseJSON?.message ?? 'Erreur serveur');
+            Swal.fire('Erreur', msg, 'error');
+        }).always(() => $btn.prop('disabled', false).html('<i class="bi bi-check-circle me-1"></i> Enregistrer l\'emplacement'));
+    });
+
+    // Reset modale à la fermeture
+    $('#affectationModal').on('hidden.bs.modal', function () {
+        $(this).find('form')[0].reset();
+        $('#affectationModal .aff-type-card').removeClass('selected');
+        $('#affectationModal .aff-summary').addClass('d-none');
+        $('#affectationModal #local_id').val('');
+    });
+
+    // ── Ajout rapide de nomenclatures (QuickAdd) ──────────────────────────────
+    function quickAdd(title, placeholder, routeName, targetSelectId) {
+        Swal.fire({
+            title: title,
+            input: 'text',
+            inputPlaceholder: placeholder,
+            showCancelButton: true,
+            confirmButtonText: 'Ajouter',
+            cancelButtonText: 'Annuler',
+            showLoaderOnConfirm: true,
+            preConfirm: (val) => {
+                if (!val) return Swal.showValidationMessage('Veuillez saisir une valeur');
+                return $.post(route(routeName), { libelle: val, _token: '{{ csrf_token() }}' })
+                    .then(res => res.data)
+                    .catch(err => {
+                        Swal.showValidationMessage(err.responseJSON?.message || 'Erreur serveur');
+                    });
+            },
+            allowOutsideClick: () => !Swal.isLoading()
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const data = result.value;
+                $(`#${targetSelectId}`).append(new Option(data.libelle, data.id, true, true));
+                Swal.fire({ icon: 'success', title: 'Ajouté !', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+            }
+        });
+    }
+
+    $('#btn-add-f-marque').on('click', () => quickAdd('Nouvelle marque', 'Ex: Dell, HP...', 'parc-info.ordinateurs.store-marque', 'f_marque_id'));
+    $('#btn-add-f-ram').on('click', () => quickAdd('Nouveau type de RAM', 'Ex: DDR4, DDR5...', 'parc-info.ordinateurs.store-type-ram', 'f_ram_type_id'));
+    $('#btn-add-f-os').on('click', () => quickAdd("Nouveau système d'exploitation", 'Ex: Windows Server 2022...', 'parc-info.ordinateurs.store-type-os', 'f_os_type_id'));
+    $('#btn-add-f-disque').on('click', () => quickAdd('Nouveau type de disque', 'Ex: SSD NVMe...', 'parc-info.ordinateurs.store-type-disque', 'f_disque_type_id'));
+    $('#btn-add-f-cpu').on('click', () => quickAdd('Nouveau type de CPU', 'Ex: Intel Xeon...', 'parc-info.ordinateurs.store-type-cpu', 'f_cpu_type_id'));
 });
 </script>
 @endpush

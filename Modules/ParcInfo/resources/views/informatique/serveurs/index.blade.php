@@ -140,6 +140,7 @@
                     <th data-field="nom_ip" data-sortable="true">Nom / IP</th>
                     <th data-field="config">Configuration</th>
                     <th data-field="statut" data-formatter="statutFormatter">Statut</th>
+                    <th data-field="affectation">Emplacement</th>
                     <th data-field="id" data-formatter="actionsFormatter">Actions</th>
                 </tr>
             </thead>

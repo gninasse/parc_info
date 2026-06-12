@@ -11,8 +11,8 @@ window.serveursQueryParams = function (params) {
     });
 };
 
-window.codeFormatter = (val) =>
-    `<span class="fw-bold text-primary small">${val}</span>`;
+window.codeFormatter = (val, row) =>
+    `<a href="${route('parc-info.serveurs.show', row.id)}" class="fw-bold text-primary small text-decoration-none">${val}</a>`;
 
 window.statutFormatter = (val) => {
     const map = {
@@ -193,6 +193,8 @@ const Wizard = (() => {
             const type = $(this).data('type');
             if (type === 'marque') quickAdd('Nouvelle marque', 'Ex: Dell, HP...', 'parc-info.ordinateurs.store-marque', 'marque_id');
             if (type === 'os') quickAdd('Nouvel OS', 'Ex: Windows Server 2022, Debian...', 'parc-info.ordinateurs.store-type-os', 'os_type_id');
+            if (type === 'cpu') quickAdd('Nouveau CPU', 'Ex: Intel Xeon, AMD EPYC...', 'parc-info.ordinateurs.store-type-cpu', 'cpu_type_id');
+            if (type === 'ram') quickAdd('Nouveau type RAM', 'Ex: DDR4 ECC, DDR5 ECC...', 'parc-info.ordinateurs.store-type-ram', 'ram_type_id');
         });
 
         $('#btn-next').on('click', () => {

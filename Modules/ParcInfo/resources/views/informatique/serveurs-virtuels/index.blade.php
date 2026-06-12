@@ -61,44 +61,6 @@
     </div>
 </div>
 
-{{-- ── Filtres ── --}}
-<div class="card border-0 shadow-sm mb-3">
-    <div class="card-body py-3">
-        <div class="row g-2 align-items-end">
-            <div class="col-md-4">
-                <label class="form-label small fw-semibold mb-1">Site / Salle</label>
-                <select class="form-select form-select-sm" id="filter-site">
-                    <option value="">Tous les sites</option>
-                    @foreach($sites as $s)
-                        <option value="{{ $s->id }}">{{ $s->libelle }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label small fw-semibold mb-1">Statut</label>
-                <select class="form-select form-select-sm" id="filter-statut">
-                    <option value="">Tous les statuts</option>
-                    <option value="en_service">En service</option>
-                    <option value="en_stock">En stock</option>
-                    <option value="en_reparation">En réparation</option>
-                    <option value="perdu">Perdu / Volé</option>
-                    <option value="reforme">Réformé</option>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <button class="btn btn-primary btn-sm w-100" id="btn-apply-filters">
-                    <i class="bi bi-funnel me-1"></i> Appliquer
-                </button>
-            </div>
-            <div class="col-md-2">
-                <button class="btn btn-outline-secondary btn-sm w-100" id="btn-reset-filters">
-                    <i class="bi bi-arrow-counterclockwise me-1"></i> Réinitialiser
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
 {{-- ── Table ── --}}
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">

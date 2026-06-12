@@ -106,6 +106,10 @@
     <form id="ficheForm">
         @csrf
         @method('PUT')
+        
+        {{-- Hidden fields to pass validation constraints --}}
+        <input type="hidden" name="modele" id="f_modele" value="{{ $equipement->modele }}">
+        <input type="hidden" name="etat" id="f_etat" value="{{ $equipement->etat }}">
 
         <div class="row g-3">
             {{-- Identification --}}
@@ -119,11 +123,11 @@
                                 <input type="text" class="form-control field-input" value="{{ $equipement->code_inventaire }}" disabled>
                             </div>
                             <div class="col-md-6">
-                                <label class="field-label">Numéro de Série / UUID <span class="text-danger">*</span></label>
+                                <label class="field-label">UUID / ID Unique de la VM <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control field-input" name="numero_serie" value="{{ $equipement->numero_serie }}" id="f_numero_serie" disabled required>
                             </div>
                             <div class="col-md-6">
-                                <label class="field-label">Serveur Hôte Physique <span class="text-danger">*</span></label>
+                                <label class="field-label">Serveur Physique Hôte <span class="text-danger">*</span></label>
                                 <select class="form-select field-input" name="serveur_hote_id" id="f_serveur_hote_id" disabled required>
                                     <option value="">—</option>
                                     @foreach($serveursPhysiques as $sp)
@@ -132,38 +136,32 @@
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="field-label">Marque (Hyperviseur)</label>
-                                <select class="form-select field-input" name="marque_id" id="f_marque_id" disabled>
-                                    <option value="">—</option>
-                                    @foreach($marques as $m)
-                                    <option value="{{ $m->id }}" {{ $equipement->marque_id == $m->id ? 'selected':'' }}>{{ $m->libelle }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="field-label">Modèle (Génération) <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control field-input" name="modele" value="{{ $equipement->modele }}" id="f_modele" disabled required>
-                            </div>
-                            <div class="col-md-6">
                                 <label class="field-label">Nom d'hôte / FQDN</label>
                                 <input type="text" class="form-control field-input" name="nom_hote" value="{{ $s->nom_hote }}" id="f_nom_hote" disabled>
                             </div>
                             <div class="col-md-6">
-                                <label class="field-label">Système d'exploitation</label>
-                                <select class="form-select field-input" name="os_type_id" id="f_os_type_id" disabled>
-                                    <option value="">—</option>
-                                    @foreach($typesOs as $o)
-                                    <option value="{{ $o->id }}" {{ $s->os_type_id == $o->id ? 'selected':'' }}>{{ $o->libelle }}</option>
-                                    @endforeach
-                                </select>
+                                <label class="field-label">Domaine</label>
+                                <input type="text" class="form-control field-input" name="domaine" value="{{ $s->domaine }}" id="f_domaine" disabled>
                             </div>
                             <div class="col-md-6">
-                                <label class="field-label">Rôle / Fonction</label>
-                                <input type="text" class="form-control field-input" name="role_serveur" value="{{ $s->role_serveur }}" id="f_role_serveur" disabled>
+                                <label class="field-label">Système d'exploitation (OS)</label>
+                                <div class="input-group">
+                                    <select class="form-select field-input" name="os_type_id" id="f_os_type_id" disabled>
+                                        <option value="">—</option>
+                                        @foreach($typesOs as $o)
+                                        <option value="{{ $o->id }}" {{ $s->os_type_id == $o->id ? 'selected':'' }}>{{ $o->libelle }}</option>
+                                        @endforeach
+                                    </select>
+                                    <button type="button" class="btn btn-outline-secondary btn-add-nomenclature" data-type="os" disabled><i class="bi bi-plus"></i></button>
+                                </div>
                             </div>
-                            <div class="col-md-12">
+                            <div class="col-md-6">
                                 <label class="field-label">Hyperviseur</label>
                                 <input type="text" class="form-control field-input" name="hyperviseur" value="{{ $s->hyperviseur }}" id="f_hyperviseur" disabled>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="field-label">Rôle / Fonction principale</label>
+                                <input type="text" class="form-control field-input" name="role_serveur" value="{{ $s->role_serveur }}" id="f_role_serveur" disabled>
                             </div>
                         </div>
                     </div>
@@ -173,46 +171,21 @@
                     <div class="card-body p-4">
                         <h6 class="section-title mb-4"><span class="section-num">02</span> Configuration Virtuelle (vCPU / RAM / Disque)</h6>
                         <div class="row g-3">
-                            <div class="col-md-4">
-                                <label class="field-label">Type vCPU</label>
-                                <select class="form-select field-input" name="cpu_type_id" id="f_cpu_type_id" disabled>
-                                    <option value="">—</option>
-                                    @foreach($typesCpu as $c)
-                                    <option value="{{ $c->id }}" {{ $s->cpu_type_id == $c->id ? 'selected':'' }}>{{ $c->libelle }}</option>
-                                    @endforeach
-                                </select>
+                            <div class="col-md-6">
+                                <label class="field-label">Sockets vCPU</label>
+                                <input type="number" class="form-control field-input" name="nb_processeurs" value="{{ $s->nb_processeurs }}" id="f_nb_processeurs" disabled min="1">
                             </div>
-                            <div class="col-md-4">
-                                <label class="field-label">Nb Sockets vCPU</label>
-                                <input type="number" class="form-control field-input" name="nb_processeurs" value="{{ $s->nb_processeurs }}" id="f_nb_processeurs" disabled>
-                            </div>
-                            <div class="col-md-4">
+                            <div class="col-md-6">
                                 <label class="field-label">Total cœurs vCPU</label>
-                                <input type="number" class="form-control field-input" name="nb_coeurs_total" value="{{ $s->nb_coeurs_total }}" id="f_nb_coeurs_total" disabled>
+                                <input type="number" class="form-control field-input" name="nb_coeurs_total" value="{{ $s->nb_coeurs_total }}" id="f_nb_coeurs_total" disabled min="1">
                             </div>
                             <div class="col-md-6">
-                                <label class="field-label">vRAM (Go)</label>
-                                <div class="input-group">
-                                    <input type="number" class="form-control field-input" name="ram_capacite_go" value="{{ $s->ram_capacite_go }}" id="f_ram_capacite_go" disabled>
-                                    <select class="form-select field-input" name="ram_type_id" id="f_ram_type_id" disabled>
-                                        <option value="">Type...</option>
-                                        @foreach($typesRam as $r)
-                                        <option value="{{ $r->id }}" {{ $s->ram_type_id == $r->id ? 'selected':'' }}>{{ $r->libelle }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
+                                <label class="field-label">Mémoire vRAM (Go)</label>
+                                <input type="number" class="form-control field-input" name="ram_capacite_go" value="{{ $s->ram_capacite_go }}" id="f_ram_capacite_go" disabled min="1">
                             </div>
                             <div class="col-md-6">
-                                <label class="field-label">Provisioning Disque (Go)</label>
-                                <div class="input-group">
-                                    <input type="number" class="form-control field-input" name="stockage_capacite_go" value="{{ $s->stockage_capacite_go }}" id="f_stockage_capacite_go" disabled>
-                                    <select class="form-select field-input" name="disque_type_id" id="f_disque_type_id" disabled>
-                                        <option value="">Type...</option>
-                                        @foreach($typesDisque as $d)
-                                        <option value="{{ $d->id }}" {{ $s->disque_type_id == $d->id ? 'selected':'' }}>{{ $d->libelle }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
+                                <label class="field-label">Disque Virtuel (Go)</label>
+                                <input type="number" class="form-control field-input" name="stockage_capacite_go" value="{{ $s->stockage_capacite_go }}" id="f_stockage_capacite_go" disabled min="1">
                             </div>
                         </div>
                     </div>
@@ -489,7 +462,7 @@ $(function () {
 
     $('#btn-edit-toggle').on('click', function() {
         editMode = !editMode;
-        $('.field-input').not('.bg-light').prop('disabled', !editMode);
+        $('.field-input, .btn-add-nomenclature').not('.bg-light').prop('disabled', !editMode);
         $('#fiche-actions').toggleClass('d-none', !editMode);
         $(this).toggleClass('btn-primary btn-warning')
                .html(editMode ? '<i class="bi bi-x me-1"></i> Annuler' : '<i class="bi bi-pencil me-1"></i> Modifier');

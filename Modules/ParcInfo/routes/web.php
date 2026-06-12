@@ -116,6 +116,8 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::put('/{id}', [ServeurController::class, 'update'])->name('update');
         Route::delete('/{id}', [ServeurController::class, 'destroy'])->name('destroy');
         Route::get('/search/hotes', [ServeurController::class, 'searchHotes'])->name('search-hotes');
+        Route::get('/search/locaux', [ServeurController::class, 'searchLocaux'])->name('search-locaux');
+        Route::post('/affectation', [ServeurController::class, 'storeAffectation'])->name('store-affectation');
         Route::patch('/{id}/statut', [ServeurController::class, 'updateStatut'])->name('update-statut');
         Route::patch('/{id}/etat', [ServeurController::class, 'updateEtat'])->name('update-etat');
         Route::post('/{id}/desaffecter', [ServeurController::class, 'desaffecter'])->name('desaffecter');

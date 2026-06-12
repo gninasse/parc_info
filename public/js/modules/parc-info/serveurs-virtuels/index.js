@@ -11,8 +11,8 @@ window.serveursQueryParams = function (params) {
     });
 };
 
-window.codeFormatter = (val) =>
-    `<span class="fw-bold text-primary small">${val}</span>`;
+window.codeFormatter = (val, row) =>
+    `<a href="${route('parc-info.serveurs-virtuels.show', row.id)}" class="fw-bold text-primary small text-decoration-none">${val}</a>`;
 
 window.statutFormatter = (val) => {
     const map = {
@@ -51,82 +51,21 @@ function loadKpis() {
 // ── Wizard ────────────────────────────────────────────────────────────────────
 
 const Wizard = (() => {
-    let currentStep = 1;
-
     const $modal = () => $('#serveurModal');
     const $form = () => $('#serveurForm');
-    const $step = (n) => $(`#step-${n}`);
-    const $circle = (n) => $(`.wizard-step-circle[data-step="${n}"]`);
-    const $label = (n) => $(`.wizard-step-label[data-step="${n}"]`);
-    const $line = (n) => $(`.wizard-step-line[data-after="${n}"]`);
 
     function isEnStock() {
-        return $('input[name="statut"]:checked').val() === 'en_stock';
+        return $('#statut').val() === 'en_stock';
     }
 
-    function totalSteps() {
-        return isEnStock() ? 2 : 3;
-    }
-
-    function goTo(n) {
-        $step(currentStep).addClass('d-none');
-        currentStep = n;
-        $step(currentStep).removeClass('d-none');
-        updateStepper();
-        updateNav();
-    }
-
-    function updateStepper() {
+    function toggleAffectationSection() {
         const stock = isEnStock();
-
-        $circle(3).toggleClass('opacity-25', stock);
-        $label(3).toggleClass('opacity-25 text-decoration-line-through', stock);
-        $line(2).toggleClass('opacity-25', stock);
-
-        for (let i = 1; i <= 3; i++) {
-            const c = $circle(i);
-            const l = $label(i);
-            c.removeClass('active done');
-            l.removeClass('text-primary fw-bold').addClass('text-muted');
-            if (i < currentStep) {
-                c.addClass('done').html('<i class="bi bi-check-lg" style="font-size:.8rem"></i>');
-                $line(i).addClass('done');
-            } else if (i === currentStep) {
-                c.addClass('active').text(i);
-                l.removeClass('text-muted').addClass('text-primary fw-bold');
-            } else {
-                c.text(i);
-                $line(i).removeClass('done');
-            }
+        $('#affectation-section').toggle(!stock);
+        if (stock) {
+            $('#local_id').val('');
+            $('#aff-local-summary').addClass('d-none');
+            $('#aff-skip-hint').removeClass('d-none');
         }
-    }
-
-    function updateNav() {
-        const last = totalSteps();
-        $('#btn-prev').toggle(currentStep > 1);
-        $('#btn-next').toggleClass('d-none', currentStep >= last);
-        $('#btn-submit').toggleClass('d-none', currentStep < last);
-    }
-
-    function validateStep(n) {
-        if (n === 1) {
-            if (!$('input[name="statut"]:checked').val()) {
-                Swal.fire({ icon: 'warning', title: 'Attention', text: 'Veuillez sélectionner un statut.', timer: 2000, showConfirmButton: false });
-                return false;
-            }
-        }
-        if (n === 2) {
-            const fields = ['numero_serie', 'modele', 'serveur_hote_id'];
-            let ok = true;
-            fields.forEach(f => {
-                const $el = $(`#${f}`);
-                if (!$el.val()) { $el.addClass('is-invalid'); ok = false; }
-                else $el.removeClass('is-invalid');
-            });
-            if (!ok) { Swal.fire({ icon: 'warning', title: 'Champs requis', text: 'Veuillez remplir tous les champs obligatoires (incluant le serveur hôte).', timer: 2500, showConfirmButton: false }); }
-            return ok;
-        }
-        return true;
     }
 
     function reset() {
@@ -134,18 +73,20 @@ const Wizard = (() => {
         $('#srv_id').val('');
         $('#wizard-title').text('Ajouter une machine virtuelle');
         $('#btn-submit-label').text('Enregistrer la VM');
-        $('.statut-card').removeClass('selected');
-        $('.aff-type-card').removeClass('selected');
+        $('#statut').val('en_service');
         $('.aff-summary').addClass('d-none');
         $('#aff-skip-hint').removeClass('d-none');
         $('#local_id').val('');
         $form().find('.is-invalid').removeClass('is-invalid');
-        goTo(1);
+        $form().find('.invalid-feedback').remove();
+        toggleAffectationSection();
     }
 
     function quickAdd(title, placeholder, routeName, selectId) {
         const bsModal = bootstrap.Modal.getInstance(document.getElementById('serveurModal'));
-        if (bsModal) bsModal._focustrap?.deactivate();
+        if (bsModal) {
+            bsModal._focustrap?.deactivate();
+        }
 
         Swal.fire({
             title,
@@ -163,7 +104,9 @@ const Wizard = (() => {
                 return value.trim();
             },
         }).then((result) => {
-            if (bsModal) bsModal._focustrap?.activate();
+            if (bsModal) {
+                bsModal._focustrap?.activate();
+            }
             if (result.isConfirmed && result.value) {
                 $.post(route(routeName), { libelle: result.value }, (res) => {
                     if (res.success) {
@@ -171,61 +114,36 @@ const Wizard = (() => {
                         Swal.fire({ icon: 'success', title: 'Ajouté avec succès', timer: 1500, showConfirmButton: false });
                     }
                 }).fail((xhr) => {
-                    if (bsModal) bsModal._focustrap?.activate();
+                    if (bsModal) {
+                        bsModal._focustrap?.activate();
+                    }
                     Swal.fire('Erreur', xhr.responseJSON?.errors?.libelle?.[0] ?? 'Ce libellé existe déjà.', 'error');
                 });
             }
         });
     }
 
-    // ── Init events ───────────────────────────────────────────────────────────
-
     function init() {
-        $(document).on('click', '.statut-card', function () {
-            $('.statut-card').removeClass('selected');
-            $(this).addClass('selected');
-            $(this).find('input[type="radio"]').prop('checked', true);
-            updateStepper();
-            updateNav();
+        $('#statut').on('change', function () {
+            toggleAffectationSection();
         });
 
         $('.btn-add-nomenclature').on('click', function() {
             const type = $(this).data('type');
-            if (type === 'marque') quickAdd('Nouvelle marque (Plateforme)', 'Ex: VMware, Proxmox...', 'parc-info.ordinateurs.store-marque', 'marque_id');
-            if (type === 'os') quickAdd('Nouvel OS', 'Ex: Windows Server 2022, Debian...', 'parc-info.ordinateurs.store-type-os', 'os_type_id');
+            if (type === 'os') {
+                const selectId = $(this).siblings('select').attr('id') || 'os_type_id';
+                quickAdd('Nouvel OS', 'Ex: Windows Server 2022, Debian...', 'parc-info.ordinateurs.store-type-os', selectId);
+            }
         });
 
-        $('#btn-next').on('click', () => {
-            if (validateStep(currentStep)) goTo(currentStep + 1);
-        });
-        $('#btn-prev').on('click', () => {
-            if (currentStep === 3) {
-                $('input[name="type_cible"]').prop('checked', false);
-                $('.aff-type-card').removeClass('selected');
-                $('.aff-summary').addClass('d-none');
-                $('#aff-skip-hint').removeClass('d-none');
-                $('#local_id').val('');
-            }
-            goTo(currentStep - 1);
-        });
-
-        // Affectation type cards
-        $(document).on('click', '.aff-type-card', function () {
-            $('.aff-type-card').removeClass('selected');
-            $(this).addClass('selected');
-            $(this).find('input[type="radio"]').prop('checked', true);
-            
-            const val = $(this).data('value');
-            if (val === 'LOCAL') {
-                $(document).trigger('show:local:modal');
-            }
+        $('#btn-select-local').on('click', function () {
+            $(document).trigger('show:local:modal');
         });
 
         $(document).on('local:selected', function (e, local) {
-            if (!$('#step-3').is(':visible')) return;
-            $('.aff-type-card').removeClass('selected');
-            $('.aff-type-card[data-value="LOCAL"]').addClass('selected')
-                .find('input[type="radio"]').prop('checked', true);
+            if (!$modal().is(':visible')) {
+                return;
+            }
             $('#local-summary-code').text(local.code);
             $('#local-summary-libelle').text(local.libelle);
             $('#local-summary-etage').text(local.etage);
@@ -238,8 +156,26 @@ const Wizard = (() => {
         $form().on('submit', function (e) {
             e.preventDefault();
             
+            $form().find('.is-invalid').removeClass('is-invalid');
+            $form().find('.invalid-feedback').remove();
+
+            const requiredFields = ['numero_serie', 'serveur_hote_id', 'statut'];
+            let hasError = false;
+            requiredFields.forEach(field => {
+                const $field = $(`#${field}`);
+                if (!$field.val()) {
+                    $field.addClass('is-invalid');
+                    hasError = true;
+                }
+            });
+
+            if (hasError) {
+                Swal.fire({ icon: 'warning', title: 'Champs requis', text: 'Veuillez remplir tous les champs obligatoires.', timer: 2500, showConfirmButton: false });
+                return;
+            }
+
             let formData = $(this).serialize();
-            if (!$('input[name="type_cible"]:checked').val()) {
+            if (isEnStock() || !$('#local_id').val()) {
                 formData += '&skip_affectation=1';
             }
 
@@ -303,30 +239,17 @@ const Wizard = (() => {
             const aff = e.affectation_active;
 
             $('#srv_id').val(e.id);
-            // Statut
-            $(`.statut-card[data-value="${e.statut}"]`).trigger('click');
+            $('#statut').val(e.statut);
+            toggleAffectationSection();
             
-            // Go to step 2 to populate fields
-            goTo(2);
             $('#code_inventaire').val(e.code_inventaire);
             $('#numero_serie').val(e.numero_serie);
-            $('#marque_id').val(e.marque_id);
-            $('#modele').val(e.modele);
-            $('#date_acquisition').val(e.date_acquisition?.substring(0, 10));
-            $('#date_mise_en_service').val(e.date_mise_en_service?.substring(0, 10));
-            $('#date_fin_garantie').val(e.date_fin_garantie?.substring(0, 10));
-            $('#valeur_achat').val(e.valeur_achat);
-            $('#etat').val(e.etat);
-
-            // VM-specific fields
+            
             $('#role_serveur').val(s.role_serveur);
             $('#hyperviseur').val(s.hyperviseur);
             $('#ram_capacite_go').val(s.ram_capacite_go);
-            $('#ram_type_id').val(s.ram_type_id);
-            $('#cpu_type_id').val(s.cpu_type_id);
             $('#nb_processeurs').val(s.nb_processeurs);
             $('#nb_coeurs_total').val(s.nb_coeurs_total);
-            $('#disque_type_id').val(s.disque_type_id);
             $('#stockage_capacite_go').val(s.stockage_capacite_go);
             $('#os_type_id').val(s.os_type_id);
             $('#nom_hote').val(s.nom_hote);
@@ -335,10 +258,7 @@ const Wizard = (() => {
             $('#adresse_mac').val(s.adresse_mac);
             $('#serveur_hote_id').val(s.serveur_hote_id);
 
-            // Affectation
             if (aff && !isEnStock()) {
-                goTo(3);
-                $(`.aff-type-card[data-value="${aff.type_cible}"]`).trigger('click');
                 if (aff.type_cible === 'LOCAL' && aff.local) {
                     $('#local_id').val(aff.local_id);
                     $('#local-summary-code').text(aff.local.code);

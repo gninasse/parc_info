@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Organisation\Models\Direction;
+use Modules\Organisation\Models\Local;
 use Modules\Organisation\Models\Site;
 use Modules\ParcInfo\Models\AffectationEquipement;
 use Modules\ParcInfo\Models\Equipement;
@@ -192,7 +193,7 @@ class ServeurController extends Controller
         $request->validate([
             'numero_serie' => "required|string|unique:parc_info_equipements,numero_serie,{$id}",
             'modele' => 'required|string|max:255',
-            'statut' => 'required|in:en_stock,en_service,en_reparation,perdu,reforme',
+            // 'statut' => 'required|in:en_stock,en_service,en_reparation,perdu,reforme',
             'etat' => 'required|in:bon,passable,mauvais,avarie',
         ]);
 
@@ -339,6 +340,78 @@ class ServeurController extends Controller
                     'text' => "{$s->equipement->code_inventaire} — {$s->equipement->modele} (".($s->nom_hote ?? 'Sans nom').')',
                 ])
         );
+    }
+
+    public function searchLocaux(Request $request): JsonResponse
+    {
+        $q = $request->get('q', '');
+
+        return response()->json(
+            Local::with(['etage.batiment.site'])
+                ->where(fn ($query) => $query
+                    ->where('libelle', 'ilike', "%{$q}%")
+                    ->orWhere('code', 'ilike', "%{$q}%"))
+                ->limit(20)->get()
+                ->map(fn ($l) => [
+                    'id' => $l->id,
+                    'text' => $l->nom_complet,
+                ])
+        );
+    }
+
+    public function storeAffectation(Request $request): JsonResponse
+    {
+        $request->validate([
+            'equipement_id' => 'required|exists:parc_info_equipements,id',
+            'local_id' => 'required|exists:organisation_locaux,id',
+        ]);
+
+        \DB::transaction(function () use ($request) {
+            $equipement = Equipement::findOrFail($request->equipement_id);
+
+            // Clôturer l'affectation active précédente
+            AffectationEquipement::where('equipement_id', $request->equipement_id)
+                ->where('statut', true)
+                ->update(['statut' => false, 'date_fin' => now()]);
+
+            AffectationEquipement::create([
+                'code' => 'AFF-'.strtoupper(uniqid()),
+                'equipement_id' => $request->equipement_id,
+                'statut' => true,
+                'type_cible' => 'LOCAL',
+                'type_affectation' => 'PERMANENTE',
+                'date_debut' => now(),
+                'date_fin' => null,
+                'local_id' => $request->local_id,
+            ]);
+
+            $ancienStatut = $equipement->statut;
+            if ($equipement->statut === 'en_stock') {
+                $equipement->update(['statut' => 'en_service']);
+
+                HistoriqueChangement::create([
+                    'equipement_id' => $request->equipement_id,
+                    'date_changement' => now(),
+                    'utilisateur_id' => auth()->id(),
+                    'type_changement' => 'STATUT',
+                    'ancien_statut' => $ancienStatut,
+                    'nouveau_statut' => 'en_service',
+                    'motif' => 'Mise en service automatique suite à affectation',
+                ]);
+            }
+
+            HistoriqueChangement::create([
+                'equipement_id' => $request->equipement_id,
+                'date_changement' => now(),
+                'utilisateur_id' => auth()->id(),
+                'type_changement' => 'AFFECTATION',
+                'ancien_statut' => $ancienStatut,
+                'nouveau_statut' => $equipement->statut,
+                'motif' => 'Nouvel emplacement défini',
+            ]);
+        });
+
+        return response()->json(['success' => true, 'message' => 'Emplacement enregistré avec succès.']);
     }
 
     private function formatRow(Equipement $e): array

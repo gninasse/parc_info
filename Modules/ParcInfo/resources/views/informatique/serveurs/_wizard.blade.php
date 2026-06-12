@@ -123,12 +123,17 @@
 
                             <div class="col-md-4">
                                 <label class="form-label field-label">Processeur (CPU)</label>
-                                <select class="form-select field-input" name="cpu_type_id" id="cpu_type_id">
-                                    <option value="">Type...</option>
-                                    @foreach($typesCpu as $c)
-                                    <option value="{{ $c->id }}">{{ $c->libelle }}</option>
-                                    @endforeach
-                                </select>
+                                <div class="input-group">
+                                    <select class="form-select field-input" name="cpu_type_id" id="cpu_type_id">
+                                        <option value="">Type...</option>
+                                        @foreach($typesCpu as $c)
+                                        <option value="{{ $c->id }}">{{ $c->libelle }}</option>
+                                        @endforeach
+                                    </select>
+                                    <button type="button" class="btn btn-outline-secondary btn-add-nomenclature" data-type="cpu" title="Nouveau type CPU">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                </div>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label field-label">Nb Proc / Cœurs</label>
@@ -147,6 +152,9 @@
                                         <option value="{{ $r->id }}">{{ $r->libelle }}</option>
                                         @endforeach
                                     </select>
+                                    <button type="button" class="btn btn-outline-secondary btn-add-nomenclature" data-type="ram" title="Nouveau type RAM">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
                                 </div>
                             </div>
 
@@ -245,3 +253,46 @@
         </div>
     </div>
 </div>
+
+<style>
+/* Stepper */
+.wizard-step-circle {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: #e9ecef;
+    color: #6c757d;
+    font-weight: 700;
+    font-size: .85rem;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .2s;
+}
+.wizard-step-circle.active  { background: #0d6efd; color: #fff; }
+.wizard-step-circle.done    { background: #0d6efd; color: #fff; }
+.wizard-step-circle.done::before { content: '✓'; }
+.wizard-step-line {
+    height: 2px; background: #dee2e6; transition: background .2s;
+}
+.wizard-step-line.done { background: #0d6efd; }
+.wizard-step-label { font-size: .68rem; letter-spacing: .5px; text-transform: uppercase; }
+
+/* Statut cards */
+.statut-card { cursor: pointer; transition: border-color .15s, background .15s; }
+.statut-card:hover { border-color: #0d6efd !important; background: #f0f6ff; }
+.statut-card.selected { border-color: #0d6efd !important; background: #f0f6ff; }
+.statut-card.selected .statut-card-icon { background: #dbeafe !important; }
+.statut-card.selected .statut-card-icon i { color: #0d6efd !important; }
+.statut-card.selected .check-icon { display: inline !important; }
+
+/* Affectation type cards */
+.aff-type-card { cursor: pointer; transition: border-color .15s; position: relative; }
+.aff-type-card:hover { border-color: #0d6efd !important; }
+.aff-type-card.selected { border-color: #0d6efd !important; background: #f0f6ff; }
+.aff-type-card.selected .aff-type-icon { background: #dbeafe !important; }
+.aff-type-card.selected .aff-type-icon i { color: #0d6efd !important; }
+.aff-type-card.selected .check-icon { display: inline !important; }
+
+/* Fields */
+.field-label { font-size: .78rem; font-weight: 600; color: #475467; margin-bottom: 4px; }
+.field-input  { font-size: .875rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
+.field-input:focus { background: #fff; border-color: #0d6efd; box-shadow: 0 0 0 3px rgba(13,110,253,.1); }
+</style>

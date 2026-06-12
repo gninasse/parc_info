@@ -39,7 +39,7 @@
                 <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
                     <h4 class="fw-bold mb-0">{{ $equipement->marque?->libelle }} {{ $equipement->modele }}</h4>
                     <span class="badge bg-{{ $sc }}-subtle text-{{ $sc }} border border-{{ $sc }}-subtle px-2 py-1">
-                        {{ $equipement->statut_label }}
+                        {!! $equipement->statut_label !!}
                     </span>
                     <span class="badge bg-{{ $ec }}-subtle text-{{ $ec }} border border-{{ $ec }}-subtle px-2 py-1">
                         {{ ucfirst($equipement->etat) }}
