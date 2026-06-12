@@ -101,6 +101,17 @@ class Equipement extends Model
         return $this->hasMany(AffectationEquipement::class, 'equipement_id');
     }
 
+    public function affectationsLicences(): HasMany
+    {
+        return $this->hasMany(AffectationLicence::class, 'equipement_id');
+    }
+
+    public function licencesActives(): HasMany
+    {
+        return $this->hasMany(AffectationLicence::class, 'equipement_id')
+            ->where('actif', true);
+    }
+
     public function affectationActive(): HasOne
     {
         return $this->hasOne(AffectationEquipement::class, 'equipement_id')

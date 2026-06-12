@@ -90,6 +90,7 @@
     @foreach([
         ['fiche',      'bi-cpu',           'Fiche Technique'],
         ['affectation','bi-person-badge',   'Affectation Actuelle'],
+        ['licences',    'bi-file-lock',     'Licences'],
         ['historique-aff','bi-clock-history','Historique Affectations'],
         ['historique-chg','bi-journal-text', 'Journal des Changements'],
     ] as [$id,$icon,$label])
@@ -414,6 +415,11 @@
             @endif
         </div>
     </div>
+</div>
+
+{{-- ══ TAB : LICENCES ══ --}}
+<div class="tab-pane fade" id="pane-licences" role="tabpanel">
+    @include('parcinfo::informatique.ordinateurs.partials._licences')
 </div>
 
 {{-- ══ TAB 3 : HISTORIQUE AFFECTATIONS ══ --}}
@@ -931,6 +937,74 @@ $(function () {
                         Swal.fire('Succès', response.message, 'success').then(() => location.reload());
                     },
                     error: function(xhr) {
+                        Swal.fire('Erreur', xhr.responseJSON?.message || 'Une erreur est survenue', 'error');
+                    }
+                });
+            }
+        });
+    });
+
+    // ── Associer Licence ──
+    $('#form-associer-licence').on('submit', function (e) {
+        e.preventDefault();
+        const licenceId = $('#assoc_licence_id').val();
+        if (!licenceId) {
+            return;
+        }
+
+        const $btn = $('#btn-save-associer-licence');
+        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>...');
+
+        $.ajax({
+            url: `/parc-info/informatique/licences/${licenceId}/affecter`,
+            method: 'POST',
+            data: {
+                type_affectation: 'device',
+                equipement_id: equipementId,
+                _token: '{{ csrf_token() }}'
+            },
+            success: function (response) {
+                if (response.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Succès',
+                        text: response.message,
+                        timer: 1500
+                    }).then(() => location.reload());
+                }
+            },
+            error: function (xhr) {
+                Swal.fire('Erreur', xhr.responseJSON?.message || 'Une erreur est survenue', 'error');
+                $btn.prop('disabled', false).html('<i class="bi bi-check-circle me-1"></i>Associer');
+            }
+        });
+    });
+
+    // ── Désassocier Licence ──
+    $(document).on('click', '.btn-desassocier-licence', function () {
+        const id = $(this).data('id');
+        Swal.fire({
+            title: 'Désassocier la licence ?',
+            text: "Cette licence ne sera plus active sur cet équipement.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            confirmButtonText: 'Oui, désassocier',
+            cancelButtonText: 'Annuler'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: `/parc-info/informatique/licences/affectations/${id}/desaffecter`,
+                    method: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}'
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            Swal.fire('Succès', response.message, 'success').then(() => location.reload());
+                        }
+                    },
+                    error: function (xhr) {
                         Swal.fire('Erreur', xhr.responseJSON?.message || 'Une erreur est survenue', 'error');
                     }
                 });

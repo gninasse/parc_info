@@ -244,6 +244,21 @@ class ParcInfoController extends Controller
                     ->orWhereHas('marque', fn ($m) => $m->where('libelle', 'ilike', "%{$q}%"));
             });
 
+        if ($request->filled('type')) {
+            $type = $request->type;
+            if ($type === 'ordinateur') {
+                $query->whereHas('ordinateur');
+            } elseif ($type === 'serveur') {
+                $query->where(function ($q) {
+                    $q->whereHas('serveur')->orWhereHas('serveurVirtuel');
+                });
+            } elseif ($type === 'reseau') {
+                $query->whereHas('reseau');
+            } elseif ($type === 'mobile') {
+                $query->whereHas('mobile');
+            }
+        }
+
         if ($request->filled('statut')) {
             $query->where('statut', $request->statut);
         }

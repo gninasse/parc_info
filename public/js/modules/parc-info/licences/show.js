@@ -122,71 +122,161 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // ── AFFECTATION ──
-    $('#type_affectation').on('change', function() {
-        if (this.value === 'user') {
-            $('#div-employe').removeClass('d-none');
-            $('#div-equipement').addClass('d-none');
+    // ── SEARCH DEBOUNCE ──
+    let searchTimeout = null;
+
+    function searchTargets(type, query, $container) {
+        $container.html('<div class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Chargement...</div>');
+
+        let url = '';
+        let data = { q: query };
+
+        if (type === 'user') {
+            url = route('parc-info.ordinateurs.search-employes');
         } else {
-            $('#div-employe').addClass('d-none');
-            $('#div-equipement').removeClass('d-none');
+            url = route('parc-info.search-equipements');
+            data.type = type;
         }
+
+        $.ajax({
+            url: url,
+            method: 'GET',
+            data: data,
+            success: function (results) {
+                $container.empty();
+                if (results.length === 0) {
+                    $container.html('<div class="text-center py-4 text-muted"><i class="fas fa-search-minus me-2"></i>Aucun résultat trouvé.</div>');
+                    return;
+                }
+
+                results.forEach(item => {
+                    let cardHtml = '';
+                    if (type === 'user') {
+                        cardHtml = `
+                            <div class="card border mb-2 shadow-sm rounded-3">
+                                <div class="card-body p-3 d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="fw-bold mb-1"><i class="fas fa-user text-muted me-2"></i>${item.nom} ${item.prenom}</h6>
+                                        <small class="text-muted d-block">ID : ${item.dossier_employe_id}</small>
+                                    </div>
+                                    <button class="btn btn-outline-primary btn-sm btn-submit-affectation" data-type="user" data-id="${item.dossier_employe_id}">
+                                        Affecter <i class="fas fa-check-circle ms-1"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        cardHtml = `
+                            <div class="card border mb-2 shadow-sm rounded-3">
+                                <div class="card-body p-3 d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="fw-bold mb-1"><i class="fas fa-desktop text-muted me-2"></i>${item.code}</h6>
+                                        <small class="text-muted d-block">${item.marque} ${item.modele} — Emplacement : ${item.emplacement}</small>
+                                    </div>
+                                    <button class="btn btn-outline-primary btn-sm btn-submit-affectation" data-type="device" data-id="${item.id}">
+                                        Affecter <i class="fas fa-check-circle ms-1"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    $container.append(cardHtml);
+                });
+            },
+            error: function () {
+                $container.html('<div class="text-center py-4 text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Erreur lors de la recherche.</div>');
+            }
+        });
+    }
+
+    // Input listeners for search
+    $('.search-target-input').on('keyup input', function () {
+        const $input = $(this);
+        const query = $input.val().trim();
+        const type = $input.data('type');
+        const $container = $input.closest('.tab-pane').find('.target-results-container');
+
+        clearTimeout(searchTimeout);
+
+        if (query.length < 2) {
+            $container.html('<div class="text-center py-4 text-muted small"><i class="fas fa-keyboard me-2"></i>Saisissez au moins 2 caractères pour commencer la recherche...</div>');
+            return;
+        }
+
+        searchTimeout = setTimeout(() => {
+            searchTargets(type, query, $container);
+        }, 300);
     });
 
-    $('#form-affecter-licence').on('submit', function(e) {
-        e.preventDefault();
+    // Handle affectation click
+    $(document).on('click', '.btn-submit-affectation', function () {
+        const $btn = $(this);
+        const typeAffectation = $btn.data('type');
+        const targetId = $btn.data('id');
+
+        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
+
+        const postData = {
+            type_affectation: typeAffectation,
+            _token: $('meta[name="csrf-token"]').attr('content')
+        };
+
+        if (typeAffectation === 'user') {
+            postData.employe_id = targetId;
+        } else {
+            postData.equipement_id = targetId;
+        }
+
         $.ajax({
             url: route('parc-info.licences.affecter', licenceId),
             method: 'POST',
-            data: $(this).serialize(),
-            success: function(res) {
+            data: postData,
+            success: function (res) {
                 if (res.success) {
-                    Swal.fire('Succès', res.message, 'success').then(() => window.location.reload());
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Succès !',
+                        text: res.message,
+                        timer: 1500
+                    }).then(() => window.location.reload());
                 }
             },
-            error: function(xhr) {
+            error: function (xhr) {
                 Swal.fire('Erreur', xhr.responseJSON?.message || 'Erreur lors de l\'affectation', 'error');
+                $btn.prop('disabled', false).html('Affecter <i class="fas fa-check-circle ms-1"></i>');
             }
         });
     });
 
-    // Select2 AJAX Employés
-    $('.select2-ajax-employes').select2({
-        theme: 'bootstrap-5',
-        dropdownParent: $('#modal-affectation'),
-        ajax: {
-            url: route('parc-info.ordinateurs.search-employes'),
-            dataType: 'json',
-            delay: 250,
-            data: params => ({ q: params.term }),
-            processResults: data => ({
-                results: data.map(item => ({
-                    id: item.dossier_employe_id,
-                    text: `${item.nom} ${item.prenom} (${item.dossier_employe_id})`
-                }))
-            })
-        },
-        minimumInputLength: 2,
-        placeholder: 'Chercher un employé...'
-    });
-
-    // Select2 AJAX Postes
-    $('.select2-ajax-postes').select2({
-        theme: 'bootstrap-5',
-        dropdownParent: $('#modal-affectation'),
-        ajax: {
-            url: route('parc-info.ordinateurs.search-postes'),
-            dataType: 'json',
-            delay: 250,
-            data: params => ({ q: params.term }),
-            processResults: data => ({
-                results: data.map(item => ({
-                    id: item.id,
-                    text: `${item.code_inventaire} - ${item.modele}`
-                }))
-            })
-        },
-        minimumInputLength: 2,
-        placeholder: 'Chercher un poste...'
+    // ── DÉSAFFECTATION ──
+    $(document).on('click', '.btn-desaffecter', function() {
+        const id = $(this).data('id');
+        Swal.fire({
+            title: 'Désaffecter la licence ?',
+            text: "Cette licence ne sera plus associée à cet équipement ou employé.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            confirmButtonText: 'Oui, désaffecter',
+            cancelButtonText: 'Annuler'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: `/parc-info/informatique/licences/affectations/${id}/desaffecter`,
+                    method: 'POST',
+                    data: {
+                        _token: $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function(res) {
+                        if (res.success) {
+                            Swal.fire('Succès', res.message, 'success').then(() => window.location.reload());
+                        }
+                    },
+                    error: function(xhr) {
+                        Swal.fire('Erreur', xhr.responseJSON?.message || 'Erreur lors de la désaffectation', 'error');
+                    }
+                });
+            }
+        });
     });
 });

@@ -14,7 +14,7 @@ class UpdateLicenceRequest extends FormRequest
 
     public function rules(): array
     {
-        $id = $this->route('licence');
+        $id = $this->route('id');
 
         return [
             'logiciel_id' => 'required|exists:parc_info_logiciels,id',

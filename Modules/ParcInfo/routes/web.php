@@ -33,6 +33,7 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::delete('/{id}', [LicenceController::class, 'destroy'])->name('licences.destroy');
         Route::post('/{id}/affecter', [LicenceController::class, 'affecter'])->name('licences.affecter');
         Route::post('/{id}/renouveler', [LicenceController::class, 'renouveler'])->name('licences.renouveler');
+        Route::post('/affectations/{affectationId}/desaffecter', [LicenceController::class, 'desaffecter'])->name('licences.desaffecter');
         Route::post('/fournisseurs/quick-add', [LicenceController::class, 'storeFournisseur'])->name('licences.store-fournisseur');
         Route::post('/contrats/quick-add', [LicenceController::class, 'storeContrat'])->name('licences.store-contrat');
     });

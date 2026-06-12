@@ -310,39 +310,69 @@
 
 {{-- ── Modales ── --}}
 <div class="modal fade" id="modal-affectation" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content border-0 shadow-lg">
-            <form id="form-affecter-licence">
-                @csrf
-                <div class="modal-header border-0 pb-0">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 14px;">
+            <div class="modal-header border-0 pb-0">
+                <div>
                     <h5 class="modal-title fw-bold">Affecter cette licence</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <small class="text-muted">Il reste <strong>{{ $licence->disponibilites }}</strong> postes disponibles.</small>
                 </div>
-                <div class="modal-body py-4">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold small">Type de cible</label>
-                        <select name="type_affectation" id="type_affectation" class="form-select" required>
-                            <option value="user">Utilisateur (Employé)</option>
-                            <option value="device">Équipement (Poste)</option>
-                        </select>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-4">
+                {{-- Tabs navigation --}}
+                <ul class="nav nav-pills nav-fill bg-light p-1 rounded-3 mb-4" id="targetTabs" role="tablist" style="font-size: .85rem;">
+                    <li class="nav-item">
+                        <button class="nav-link active fw-bold py-2" id="tab-target-user" data-bs-toggle="pill" data-bs-target="#pane-target-user" type="button" role="tab">
+                            <i class="fas fa-user me-1"></i> Collaborateurs
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link fw-bold py-2" id="tab-target-ordinateur" data-bs-toggle="pill" data-bs-target="#pane-target-ordinateur" type="button" role="tab">
+                            <i class="fas fa-desktop me-1"></i> Ordinateurs
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link fw-bold py-2" id="tab-target-serveur" data-bs-toggle="pill" data-bs-target="#pane-target-serveur" type="button" role="tab">
+                            <i class="fas fa-server me-1"></i> Serveurs
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link fw-bold py-2" id="tab-target-reseau" data-bs-toggle="pill" data-bs-target="#pane-target-reseau" type="button" role="tab">
+                            <i class="fas fa-wifi me-1"></i> Réseau
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link fw-bold py-2" id="tab-target-mobile" data-bs-toggle="pill" data-bs-target="#pane-target-mobile" type="button" role="tab">
+                            <i class="fas fa-mobile-alt me-1"></i> Mobiles
+                        </button>
+                    </li>
+                </ul>
+
+                {{-- Tabs content --}}
+                <div class="tab-content" id="targetTabsContent">
+                    @foreach([
+                        ['user', 'Rechercher un collaborateur...', 'Entrez le nom, prénom ou ID...'],
+                        ['ordinateur', 'Rechercher un ordinateur...', 'Entrez le code d\'inventaire, modèle, marque...'],
+                        ['serveur', 'Rechercher un serveur...', 'Entrez le code d\'inventaire, modèle, marque...'],
+                        ['reseau', 'Rechercher un équipement réseau...', 'Entrez le code d\'inventaire, modèle, marque...'],
+                        ['mobile', 'Rechercher un appareil mobile...', 'Entrez le code d\'inventaire, modèle, marque...']
+                    ] as [$type, $label, $placeholder])
+                    <div class="tab-pane fade {{ $type === 'user' ? 'show active' : '' }}" id="pane-target-{{ $type }}" role="tabpanel">
+                        <div class="input-group mb-3 shadow-sm border rounded-3 overflow-hidden">
+                            <span class="input-group-text bg-white border-0"><i class="fas fa-search text-muted"></i></span>
+                            <input type="text" class="form-control border-0 search-target-input" data-type="{{ $type }}" placeholder="{{ $placeholder }}" style="box-shadow: none;">
+                        </div>
+                        <div class="target-results-container overflow-auto" style="max-height: 300px;">
+                            <div class="text-center py-4 text-muted small"><i class="fas fa-keyboard me-2"></i>Saisissez des caractères pour commencer la recherche...</div>
+                        </div>
                     </div>
-                    <div id="div-employe" class="mb-3">
-                        <label class="form-label fw-bold small">Sélectionner l'employé</label>
-                        <select name="employe_id" class="form-select select2-ajax-employes" style="width: 100%"></select>
-                    </div>
-                    <div id="div-equipement" class="mb-3 d-none">
-                        <label class="form-label fw-bold small">Sélectionner l'équipement</label>
-                        <select name="equipement_id" class="form-select select2-ajax-postes" style="width: 100%"></select>
-                    </div>
-                    <div class="alert alert-info border-0 small mb-0">
-                        Il reste <strong>{{ $licence->disponibilites }}</strong> postes disponibles.
-                    </div>
+                    @endforeach
                 </div>
-                <div class="modal-footer border-0 pt-0">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-primary px-4">Valider l'affectation</button>
-                </div>
-            </form>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+            </div>
         </div>
     </div>
 </div>

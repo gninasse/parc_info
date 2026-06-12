@@ -176,6 +176,33 @@ class LicenceController extends Controller
         return response()->json(['success' => true, 'message' => 'Affectation réussie']);
     }
 
+    public function desaffecter(Request $request, $affectationId)
+    {
+        $affectation = AffectationLicence::findOrFail($affectationId);
+
+        if (! $affectation->actif) {
+            return response()->json(['success' => false, 'message' => 'Cette affectation est déjà inactive.'], 422);
+        }
+
+        DB::transaction(function () use ($affectation) {
+            $affectation->actif = false;
+            $affectation->date_fin_affectation = now();
+            $affectation->save();
+
+            $licence = $affectation->licence;
+            if ($licence->nombre_postes_utilises > 0) {
+                $licence->decrement('nombre_postes_utilises');
+            }
+        });
+
+        activity('licence')
+            ->performedOn($affectation->licence)
+            ->causedBy(auth()->user())
+            ->log('Désaffectation de licence');
+
+        return response()->json(['success' => true, 'message' => 'Licence désaffectée avec succès.']);
+    }
+
     public function renouveler(Request $request, $id)
     {
         $licence = Licence::findOrFail($id);
