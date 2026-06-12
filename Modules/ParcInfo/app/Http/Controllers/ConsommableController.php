@@ -89,12 +89,22 @@ class ConsommableController extends Controller
             'success' => true,
             'message' => 'Consommable ajouté au catalogue',
             'consommable_id' => $consommable->id,
+            'redirect' => route('parc-info.consommables.show', $consommable->id),
         ]);
     }
 
     public function show($id)
     {
-        $consommable = Consommable::with(['typeConsommable', 'fournisseur', 'mouvementsStock.utilisateur', 'affectations.equipement'])->findOrFail($id);
+        $consommable = Consommable::with([
+            'typeConsommable',
+            'fournisseur',
+            'mouvementsStock.utilisateur',
+            'mouvementsStock.equipement',
+            'mouvementsStock.employe',
+            'mouvementsStock.service',
+            'mouvementsStock.unite',
+            'affectations.equipement',
+        ])->findOrFail($id);
 
         if (request()->wantsJson() || request()->has('json')) {
             return response()->json($consommable);
@@ -103,24 +113,24 @@ class ConsommableController extends Controller
         $types = TypeConsommable::orderBy('nom')->get();
         $fournisseurs = Fournisseur::where('est_actif', true)->orderBy('nom')->get();
         $marques = Marque::orderBy('libelle')->get();
+        $services = \Modules\Organisation\Models\Service::orderBy('libelle')->get();
+        $unites = \Modules\Organisation\Models\Unite::orderBy('libelle')->get();
+        $directions = \Modules\Organisation\Models\Direction::where('actif', true)->orderBy('libelle')->get(['id', 'libelle']);
+        $sites = \Modules\Organisation\Models\Site::orderBy('libelle')->get(['id', 'libelle']);
 
-        return view('parcinfo::informatique.consommables.show', compact('consommable', 'types', 'fournisseurs', 'marques'));
+        return view('parcinfo::informatique.consommables.show', compact('consommable', 'types', 'fournisseurs', 'marques', 'services', 'unites', 'directions', 'sites'));
     }
 
-    public function update(Request $request, $id)
+    public function update(StoreConsommableRequest $request, $id)
     {
         $consommable = Consommable::findOrFail($id);
-        $request->validate([
-            'code' => 'required|string|unique:parc_info_consommables,code,'.$id,
-            'nom' => 'required|string',
-            'type_consommable_id' => 'required|exists:parc_info_types_consommables,id',
-            'fournisseur_principal_id' => 'required|exists:parc_info_fournisseurs,id',
-            'cout_unitaire' => 'required|numeric|min:0',
+        $consommable->update($request->validated());
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Fiche article mise à jour.',
+            'data' => $consommable->load(['typeConsommable', 'fournisseur', 'marque']),
         ]);
-
-        $consommable->update($request->all());
-
-        return response()->json(['success' => true, 'message' => 'Fiche article mise à jour.']);
     }
 
     public function toggleStatus($id)
@@ -159,9 +169,22 @@ class ConsommableController extends Controller
                 'date_mouvement' => now(),
                 'utilisateur_id' => auth()->id(),
                 'equipement_id' => $request->equipement_id,
+                'employe_id' => $request->employe_id,
+                'service_id' => $request->service_id,
+                'unite_id' => $request->unite_id,
                 'raison' => $request->raison,
                 'notes' => $request->notes,
             ]);
+
+            if ($request->filled('equipement_id')) {
+                \Modules\ParcInfo\Models\AffectationConsommable::create([
+                    'consommable_id' => $consommable->id,
+                    'equipement_id' => $request->equipement_id,
+                    'quantite_fournie' => $request->quantite,
+                    'date_affectation' => now(),
+                    'notes' => $request->notes,
+                ]);
+            }
 
             $consommable->decrement('quantite_stock_actuel', $request->quantite);
         });

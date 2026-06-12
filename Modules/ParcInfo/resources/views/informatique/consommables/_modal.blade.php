@@ -39,12 +39,17 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label small fw-bold">Marque</label>
-                            <select name="marque_id" class="form-select select2-modal">
-                                <option value="">Générique</option>
-                                @foreach($marques as $m)
-                                    <option value="{{ $m->id }}">{{ $m->libelle }}</option>
-                                @endforeach
-                            </select>
+                            <div class="input-group">
+                                <select name="marque_id" id="select-marque" class="form-select select2-modal">
+                                    <option value="">Générique</option>
+                                    @foreach($marques as $m)
+                                        <option value="{{ $m->id }}">{{ $m->libelle }}</option>
+                                    @endforeach
+                                </select>
+                                <button type="button" class="btn btn-outline-primary" id="btn-quickadd-marque" title="Nouvelle Marque">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
 

@@ -256,6 +256,14 @@ class ParcInfoController extends Controller
                 $query->whereHas('reseau');
             } elseif ($type === 'mobile') {
                 $query->whereHas('mobile');
+            } elseif ($type === 'imprimante') {
+                $query->whereHas('imprimante');
+            } elseif ($type === 'scanner') {
+                $query->whereHas('scanner');
+            } elseif ($type === 'telephone') {
+                $query->whereHas('telephone');
+            } elseif ($type === 'camera') {
+                $query->whereHas('camera');
             }
         }
 

@@ -20,6 +20,8 @@ class MouvementConsommable extends Model
         'utilisateur_id',
         'equipement_id',
         'employe_id',
+        'service_id',
+        'unite_id',
         'raison',
         'notes',
     ];
@@ -47,6 +49,16 @@ class MouvementConsommable extends Model
 
     public function employe()
     {
-        return $this->belongsTo(Employe::class, 'employe_id', 'dossier_employe_id');
+        return $this->belongsTo(Employe::class, 'employe_id');
+    }
+
+    public function service()
+    {
+        return $this->belongsTo(\Modules\Organisation\Models\Service::class);
+    }
+
+    public function unite()
+    {
+        return $this->belongsTo(\Modules\Organisation\Models\Unite::class);
     }
 }

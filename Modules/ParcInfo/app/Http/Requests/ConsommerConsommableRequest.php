@@ -15,8 +15,11 @@ class ConsommerConsommableRequest extends FormRequest
     {
         return [
             'quantite' => 'required|integer|min:1',
-            'equipement_id' => 'required|exists:parc_info_equipements,id',
-            'raison' => 'required|string|max:255',
+            'equipement_id' => 'nullable|exists:parc_info_equipements,id',
+            'employe_id' => 'nullable|exists:grh_dossiers_employes,id',
+            'service_id' => 'nullable|exists:organisation_services,id',
+            'unite_id' => 'nullable|exists:organisation_unites,id',
+            'raison' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
         ];
     }

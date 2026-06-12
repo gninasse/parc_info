@@ -4,13 +4,26 @@
         <div class="modal-content border-0 shadow-lg">
             <div class="modal-header bg-primary bg-opacity-10 border-0">
                 <h5 class="modal-title fw-bold text-primary">
-                    <i class="fas fa-desktop me-2"></i>Sélectionner un équipement
+                    <i class="bi bi-pc-display me-2"></i>Sélectionner un équipement
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="row g-3 mb-3">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
+                        <select class="form-select form-select-sm" id="eq-filter-type">
+                            <option value="">Tous les types</option>
+                            <option value="ordinateur">Poste de travail (Ordinateur)</option>
+                            <option value="serveur">Serveur</option>
+                            <option value="imprimante">Imprimante</option>
+                            <option value="scanner">Scanner</option>
+                            <option value="telephone">Téléphone</option>
+                            <option value="camera">Caméra IP</option>
+                            <option value="mobile">Mobile / Tablette</option>
+                            <option value="reseau">Équipement Réseau</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
                         <select class="form-select form-select-sm" id="eq-filter-statut">
                             <option value="">Tous les statuts</option>
                             <option value="en_service" selected>En service</option>
@@ -18,9 +31,9 @@
                             <option value="en_reparation">En réparation</option>
                         </select>
                     </div>
-                    <div class="col-md-8">
+                    <div class="col-md-6">
                         <div class="input-group input-group-sm">
-                            <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+                            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
                             <input type="text" class="form-control border-start-0" id="eq-search" placeholder="Rechercher par code, modèle, marque ou n° série...">
                         </div>
                     </div>
@@ -54,7 +67,7 @@
             <div class="modal-footer bg-light border-0">
                 <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Annuler</button>
                 <button type="button" class="btn btn-primary px-4" id="eq-confirm" disabled>
-                    <i class="fas fa-check me-2"></i>Confirmer la sélection
+                    <i class="bi bi-check-circle me-2"></i>Confirmer la sélection
                 </button>
             </div>
         </div>

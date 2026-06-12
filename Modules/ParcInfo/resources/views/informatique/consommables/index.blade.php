@@ -152,13 +152,14 @@
 </div>
 
 @include('parcinfo::informatique.consommables._modal')
-@include('parcinfo::shared._modal_fournisseur')
 @include('parcinfo::shared._modal_type_consommable')
-@include('parcinfo::shared._modal_selection_equipement')
 
 @endsection
 
 @push('js')
+<script>
+    const csrfToken = '{{ csrf_token() }}';
+</script>
 <script src="{{ asset('plugins/bootstrap-table/bootstrap-table.min.js') }}"></script>
 <script src="{{ asset('plugins/bootstrap-table/locale/bootstrap-table-fr-FR.min.js') }}"></script>
 <script src="{{ asset('plugins/select2/js/select2.full.min.js') }}"></script>
