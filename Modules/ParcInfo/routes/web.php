@@ -377,4 +377,135 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::get('/locaux/search', [CameraController::class, 'searchLocaux'])->name('search-locaux');
     });
 
+    // Référentiels
+    Route::prefix('referentiels')->name('referentiels.')->group(function () {
+        // Types de CPU
+        Route::prefix('types-cpus')->name('types-cpus.')->group(function () {
+            Route::get('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeCpuController::class, 'index'])->name('index');
+            Route::get('/data', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeCpuController::class, 'getData'])->name('data');
+            Route::post('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeCpuController::class, 'store'])->name('store');
+            Route::get('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeCpuController::class, 'show'])->name('show');
+            Route::put('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeCpuController::class, 'update'])->name('update');
+            Route::delete('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeCpuController::class, 'destroy'])->name('destroy');
+        });
+
+        // Types de Disques
+        Route::prefix('types-disques')->name('types-disques.')->group(function () {
+            Route::get('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeDisqueController::class, 'index'])->name('index');
+            Route::get('/data', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeDisqueController::class, 'getData'])->name('data');
+            Route::post('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeDisqueController::class, 'store'])->name('store');
+            Route::get('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeDisqueController::class, 'show'])->name('show');
+            Route::put('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeDisqueController::class, 'update'])->name('update');
+            Route::delete('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeDisqueController::class, 'destroy'])->name('destroy');
+        });
+
+        // Types d'OS
+        Route::prefix('types-os')->name('types-os.')->group(function () {
+            Route::get('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeOsController::class, 'index'])->name('index');
+            Route::get('/data', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeOsController::class, 'getData'])->name('data');
+            Route::post('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeOsController::class, 'store'])->name('store');
+            Route::get('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeOsController::class, 'show'])->name('show');
+            Route::put('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeOsController::class, 'update'])->name('update');
+            Route::delete('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeOsController::class, 'destroy'])->name('destroy');
+        });
+
+        // Types de RAM
+        Route::prefix('types-rams')->name('types-rams.')->group(function () {
+            Route::get('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeRamController::class, 'index'])->name('index');
+            Route::get('/data', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeRamController::class, 'getData'])->name('data');
+            Route::post('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeRamController::class, 'store'])->name('store');
+            Route::get('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeRamController::class, 'show'])->name('show');
+            Route::put('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeRamController::class, 'update'])->name('update');
+            Route::delete('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeRamController::class, 'destroy'])->name('destroy');
+        });
+
+        // Marques
+        Route::prefix('marques')->name('marques.')->group(function () {
+            Route::get('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\MarqueController::class, 'index'])->name('index');
+            Route::get('/data', [\Modules\ParcInfo\Http\Controllers\Referentiels\MarqueController::class, 'getData'])->name('data');
+            Route::post('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\MarqueController::class, 'store'])->name('store');
+            Route::get('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\MarqueController::class, 'show'])->name('show');
+            Route::put('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\MarqueController::class, 'update'])->name('update');
+            Route::delete('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\MarqueController::class, 'destroy'])->name('destroy');
+        });
+
+        // Types d'Imprimantes
+        Route::prefix('types-imprimantes')->name('types-imprimantes.')->group(function () {
+            Route::get('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeImprimanteController::class, 'index'])->name('index');
+            Route::get('/data', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeImprimanteController::class, 'getData'])->name('data');
+            Route::post('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeImprimanteController::class, 'store'])->name('store');
+            Route::get('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeImprimanteController::class, 'show'])->name('show');
+            Route::put('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeImprimanteController::class, 'update'])->name('update');
+            Route::delete('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeImprimanteController::class, 'destroy'])->name('destroy');
+        });
+
+        // Types de Mobiles
+        Route::prefix('types-mobiles')->name('types-mobiles.')->group(function () {
+            Route::get('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeMobileController::class, 'index'])->name('index');
+            Route::get('/data', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeMobileController::class, 'getData'])->name('data');
+            Route::post('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeMobileController::class, 'store'])->name('store');
+            Route::get('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeMobileController::class, 'show'])->name('show');
+            Route::put('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeMobileController::class, 'update'])->name('update');
+            Route::delete('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeMobileController::class, 'destroy'])->name('destroy');
+        });
+
+        // Types Équipements Réseau
+        Route::prefix('types-reseaux')->name('types-reseaux.')->group(function () {
+            Route::get('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeReseauController::class, 'index'])->name('index');
+            Route::get('/data', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeReseauController::class, 'getData'])->name('data');
+            Route::post('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeReseauController::class, 'store'])->name('store');
+            Route::get('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeReseauController::class, 'show'])->name('show');
+            Route::put('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeReseauController::class, 'update'])->name('update');
+            Route::delete('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeReseauController::class, 'destroy'])->name('destroy');
+        });
+
+        // Types Infrastructure
+        Route::prefix('types-infrastructures')->name('types-infrastructures.')->group(function () {
+            Route::get('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeInfrastructureController::class, 'index'])->name('index');
+            Route::get('/data', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeInfrastructureController::class, 'getData'])->name('data');
+            Route::post('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeInfrastructureController::class, 'store'])->name('store');
+            Route::get('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeInfrastructureController::class, 'show'])->name('show');
+            Route::put('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeInfrastructureController::class, 'update'])->name('update');
+            Route::delete('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeInfrastructureController::class, 'destroy'])->name('destroy');
+        });
+
+        // Types de Licences
+        Route::prefix('types-licences')->name('types-licences.')->group(function () {
+            Route::get('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeLicenceController::class, 'index'])->name('index');
+            Route::get('/data', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeLicenceController::class, 'getData'])->name('data');
+            Route::post('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeLicenceController::class, 'store'])->name('store');
+            Route::get('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeLicenceController::class, 'show'])->name('show');
+            Route::put('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeLicenceController::class, 'update'])->name('update');
+            Route::delete('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeLicenceController::class, 'destroy'])->name('destroy');
+        });
+
+        // Types Consommables
+        Route::prefix('types-consommables')->name('types-consommables.')->group(function () {
+            Route::get('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeConsommableController::class, 'index'])->name('index');
+            Route::get('/data', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeConsommableController::class, 'getData'])->name('data');
+            Route::post('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeConsommableController::class, 'store'])->name('store');
+            Route::get('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeConsommableController::class, 'show'])->name('show');
+            Route::put('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeConsommable::class, 'update'])->name('update');
+            Route::delete('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeConsommableController::class, 'destroy'])->name('destroy');
+        });
+
+        // Éditeurs
+        Route::prefix('editeurs')->name('editeurs.')->group(function () {
+            Route::get('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\EditeurController::class, 'index'])->name('index');
+            Route::get('/data', [\Modules\ParcInfo\Http\Controllers\Referentiels\EditeurController::class, 'getData'])->name('data');
+            Route::post('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\EditeurController::class, 'store'])->name('store');
+            Route::get('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\EditeurController::class, 'show'])->name('show');
+            Route::put('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\EditeurController::class, 'update'])->name('update');
+            Route::delete('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\EditeurController::class, 'destroy'])->name('destroy');
+        });
+    });
+
+    // Analyse
+    Route::prefix('analyse')->name('analyse.')->group(function () {
+        Route::get('/etats', [\Modules\ParcInfo\Http\Controllers\Analyse\EtatController::class, 'index'])->name('etats.index');
+        Route::get('/etats/data', [\Modules\ParcInfo\Http\Controllers\Analyse\EtatController::class, 'getData'])->name('etats.data');
+        Route::get('/statistiques', [\Modules\ParcInfo\Http\Controllers\Analyse\StatistiquesController::class, 'index'])->name('statistiques.index');
+        Route::get('/statistiques/data', [\Modules\ParcInfo\Http\Controllers\Analyse\StatistiquesController::class, 'getData'])->name('statistiques.data');
+    });
+
 });

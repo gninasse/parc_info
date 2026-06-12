@@ -25,7 +25,7 @@ class Telephone extends Model
     ];
 
     protected $casts = [
-        'est_ip'                 => 'boolean',
+        'est_ip' => 'boolean',
         'modele_expansion_count' => 'integer',
     ];
 

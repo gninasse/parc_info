@@ -4,14 +4,13 @@ namespace Modules\ParcInfo\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Modules\ParcInfo\Models\Logiciel;
-use Modules\ParcInfo\Models\Editeur;
-use Modules\ParcInfo\Models\TypeLicence;
-use Modules\ParcInfo\Models\Fournisseur;
+use Modules\ParcInfo\Http\Requests\StoreLogicielRequest;
 use Modules\ParcInfo\Models\Contact;
 use Modules\ParcInfo\Models\ContratMaintenance;
-use Modules\ParcInfo\Http\Requests\StoreLogicielRequest;
-use Illuminate\Support\Facades\DB;
+use Modules\ParcInfo\Models\Editeur;
+use Modules\ParcInfo\Models\Fournisseur;
+use Modules\ParcInfo\Models\Logiciel;
+use Modules\ParcInfo\Models\TypeLicence;
 
 class LogicielController extends Controller
 {

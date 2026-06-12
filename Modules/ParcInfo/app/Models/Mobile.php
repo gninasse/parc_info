@@ -28,7 +28,7 @@ class Mobile extends Model
     ];
 
     protected $casts = [
-        'a_coque_protection'    => 'boolean',
+        'a_coque_protection' => 'boolean',
         'capacite_batterie_mah' => 'integer',
     ];
 

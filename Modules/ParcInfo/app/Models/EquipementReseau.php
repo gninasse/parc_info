@@ -32,13 +32,13 @@ class EquipementReseau extends Model
     ];
 
     protected $casts = [
-        'est_poe'           => 'boolean',
-        'est_manageable'    => 'boolean',
-        'nb_ports'          => 'integer',
-        'vitesse_max_mbps'  => 'integer',
+        'est_poe' => 'boolean',
+        'est_manageable' => 'boolean',
+        'nb_ports' => 'integer',
+        'vitesse_max_mbps' => 'integer',
         'u_position_depart' => 'integer',
-        'u_position_fin'    => 'integer',
-        'vlan_management'   => 'integer',
+        'u_position_fin' => 'integer',
+        'vlan_management' => 'integer',
     ];
 
     public function equipement()

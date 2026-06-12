@@ -241,7 +241,7 @@ class LicenceController extends Controller
             'adresse' => 'nullable|string',
         ]);
 
-        $code = 'FOUR-' . strtoupper(substr($validated['nom'], 0, 3)) . rand(100, 999);
+        $code = 'FOUR-'.strtoupper(substr($validated['nom'], 0, 3)).rand(100, 999);
         $validated['code'] = $code;
         $validated['est_actif'] = true;
 

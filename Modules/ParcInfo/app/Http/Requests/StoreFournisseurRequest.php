@@ -15,6 +15,7 @@ class StoreFournisseurRequest extends FormRequest
     public function rules(): array
     {
         $id = $this->route('id') ?? $this->route('fournisseur');
+
         return [
             'code' => [
                 'required',

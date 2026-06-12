@@ -33,8 +33,8 @@ class AffectationEquipement extends Model
 
     protected $casts = [
         'date_debut' => 'date',
-        'date_fin'   => 'date',
-        'statut'     => 'boolean',
+        'date_fin' => 'date',
+        'statut' => 'boolean',
     ];
 
     // ── Relations ─────────────────────────────────────────────────────────────

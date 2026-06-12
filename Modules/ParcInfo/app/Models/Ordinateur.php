@@ -41,11 +41,11 @@ class Ordinateur extends Model
     ];
 
     protected $casts = [
-        'support_tpm2'        => 'boolean',
+        'support_tpm2' => 'boolean',
         'support_secure_boot' => 'boolean',
-        'ram_capacite_go'     => 'integer',
-        'stockage_capacite_go'=> 'integer',
-        'cycle_batterie'      => 'integer',
+        'ram_capacite_go' => 'integer',
+        'stockage_capacite_go' => 'integer',
+        'cycle_batterie' => 'integer',
     ];
 
     public function equipement()

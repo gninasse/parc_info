@@ -22,28 +22,86 @@
           data-accordion="false"
           id="navigation">
 
-        {{-- Dashboard --}}
+        @php
+          $dashboardActive = request()->routeIs('parc-info.dashboard');
+
+          $ordinateursActive = request()->routeIs('parc-info.ordinateurs.*');
+          $serveursActive = request()->routeIs('parc-info.serveurs.*') || request()->routeIs('parc-info.serveurs-virtuels.*');
+          $mobilesActive = request()->routeIs('parc-info.mobiles.*') && !request()->is('*telephonie*');
+          $actifsActive = $ordinateursActive || $serveursActive || $mobilesActive;
+
+          $imprimantesActive = request()->routeIs('parc-info.imprimantes.*');
+          $scannersActive = request()->routeIs('parc-info.scanners.*');
+          $camerasActive = request()->routeIs('parc-info.cameras.*');
+          $telephonesActive = request()->routeIs('parc-info.telephonie.*');
+          $terminauxMobilesActive = request()->routeIs('parc-info.mobiles.*') && request()->is('*telephonie*');
+          $terminauxIpActive = request()->routeIs('parc-info.terminaux-ip.*');
+          $telephonieActive = $telephonesActive || $terminauxMobilesActive || $terminauxIpActive;
+
+          $logicielsActive = request()->routeIs('parc-info.logiciels.*');
+          $licencesActive = request()->routeIs('parc-info.licences.*');
+          $consommablesActive = request()->routeIs('parc-info.consommables.*');
+          $fournisseursActive = request()->routeIs('parc-info.fournisseurs.*');
+
+          $switchesActive = request()->routeIs('parc-info.switches.*');
+          $routeursActive = request()->routeIs('parc-info.routeurs.*');
+          $wifiActive = request()->routeIs('parc-info.wifi.*');
+          $parefeuxActive = request()->routeIs('parc-info.parefeux.*');
+          $reseauActive = $switchesActive || $routeursActive || $wifiActive || $parefeuxActive;
+
+          $onduleursActive = request()->routeIs('parc-info.onduleurs.*');
+          $racksActive = request()->routeIs('parc-info.racks.*');
+          $brassageActive = request()->routeIs('parc-info.brassage.*');
+          $infraActive = $onduleursActive || $racksActive || $brassageActive;
+
+          $etatsActive = request()->routeIs('parc-info.analyse.etats.*');
+          $statsActive = request()->routeIs('parc-info.analyse.statistiques.*');
+
+          $refCpusActive = request()->routeIs('parc-info.referentiels.types-cpus.*');
+          $refDisquesActive = request()->routeIs('parc-info.referentiels.types-disques.*');
+          $refOsActive = request()->routeIs('parc-info.referentiels.types-os.*');
+          $refRamsActive = request()->routeIs('parc-info.referentiels.types-rams.*');
+          $refMarquesActive = request()->routeIs('parc-info.referentiels.marques.*');
+          $refImprimantesActive = request()->routeIs('parc-info.referentiels.types-imprimantes.*');
+          $refMobilesActive = request()->routeIs('parc-info.referentiels.types-mobiles.*');
+          $refReseauxActive = request()->routeIs('parc-info.referentiels.types-reseaux.*');
+          $refInfrasActive = request()->routeIs('parc-info.referentiels.types-infrastructures.*');
+          $refLicencesActive = request()->routeIs('parc-info.referentiels.types-licences.*');
+          $refConsommablesActive = request()->routeIs('parc-info.referentiels.types-consommables.*');
+          $refEditeursActive = request()->routeIs('parc-info.referentiels.editeurs.*');
+          $referentielsActive = request()->routeIs('parc-info.referentiels.*');
+        @endphp
+
+        {{-- Tableau de bord --}}
+        @can('parcinfo.dashboard.view')
         <li class="nav-item">
           <a href="{{ route('parc-info.dashboard') }}"
-             class="nav-link {{ request()->routeIs('parc-info.dashboard') ? 'active' : '' }}">
+             class="nav-link {{ $dashboardActive ? 'active' : '' }}">
             <i class="nav-icon bi bi-speedometer2"></i>
             <p>Tableau de bord</p>
           </a>
         </li>
+        @endcan
 
-        {{-- ── GESTION DES ACTIFS ── --}}
-        <li class="nav-header text-uppercase small opacity-50">Gestion des Actifs</li>
+        {{-- ── SECTION 1: MATÉRIELS & ACTIFS ── --}}
+        @canany(['parcinfo.ordinateurs.index', 'parcinfo.serveurs.index', 'parcinfo.mobiles.index'])
+        <li class="nav-header text-uppercase small opacity-50">Gestion du Parc</li>
 
+        {{-- Ordinateurs --}}
+        @can('parcinfo.ordinateurs.index')
         <li class="nav-item">
           <a href="{{ route('parc-info.ordinateurs.index') }}"
-             class="nav-link {{ request()->routeIs('parc-info.ordinateurs.*') ? 'active' : '' }}">
+             class="nav-link {{ $ordinateursActive ? 'active' : '' }}">
             <i class="nav-icon bi bi-pc-display"></i>
             <p>Ordinateurs</p>
           </a>
         </li>
+        @endcan
 
-        <li class="nav-item">
-          <a href="#" class="nav-link {{ request()->routeIs('parc-info.serveurs.*', 'parc-info.serveurs-virtuels.*') ? 'active' : '' }}">
+        {{-- Serveurs & VMs --}}
+        @can('parcinfo.serveurs.index')
+        <li class="nav-item {{ $serveursActive ? 'menu-open' : '' }}">
+          <a href="#" class="nav-link {{ $serveursActive ? 'active' : '' }}">
             <i class="nav-icon bi bi-server"></i>
             <p>
               Serveurs & VMs
@@ -54,178 +112,403 @@
             <li class="nav-item">
               <a href="{{ route('parc-info.serveurs.index') }}"
                  class="nav-link {{ request()->routeIs('parc-info.serveurs.*') ? 'active' : '' }}">
-                <i class="nav-icon bi bi-circle"></i>
+                <i class="nav-icon bi bi-circle-fill" style="font-size: 0.5rem; opacity: 0.6;"></i>
                 <p>Serveurs Physiques</p>
               </a>
             </li>
             <li class="nav-item">
               <a href="{{ route('parc-info.serveurs-virtuels.index') }}"
                  class="nav-link {{ request()->routeIs('parc-info.serveurs-virtuels.*') ? 'active' : '' }}">
-                <i class="nav-icon bi bi-circle"></i>
+                <i class="nav-icon bi bi-circle-fill" style="font-size: 0.5rem; opacity: 0.6;"></i>
                 <p>Machines Virtuelles</p>
               </a>
             </li>
           </ul>
         </li>
+        @endcan
 
+        {{-- Mobiles & Tablettes --}}
+        @can('parcinfo.mobiles.index')
         <li class="nav-item">
           <a href="{{ route('parc-info.mobiles.index') }}"
-             class="nav-link {{ request()->routeIs('parc-info.mobiles.*') ? 'active' : '' }}">
+             class="nav-link {{ $mobilesActive ? 'active' : '' }}">
             <i class="nav-icon bi bi-phone-vibrate"></i>
             <p>Tablettes & Mobiles</p>
           </a>
         </li>
+        @endcan
+        @endcanany
 
-        {{-- ── LOGICIELS & LICENCES ── --}}
-        <li class="nav-header text-uppercase small opacity-50">Logiciels & Licences</li>
+        {{-- ── SECTION 2: PÉRIPHÉRIQUES & COMM ── --}}
+        @canany(['parcinfo.imprimantes.index', 'parcinfo.scanners.index', 'parcinfo.telephonie.index', 'parcinfo.terminaux-ip.index', 'parcinfo.cameras.index'])
+        <li class="nav-header text-uppercase small opacity-50">Périphériques & Comm</li>
 
-        <li class="nav-item">
-          <a href="{{ route('parc-info.logiciels.index') }}"
-             class="nav-link {{ request()->routeIs('parc-info.logiciels.*') ? 'active' : '' }}">
-            <i class="nav-icon bi bi-compact-disc"></i>
-            <p>Catalogue Logiciels</p>
-          </a>
-        </li>
-
-        <li class="nav-item">
-          <a href="{{ route('parc-info.fournisseurs.index') }}"
-             class="nav-link {{ request()->routeIs('parc-info.fournisseurs.*') ? 'active' : '' }}">
-            <i class="nav-icon bi bi-truck"></i>
-            <p>Fournisseurs</p>
-          </a>
-        </li>
-
-        <li class="nav-item">
-          <a href="{{ route('parc-info.licences.index') }}"
-             class="nav-link {{ request()->routeIs('parc-info.licences.*') ? 'active' : '' }}">
-            <i class="nav-icon bi bi-file-lock"></i>
-            <p>Licences</p>
-          </a>
-        </li>
-
-        {{-- ── CONSOMMABLES & STOCKS ── --}}
-        <li class="nav-header text-uppercase small opacity-50">Consommables & Stocks</li>
-
-        <li class="nav-item">
-          <a href="{{ route('parc-info.consommables.index') }}"
-             class="nav-link {{ request()->routeIs('parc-info.consommables.*') ? 'active' : '' }}">
-            <i class="nav-icon bi bi-cart-check"></i>
-            <p>Stock Consommables</p>
-          </a>
-        </li>
-
-        {{-- ── INFRASTRUCTURE & RÉSEAU ── --}}
-        <li class="nav-header text-uppercase small opacity-50">Infrastructure & Réseau</li>
-
-        <li class="nav-item">
-          <a href="#" class="nav-link {{ request()->routeIs('parc-info.switches.*', 'parc-info.routeurs.*', 'parc-info.wifi.*', 'parc-info.parefeux.*') ? 'active' : '' }}">
-            <i class="nav-icon bi bi-diagram-3"></i>
-            <p>Équipements Réseau <i class="nav-arrow bi bi-chevron-right"></i></p>
+        {{-- Impression & Scanners --}}
+        @canany(['parcinfo.imprimantes.index', 'parcinfo.scanners.index'])
+        <li class="nav-item {{ $imprimantesActive || $scannersActive ? 'menu-open' : '' }}">
+          <a href="#" class="nav-link {{ $imprimantesActive || $scannersActive ? 'active' : '' }}">
+            <i class="nav-icon bi bi-printer"></i>
+            <p>
+              Impression & Scan
+              <i class="nav-arrow bi bi-chevron-right"></i>
+            </p>
           </a>
           <ul class="nav nav-treeview">
+            @can('parcinfo.imprimantes.index')
             <li class="nav-item">
-              <a href="{{ route('parc-info.switches.index') }}" class="nav-link {{ request()->routeIs('parc-info.switches.*') ? 'active' : '' }}">
-                <i class="nav-icon bi bi-circle"></i>
-                <p>Switches</p>
+              <a href="{{ route('parc-info.imprimantes.index') }}" class="nav-link {{ $imprimantesActive ? 'active' : '' }}">
+                <i class="nav-icon bi bi-circle-fill" style="font-size: 0.5rem; opacity: 0.6;"></i>
+                <p>Imprimantes & Copieurs</p>
               </a>
             </li>
+            @endcan
+            @can('parcinfo.scanners.index')
             <li class="nav-item">
-              <a href="{{ route('parc-info.routeurs.index') }}" class="nav-link {{ request()->routeIs('parc-info.routeurs.*') ? 'active' : '' }}">
-                <i class="nav-icon bi bi-circle"></i>
-                <p>Routeurs</p>
+              <a href="{{ route('parc-info.scanners.index') }}" class="nav-link {{ $scannersActive ? 'active' : '' }}">
+                <i class="nav-icon bi bi-circle-fill" style="font-size: 0.5rem; opacity: 0.6;"></i>
+                <p>Scanners & Lecteurs</p>
               </a>
             </li>
-            <li class="nav-item">
-              <a href="{{ route('parc-info.wifi.index') }}" class="nav-link {{ request()->routeIs('parc-info.wifi.*') ? 'active' : '' }}">
-                <i class="nav-icon bi bi-circle"></i>
-                <p>Points d'accès WiFi</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="{{ route('parc-info.parefeux.index') }}" class="nav-link {{ request()->routeIs('parc-info.parefeux.*') ? 'active' : '' }}">
-                <i class="nav-icon bi bi-circle"></i>
-                <p>Pare-feux</p>
-              </a>
-            </li>
+            @endcan
           </ul>
         </li>
+        @endcanany
 
-        <li class="nav-item">
-          <a href="#" class="nav-link {{ request()->routeIs('parc-info.onduleurs.*', 'parc-info.racks.*', 'parc-info.brassage.*') ? 'active' : '' }}">
-            <i class="nav-icon bi bi-lightning-charge"></i>
-            <p>Infrastructure <i class="nav-arrow bi bi-chevron-right"></i></p>
+        {{-- Téléphonie --}}
+        @canany(['parcinfo.telephonie.index', 'parcinfo.mobiles.index', 'parcinfo.terminaux-ip.index'])
+        <li class="nav-item {{ $telephonieActive ? 'menu-open' : '' }}">
+          <a href="#" class="nav-link {{ $telephonieActive ? 'active' : '' }}">
+            <i class="nav-icon bi bi-telephone"></i>
+            <p>
+              Téléphonie & Comm
+              <i class="nav-arrow bi bi-chevron-right"></i>
+            </p>
           </a>
           <ul class="nav nav-treeview">
+            @can('parcinfo.telephonie.index')
             <li class="nav-item">
-              <a href="{{ route('parc-info.onduleurs.index') }}" class="nav-link {{ request()->routeIs('parc-info.onduleurs.*') ? 'active' : '' }}">
-                <i class="nav-icon bi bi-circle"></i>
-                <p>Onduleurs</p>
+              <a href="{{ route('parc-info.telephonie.index') }}" class="nav-link {{ $telephonesActive ? 'active' : '' }}">
+                <i class="nav-icon bi bi-circle-fill" style="font-size: 0.5rem; opacity: 0.6;"></i>
+                <p>Téléphones fixes</p>
               </a>
             </li>
+            @endcan
+            @can('parcinfo.mobiles.index')
             <li class="nav-item">
-              <a href="{{ route('parc-info.racks.index') }}" class="nav-link {{ request()->routeIs('parc-info.racks.*') ? 'active' : '' }}">
-                <i class="nav-icon bi bi-circle"></i>
-                <p>Baies & Racks</p>
+              <a href="{{ route('parc-info.mobiles.index') }}" class="nav-link {{ $terminauxMobilesActive ? 'active' : '' }}">
+                <i class="nav-icon bi bi-circle-fill" style="font-size: 0.5rem; opacity: 0.6;"></i>
+                <p>Terminaux Mobiles</p>
               </a>
             </li>
+            @endcan
+            @can('parcinfo.terminaux-ip.index')
             <li class="nav-item">
-              <a href="{{ route('parc-info.brassage.index') }}" class="nav-link {{ request()->routeIs('parc-info.brassage.*') ? 'active' : '' }}">
-                <i class="nav-icon bi bi-circle"></i>
-                <p>Brassage</p>
+              <a href="{{ route('parc-info.terminaux-ip.index') }}" class="nav-link {{ $terminauxIpActive ? 'active' : '' }}">
+                <i class="nav-icon bi bi-circle-fill" style="font-size: 0.5rem; opacity: 0.6;"></i>
+                <p>Terminaux IP</p>
               </a>
             </li>
+            @endcan
           </ul>
         </li>
+        @endcanany
 
-        {{-- ── SÉCURITÉ ── --}}
-        <li class="nav-header text-uppercase small opacity-50">Sécurité</li>
+        {{-- Sécurité / Caméras --}}
+        @can('parcinfo.cameras.index')
         <li class="nav-item">
-          <a href="{{ route('parc-info.cameras.index') }}" class="nav-link {{ request()->routeIs('parc-info.cameras.*') ? 'active' : '' }}">
+          <a href="{{ route('parc-info.cameras.index') }}" class="nav-link {{ $camerasActive ? 'active' : '' }}">
             <i class="nav-icon bi bi-camera-video"></i>
             <p>Caméras IP</p>
           </a>
         </li>
+        @endcan
+        @endcanany
 
-        {{-- ── PÉRIPHÉRIQUES & IMPRESSION ── --}}
-        <li class="nav-header text-uppercase small opacity-50">Périphériques & Impression</li>
+        {{-- ── SECTION 3: LOGICIELS & STOCKS ── --}}
+        @canany(['parcinfo.logiciels.index', 'parcinfo.licences.index', 'parcinfo.consommables.index', 'parcinfo.fournisseurs.index'])
+        <li class="nav-header text-uppercase small opacity-50">Logiciels & Stocks</li>
 
+        @can('parcinfo.logiciels.index')
         <li class="nav-item">
-          <a href="{{ route('parc-info.imprimantes.index') }}" class="nav-link {{ request()->routeIs('parc-info.imprimantes.*') ? 'active' : '' }}">
-            <i class="nav-icon bi bi-printer"></i>
-            <p>Imprimantes & Copieurs</p>
+          <a href="{{ route('parc-info.logiciels.index') }}"
+             class="nav-link {{ $logicielsActive ? 'active' : '' }}">
+            <i class="nav-icon bi bi-compact-disc"></i>
+            <p>Catalogue Logiciels</p>
           </a>
         </li>
+        @endcan
 
+        @can('parcinfo.licences.index')
         <li class="nav-item">
-          <a href="{{ route('parc-info.scanners.index') }}" class="nav-link {{ request()->routeIs('parc-info.scanners.*') ? 'active' : '' }}">
-            <i class="nav-icon bi bi-upc-scan"></i>
-            <p>Scanners & Lecteurs</p>
+          <a href="{{ route('parc-info.licences.index') }}"
+             class="nav-link {{ $licencesActive ? 'active' : '' }}">
+            <i class="nav-icon bi bi-file-lock"></i>
+            <p>Licences</p>
           </a>
         </li>
+        @endcan
 
-        {{-- ── TÉLÉPHONIE & COMM. ── --}}
-        <li class="nav-header text-uppercase small opacity-50">Téléphonie & Comm.</li>
-
+        @can('parcinfo.consommables.index')
         <li class="nav-item">
-          <a href="{{ route('parc-info.telephonie.index') }}" class="nav-link {{ request()->routeIs('parc-info.telephonie.*') ? 'active' : '' }}">
-            <i class="nav-icon bi bi-telephone"></i>
-            <p>Téléphones fixes</p>
+          <a href="{{ route('parc-info.consommables.index') }}"
+             class="nav-link {{ $consommablesActive ? 'active' : '' }}">
+            <i class="nav-icon bi bi-cart-check"></i>
+            <p>Stock Consommables</p>
           </a>
         </li>
+        @endcan
 
+        @can('parcinfo.fournisseurs.index')
         <li class="nav-item">
-          <a href="{{ route('parc-info.mobiles.index') }}" class="nav-link {{ request()->routeIs('parc-info.mobiles.*') ? 'active' : '' }}">
-            <i class="nav-icon bi bi-phone"></i>
-            <p>Terminaux Mobiles</p>
+          <a href="{{ route('parc-info.fournisseurs.index') }}"
+             class="nav-link {{ $fournisseursActive ? 'active' : '' }}">
+            <i class="nav-icon bi bi-truck"></i>
+            <p>Fournisseurs</p>
           </a>
         </li>
+        @endcan
+        @endcanany
 
+        {{-- ── SECTION 4: RÉSEAU & INFRASTRUCTURE ── --}}
+        @canany(['parcinfo.switches.index', 'parcinfo.routeurs.index', 'parcinfo.wifi.index', 'parcinfo.parefeux.index', 'parcinfo.onduleurs.index', 'parcinfo.racks.index', 'parcinfo.brassage.index'])
+        <li class="nav-header text-uppercase small opacity-50">Réseau & Infrastructure</li>
+
+        {{-- Équipements Réseau --}}
+        @canany(['parcinfo.switches.index', 'parcinfo.routeurs.index', 'parcinfo.wifi.index', 'parcinfo.parefeux.index'])
+        <li class="nav-item {{ $reseauActive ? 'menu-open' : '' }}">
+          <a href="#" class="nav-link {{ $reseauActive ? 'active' : '' }}">
+            <i class="nav-icon bi bi-diagram-3"></i>
+            <p>
+              Équipements Réseau
+              <i class="nav-arrow bi bi-chevron-right"></i>
+            </p>
+          </a>
+          <ul class="nav nav-treeview">
+            @can('parcinfo.switches.index')
+            <li class="nav-item">
+              <a href="{{ route('parc-info.switches.index') }}" class="nav-link {{ $switchesActive ? 'active' : '' }}">
+                <i class="nav-icon bi bi-circle-fill" style="font-size: 0.5rem; opacity: 0.6;"></i>
+                <p>Switches</p>
+              </a>
+            </li>
+            @endcan
+            @can('parcinfo.routeurs.index')
+            <li class="nav-item">
+              <a href="{{ route('parc-info.routeurs.index') }}" class="nav-link {{ $routeursActive ? 'active' : '' }}">
+                <i class="nav-icon bi bi-circle-fill" style="font-size: 0.5rem; opacity: 0.6;"></i>
+                <p>Routeurs</p>
+              </a>
+            </li>
+            @endcan
+            @can('parcinfo.wifi.index')
+            <li class="nav-item">
+              <a href="{{ route('parc-info.wifi.index') }}" class="nav-link {{ $wifiActive ? 'active' : '' }}">
+                <i class="nav-icon bi bi-circle-fill" style="font-size: 0.5rem; opacity: 0.6;"></i>
+                <p>Points d'accès WiFi</p>
+              </a>
+            </li>
+            @endcan
+            @can('parcinfo.parefeux.index')
+            <li class="nav-item">
+              <a href="{{ route('parc-info.parefeux.index') }}" class="nav-link {{ $parefeuxActive ? 'active' : '' }}">
+                <i class="nav-icon bi bi-circle-fill" style="font-size: 0.5rem; opacity: 0.6;"></i>
+                <p>Pare-feux</p>
+              </a>
+            </li>
+            @endcan
+          </ul>
+        </li>
+        @endcanany
+
+        {{-- Infrastructure Physique --}}
+        @canany(['parcinfo.onduleurs.index', 'parcinfo.racks.index', 'parcinfo.brassage.index'])
+        <li class="nav-item {{ $infraActive ? 'menu-open' : '' }}">
+          <a href="#" class="nav-link {{ $infraActive ? 'active' : '' }}">
+            <i class="nav-icon bi bi-lightning-charge"></i>
+            <p>
+              Infrastructure
+              <i class="nav-arrow bi bi-chevron-right"></i>
+            </p>
+          </a>
+          <ul class="nav nav-treeview">
+            @can('parcinfo.onduleurs.index')
+            <li class="nav-item">
+              <a href="{{ route('parc-info.onduleurs.index') }}" class="nav-link {{ $onduleursActive ? 'active' : '' }}">
+                <i class="nav-icon bi bi-circle-fill" style="font-size: 0.5rem; opacity: 0.6;"></i>
+                <p>Onduleurs</p>
+              </a>
+            </li>
+            @endcan
+            @can('parcinfo.racks.index')
+            <li class="nav-item">
+              <a href="{{ route('parc-info.racks.index') }}" class="nav-link {{ $racksActive ? 'active' : '' }}">
+                <i class="nav-icon bi bi-circle-fill" style="font-size: 0.5rem; opacity: 0.6;"></i>
+                <p>Baies & Racks</p>
+              </a>
+            </li>
+            @endcan
+            @can('parcinfo.brassage.index')
+            <li class="nav-item">
+              <a href="{{ route('parc-info.brassage.index') }}" class="nav-link {{ $brassageActive ? 'active' : '' }}">
+                <i class="nav-icon bi bi-circle-fill" style="font-size: 0.5rem; opacity: 0.6;"></i>
+                <p>Brassage</p>
+              </a>
+            </li>
+            @endcan
+          </ul>
+        </li>
+        @endcanany
+        @endcanany
+
+        {{-- ── SECTION 5: ANALYSE & RAPPORTS ── --}}
+        @canany(['parc-info.analyse.etats.view', 'parc-info.analyse.statistiques.view'])
+        <li class="nav-header text-uppercase small opacity-50">Analyse & Rapports</li>
+
+        @can('parc-info.analyse.etats.view')
         <li class="nav-item">
-          <a href="{{ route('parc-info.terminaux-ip.index') }}" class="nav-link {{ request()->routeIs('parc-info.terminaux-ip.*') ? 'active' : '' }}">
-            <i class="nav-icon bi bi-headset"></i>
-            <p>Terminaux IP</p>
+          <a href="{{ route('parc-info.analyse.etats.index') }}" class="nav-link {{ $etatsActive ? 'active' : '' }}">
+            <i class="nav-icon bi bi-circle-fill text-warning" style="font-size: 0.6rem;"></i>
+            <p>États des Équipements</p>
           </a>
         </li>
+        @endcan
+
+        @can('parc-info.analyse.statistiques.view')
+        <li class="nav-item">
+          <a href="{{ route('parc-info.analyse.statistiques.index') }}" class="nav-link {{ $statsActive ? 'active' : '' }}">
+            <i class="nav-icon bi bi-graph-up text-success"></i>
+            <p>Statistiques</p>
+          </a>
+        </li>
+        @endcan
+        @endcanany
+
+        {{-- ── SECTION 6: CONFIGURATIONS & RÉFÉRENTIELS ── --}}
+        @canany([
+            'parc-info.referentiels.types-cpus.index',
+            'parc-info.referentiels.types-disques.index',
+            'parc-info.referentiels.types-os.index',
+            'parc-info.referentiels.types-rams.index',
+            'parc-info.referentiels.marques.index',
+            'parc-info.referentiels.types-imprimantes.index',
+            'parc-info.referentiels.types-mobiles.index',
+            'parc-info.referentiels.types-reseaux.index',
+            'parc-info.referentiels.types-infrastructures.index',
+            'parc-info.referentiels.types-licences.index',
+            'parc-info.referentiels.types-consommables.index',
+            'parc-info.referentiels.editeurs.index'
+        ])
+        <li class="nav-header text-uppercase small opacity-50">Configuration</li>
+
+        <li class="nav-item {{ $referentielsActive ? 'menu-open' : '' }}">
+          <a href="#" class="nav-link {{ $referentielsActive ? 'active' : '' }}">
+            <i class="nav-icon bi bi-gear"></i>
+            <p>
+              Tables Référentielles
+              <i class="nav-arrow bi bi-chevron-right"></i>
+            </p>
+          </a>
+          <ul class="nav nav-treeview">
+            @can('parc-info.referentiels.types-cpus.index')
+            <li class="nav-item">
+              <a href="{{ route('parc-info.referentiels.types-cpus.index') }}" class="nav-link {{ $refCpusActive ? 'active' : '' }}">
+                <i class="nav-icon bi bi-circle-fill" style="font-size: 0.5rem; opacity: 0.6;"></i>
+                <p>Types CPU</p>
+              </a>
+            </li>
+            @endcan
+            @can('parc-info.referentiels.types-disques.index')
+            <li class="nav-item">
+              <a href="{{ route('parc-info.referentiels.types-disques.index') }}" class="nav-link {{ $refDisquesActive ? 'active' : '' }}">
+                <i class="nav-icon bi bi-circle-fill" style="font-size: 0.5rem; opacity: 0.6;"></i>
+                <p>Types Disques</p>
+              </a>
+            </li>
+            @endcan
+            @can('parc-info.referentiels.types-os.index')
+            <li class="nav-item">
+              <a href="{{ route('parc-info.referentiels.types-os.index') }}" class="nav-link {{ $refOsActive ? 'active' : '' }}">
+                <i class="nav-icon bi bi-circle-fill" style="font-size: 0.5rem; opacity: 0.6;"></i>
+                <p>Types OS</p>
+              </a>
+            </li>
+            @endcan
+            @can('parc-info.referentiels.types-rams.index')
+            <li class="nav-item">
+              <a href="{{ route('parc-info.referentiels.types-rams.index') }}" class="nav-link {{ $refRamsActive ? 'active' : '' }}">
+                <i class="nav-icon bi bi-circle-fill" style="font-size: 0.5rem; opacity: 0.6;"></i>
+                <p>Types RAM</p>
+              </a>
+            </li>
+            @endcan
+            @can('parc-info.referentiels.marques.index')
+            <li class="nav-item">
+              <a href="{{ route('parc-info.referentiels.marques.index') }}" class="nav-link {{ $refMarquesActive ? 'active' : '' }}">
+                <i class="nav-icon bi bi-circle-fill" style="font-size: 0.5rem; opacity: 0.6;"></i>
+                <p>Marques</p>
+              </a>
+            </li>
+            @endcan
+            @can('parc-info.referentiels.types-imprimantes.index')
+            <li class="nav-item">
+              <a href="{{ route('parc-info.referentiels.types-imprimantes.index') }}" class="nav-link {{ $refImprimantesActive ? 'active' : '' }}">
+                <i class="nav-icon bi bi-circle-fill" style="font-size: 0.5rem; opacity: 0.6;"></i>
+                <p>Types Imprimantes</p>
+              </a>
+            </li>
+            @endcan
+            @can('parc-info.referentiels.types-mobiles.index')
+            <li class="nav-item">
+              <a href="{{ route('parc-info.referentiels.types-mobiles.index') }}" class="nav-link {{ $refMobilesActive ? 'active' : '' }}">
+                <i class="nav-icon bi bi-circle-fill" style="font-size: 0.5rem; opacity: 0.6;"></i>
+                <p>Types Mobiles</p>
+              </a>
+            </li>
+            @endcan
+            @can('parc-info.referentiels.types-reseaux.index')
+            <li class="nav-item">
+              <a href="{{ route('parc-info.referentiels.types-reseaux.index') }}" class="nav-link {{ $refReseauxActive ? 'active' : '' }}">
+                <i class="nav-icon bi bi-circle-fill" style="font-size: 0.5rem; opacity: 0.6;"></i>
+                <p>Types Réseau</p>
+              </a>
+            </li>
+            @endcan
+            @can('parc-info.referentiels.types-infrastructures.index')
+            <li class="nav-item">
+              <a href="{{ route('parc-info.referentiels.types-infrastructures.index') }}" class="nav-link {{ $refInfrasActive ? 'active' : '' }}">
+                <i class="nav-icon bi bi-circle-fill" style="font-size: 0.5rem; opacity: 0.6;"></i>
+                <p>Types Infrastructure</p>
+              </a>
+            </li>
+            @endcan
+            @can('parc-info.referentiels.types-licences.index')
+            <li class="nav-item">
+              <a href="{{ route('parc-info.referentiels.types-licences.index') }}" class="nav-link {{ $refLicencesActive ? 'active' : '' }}">
+                <i class="nav-icon bi bi-circle-fill" style="font-size: 0.5rem; opacity: 0.6;"></i>
+                <p>Types Licences</p>
+              </a>
+            </li>
+            @endcan
+            @can('parc-info.referentiels.types-consommables.index')
+            <li class="nav-item">
+              <a href="{{ route('parc-info.referentiels.types-consommables.index') }}" class="nav-link {{ $refConsommablesActive ? 'active' : '' }}">
+                <i class="nav-icon bi bi-circle-fill" style="font-size: 0.5rem; opacity: 0.6;"></i>
+                <p>Types Consommables</p>
+              </a>
+            </li>
+            @endcan
+            @can('parc-info.referentiels.editeurs.index')
+            <li class="nav-item">
+              <a href="{{ route('parc-info.referentiels.editeurs.index') }}" class="nav-link {{ $refEditeursActive ? 'active' : '' }}">
+                <i class="nav-icon bi bi-circle-fill" style="font-size: 0.5rem; opacity: 0.6;"></i>
+                <p>Éditeurs</p>
+              </a>
+            </li>
+            @endcan
+          </ul>
+        </li>
+        @endcanany
+
 
         {{-- ── Retour accueil ── --}}
         <li class="nav-item mt-4 border-top border-secondary pt-3">

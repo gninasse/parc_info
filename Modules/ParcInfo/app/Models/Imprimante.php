@@ -25,7 +25,7 @@ class Imprimante extends Model
     ];
 
     protected $casts = [
-        'est_couleur'       => 'boolean',
+        'est_couleur' => 'boolean',
         'est_multifonction' => 'boolean',
     ];
 

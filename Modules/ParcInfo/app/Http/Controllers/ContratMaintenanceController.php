@@ -5,7 +5,6 @@ namespace Modules\ParcInfo\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Modules\ParcInfo\Models\ContratMaintenance;
-use Modules\ParcInfo\Models\Fournisseur;
 
 class ContratMaintenanceController extends Controller
 {
@@ -35,6 +34,7 @@ class ContratMaintenanceController extends Controller
     public function show($id)
     {
         $contrat = ContratMaintenance::findOrFail($id);
+
         return response()->json($contrat);
     }
 
@@ -42,7 +42,7 @@ class ContratMaintenanceController extends Controller
     {
         $contrat = ContratMaintenance::findOrFail($id);
         $validated = $request->validate([
-            'reference' => 'required|string|unique:parc_info_contrats_maintenances,reference,' . $id,
+            'reference' => 'required|string|unique:parc_info_contrats_maintenances,reference,'.$id,
             'nom' => 'required|string',
             'fournisseur_id' => 'required|exists:parc_info_fournisseurs,id',
             'date_debut' => 'nullable|date',
@@ -68,6 +68,7 @@ class ContratMaintenanceController extends Controller
             return response()->json(['success' => false, 'message' => 'Impossible de supprimer un contrat lié à des licences.'], 422);
         }
         $contrat->delete();
+
         return response()->json(['success' => true, 'message' => 'Contrat supprimé.']);
     }
 }
