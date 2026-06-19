@@ -2,11 +2,11 @@
 
 namespace Modules\ParcInfo\Tests\Feature;
 
-use Tests\TestCase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Modules\Core\Models\User;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class DashboardTest extends TestCase
 {
@@ -15,14 +15,14 @@ class DashboardTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         // Setup permissions
         Permission::findOrCreate('dashboard.view');
         Permission::findOrCreate('parcinfo.dashboard.view');
-        
+
         $this->adminRole = Role::findOrCreate('Admin');
         $this->adminRole->givePermissionTo(Permission::all());
-        
+
         $this->userRole = Role::findOrCreate('User');
     }
 

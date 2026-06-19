@@ -185,6 +185,12 @@
                             <input type="text" class="form-control bg-light view-mode" value="{{ $equipement->date_acquisition ? $equipement->date_acquisition->format('d/m/Y') : '—' }}" readonly>
                             <input type="date" class="form-control edit-mode d-none" name="date_acquisition" value="{{ $equipement->date_acquisition?->format('Y-m-d') }}">
                         </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label text-muted small">Bordereau de livraison</label>
+                            <input type="text" class="form-control bg-light view-mode" value="{{ $equipement->ref_bordereau ?? '—' }}" readonly>
+                            <input type="text" class="form-control edit-mode d-none" name="ref_bordereau" id="f_ref_bordereau" value="{{ $equipement->ref_bordereau }}" placeholder="—">
+                        </div>
                     </div>
 
                     {{-- Form Hidden inputs needed for update --}}

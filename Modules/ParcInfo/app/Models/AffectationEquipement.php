@@ -73,4 +73,31 @@ class AffectationEquipement extends Model
     {
         return $this->belongsTo(Unite::class, 'unite_id');
     }
+
+    protected static function booted(): void
+    {
+        static::saved(function (AffectationEquipement $affectation) {
+            $equipement = $affectation->equipement;
+            if ($equipement) {
+                if ($affectation->statut) {
+                    $equipement->update([
+                        'direction_id' => $affectation->direction_id,
+                        'service_id' => $affectation->service_id,
+                        'unite_id' => $affectation->unite_id,
+                    ]);
+                } else {
+                    $hasActive = AffectationEquipement::where('equipement_id', $equipement->id)
+                        ->where('statut', true)
+                        ->exists();
+                    if (! $hasActive) {
+                        $equipement->update([
+                            'direction_id' => null,
+                            'service_id' => null,
+                            'unite_id' => null,
+                        ]);
+                    }
+                }
+            }
+        });
+    }
 }

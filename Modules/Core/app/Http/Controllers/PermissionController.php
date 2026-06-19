@@ -63,7 +63,7 @@ class PermissionController extends Controller
             if ($role->name === 'super-admin') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Les permissions du rôle super-admin ne peuvent pas être modifiées'
+                    'message' => 'Les permissions du rôle super-admin ne peuvent pas être modifiées',
                 ], 403);
             }
 

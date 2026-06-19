@@ -6,7 +6,7 @@
             <div class="modal-header border-0 px-4 pt-4 pb-0">
                 <div>
                     <h5 class="modal-title fw-bold mb-0" id="wizard-title">Ajouter une machine virtuelle</h5>
-                    <small class="text-muted" id="wizard-subtitle">Configuration de l'infrastructure IT - CHU Yalgado</small>
+                    <small id="wizard-subtitle">Configuration de l'infrastructure IT - CHU Yalgado</small>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
@@ -132,7 +132,7 @@
 
                 {{-- Footer --}}
                 <div class="modal-footer border-0 px-4 pb-4 pt-0 d-flex justify-content-between">
-                    <button type="button" class="btn btn-link text-dark text-decoration-none fw-medium shadow-none" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
                     <button type="submit" class="btn btn-primary px-4" id="btn-submit">
                         <i class="bi bi-floppy me-1"></i> <span id="btn-submit-label">Enregistrer la VM</span>
                     </button>

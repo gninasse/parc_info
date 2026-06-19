@@ -121,6 +121,10 @@
                                 <input type="date" class="form-control field-input" name="date_acquisition" id="date_acquisition">
                             </div>
                             <div class="col-md-6">
+                                <label class="form-label field-label">Bordereau de livraison</label>
+                                <input type="text" class="form-control field-input" name="ref_bordereau" id="ref_bordereau" placeholder="Ex: BL-2026-0001">
+                            </div>
+                            <div class="col-md-6">
                                 <label class="form-label field-label">Fin de garantie</label>
                                 <input type="date" class="form-control field-input" name="date_fin_garantie" id="date_fin_garantie">
                             </div>
@@ -196,7 +200,7 @@
 
                 {{-- Footer --}}
                 <div class="modal-footer border-0 px-4 pb-4 pt-0 d-flex justify-content-between">
-                    <button type="button" class="btn btn-link text-dark text-decoration-none fw-medium shadow-none" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
                     <div class="d-flex gap-2">
                         <button type="button" class="btn btn-outline-secondary px-4" id="btn-prev" style="display:none!important">
                             <i class="bi bi-chevron-left me-1"></i> Précédent

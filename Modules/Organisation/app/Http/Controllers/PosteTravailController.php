@@ -99,13 +99,13 @@ class PosteTravailController extends Controller
         }
         if ($request->filled('search')) {
             $s = $request->search;
-            $query->where(function($q) use ($s) {
+            $query->where(function ($q) use ($s) {
                 $q->where('code', 'ilike', "%{$s}%")
-                  ->orWhere('libelle', 'ilike', "%{$s}%");
+                    ->orWhere('libelle', 'ilike', "%{$s}%");
             });
         }
 
-        return response()->json($query->get()->map(function($poste) {
+        return response()->json($query->get()->map(function ($poste) {
             return [
                 'id' => $poste->id,
                 'code' => $poste->code,
@@ -114,7 +114,7 @@ class PosteTravailController extends Controller
                 'service' => $poste->service?->libelle,
                 'emplacement' => $poste->local ? $poste->local->nom_complet : '—',
                 'occupant' => $poste->agent ? $poste->agent->full_name : '—',
-                'statut' => $poste->actif ? 'actif' : 'inactif'
+                'statut' => $poste->actif ? 'actif' : 'inactif',
             ];
         }));
     }

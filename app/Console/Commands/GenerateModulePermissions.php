@@ -9,6 +9,7 @@ use Spatie\Permission\Models\Permission;
 class GenerateModulePermissions extends Command
 {
     protected $signature = 'permissions:generate {module?} {--sync}';
+
     protected $description = 'Générer les permissions pour les modules.';
 
     public function handle()
@@ -38,18 +39,20 @@ class GenerateModulePermissions extends Command
     {
         $module = Module::find($moduleName);
 
-        if (!$module) {
+        if (! $module) {
             $this->error("Le module {$moduleName} n'existe pas.");
+
             return;
         }
 
         $this->info("Génération des permissions pour le module: {$moduleName}");
 
         // Lire le fichier de configuration des permissions
-        $configPath = $module->getPath() . '/config/permissions.php';
+        $configPath = $module->getPath().'/config/permissions.php';
 
-        if (!file_exists($configPath)) {
+        if (! file_exists($configPath)) {
             $this->warn("Aucun fichier permissions.php trouvé dans {$moduleName}/config/");
+
             return;
         }
 
@@ -83,24 +86,58 @@ class GenerateModulePermissions extends Command
 
     protected function extractCategory(string $permissionName): string
     {
-        if (str_contains($permissionName, '.view')) return 'view';
-        if (str_contains($permissionName, '.index')) return 'view';
-        if (str_contains($permissionName, '.create')) return 'create';
-        if (str_contains($permissionName, '.store')) return 'create';
-        if (str_contains($permissionName, '.edit')) return 'edit';
-        if (str_contains($permissionName, '.update')) return 'edit';
-        if (str_contains($permissionName, '.delete')) return 'delete';
-        if (str_contains($permissionName, '.destroy')) return 'delete';
-        if (str_contains($permissionName, '.toggle')) return 'toggle';
-        if (str_contains($permissionName, '.show')) return 'view';
-        if (str_contains($permissionName, '.manage')) return 'manage';
-        if (str_contains($permissionName, '.assign')) return 'assign';
-        if (str_contains($permissionName, '.configure')) return 'configure';
-        if (str_contains($permissionName, '.enable')) return 'enable';
-         if (str_contains($permissionName, '.disable')) return 'disable';
-        if (str_contains($permissionName, '.install')) return 'install';
-        if (str_contains($permissionName, '.uninstall')) return 'uninstall';
-        
+        if (str_contains($permissionName, '.view')) {
+            return 'view';
+        }
+        if (str_contains($permissionName, '.index')) {
+            return 'view';
+        }
+        if (str_contains($permissionName, '.create')) {
+            return 'create';
+        }
+        if (str_contains($permissionName, '.store')) {
+            return 'create';
+        }
+        if (str_contains($permissionName, '.edit')) {
+            return 'edit';
+        }
+        if (str_contains($permissionName, '.update')) {
+            return 'edit';
+        }
+        if (str_contains($permissionName, '.delete')) {
+            return 'delete';
+        }
+        if (str_contains($permissionName, '.destroy')) {
+            return 'delete';
+        }
+        if (str_contains($permissionName, '.toggle')) {
+            return 'toggle';
+        }
+        if (str_contains($permissionName, '.show')) {
+            return 'view';
+        }
+        if (str_contains($permissionName, '.manage')) {
+            return 'manage';
+        }
+        if (str_contains($permissionName, '.assign')) {
+            return 'assign';
+        }
+        if (str_contains($permissionName, '.configure')) {
+            return 'configure';
+        }
+        if (str_contains($permissionName, '.enable')) {
+            return 'enable';
+        }
+        if (str_contains($permissionName, '.disable')) {
+            return 'disable';
+        }
+        if (str_contains($permissionName, '.install')) {
+            return 'install';
+        }
+        if (str_contains($permissionName, '.uninstall')) {
+            return 'uninstall';
+        }
+
         return 'other';
     }
 }

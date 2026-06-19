@@ -2,9 +2,9 @@
 
 namespace Modules\Core\Listeners;
 
+use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
-use Illuminate\Auth\Events\Failed;
 
 class LogAuthenticationEvents
 {
@@ -25,7 +25,7 @@ class LogAuthenticationEvents
                 'login' => $event->credentials['login'] ?? null,
                 'ip' => request()->ip(),
             ])
-            ->tap(function($activity) {
+            ->tap(function ($activity) {
                 $activity->module = 'core';
                 $activity->ip_address = request()->ip();
                 $activity->user_agent = request()->userAgent();

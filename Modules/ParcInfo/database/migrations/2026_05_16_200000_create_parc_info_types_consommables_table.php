@@ -18,7 +18,7 @@ return new class extends Migration
                 'Maintenance',
                 'Reseau',
                 'Securite',
-                'Accessoires'
+                'Accessoires',
             ]);
             $table->string('sous_categorie')->nullable();
             $table->string('unite_stock'); // Cartouche, Rame, Boîte, Litre

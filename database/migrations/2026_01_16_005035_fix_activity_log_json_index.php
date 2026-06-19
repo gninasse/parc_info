@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::connection(config('activitylog.database_connection'))->table(config('activitylog.table_name'),  function (Blueprint $table) {
+        Schema::connection(config('activitylog.database_connection'))->table(config('activitylog.table_name'), function (Blueprint $table) {
             //
             // 1. On supprime l'index problématique s'il existe
             // $table->dropIndex('activity_log_causer_roles_index');

@@ -7,6 +7,7 @@ use Illuminate\View\Component;
 class ModuleCard extends Component
 {
     public $module;
+
     public $showActions;
 
     public function __construct($module, $showActions = true)

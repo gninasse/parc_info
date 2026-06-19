@@ -6,7 +6,7 @@
             <div class="modal-header border-0 px-4 pt-4 pb-0">
                 <div>
                     <h5 class="modal-title fw-bold mb-0" id="wizard-title">Ajouter un serveur physique</h5>
-                    <small class="text-muted" id="wizard-subtitle">Configuration de l'infrastructure IT - CHU Yalgado</small>
+                    <small id="wizard-subtitle">Configuration de l'infrastructure IT - CHU Yalgado</small>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
@@ -76,6 +76,10 @@
                             <div class="col-md-6">
                                 <label class="form-label field-label">Numéro de Série <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control field-input" name="numero_serie" id="numero_serie" placeholder="Ex: S/N 987654321" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label field-label">Bordereau de livraison</label>
+                                <input type="text" class="form-control field-input" name="ref_bordereau" id="ref_bordereau" placeholder="Ex: BL-2026-0001">
                             </div>
 
                             <div class="col-md-5">
@@ -236,7 +240,7 @@
 
                 {{-- Footer --}}
                 <div class="modal-footer border-0 px-4 pb-4 pt-0 d-flex justify-content-between">
-                    <button type="button" class="btn btn-link text-dark text-decoration-none fw-medium shadow-none" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
                     <div class="d-flex gap-2">
                         <button type="button" class="btn btn-outline-secondary px-4" id="btn-prev" style="display:none!important">
                             <i class="bi bi-chevron-left me-1"></i> Précédent

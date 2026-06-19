@@ -184,4 +184,9 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Employe::class, 'dossier_employe_id');
     }
+
+    protected static function newFactory()
+    {
+        return \Modules\Core\Database\Factories\UserFactory::new();
+    }
 }

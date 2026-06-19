@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('cores_users', function (Blueprint $table) {
-            $table->id(); 
+            $table->id();
             $table->string('name'); // Prénom
             $table->string('last_name'); // Nom
             $table->string('user_name')->unique(); // Nom d'utilisateur
@@ -30,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('cores_users'); 
+        Schema::dropIfExists('cores_users');
     }
 };

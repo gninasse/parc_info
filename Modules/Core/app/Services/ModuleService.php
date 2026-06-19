@@ -2,9 +2,9 @@
 
 namespace Modules\Core\Services;
 
+use Illuminate\Support\Facades\Artisan;
 use Modules\Core\Models\Module;
 use Nwidart\Modules\Facades\Module as ModuleFacade;
-use Illuminate\Support\Facades\Artisan;
 
 class ModuleService
 {
@@ -15,13 +15,13 @@ class ModuleService
     {
         $allModules = ModuleFacade::all();
         $registeredModules = Module::pluck('slug')->toArray();
-        
+
         $detected = [];
-        
+
         foreach ($allModules as $moduleInfo) {
             $slug = strtolower($moduleInfo->getName());
-            
-            if (!in_array($slug, $registeredModules)) {
+
+            if (! in_array($slug, $registeredModules)) {
                 $detected[] = [
                     'name' => $moduleInfo->getName(),
                     'slug' => $slug,
@@ -30,7 +30,7 @@ class ModuleService
                 ];
             }
         }
-        
+
         return $detected;
     }
 
@@ -40,15 +40,15 @@ class ModuleService
     public function installModule(string $moduleSlug): Module
     {
         $moduleInfo = ModuleFacade::find($moduleSlug);
-        
-        if (!$moduleInfo) {
+
+        if (! $moduleInfo) {
             throw new \Exception("Le module '{$moduleSlug}' n'existe pas.");
         }
 
         // Vérifier si déjà installé
         $existingModule = Module::where('slug', $moduleSlug)->first();
         if ($existingModule) {
-            throw new \Exception("Le module est déjà installé.");
+            throw new \Exception('Le module est déjà installé.');
         }
 
         // Créer l'enregistrement
@@ -89,7 +89,7 @@ class ModuleService
     public function uninstallModule(Module $module): void
     {
         if ($module->is_required) {
-            throw new \Exception("Ce module est requis et ne peut pas être désinstallé.");
+            throw new \Exception('Ce module est requis et ne peut pas être désinstallé.');
         }
 
         if ($module->is_active) {
@@ -114,12 +114,12 @@ class ModuleService
         if ($module->dependencies) {
             foreach ($module->dependencies as $dependencySlug) {
                 $dependency = Module::where('slug', $dependencySlug)->first();
-                
-                if (!$dependency) {
+
+                if (! $dependency) {
                     throw new \Exception("Le module dépendant '{$dependencySlug}' n'est pas installé.");
                 }
-                
-                if (!$dependency->is_active) {
+
+                if (! $dependency->is_active) {
                     $this->enableModule($dependency);
                 }
             }
@@ -137,7 +137,7 @@ class ModuleService
      */
     public function disableModule(Module $module): void
     {
-        if (!$module->canBeDeactivated()) {
+        if (! $module->canBeDeactivated()) {
             // Trouver les modules dépendants
             $dependents = Module::active()
                 ->where('id', '!=', $module->id)
@@ -147,7 +147,7 @@ class ModuleService
                 })
                 ->pluck('name')
                 ->implode(', ');
-            
+
             throw new \Exception("Ce module ne peut pas être désactivé car d'autres modules en dépendent : {$dependents}");
         }
 
@@ -165,10 +165,10 @@ class ModuleService
     {
         $allModules = ModuleFacade::all();
         $synced = [];
-        
+
         foreach ($allModules as $moduleInfo) {
             $slug = strtolower($moduleInfo->getName());
-            
+
             $module = Module::updateOrCreate(
                 ['slug' => $slug],
                 [
@@ -183,10 +183,10 @@ class ModuleService
                     'installed_at' => $module->installed_at ?? now(),
                 ]
             );
-            
+
             $synced[] = $module;
         }
-        
+
         return $synced;
     }
 }

@@ -181,9 +181,9 @@ class DirectionController extends Controller implements HasMiddleware
     {
         return response()->json(
             Service::where('direction_id', $id)
-                   ->where('actif', true)
-                   ->orderBy('libelle')
-                   ->get(['id', 'libelle'])
+                ->where('actif', true)
+                ->orderBy('libelle')
+                ->get(['id', 'libelle'])
         );
     }
 }

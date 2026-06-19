@@ -7,6 +7,7 @@ use Illuminate\View\Component;
 class RoleBadge extends Component
 {
     public $role;
+
     public $showCount;
 
     public function __construct($role, $showCount = false)
@@ -17,7 +18,7 @@ class RoleBadge extends Component
 
     public function getBadgeColor()
     {
-        return match($this->role->name) {
+        return match ($this->role->name) {
             'super-admin' => 'bg-danger',
             'admin' => 'bg-warning text-dark',
             'manager' => 'bg-info',

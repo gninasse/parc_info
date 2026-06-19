@@ -508,6 +508,7 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
     Route::prefix('analyse')->name('analyse.')->group(function () {
         Route::get('/etats', [\Modules\ParcInfo\Http\Controllers\Analyse\EtatController::class, 'index'])->name('etats.index');
         Route::get('/etats/data', [\Modules\ParcInfo\Http\Controllers\Analyse\EtatController::class, 'getData'])->name('etats.data');
+        Route::get('/etats/export', [\Modules\ParcInfo\Http\Controllers\Analyse\EtatController::class, 'export'])->name('etats.export');
         Route::get('/statistiques', [\Modules\ParcInfo\Http\Controllers\Analyse\StatistiquesController::class, 'index'])->name('statistiques.index');
         Route::get('/statistiques/data', [\Modules\ParcInfo\Http\Controllers\Analyse\StatistiquesController::class, 'getData'])->name('statistiques.data');
     });

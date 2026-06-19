@@ -2,9 +2,6 @@
 
 namespace Modules\Core\Listeners;
 
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Contracts\Queue\ShouldQueue;
-
 class HandleUserLogin
 {
     /**
@@ -15,7 +12,8 @@ class HandleUserLogin
     /**
      * Handle the event.
      */
-    public function handle($event): void {
+    public function handle($event): void
+    {
         $event->user->logLogin();
     }
 }

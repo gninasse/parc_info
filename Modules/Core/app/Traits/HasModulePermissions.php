@@ -2,8 +2,8 @@
 
 namespace Modules\Core\Traits;
 
-use Spatie\Permission\Models\Permission;
 use Illuminate\Support\Collection;
+use Spatie\Permission\Models\Permission;
 
 trait HasModulePermissions
 {
@@ -13,13 +13,13 @@ trait HasModulePermissions
     public function hasModuleAccess(string $module): bool
     {
         $permissions = Permission::where('module', $module)->pluck('name');
-        
+
         foreach ($permissions as $permission) {
             if ($this->can($permission)) {
                 return true;
             }
         }
-        
+
         return false;
     }
 
@@ -51,13 +51,13 @@ trait HasModulePermissions
     public function hasAllModulePermissions(string $module): bool
     {
         $modulePermissions = Permission::where('module', $module)->get();
-        
+
         foreach ($modulePermissions as $permission) {
-            if (!$this->can($permission->name)) {
+            if (! $this->can($permission->name)) {
                 return false;
             }
         }
-        
+
         return true;
     }
 

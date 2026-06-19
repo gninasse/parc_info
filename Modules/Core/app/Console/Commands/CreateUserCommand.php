@@ -4,16 +4,15 @@ namespace Modules\Core\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
 use Modules\Core\Models\User;
 use Spatie\Permission\Models\Role;
 
-use function Laravel\Prompts\text;
+use function Laravel\Prompts\confirm;
+use function Laravel\Prompts\error;
+use function Laravel\Prompts\info;
 use function Laravel\Prompts\password;
 use function Laravel\Prompts\select;
-use function Laravel\Prompts\confirm;
-use function Laravel\Prompts\info;
-use function Laravel\Prompts\error;
+use function Laravel\Prompts\text;
 use function Laravel\Prompts\warning;
 
 class CreateUserCommand extends Command
@@ -73,7 +72,7 @@ class CreateUserCommand extends Command
             placeholder: 'ex: jean.dupont@exemple.com',
             required: true,
             validate: fn (string $value) => match (true) {
-                !filter_var($value, FILTER_VALIDATE_EMAIL) => 'L\'adresse email n\'est pas valide.',
+                ! filter_var($value, FILTER_VALIDATE_EMAIL) => 'L\'adresse email n\'est pas valide.',
                 User::where('email', $value)->exists() => 'Cette adresse email est déjà utilisée.',
                 default => null
             }
@@ -89,9 +88,9 @@ class CreateUserCommand extends Command
         );
 
         $roles = Role::pluck('name')->toArray();
-        
+
         $role = null;
-        if (!empty($roles)) {
+        if (! empty($roles)) {
             $role = select(
                 label: 'Attribuer un rôle ?',
                 options: array_merge(['Aucun'], $roles),

@@ -3,11 +3,11 @@
 namespace Modules\Core\View\Components;
 
 use Illuminate\View\Component;
-use Spatie\Permission\Models\Permission;
 
 class PermissionBadge extends Component
 {
     public $permission;
+
     public $showCategory;
 
     public function __construct($permission, $showCategory = false)
@@ -18,7 +18,7 @@ class PermissionBadge extends Component
 
     public function getBadgeColor()
     {
-        return match($this->permission->category) {
+        return match ($this->permission->category) {
             'view' => 'bg-primary',
             'create' => 'bg-success',
             'edit' => 'bg-warning',
@@ -30,7 +30,7 @@ class PermissionBadge extends Component
 
     public function getCategoryIcon()
     {
-        return match($this->permission->category) {
+        return match ($this->permission->category) {
             'view' => 'fa-eye',
             'create' => 'fa-plus',
             'edit' => 'fa-edit',

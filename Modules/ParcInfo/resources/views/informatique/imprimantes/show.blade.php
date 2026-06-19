@@ -162,6 +162,10 @@
                                value="{{ $equipement->date_acquisition?->format('Y-m-d') }}" disabled>
                     </div>
                     <div class="col-md-3">
+                        <label class="field-label">Bordereau de livraison</label>
+                        <input type="text" class="form-control field-input" name="ref_bordereau" id="f_ref_bordereau" value="{{ $equipement->ref_bordereau }}" disabled placeholder="—">
+                    </div>
+                    <div class="col-md-3">
                         <label class="field-label">Mise en service</label>
                         <input type="date" class="form-control field-input" name="date_mise_en_service"
                                value="{{ $equipement->date_mise_en_service?->format('Y-m-d') }}" disabled>

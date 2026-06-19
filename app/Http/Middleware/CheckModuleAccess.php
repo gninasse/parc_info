@@ -4,8 +4,8 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\Response;
 
 class CheckModuleAccess
 {
@@ -14,14 +14,14 @@ class CheckModuleAccess
      */
     public function handle(Request $request, Closure $next, string $module): Response
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return redirect()->route('login');
         }
 
         $user = Auth::user();
 
         // Vérifier si l'utilisateur a au moins une permission du module
-        if (!$user->hasModuleAccess($module)) {
+        if (! $user->hasModuleAccess($module)) {
             abort(403, "Vous n'avez pas accès au module {$module}.");
         }
 

@@ -160,9 +160,9 @@ class SiteController extends Controller implements HasMiddleware
     {
         return response()->json(
             Batiment::where('site_id', $id)
-                    ->where('actif', true)
-                    ->orderBy('libelle')
-                    ->get(['id', 'libelle'])
+                ->where('actif', true)
+                ->orderBy('libelle')
+                ->get(['id', 'libelle'])
         );
     }
 }

@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('permissions', function (Blueprint $table) { 
+        Schema::table('permissions', function (Blueprint $table) {
             // Catégorie de permission (view, create, edit, delete, manage)
             $table->string('category')->nullable()->after('module');
             $table->index('category');
@@ -36,12 +36,12 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('permissions', function (Blueprint $table) {
-            $table->dropColumn([ 
+            $table->dropColumn([
                 'category',
                 'description',
                 'group',
                 'sort_order',
-                'is_visible'
+                'is_visible',
             ]);
         });
     }

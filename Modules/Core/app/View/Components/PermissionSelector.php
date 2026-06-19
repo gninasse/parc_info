@@ -7,7 +7,9 @@ use Illuminate\View\Component;
 class PermissionSelector extends Component
 {
     public $permissions;
+
     public $selected;
+
     public $name;
 
     public function __construct($permissions, $selected = [], $name = 'permissions')

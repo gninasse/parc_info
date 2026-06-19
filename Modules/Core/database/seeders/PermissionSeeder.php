@@ -21,13 +21,13 @@ class PermissionSeeder extends Seeder
             ['name' => 'create users', 'label' => 'Créer des utilisateurs'],
             ['name' => 'edit users', 'label' => 'Modifier des utilisateurs'],
             ['name' => 'delete users', 'label' => 'Supprimer des utilisateurs'],
-            
+
             // Role Management
             ['name' => 'view roles', 'label' => 'Voir les rôles'],
             ['name' => 'create roles', 'label' => 'Créer des rôles'],
             ['name' => 'edit roles', 'label' => 'Modifier des rôles'],
             ['name' => 'delete roles', 'label' => 'Supprimer des rôles'],
-            
+
             // Permission Management
             ['name' => 'manage permissions', 'label' => 'Gérer les permissions'],
         ];

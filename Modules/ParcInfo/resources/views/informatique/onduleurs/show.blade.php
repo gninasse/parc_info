@@ -190,6 +190,10 @@
                                     <label class="form-label small fw-bold text-muted">Date d'acquisition</label>
                                     <input type="date" class="form-control" name="date_acquisition" value="{{ $equipement->date_acquisition?->format('Y-m-d') }}" disabled id="f_date_acquisition">
                                 </div>
+                    <div class="col-12">
+                        <label class="form-label small fw-bold text-muted">Bordereau de livraison</label>
+                        <input type="text" class="form-control field-input" name="ref_bordereau" id="f_ref_bordereau" value="{{ $equipement->ref_bordereau }}" disabled placeholder="—">
+                    </div>
                                 <div class="col-12">
                                     <label class="form-label small fw-bold text-muted">Fin de garantie</label>
                                     <input type="date" class="form-control" name="date_fin_garantie" value="{{ $equipement->date_fin_garantie?->format('Y-m-d') }}" disabled id="f_date_fin_garantie">

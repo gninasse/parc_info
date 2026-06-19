@@ -32,7 +32,7 @@ class ModuleApiController extends Controller
     public function show($slug): JsonResponse
     {
         $module = Module::where('slug', $slug)->firstOrFail();
-        
+
         return response()->json([
             'module' => $module,
             'permissions' => $module->permissions, // Relationship call without brackets returns collection
@@ -58,7 +58,7 @@ class ModuleApiController extends Controller
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 422);
         }
     }
@@ -78,7 +78,7 @@ class ModuleApiController extends Controller
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 422);
         }
     }

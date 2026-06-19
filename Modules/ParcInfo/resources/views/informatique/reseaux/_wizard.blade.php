@@ -99,6 +99,10 @@
                                 <input type="date" class="form-control" id="date_acquisition" name="date_acquisition">
                             </div>
                             <div class="col-md-6">
+                                <label class="form-label field-label">Bordereau de livraison</label>
+                                <input type="text" class="form-control field-input" name="ref_bordereau" id="ref_bordereau" placeholder="Ex: BL-2026-0001">
+                            </div>
+                            <div class="col-md-6">
                                 <label class="form-label fw-semibold">État physique <span class="text-danger">*</span></label>
                                 <select class="form-select" id="etat" name="etat" required>
                                     <option value="bon">Bon état</option>

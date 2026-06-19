@@ -11,10 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('permissions', function (Blueprint $table) {
-            //
-            $table->string('module')->nullable()->after('name');
-            $table->index('module');
+        Schema::table('parc_info_equipements', function (Blueprint $table) {
+            $table->string('ref_bordereau')->nullable()->after('tags');
         });
     }
 
@@ -23,10 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('permissions', function (Blueprint $table) {
-            //
-            $table->dropIndex('module');
-            $table->dropColumn('module');
+        Schema::table('parc_info_equipements', function (Blueprint $table) {
+            $table->dropColumn('ref_bordereau');
         });
     }
 };

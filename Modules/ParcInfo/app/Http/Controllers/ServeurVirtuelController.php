@@ -11,6 +11,7 @@ use Modules\Organisation\Models\Site;
 use Modules\ParcInfo\Models\AffectationEquipement;
 use Modules\ParcInfo\Models\Equipement;
 use Modules\ParcInfo\Models\HistoriqueChangement;
+use Modules\ParcInfo\Models\Licence;
 use Modules\ParcInfo\Models\Marque;
 use Modules\ParcInfo\Models\Serveur;
 use Modules\ParcInfo\Models\ServeurVirtuel;
@@ -162,6 +163,7 @@ class ServeurVirtuelController extends Controller
             'affectationActive.direction', 'affectationActive.service',
             'affectations.local', 'affectations.service',
             'historique',
+            'affectationsLicences.licence.logiciel',
         ])->findOrFail($id);
 
         $marques = Marque::orderBy('libelle')->get(['id', 'libelle']);
@@ -173,8 +175,14 @@ class ServeurVirtuelController extends Controller
         $directions = Direction::where('actif', true)->orderBy('libelle')->get(['id', 'libelle']);
         $serveursPhysiques = Serveur::with('equipement')->get();
 
+        // Fetch available licenses
+        $licencesDisponibles = Licence::with('logiciel')
+            ->where('actif', true)
+            ->get()
+            ->filter(fn ($licence) => $licence->nombre_postes_utilises < $licence->nombre_postes_accordes || $licence->nombre_postes_accordes == 0);
+
         return view('parcinfo::informatique.serveurs-virtuels.show', compact(
-            'equipement', 'marques', 'typesOs', 'typesRam', 'typesCpu', 'typesDisque', 'sites', 'directions', 'serveursPhysiques'
+            'equipement', 'marques', 'typesOs', 'typesRam', 'typesCpu', 'typesDisque', 'sites', 'directions', 'serveursPhysiques', 'licencesDisponibles'
         ));
     }
 

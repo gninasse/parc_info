@@ -91,15 +91,15 @@ class LocalController extends Controller implements HasMiddleware
         }
         if ($request->filled('search')) {
             $s = $request->search;
-            $query->where(function($q) use ($s) {
+            $query->where(function ($q) use ($s) {
                 $q->where('code', 'ilike', "%{$s}%")
-                  ->orWhere('libelle', 'ilike', "%{$s}%");
+                    ->orWhere('libelle', 'ilike', "%{$s}%");
             });
         }
 
         $locaux = $query->get();
-        
-        return response()->json($locaux->map(function($local) {
+
+        return response()->json($locaux->map(function ($local) {
             return [
                 'id' => $local->id,
                 'code' => $local->code ?? '',
@@ -109,7 +109,7 @@ class LocalController extends Controller implements HasMiddleware
                 'etage' => $local->etage?->libelle ?? '—',
                 'batiment' => $local->etage?->batiment?->libelle ?? '—',
                 'site' => $local->etage?->batiment?->site?->libelle ?? '—',
-                'statut' => $local->actif ? 'actif' : 'inactif'
+                'statut' => $local->actif ? 'actif' : 'inactif',
             ];
         }));
     }

@@ -7,6 +7,7 @@ use Illuminate\View\Component;
 class UserAvatar extends Component
 {
     public $user;
+
     public $size;
 
     public function __construct($user, $size = 'md')
@@ -17,7 +18,7 @@ class UserAvatar extends Component
 
     public function getSizeClass()
     {
-        return match($this->size) {
+        return match ($this->size) {
             'sm' => 'width: 30px; height: 30px; font-size: 12px;',
             'md' => 'width: 40px; height: 40px; font-size: 16px;',
             'lg' => 'width: 60px; height: 60px; font-size: 24px;',

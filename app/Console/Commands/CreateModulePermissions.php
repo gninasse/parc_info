@@ -33,6 +33,7 @@ class CreateModulePermissions extends Command
 
         if (! $module) {
             $this->error('Module name is required.');
+
             return;
         }
 
@@ -44,6 +45,7 @@ class CreateModulePermissions extends Command
 
         if (file_exists($path)) {
             $this->error("File already exists: {$path}");
+
             return;
         }
 

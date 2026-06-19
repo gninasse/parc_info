@@ -3,13 +3,11 @@
 namespace Modules\Core\Console\Commands;
 
 use Illuminate\Console\Command;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Input\InputArgument;
 use Modules\Core\Models\Activity;
 
 class CleanupExpiredActivitiesCommand extends Command
 {
-   /**
+    /**
      * The name and signature of the console command.
      */
     protected $signature = 'activities:cleanup-expired 
@@ -40,8 +38,8 @@ class CleanupExpiredActivitiesCommand extends Command
         }
 
         // Exclure les activités critiques sauf si --force
-        if (!$this->option('force')) {
-            $query->where(function($q) {
+        if (! $this->option('force')) {
+            $query->where(function ($q) {
                 $q->whereNotIn('description', [
                     'deleted',
                     'permission_changed',
@@ -56,6 +54,7 @@ class CleanupExpiredActivitiesCommand extends Command
 
         if ($count === 0) {
             $this->info('✅ Aucune activité expirée à nettoyer.');
+
             return 0;
         }
 
@@ -67,7 +66,7 @@ class CleanupExpiredActivitiesCommand extends Command
             $this->warn('🔍 Mode DRY RUN - Aucune suppression effectuée');
             $this->table(
                 ['ID', 'Module', 'Description', 'Date', 'Expiration', 'Jours depuis expiration'],
-                $query->take(20)->get()->map(fn($activity) => [
+                $query->take(20)->get()->map(fn ($activity) => [
                     $activity->id,
                     $activity->module ?? 'N/A',
                     $activity->description,
@@ -78,15 +77,16 @@ class CleanupExpiredActivitiesCommand extends Command
             );
 
             if ($count > 20) {
-                $this->info("... et " . ($count - 20) . " autres activités");
+                $this->info('... et '.($count - 20).' autres activités');
             }
 
             return 0;
         }
 
         // Confirmation
-        if (!$this->confirm("Êtes-vous sûr de vouloir supprimer {$count} activité(s) expirée(s) ?")) {
+        if (! $this->confirm("Êtes-vous sûr de vouloir supprimer {$count} activité(s) expirée(s) ?")) {
             $this->info('❌ Opération annulée.');
+
             return 1;
         }
 
@@ -95,7 +95,7 @@ class CleanupExpiredActivitiesCommand extends Command
         $bar->start();
 
         $deleted = 0;
-        $query->chunk(100, function($activities) use ($bar, &$deleted) {
+        $query->chunk(100, function ($activities) use ($bar, &$deleted) {
             foreach ($activities as $activity) {
                 $activity->delete();
                 $deleted++;
@@ -107,7 +107,7 @@ class CleanupExpiredActivitiesCommand extends Command
         $this->newLine(2);
 
         $this->info("✅ {$deleted} activité(s) expirée(s) supprimée(s) avec succès!");
-        
+
         // Afficher l'espace disque libéré (estimation)
         $estimatedSpace = ($deleted * 2); // ~2KB par activité en moyenne
         $this->info("💾 Espace disque libéré (estimé) : ~{$estimatedSpace} KB");
@@ -131,7 +131,7 @@ class CleanupExpiredActivitiesCommand extends Command
 
         $this->table(
             ['Module', 'Nombre'],
-            $byModule->map(fn($count, $module) => [$module ?? 'N/A', $count])
+            $byModule->map(fn ($count, $module) => [$module ?? 'N/A', $count])
         );
 
         // Par durée d'expiration
@@ -146,7 +146,7 @@ class CleanupExpiredActivitiesCommand extends Command
             $this->info('Par durée de rétention :');
             $this->table(
                 ['Rétention (mois)', 'Nombre'],
-                $byRetention->map(fn($count, $months) => [$months . ' mois', $count])
+                $byRetention->map(fn ($count, $months) => [$months.' mois', $count])
             );
         }
 

@@ -2,8 +2,8 @@
 
 namespace Modules\Core\Traits;
 
-use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 trait LogsActivityWithModule
 {
@@ -13,7 +13,8 @@ trait LogsActivityWithModule
      * Module auquel appartient ce modèle
      */
     protected static $activityModule = 'core';
-    protected static $activityRetentionMonths =  12;
+
+    protected static $activityRetentionMonths = 12;
 
     public function getActivitylogOptions(): LogOptions
     {
@@ -30,7 +31,7 @@ trait LogsActivityWithModule
     protected static function bootLogsActivityWithModule()
     {
         static::eventsToBeRecorded()->each(function ($eventName) {
-            static::$eventName(function ($model) use ($eventName) {
+            static::$eventName(function ($model) {
                 if (method_exists($model, 'tapActivity')) {
                     return;
                 }
@@ -49,7 +50,7 @@ trait LogsActivityWithModule
         $activity->ip_address = request()->ip();
         $activity->user_agent = request()->userAgent();
         $activity->retention_months = static::$activityRetentionMonths;
-        if(is_int(static::$activityRetentionMonths)){
+        if (is_int(static::$activityRetentionMonths)) {
             $activity->expires_at = now()->addMonths(static::$activityRetentionMonths);
         }
         $activity->causer_roles = auth()->user()?->roles()->pluck('name')->toArray();

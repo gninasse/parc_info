@@ -6,7 +6,7 @@
             <div class="modal-header border-0 px-4 pt-4 pb-0">
                 <div>
                     <h5 class="modal-title fw-bold mb-0" id="wizard-title">Ajouter un équipement mobile</h5>
-                    <small class="text-muted" id="wizard-subtitle">Configuration des terminaux mobiles - CHU Yalgado</small>
+                    <small id="wizard-subtitle">Configuration des terminaux mobiles - CHU Yalgado</small>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
@@ -145,6 +145,10 @@
                             <div class="col-md-6">
                                 <label class="form-label field-label">Date d'acquisition</label>
                                 <input type="date" class="form-control field-input" name="date_acquisition" id="date_acquisition">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label field-label">Bordereau de livraison</label>
+                                <input type="text" class="form-control field-input" name="ref_bordereau" id="ref_bordereau" placeholder="Ex: BL-2026-0001">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label field-label">Fin de garantie</label>

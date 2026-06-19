@@ -5,7 +5,6 @@ namespace Modules\Core\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
@@ -14,6 +13,7 @@ class AuthController extends Controller
         if (Auth::check()) {
             return redirect()->route('cores.dashboard');
         }
+
         return view('core::auth.login');
     }
 
@@ -31,6 +31,7 @@ class AuthController extends Controller
 
         if (Auth::attempt([$field => $login, 'password' => $password, 'is_active' => true], true)) {
             $request->session()->regenerate();
+
             return redirect()->intended(route('cores.dashboard'));
         }
 
@@ -45,6 +46,7 @@ class AuthController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
         return redirect()->route('login');
     }
 }

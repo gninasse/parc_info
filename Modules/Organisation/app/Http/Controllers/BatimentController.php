@@ -163,9 +163,9 @@ class BatimentController extends Controller implements HasMiddleware
     {
         return response()->json(
             Etage::where('batiment_id', $id)
-                 ->where('actif', true)
-                 ->orderBy('numero')
-                 ->get(['id', 'libelle'])
+                ->where('actif', true)
+                ->orderBy('numero')
+                ->get(['id', 'libelle'])
         );
     }
 }

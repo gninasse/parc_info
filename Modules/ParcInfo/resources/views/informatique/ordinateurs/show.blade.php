@@ -179,6 +179,11 @@
                         <input type="number" class="form-control field-input" name="valeur_achat"
                                value="{{ $equipement->valeur_achat }}" disabled>
                     </div>
+                    <div class="col-md-3">
+                        <label class="field-label">Bordereau de livraison</label>
+                        <input type="text" class="form-control field-input" name="ref_bordereau" id="f_ref_bordereau"
+                               value="{{ $equipement->ref_bordereau }}" disabled placeholder="—">
+                    </div>
                 </div>
             </div>
         </div>

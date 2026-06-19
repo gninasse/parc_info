@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Modules\Core\Models\User;
 use Modules\ParcInfo\Models\TypeCpu;
 use Spatie\Permission\Models\Permission;
@@ -10,7 +10,7 @@ use Tests\TestCase;
 
 class ReferentielsTypeCpuTest extends TestCase
 {
-    use DatabaseTransactions;
+    use RefreshDatabase;
 
     protected $user;
 
@@ -19,13 +19,7 @@ class ReferentielsTypeCpuTest extends TestCase
         parent::setUp();
 
         // Create a testing user manually
-        $this->user = User::create([
-            'name' => 'Test',
-            'last_name' => 'User',
-            'user_name' => 'testuser',
-            'email' => 'testuser'.uniqid().'@example.com',
-            'password' => bcrypt('password'),
-        ]);
+        $this->user = User::factory()->create();
     }
 
     /**

@@ -18,7 +18,7 @@ return new class extends Migration
             $table->unsignedInteger('cycle_remplacement_jours')->nullable();
             $table->text('notes')->nullable();
             $table->timestamps();
-            
+
             $table->index(['equipement_id']);
             $table->index(['date_remplacement_prochain_prevu']);
         });

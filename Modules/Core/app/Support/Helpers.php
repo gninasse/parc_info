@@ -1,18 +1,17 @@
 <?php
 
 use App\Models\User;
-use Modules\Core\Models\Module;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
 use Illuminate\Support\Collection;
+use Modules\Core\Models\Module;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 /**
  * Helpers et fonctions utilitaires pour le module Core
- * 
+ *
  * Fichier: Modules/Core/app/Support/Helpers.php
  */
-
-if (!function_exists('core_user')) {
+if (! function_exists('core_user')) {
     /**
      * Obtenir l'utilisateur actuellement connecté
      */
@@ -22,35 +21,35 @@ if (!function_exists('core_user')) {
     }
 }
 
-if (!function_exists('has_core_access')) {
+if (! function_exists('has_core_access')) {
     /**
      * Vérifier si l'utilisateur a accès au module Core
      */
     function has_core_access(): bool
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return false;
         }
-        
+
         return auth()->user()->hasModuleAccess('core');
     }
 }
 
-if (!function_exists('has_module_access')) {
+if (! function_exists('has_module_access')) {
     /**
      * Vérifier si l'utilisateur a accès à un module
      */
     function has_module_access(string $module): bool
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return false;
         }
-        
+
         return auth()->user()->hasModuleAccess($module);
     }
 }
 
-if (!function_exists('active_modules')) {
+if (! function_exists('active_modules')) {
     /**
      * Obtenir tous les modules actifs
      */
@@ -60,7 +59,7 @@ if (!function_exists('active_modules')) {
     }
 }
 
-if (!function_exists('get_module')) {
+if (! function_exists('get_module')) {
     /**
      * Obtenir un module par son slug
      */
@@ -70,34 +69,35 @@ if (!function_exists('get_module')) {
     }
 }
 
-if (!function_exists('is_module_active')) {
+if (! function_exists('is_module_active')) {
     /**
      * Vérifier si un module est actif
      */
     function is_module_active(string $slug): bool
     {
         $module = get_module($slug);
+
         return $module && $module->is_active;
     }
 }
 
-if (!function_exists('get_user_modules')) {
+if (! function_exists('get_user_modules')) {
     /**
      * Obtenir les modules accessibles par l'utilisateur
      */
     function get_user_modules(?User $user = null): Collection
     {
         $user = $user ?? auth()->user();
-        
-        if (!$user) {
+
+        if (! $user) {
             return collect();
         }
-        
+
         return $user->getAccessibleModules();
     }
 }
 
-if (!function_exists('permission_exists')) {
+if (! function_exists('permission_exists')) {
     /**
      * Vérifier si une permission existe
      */
@@ -107,7 +107,7 @@ if (!function_exists('permission_exists')) {
     }
 }
 
-if (!function_exists('role_exists')) {
+if (! function_exists('role_exists')) {
     /**
      * Vérifier si un rôle existe
      */
@@ -117,7 +117,7 @@ if (!function_exists('role_exists')) {
     }
 }
 
-if (!function_exists('get_permissions_by_module')) {
+if (! function_exists('get_permissions_by_module')) {
     /**
      * Obtenir les permissions groupées par module
      */
@@ -127,7 +127,7 @@ if (!function_exists('get_permissions_by_module')) {
     }
 }
 
-if (!function_exists('get_module_permissions')) {
+if (! function_exists('get_module_permissions')) {
     /**
      * Obtenir les permissions d'un module spécifique
      */
@@ -137,23 +137,23 @@ if (!function_exists('get_module_permissions')) {
     }
 }
 
-if (!function_exists('is_super_admin')) {
+if (! function_exists('is_super_admin')) {
     /**
      * Vérifier si l'utilisateur est super-admin
      */
     function is_super_admin(?User $user = null): bool
     {
         $user = $user ?? auth()->user();
-        
-        if (!$user) {
+
+        if (! $user) {
             return false;
         }
-        
+
         return $user->hasRole('super-admin');
     }
 }
 
-if (!function_exists('is_impersonating')) {
+if (! function_exists('is_impersonating')) {
     /**
      * Vérifier si on est en mode impersonnification
      */
@@ -163,7 +163,7 @@ if (!function_exists('is_impersonating')) {
     }
 }
 
-if (!function_exists('original_user_id')) {
+if (! function_exists('original_user_id')) {
     /**
      * Obtenir l'ID de l'utilisateur original en mode impersonnification
      */
@@ -173,7 +173,7 @@ if (!function_exists('original_user_id')) {
     }
 }
 
-if (!function_exists('format_permission_name')) {
+if (! function_exists('format_permission_name')) {
     /**
      * Formater un nom de permission (module.resource.action)
      */
@@ -183,14 +183,14 @@ if (!function_exists('format_permission_name')) {
     }
 }
 
-if (!function_exists('parse_permission_name')) {
+if (! function_exists('parse_permission_name')) {
     /**
      * Parser un nom de permission en ses composants
      */
     function parse_permission_name(string $permission): array
     {
         $parts = explode('.', $permission);
-        
+
         return [
             'module' => $parts[0] ?? null,
             'resource' => $parts[1] ?? null,
@@ -199,7 +199,7 @@ if (!function_exists('parse_permission_name')) {
     }
 }
 
-if (!function_exists('core_stats')) {
+if (! function_exists('core_stats')) {
     /**
      * Obtenir les statistiques du module Core
      */
@@ -229,60 +229,60 @@ if (!function_exists('core_stats')) {
     }
 }
 
-if (!function_exists('can_manage_users')) {
+if (! function_exists('can_manage_users')) {
     /**
      * Vérifier si l'utilisateur peut gérer les utilisateurs
      */
     function can_manage_users(): bool
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return false;
         }
-        
-        return auth()->user()->can('cores.users.view') 
+
+        return auth()->user()->can('cores.users.view')
             || auth()->user()->can('cores.users.create')
             || auth()->user()->can('cores.users.edit');
     }
 }
 
-if (!function_exists('can_manage_roles')) {
+if (! function_exists('can_manage_roles')) {
     /**
      * Vérifier si l'utilisateur peut gérer les rôles
      */
     function can_manage_roles(): bool
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return false;
         }
-        
-        return auth()->user()->can('cores.roles.view') 
+
+        return auth()->user()->can('cores.roles.view')
             || auth()->user()->can('cores.roles.create')
             || auth()->user()->can('cores.roles.edit');
     }
 }
 
-if (!function_exists('can_manage_modules')) {
+if (! function_exists('can_manage_modules')) {
     /**
      * Vérifier si l'utilisateur peut gérer les modules
      */
     function can_manage_modules(): bool
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return false;
         }
-        
-        return auth()->user()->can('cores.modules.view') 
+
+        return auth()->user()->can('cores.modules.view')
             || auth()->user()->can('cores.modules.enable');
     }
 }
 
-if (!function_exists('get_role_badge_color')) {
+if (! function_exists('get_role_badge_color')) {
     /**
      * Obtenir la couleur du badge pour un rôle
      */
     function get_role_badge_color(string $roleName): string
     {
-        return match($roleName) {
+        return match ($roleName) {
             'super-admin' => 'danger',
             'admin' => 'warning',
             'manager' => 'info',
@@ -292,13 +292,13 @@ if (!function_exists('get_role_badge_color')) {
     }
 }
 
-if (!function_exists('get_permission_category_icon')) {
+if (! function_exists('get_permission_category_icon')) {
     /**
      * Obtenir l'icône pour une catégorie de permission
      */
     function get_permission_category_icon(string $category): string
     {
-        return match($category) {
+        return match ($category) {
             'view' => 'fa-eye',
             'create' => 'fa-plus',
             'edit' => 'fa-edit',
@@ -309,7 +309,7 @@ if (!function_exists('get_permission_category_icon')) {
     }
 }
 
-if (!function_exists('generate_crud_permissions')) {
+if (! function_exists('generate_crud_permissions')) {
     /**
      * Générer les permissions CRUD standard pour un module
      */
@@ -324,20 +324,20 @@ if (!function_exists('generate_crud_permissions')) {
     }
 }
 
-if (!function_exists('sync_user_modules')) {
+if (! function_exists('sync_user_modules')) {
     /**
      * Synchroniser les modules d'un utilisateur avec ses permissions
      */
     function sync_user_modules(User $user): void
     {
         $modules = $user->getAccessibleModules();
-        
+
         // Vous pouvez stocker cela en cache ou ailleurs si nécessaire
         cache()->put("user.{$user->id}.modules", $modules, now()->addDay());
     }
 }
 
-if (!function_exists('clear_permissions_cache')) {
+if (! function_exists('clear_permissions_cache')) {
     /**
      * Vider le cache des permissions
      */
@@ -348,28 +348,28 @@ if (!function_exists('clear_permissions_cache')) {
     }
 }
 
-if (!function_exists('module_navigation')) {
+if (! function_exists('module_navigation')) {
     /**
      * Générer la navigation pour un module
      */
     function module_navigation(string $module): array
     {
         $config = config("modules.{$module}.navigation", []);
-        
+
         return collect($config)
-            ->filter(fn($item) => auth()->check() && auth()->user()->can($item['permission'] ?? ''))
+            ->filter(fn ($item) => auth()->check() && auth()->user()->can($item['permission'] ?? ''))
             ->toArray();
     }
 }
 
-if (!function_exists('breadcrumb')) {
+if (! function_exists('breadcrumb')) {
     /**
      * Générer un fil d'Ariane
      */
     function breadcrumb(array $items): string
     {
         $html = '<nav aria-label="breadcrumb"><ol class="breadcrumb">';
-        
+
         foreach ($items as $label => $url) {
             if ($url) {
                 $html .= "<li class='breadcrumb-item'><a href='{$url}'>{$label}</a></li>";
@@ -377,64 +377,65 @@ if (!function_exists('breadcrumb')) {
                 $html .= "<li class='breadcrumb-item active'>{$label}</li>";
             }
         }
-        
+
         $html .= '</ol></nav>';
-        
+
         return $html;
     }
 }
 
-if (!function_exists('permission_description')) {
+if (! function_exists('permission_description')) {
     /**
      * Obtenir la description d'une permission
      */
     function permission_description(string $permissionName): ?string
     {
         $permission = Permission::where('name', $permissionName)->first();
+
         return $permission?->description;
     }
 }
 
-if (!function_exists('user_has_any_permission')) {
+if (! function_exists('user_has_any_permission')) {
     /**
      * Vérifier si l'utilisateur a au moins une des permissions
      */
     function user_has_any_permission(array $permissions, ?User $user = null): bool
     {
         $user = $user ?? auth()->user();
-        
-        if (!$user) {
+
+        if (! $user) {
             return false;
         }
-        
+
         foreach ($permissions as $permission) {
             if ($user->can($permission)) {
                 return true;
             }
         }
-        
+
         return false;
     }
 }
 
-if (!function_exists('user_has_all_permissions')) {
+if (! function_exists('user_has_all_permissions')) {
     /**
      * Vérifier si l'utilisateur a toutes les permissions
      */
     function user_has_all_permissions(array $permissions, ?User $user = null): bool
     {
         $user = $user ?? auth()->user();
-        
-        if (!$user) {
+
+        if (! $user) {
             return false;
         }
-        
+
         foreach ($permissions as $permission) {
-            if (!$user->can($permission)) {
+            if (! $user->can($permission)) {
                 return false;
             }
         }
-        
+
         return true;
     }
 }

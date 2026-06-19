@@ -2,9 +2,9 @@
 
 namespace Modules\Core\Services;
 
-use Spatie\Permission\Models\Permission;
 use Modules\Core\Models\Module;
 use Nwidart\Modules\Facades\Module as ModuleFacade;
+use Spatie\Permission\Models\Permission;
 
 class PermissionService
 {
@@ -38,15 +38,15 @@ class PermissionService
     public function syncModulePermissions(string $moduleSlug): array
     {
         $moduleInfo = ModuleFacade::find($moduleSlug);
-        
-        if (!$moduleInfo) {
+
+        if (! $moduleInfo) {
             throw new \Exception("Le module '{$moduleSlug}' n'existe pas.");
         }
 
         // Charger le fichier de configuration des permissions
-        $configPath = $moduleInfo->getPath() . '/config/permissions.php';
-        
-        if (!file_exists($configPath)) {
+        $configPath = $moduleInfo->getPath().'/config/permissions.php';
+
+        if (! file_exists($configPath)) {
             return ['created' => 0, 'updated' => 0];
         }
 
@@ -56,9 +56,9 @@ class PermissionService
 
         foreach ($permissionsConfig as $name => $label) {
             $permission = Permission::firstOrNew(['name' => $name]);
-            
-            $wasRecentlyCreated = !$permission->exists;
-            
+
+            $wasRecentlyCreated = ! $permission->exists;
+
             $permission->fill([
                 'module' => strtolower($moduleSlug),
                 'label' => $label,
@@ -66,9 +66,9 @@ class PermissionService
                 'category' => $this->extractCategory($name),
                 'guard_name' => 'web',
             ]);
-            
+
             $permission->save();
-            
+
             if ($wasRecentlyCreated) {
                 $created++;
             } else {
@@ -90,24 +90,58 @@ class PermissionService
      */
     protected function extractCategory(string $permissionName): string
     {
-       if (str_contains($permissionName, '.view')) return 'view';
-        if (str_contains($permissionName, '.index')) return 'view';
-        if (str_contains($permissionName, '.create')) return 'create';
-        if (str_contains($permissionName, '.store')) return 'create';
-        if (str_contains($permissionName, '.edit')) return 'edit';
-        if (str_contains($permissionName, '.update')) return 'edit';
-        if (str_contains($permissionName, '.delete')) return 'delete';
-        if (str_contains($permissionName, '.destroy')) return 'delete';
-        if (str_contains($permissionName, '.toggle')) return 'toggle';
-        if (str_contains($permissionName, '.show')) return 'view';
-        if (str_contains($permissionName, '.manage')) return 'manage';
-        if (str_contains($permissionName, '.assign')) return 'assign';
-        if (str_contains($permissionName, '.configure')) return 'configure';
-        if (str_contains($permissionName, '.enable')) return 'enable';
-        if (str_contains($permissionName, '.disable')) return 'disable';
-        if (str_contains($permissionName, '.install')) return 'install';
-        if (str_contains($permissionName, '.uninstall')) return 'uninstall';
-        
+        if (str_contains($permissionName, '.view')) {
+            return 'view';
+        }
+        if (str_contains($permissionName, '.index')) {
+            return 'view';
+        }
+        if (str_contains($permissionName, '.create')) {
+            return 'create';
+        }
+        if (str_contains($permissionName, '.store')) {
+            return 'create';
+        }
+        if (str_contains($permissionName, '.edit')) {
+            return 'edit';
+        }
+        if (str_contains($permissionName, '.update')) {
+            return 'edit';
+        }
+        if (str_contains($permissionName, '.delete')) {
+            return 'delete';
+        }
+        if (str_contains($permissionName, '.destroy')) {
+            return 'delete';
+        }
+        if (str_contains($permissionName, '.toggle')) {
+            return 'toggle';
+        }
+        if (str_contains($permissionName, '.show')) {
+            return 'view';
+        }
+        if (str_contains($permissionName, '.manage')) {
+            return 'manage';
+        }
+        if (str_contains($permissionName, '.assign')) {
+            return 'assign';
+        }
+        if (str_contains($permissionName, '.configure')) {
+            return 'configure';
+        }
+        if (str_contains($permissionName, '.enable')) {
+            return 'enable';
+        }
+        if (str_contains($permissionName, '.disable')) {
+            return 'disable';
+        }
+        if (str_contains($permissionName, '.install')) {
+            return 'install';
+        }
+        if (str_contains($permissionName, '.uninstall')) {
+            return 'uninstall';
+        }
+
         return 'other';
     }
 
@@ -134,11 +168,11 @@ class PermissionService
         foreach ($permissions as $key => $permission) {
             if (is_int($key) && is_string($permission)) {
                 $name = $permission;
-                $label = null; 
-            } else if(is_int($key) && is_array($permission)) {
+                $label = null;
+            } elseif (is_int($key) && is_array($permission)) {
                 $name = $permission['name'];
                 $label = $permission['label'] ?? null;
-            }elseif (is_string($key) && is_string($permission)){
+            } elseif (is_string($key) && is_string($permission)) {
                 $name = $key;
                 $label = $permission;
             }

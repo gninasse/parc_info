@@ -2,10 +2,11 @@
 
 namespace Modules\Core\Database\Seeders;
 
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
-use App\Models\User;
+
 class SeedPermissionsTableSeeder extends Seeder
 {
     /**
@@ -19,7 +20,7 @@ class SeedPermissionsTableSeeder extends Seeder
         $permissions = [
             'users.view', 'users.create', 'users.edit', 'users.delete',
             'roles.view', 'roles.create', 'roles.edit', 'roles.delete',
-            'dashboard.view'
+            'dashboard.view',
         ];
 
         foreach ($permissions as $permission) {

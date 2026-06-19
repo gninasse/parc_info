@@ -2,8 +2,8 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\ServiceProvider;
 
 class BladeServiceProvider extends ServiceProvider
 {
@@ -31,7 +31,7 @@ class BladeServiceProvider extends ServiceProvider
         });
 
         Blade::directive('endcanModule', function () {
-            return "<?php endif; ?>";
+            return '<?php endif; ?>';
         });
 
         // Directive pour vérifier plusieurs permissions d'un module
@@ -40,7 +40,7 @@ class BladeServiceProvider extends ServiceProvider
         });
 
         Blade::directive('endhasAnyModulePermission', function () {
-            return "<?php endif; ?>";
+            return '<?php endif; ?>';
         });
 
         // Directive pour afficher un élément de menu de module

@@ -2,34 +2,28 @@
 
 namespace Modules\Core\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\SoftDeletes; 
-use Spatie\Permission\Models\Permission;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\Core\Traits\LogsActivityWithModule;
 
 class Module extends Model
 {
-    use HasFactory, SoftDeletes, LogsActivityWithModule{
+    use HasFactory, LogsActivityWithModule, SoftDeletes{
         tapActivity as tapActivityLogsActivityWithModule;
     }
- 
 
     protected static $activityModule = 'core';
 
     protected static $recordEvents = ['created', 'updated', 'deleted'];
 
-      // Attributs sensibles à logger
+    // Attributs sensibles à logger
     protected static $logAttributes = [
-        'name', 'slug', 'is_active', 'is_required', 
-        'dependencies', 'version'
+        'name', 'slug', 'is_active', 'is_required',
+        'dependencies', 'version',
     ];
 
     protected static $logOnlyDirty = true;
-
-  
-
 
     protected $fillable = [
         'name',
@@ -100,7 +94,7 @@ class Module extends Model
         if ($this->dependencies) {
             foreach ($this->dependencies as $dependency) {
                 $dependencyModule = static::where('slug', $dependency)->first();
-                if (!$dependencyModule || !$dependencyModule->is_active) {
+                if (! $dependencyModule || ! $dependencyModule->is_active) {
                     throw new \Exception("Le module dépendant '{$dependency}' n'est pas actif.");
                 }
             }
@@ -108,6 +102,7 @@ class Module extends Model
 
         $this->is_active = true;
         $this->activated_at = now();
+
         return $this->save();
     }
 
@@ -116,12 +111,13 @@ class Module extends Model
      */
     public function deactivate(): bool
     {
-        if (!$this->canBeDeactivated()) {
-            throw new \Exception("Ce module ne peut pas être désactivé.");
+        if (! $this->canBeDeactivated()) {
+            throw new \Exception('Ce module ne peut pas être désactivé.');
         }
 
         $this->is_active = false;
         $this->activated_at = null;
+
         return $this->save();
     }
 
@@ -139,16 +135,16 @@ class Module extends Model
     public function getUsersCountAttribute(): int
     {
         $permissions = $this->permissions()->pluck('id');
-        
+
         return \DB::table('model_has_permissions')
             ->whereIn('permission_id', $permissions)
             ->distinct('model_id')
             ->count();
     }
 
-    // Surcharge de la méthode tapActivity pour ajouter des informations contextuelles 
-      public function tapActivity($activity, string $eventName)
-    { 
+    // Surcharge de la méthode tapActivity pour ajouter des informations contextuelles
+    public function tapActivity($activity, string $eventName)
+    {
         // Ajouter des informations contextuelles
         $this->tapActivityLogsActivityWithModule($activity, $eventName);
         if ($eventName === 'updated' && $this->wasChanged('is_active')) {

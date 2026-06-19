@@ -25,7 +25,7 @@ class RoleController extends Controller
     {
         $query = Role::query();
 
-        if ($request->has('search') && !empty($request->search)) {
+        if ($request->has('search') && ! empty($request->search)) {
             $search = $request->search;
             $query->where('name', 'like', "%{$search}%");
         }
@@ -42,7 +42,7 @@ class RoleController extends Controller
 
         return response()->json([
             'total' => $total,
-            'rows' => $roles
+            'rows' => $roles,
         ]);
     }
 
@@ -55,18 +55,18 @@ class RoleController extends Controller
             $role = Role::create([
                 'name' => $request->name,
                 'description' => $request->description,
-                'guard_name' => 'web' 
+                'guard_name' => 'web',
             ]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Rôle créé avec succès',
-                'data' => $role
+                'data' => $role,
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Erreur lors de la création : ' . $e->getMessage()
+                'message' => 'Erreur lors de la création : '.$e->getMessage(),
             ], 500);
         }
     }
@@ -78,14 +78,15 @@ class RoleController extends Controller
     {
         try {
             $role = Role::findOrFail($id);
+
             return response()->json([
                 'success' => true,
-                'data' => $role
+                'data' => $role,
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Rôle non trouvé'
+                'message' => 'Rôle non trouvé',
             ], 404);
         }
     }
@@ -101,7 +102,7 @@ class RoleController extends Controller
             if ($role->name === 'super-admin') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Le rôle super-admin ne peut pas être modifié'
+                    'message' => 'Le rôle super-admin ne peut pas être modifié',
                 ], 403);
             }
 
@@ -112,12 +113,12 @@ class RoleController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Rôle modifié avec succès',
-                'data' => $role
+                'data' => $role,
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Erreur lors de la modification : ' . $e->getMessage()
+                'message' => 'Erreur lors de la modification : '.$e->getMessage(),
             ], 500);
         }
     }
@@ -133,7 +134,7 @@ class RoleController extends Controller
             if ($role->name === 'super-admin') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Le rôle super-admin ne peut pas être supprimé'
+                    'message' => 'Le rôle super-admin ne peut pas être supprimé',
                 ], 403);
             }
 
@@ -141,12 +142,12 @@ class RoleController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Rôle supprimé avec succès'
+                'message' => 'Rôle supprimé avec succès',
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Erreur lors de la suppression : ' . $e->getMessage()
+                'message' => 'Erreur lors de la suppression : '.$e->getMessage(),
             ], 500);
         }
     }
@@ -159,20 +160,20 @@ class RoleController extends Controller
         try {
             $role = Role::findOrFail($id);
             $rolePermissions = $role->permissions->pluck('id')->toArray();
-            
+
             $permissionsByModule = \Spatie\Permission\Models\Permission::all()
                 ->groupBy('module')
-                ->map(function($permissions, $module) use ($rolePermissions) {
+                ->map(function ($permissions, $module) use ($rolePermissions) {
                     return [
                         'module' => $module ?: 'Système',
-                        'permissions' => $permissions->map(function($permission) use ($rolePermissions) {
+                        'permissions' => $permissions->map(function ($permission) use ($rolePermissions) {
                             return [
                                 'id' => $permission->id,
                                 'name' => $permission->name,
                                 'label' => $permission->label ?: $permission->name,
-                                'assigned' => in_array($permission->id, $rolePermissions)
+                                'assigned' => in_array($permission->id, $rolePermissions),
                             ];
-                        })
+                        }),
                     ];
                 })->values();
 
@@ -182,12 +183,12 @@ class RoleController extends Controller
                 'success' => true,
                 'role_name' => $role->name,
                 'permissions_by_module' => $permissionsByModule,
-                'modules' => $modules
+                'modules' => $modules,
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Erreur : ' . $e->getMessage()
+                'message' => 'Erreur : '.$e->getMessage(),
             ], 500);
         }
     }
@@ -199,14 +200,14 @@ class RoleController extends Controller
     {
         try {
             $role = Role::findOrFail($id);
-            
+
             if ($role->name === 'super-admin') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Les permissions du rôle super-admin ne peuvent pas être modifiées'
+                    'message' => 'Les permissions du rôle super-admin ne peuvent pas être modifiées',
                 ], 403);
             }
-            
+
             $request->validate([
                 'permission_id' => 'required|exists:permissions,id',
             ]);
@@ -225,12 +226,12 @@ class RoleController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => $message
+                'message' => $message,
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Erreur : ' . $e->getMessage()
+                'message' => 'Erreur : '.$e->getMessage(),
             ], 500);
         }
     }

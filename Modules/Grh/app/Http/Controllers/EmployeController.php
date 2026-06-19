@@ -114,14 +114,14 @@ class EmployeController extends Controller
         }
         if ($request->filled('search')) {
             $s = $request->search;
-            $query->where(function($q) use ($s) {
+            $query->where(function ($q) use ($s) {
                 $q->where('matricule', 'ilike', "%{$s}%")
-                  ->orWhere('nom', 'ilike', "%{$s}%")
-                  ->orWhere('prenom', 'ilike', "%{$s}%");
+                    ->orWhere('nom', 'ilike', "%{$s}%")
+                    ->orWhere('prenom', 'ilike', "%{$s}%");
             });
         }
 
-        return response()->json($query->get()->map(function($emp) {
+        return response()->json($query->get()->map(function ($emp) {
             return [
                 'id' => $emp->id,
                 'matricule' => $emp->matricule,
@@ -129,7 +129,7 @@ class EmployeController extends Controller
                 'poste' => $emp->poste,
                 'niveau' => ucfirst($emp->niveau_rattachement),
                 'rattachement' => $emp->organisation,
-                'statut' => $emp->est_actif ? 'actif' : 'inactif'
+                'statut' => $emp->est_actif ? 'actif' : 'inactif',
             ];
         }));
     }

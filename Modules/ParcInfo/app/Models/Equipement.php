@@ -28,6 +28,10 @@ class Equipement extends Model
         'statut',
         'etat',
         'tags',
+        'ref_bordereau',
+        'direction_id',
+        'service_id',
+        'unite_id',
     ];
 
     protected $casts = [
@@ -95,6 +99,21 @@ class Equipement extends Model
         return $this->belongsTo(Marque::class);
     }
 
+    public function direction(): BelongsTo
+    {
+        return $this->belongsTo(\Modules\Organisation\Models\Direction::class);
+    }
+
+    public function service(): BelongsTo
+    {
+        return $this->belongsTo(\Modules\Organisation\Models\Service::class);
+    }
+
+    public function unite(): BelongsTo
+    {
+        return $this->belongsTo(\Modules\Organisation\Models\Unite::class);
+    }
+
     // Affectations ──
     public function affectations(): HasMany
     {
@@ -123,6 +142,44 @@ class Equipement extends Model
     {
         return $this->hasMany(HistoriqueChangement::class, 'equipement_id')
             ->orderBy('date_changement', 'desc');
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (Equipement $equipement) {
+            if (request()->has('ref_bordereau')) {
+                $ref = request()->input('ref_bordereau');
+                $equipement->ref_bordereau = is_string($ref) ? substr($ref, 0, 255) : null;
+            }
+        });
+
+        static::updating(function (Equipement $equipement) {
+            if (request()->has('ref_bordereau')) {
+                $ref = request()->input('ref_bordereau');
+                $equipement->ref_bordereau = is_string($ref) ? substr($ref, 0, 255) : null;
+            }
+        });
+
+        static::saving(function (Equipement $equipement) {
+            if ($equipement->id) {
+                $activeAff = AffectationEquipement::where('equipement_id', $equipement->id)
+                    ->where('statut', true)
+                    ->first();
+                if ($activeAff) {
+                    $equipement->direction_id = $activeAff->direction_id;
+                    $equipement->service_id = $activeAff->service_id;
+                    $equipement->unite_id = $activeAff->unite_id;
+                } else {
+                    $equipement->direction_id = null;
+                    $equipement->service_id = null;
+                    $equipement->unite_id = null;
+                }
+            } else {
+                $equipement->direction_id = null;
+                $equipement->service_id = null;
+                $equipement->unite_id = null;
+            }
+        });
     }
 
     // Logs ──

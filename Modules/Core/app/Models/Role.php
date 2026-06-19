@@ -1,8 +1,9 @@
 <?php
 
 namespace Modules\Core\Models;
-use Spatie\Permission\Models\Role as SpatieRole;
+
 use Modules\Core\Traits\LogsActivityWithModule;
+use Spatie\Permission\Models\Role as SpatieRole;
 
 class Role extends SpatieRole
 {
@@ -28,14 +29,15 @@ class Role extends SpatieRole
                 'permissions' => $permissions,
                 'action' => $action,
             ])
-            ->tap(function($activity) use ($action) {
+            ->tap(function ($activity) use ($action) {
                 $activity->module = 'core';
-                $activity->description = 'permissions_' . $action;
+                $activity->description = 'permissions_'.$action;
                 $activity->ip_address = request()->ip();
                 $activity->user_agent = request()->userAgent();
             })
             ->log("permissions_{$action}");
     }
+
     public function logPermissionToggle(string $permission, string $action = 'given')
     {
         activity('permissions')
@@ -45,14 +47,12 @@ class Role extends SpatieRole
                 'permission' => $permission,
                 'action' => $action,
             ])
-            ->tap(function($activity) use ($action) {
+            ->tap(function ($activity) use ($action) {
                 $activity->module = 'core';
-                $activity->description = 'permission_' . $action;
+                $activity->description = 'permission_'.$action;
                 $activity->ip_address = request()->ip();
                 $activity->user_agent = request()->userAgent();
             })
             ->log("permission_{$action}");
     }
-
-    
 }

@@ -2,13 +2,14 @@
 
 namespace Modules\Core\Providers;
 
-use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\ServiceProvider;
 
 class CoreServiceProvider extends ServiceProvider
 {
     protected string $moduleName = 'Core';
+
     protected string $moduleNameLower = 'core';
 
     /**
@@ -22,7 +23,7 @@ class CoreServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(module_path($this->moduleName, 'database/migrations'));
         $this->registerBladeDirectives();
         $this->registerGates();
-        
+
         $this->commands([
             \Modules\Core\Console\Commands\MakeSuperAdminCommand::class,
             \Modules\Core\Console\Commands\AssignRoleCommand::class,
@@ -44,7 +45,7 @@ class CoreServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->register(RouteServiceProvider::class);
-        
+
         // Enregistrer les services
         $this->app->singleton(\Modules\Core\Services\ModuleService::class);
         $this->app->singleton(\Modules\Core\Services\PermissionService::class);
@@ -56,9 +57,9 @@ class CoreServiceProvider extends ServiceProvider
     protected function registerConfig(): void
     {
         $this->publishes([
-            module_path($this->moduleName, 'config/config.php') => config_path($this->moduleNameLower . '.php'),
+            module_path($this->moduleName, 'config/config.php') => config_path($this->moduleNameLower.'.php'),
         ], 'config');
-        
+
         $this->mergeConfigFrom(
             module_path($this->moduleName, 'config/config.php'),
             $this->moduleNameLower
@@ -70,12 +71,12 @@ class CoreServiceProvider extends ServiceProvider
      */
     protected function registerViews(): void
     {
-        $viewPath = resource_path('views/modules/' . $this->moduleNameLower);
+        $viewPath = resource_path('views/modules/'.$this->moduleNameLower);
         $sourcePath = module_path($this->moduleName, 'resources/views');
 
         $this->publishes([
-            $sourcePath => $viewPath
-        ], ['views', $this->moduleNameLower . '-module-views']);
+            $sourcePath => $viewPath,
+        ], ['views', $this->moduleNameLower.'-module-views']);
 
         $this->loadViewsFrom(array_merge($this->getPublishableViewPaths(), [$sourcePath]), $this->moduleNameLower);
     }
@@ -85,7 +86,7 @@ class CoreServiceProvider extends ServiceProvider
      */
     protected function registerTranslations(): void
     {
-        $langPath = resource_path('lang/modules/' . $this->moduleNameLower);
+        $langPath = resource_path('lang/modules/'.$this->moduleNameLower);
 
         if (is_dir($langPath)) {
             $this->loadTranslationsFrom($langPath, $this->moduleNameLower);
@@ -140,6 +141,7 @@ class CoreServiceProvider extends ServiceProvider
             if (in_array($role->name, ['super-admin'])) {
                 return $user->hasRole('super-admin');
             }
+
             return true;
         });
 
@@ -167,10 +169,11 @@ class CoreServiceProvider extends ServiceProvider
     {
         $paths = [];
         foreach (config('view.paths') as $path) {
-            if (is_dir($path . '/modules/' . $this->moduleNameLower)) {
-                $paths[] = $path . '/modules/' . $this->moduleNameLower;
+            if (is_dir($path.'/modules/'.$this->moduleNameLower)) {
+                $paths[] = $path.'/modules/'.$this->moduleNameLower;
             }
         }
+
         return $paths;
     }
 }

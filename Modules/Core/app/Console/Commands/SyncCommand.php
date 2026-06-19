@@ -32,10 +32,10 @@ class SyncCommand extends Command
         // 1. Synchroniser les modules
         $this->info('1. Synchronisation des modules avec le système de fichiers...');
         $syncedModules = $moduleService->syncModules();
-        
+
         $this->table(
             ['Nom', 'Slug', 'Statut', 'Version'],
-            collect($syncedModules)->map(fn($module) => [
+            collect($syncedModules)->map(fn ($module) => [
                 $module->name,
                 $module->slug,
                 $module->is_active ? 'Actif' : 'Inactif',

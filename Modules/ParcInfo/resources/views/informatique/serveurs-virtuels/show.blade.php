@@ -39,7 +39,7 @@
                 <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
                     <h4 class="fw-bold mb-0">{{ $equipement->marque?->libelle }} {{ $equipement->modele }}</h4>
                     <span class="badge bg-{{ $sc }}-subtle text-{{ $sc }} border border-{{ $sc }}-subtle px-2 py-1">
-                        {{ $equipement->statut_label }}
+                        {!! $equipement->statut_label !!}
                     </span>
                     <span class="badge bg-purple-subtle text-purple border border-purple-subtle px-2 py-1">
                         MACHINE VIRTUELLE
@@ -87,6 +87,7 @@
         ['fiche',      'bi-cpu',           'Fiche Technique'],
         ['virtua',     'bi-layers',        'Virtualisation'],
         ['affectation','bi-geo-alt',       'Emplacement'],
+        ['licences',   'bi-file-lock',     'Licences'],
         ['historique-chg','bi-journal-text', 'Journal'],
     ] as [$id,$icon,$label])
     <li class="nav-item" role="presentation">
@@ -222,6 +223,10 @@
                                 <input type="date" class="form-control field-input" name="date_acquisition" value="{{ $equipement->date_acquisition?->format('Y-m-d') }}" id="f_date_acquisition" disabled>
                             </div>
                             <div class="col-12">
+                                <label class="field-label">Bordereau de livraison</label>
+                                <input type="text" class="form-control field-input" name="ref_bordereau" id="f_ref_bordereau" value="{{ $equipement->ref_bordereau }}" disabled placeholder="—">
+                            </div>
+                            <div class="col-12">
                                 <label class="field-label">Date mise en service</label>
                                 <input type="date" class="form-control field-input" name="date_mise_en_service" value="{{ $equipement->date_mise_en_service?->format('Y-m-d') }}" id="f_date_mise_en_service" disabled>
                             </div>
@@ -316,6 +321,11 @@
             @endif
         </div>
     </div>
+</div>
+
+{{-- ══ TAB : LICENCES ══ --}}
+<div class="tab-pane fade" id="pane-licences" role="tabpanel">
+    @include('parcinfo::informatique.ordinateurs.partials._licences')
 </div>
 
 {{-- ══ TAB 4 : JOURNAL ══ --}}
@@ -486,6 +496,74 @@ $(function () {
             error: (xhr) => {
                 $btn.prop('disabled', false).html('<i class="bi bi-floppy me-1"></i> Enregistrer');
                 Swal.fire('Erreur', xhr.responseJSON?.message || 'Erreur serveur', 'error');
+            }
+        });
+    });
+
+    // ── Associer Licence ──
+    $('#form-associer-licence').on('submit', function (e) {
+        e.preventDefault();
+        const licenceId = $('#assoc_licence_id').val();
+        if (!licenceId) {
+            return;
+        }
+
+        const $btn = $('#btn-save-associer-licence');
+        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>...');
+
+        $.ajax({
+            url: `/parc-info/informatique/licences/${licenceId}/affecter`,
+            method: 'POST',
+            data: {
+                type_affectation: 'device',
+                equipement_id: equipementId,
+                _token: '{{ csrf_token() }}'
+            },
+            success: function (response) {
+                if (response.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Succès',
+                        text: response.message,
+                        timer: 1500
+                    }).then(() => location.reload());
+                }
+            },
+            error: function (xhr) {
+                Swal.fire('Erreur', xhr.responseJSON?.message || 'Une erreur est survenue', 'error');
+                $btn.prop('disabled', false).html('<i class="bi bi-check-circle me-1"></i>Associer');
+            }
+        });
+    });
+
+    // ── Désassocier Licence ──
+    $(document).on('click', '.btn-desassocier-licence', function () {
+        const id = $(this).data('id');
+        Swal.fire({
+            title: 'Désassocier la licence ?',
+            text: "Cette licence ne sera plus active sur cet équipement.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            confirmButtonText: 'Oui, désassocier',
+            cancelButtonText: 'Annuler'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: `/parc-info/informatique/licences/affectations/${id}/desaffecter`,
+                    method: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}'
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            Swal.fire('Succès', response.message, 'success').then(() => location.reload());
+                        }
+                    },
+                    error: function (xhr) {
+                        Swal.fire('Erreur', xhr.responseJSON?.message || 'Une erreur est survenue', 'error');
+                    }
+                });
             }
         });
     });
