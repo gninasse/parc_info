@@ -16,6 +16,7 @@ class Equipement extends Model
     protected $table = 'parc_info_equipements';
 
     protected $fillable = [
+        'categorie_id',
         'code_inventaire',
         'numero_serie',
         'marque_id',
@@ -32,6 +33,8 @@ class Equipement extends Model
         'direction_id',
         'service_id',
         'unite_id',
+        'local_id',
+        'champs_valeurs',
     ];
 
     protected $casts = [
@@ -40,17 +43,13 @@ class Equipement extends Model
         'date_fin_garantie' => 'date',
         'valeur_achat' => 'decimal:2',
         'tags' => 'array',
+        'champs_valeurs' => 'array',
     ];
 
     // Spécialisations ──
     public function ordinateur(): HasOne
     {
         return $this->hasOne(Ordinateur::class, 'equipement_id');
-    }
-
-    public function reseau(): HasOne
-    {
-        return $this->hasOne(EquipementReseau::class, 'equipement_id');
     }
 
     public function serveur(): HasOne
@@ -61,11 +60,6 @@ class Equipement extends Model
     public function serveurVirtuel(): HasOne
     {
         return $this->hasOne(ServeurVirtuel::class, 'equipement_id');
-    }
-
-    public function infrastructure(): HasOne
-    {
-        return $this->hasOne(Infrastructure::class, 'equipement_id');
     }
 
     public function mobile(): HasOne
@@ -94,6 +88,16 @@ class Equipement extends Model
     }
 
     // Propriétés ──
+    public function categorie(): BelongsTo
+    {
+        return $this->belongsTo(CategorieEquipement::class, 'categorie_id');
+    }
+
+    public function local(): BelongsTo
+    {
+        return $this->belongsTo(\Modules\Organisation\Models\Local::class, 'local_id');
+    }
+
     public function marque(): BelongsTo
     {
         return $this->belongsTo(Marque::class);
@@ -195,6 +199,8 @@ class Equipement extends Model
     public function getStatutLabelAttribute(): string
     {
         return match ($this->statut) {
+            'en_stock_magasin' => '<span class="badge bg-secondary"><i class="bi bi-box me-1"></i>Magasin</span>',
+            'en_stock_dsi' => '<span class="badge bg-info text-dark"><i class="bi bi-cpu me-1"></i>Stock DSI</span>',
             'en_stock' => '<span class="badge bg-secondary"><i class="bi bi-box me-1"></i>En stock</span>',
             'en_service' => '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>En service</span>',
             'en_reparation' => '<span class="badge bg-warning"><i class="bi bi-tools me-1"></i>En réparation</span>',
@@ -202,5 +208,37 @@ class Equipement extends Model
             'reforme' => '<span class="badge bg-dark"><i class="bi bi-trash me-1"></i>Réformé</span>',
             default => '<span class="badge bg-light text-dark">Inconnu</span>',
         };
+    }
+
+    /**
+     * Resolve the human readable value of a dynamic field.
+     */
+    public function getValeurAffichee(string $codeChamp): mixed
+    {
+        if (! $this->categorie_id || ! is_array($this->champs_valeurs) || ! isset($this->champs_valeurs[$codeChamp])) {
+            return null;
+        }
+
+        $valeurBrute = $this->champs_valeurs[$codeChamp];
+
+        $champ = ChampConfig::where('categorie_id', $this->categorie_id)
+            ->where('code', $codeChamp)
+            ->first();
+
+        if (! $champ) {
+            return $valeurBrute;
+        }
+
+        if ($champ->type_champ === 'select') {
+            $options = $champ->options_resolved;
+
+            return $options[$valeurBrute] ?? $valeurBrute;
+        }
+
+        if ($champ->type_champ === 'boolean') {
+            return $valeurBrute ? 'Oui' : 'Non';
+        }
+
+        return $valeurBrute;
     }
 }

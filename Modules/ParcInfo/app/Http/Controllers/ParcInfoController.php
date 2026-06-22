@@ -4,12 +4,21 @@ namespace Modules\ParcInfo\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Modules\ParcInfo\Models\Consommable;
 use Modules\ParcInfo\Models\Equipement;
 use Modules\ParcInfo\Models\Licence;
 
-class ParcInfoController extends Controller
+class ParcInfoController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:parcinfo.dashboard.view', only: ['dashboard', 'searchEquipements']),
+        ];
+    }
+
     public function dashboard(): \Illuminate\View\View
     {
         $stats = [
@@ -19,23 +28,23 @@ class ParcInfoController extends Controller
             'hors_service' => Equipement::whereIn('statut', ['perdu', 'reforme'])->count(),
             'en_stock' => Equipement::where('statut', 'en_stock')->count(),
 
-            // Ventilation par type d'actif
-            'postes_travail' => Equipement::has('ordinateur')->count(),
-            'serveurs' => Equipement::has('serveur')->count(),
-            'imprimantes' => Equipement::has('imprimante')->count(),
-            'scanners' => Equipement::has('scanner')->count(),
-            'telephones' => Equipement::has('telephone')->count(),
-            'cameras' => Equipement::has('camera')->count(),
-            'mobiles' => Equipement::has('mobile')->count(),
+            // Ventilation par type d'actif (using dynamic categories)
+            'postes_travail' => Equipement::whereHas('categorie', fn ($q) => $q->where('code', 'ordinateur'))->count(),
+            'serveurs' => Equipement::whereHas('categorie', fn ($q) => $q->whereIn('code', ['serveur', 'serveur-virtuel']))->count(),
+            'imprimantes' => Equipement::whereHas('categorie', fn ($q) => $q->where('code', 'imprimante'))->count(),
+            'scanners' => Equipement::whereHas('categorie', fn ($q) => $q->where('code', 'scanner'))->count(),
+            'telephones' => Equipement::whereHas('categorie', fn ($q) => $q->where('code', 'telephone'))->count(),
+            'cameras' => Equipement::whereHas('categorie', fn ($q) => $q->where('code', 'camera'))->count(),
+            'mobiles' => Equipement::whereHas('categorie', fn ($q) => $q->where('code', 'mobile'))->count(),
             'licences' => Licence::where('actif', true)->count(),
             'consommables' => Consommable::where('est_actif', true)->count(),
 
             // Équipements réseaux spécifiques
-            'switches' => Equipement::whereHas('reseau.typeReseau', fn ($q) => $q->where('libelle', 'ilike', '%switch%')->orWhere('libelle', 'ilike', '%commutateur%'))->count(),
-            'routeurs' => Equipement::whereHas('reseau.typeReseau', fn ($q) => $q->where('libelle', 'ilike', '%routeur%'))->count(),
-            'parefeux' => Equipement::whereHas('reseau.typeReseau', fn ($q) => $q->where('libelle', 'ilike', '%pare-feu%')->orWhere('libelle', 'ilike', '%firewall%'))->count(),
-            'wifi' => Equipement::whereHas('reseau.typeReseau', fn ($q) => $q->where('libelle', 'ilike', '%wifi%')->orWhere('libelle', 'ilike', '%AP%'))->count(),
-            'terminaux_ip' => Equipement::whereHas('reseau.typeReseau', fn ($q) => $q->where('libelle', 'ilike', '%terminal%')->orWhere('libelle', 'ilike', '%terminal ip%'))->count(),
+            'switches' => Equipement::whereHas('categorie', fn ($q) => $q->where('code', 'switch'))->count(),
+            'routeurs' => Equipement::whereHas('categorie', fn ($q) => $q->where('code', 'routeur'))->count(),
+            'parefeux' => Equipement::whereHas('categorie', fn ($q) => $q->where('code', 'parefeu'))->count(),
+            'wifi' => Equipement::whereHas('categorie', fn ($q) => $q->where('code', 'wifi'))->count(),
+            'terminaux_ip' => Equipement::whereHas('categorie', fn ($q) => $q->where('code', 'terminal-ip'))->count(),
 
             // Expirations, Alertes & Renouvellements
             'garantie_expiree' => Equipement::whereNotNull('date_fin_garantie')->where('date_fin_garantie', '<', now())->count(),
@@ -52,14 +61,7 @@ class ParcInfoController extends Controller
         // Flux des équipements récemment enregistrés avec eager loading exhaustif
         $rawRecent = Equipement::with([
             'marque',
-            'ordinateur',
-            'serveur',
-            'imprimante',
-            'scanner',
-            'telephone',
-            'camera',
-            'mobile',
-            'reseau.typeReseau',
+            'categorie',
             'affectationActive.local.etage.batiment.site',
             'affectationActive.posteTravail.local.etage.batiment.site',
             'affectationActive.employe',
@@ -73,57 +75,64 @@ class ParcInfoController extends Controller
             $typeIcon = 'bi-cpu-fill';
             $typeColor = 'secondary';
 
-            if ($e->ordinateur) {
+            $catCode = $e->categorie?->code;
+
+            if ($catCode === 'ordinateur') {
                 $typeLabel = 'Poste de travail';
                 $typeIcon = 'bi-pc-display-horizontal';
                 $typeColor = 'primary';
-            } elseif ($e->serveur) {
+            } elseif ($catCode === 'serveur' || $catCode === 'serveur-virtuel') {
                 $typeLabel = 'Serveur';
                 $typeIcon = 'bi-server';
                 $typeColor = 'warning';
-            } elseif ($e->imprimante) {
+            } elseif ($catCode === 'imprimante') {
                 $typeLabel = 'Imprimante';
                 $typeIcon = 'bi-printer';
                 $typeColor = 'success';
-            } elseif ($e->scanner) {
+            } elseif ($catCode === 'scanner') {
                 $typeLabel = 'Scanner';
                 $typeIcon = 'bi-camera';
                 $typeColor = 'info';
-            } elseif ($e->telephone) {
+            } elseif ($catCode === 'telephone') {
                 $typeLabel = 'Téléphone';
                 $typeIcon = 'bi-telephone';
                 $typeColor = 'indigo';
-            } elseif ($e->camera) {
+            } elseif ($catCode === 'camera') {
                 $typeLabel = 'Caméra IP';
                 $typeIcon = 'bi-eye';
                 $typeColor = 'danger';
-            } elseif ($e->mobile) {
+            } elseif ($catCode === 'mobile') {
                 $typeLabel = 'Mobile';
                 $typeIcon = 'bi-phone';
                 $typeColor = 'purple';
-            } elseif ($e->reseau) {
-                $lib = strtolower($e->reseau->typeReseau?->libelle ?? '');
-                if (str_contains($lib, 'switch')) {
-                    $typeLabel = 'Switch';
-                    $typeIcon = 'bi-hdd-network';
-                    $typeColor = 'info';
-                } elseif (str_contains($lib, 'routeur')) {
-                    $typeLabel = 'Routeur';
-                    $typeIcon = 'bi-router';
-                    $typeColor = 'primary';
-                } elseif (str_contains($lib, 'pare-feu') || str_contains($lib, 'firewall')) {
-                    $typeLabel = 'Pare-feu';
-                    $typeIcon = 'bi-shield-shaded';
-                    $typeColor = 'danger';
-                } elseif (str_contains($lib, 'wifi') || str_contains($lib, 'ap')) {
-                    $typeLabel = 'Point WiFi';
-                    $typeIcon = 'bi-wifi';
-                    $typeColor = 'success';
-                } else {
-                    $typeLabel = $e->reseau->typeReseau?->libelle ?? 'Réseau';
-                    $typeIcon = 'bi-router';
-                    $typeColor = 'secondary';
-                }
+            } elseif ($catCode === 'switch') {
+                $typeLabel = 'Switch';
+                $typeIcon = 'bi-hdd-network';
+                $typeColor = 'info';
+            } elseif ($catCode === 'routeur') {
+                $typeLabel = 'Routeur';
+                $typeIcon = 'bi-router';
+                $typeColor = 'primary';
+            } elseif ($catCode === 'wifi') {
+                $typeLabel = 'Point WiFi';
+                $typeIcon = 'bi-wifi';
+                $typeColor = 'success';
+            } elseif ($catCode === 'parefeu') {
+                $typeLabel = 'Pare-feu';
+                $typeIcon = 'bi-shield-shaded';
+                $typeColor = 'danger';
+            } elseif ($catCode === 'onduleur') {
+                $typeLabel = 'Onduleur';
+                $typeIcon = 'bi-lightning-charge';
+                $typeColor = 'warning';
+            } elseif ($catCode === 'rack') {
+                $typeLabel = 'Baie & Rack';
+                $typeIcon = 'bi-grid-3x3-gap';
+                $typeColor = 'dark';
+            } elseif ($catCode === 'brassage') {
+                $typeLabel = 'Brassage';
+                $typeIcon = 'bi-ethernet';
+                $typeColor = 'secondary';
             }
 
             $siteLabel = '—';
@@ -158,6 +167,9 @@ class ParcInfoController extends Controller
                 'Routeur' => route('parc-info.routeurs.show', $e->id),
                 'Pare-feu' => route('parc-info.parefeux.show', $e->id),
                 'Point WiFi' => route('parc-info.wifi.show', $e->id),
+                'Onduleur' => route('parc-info.onduleurs.show', $e->id),
+                'Baie & Rack' => route('parc-info.racks.show', $e->id),
+                'Brassage' => route('parc-info.brassage.show', $e->id),
                 default => '#',
             };
 
@@ -235,35 +247,34 @@ class ParcInfoController extends Controller
     public function searchEquipements(Request $request)
     {
         $q = $request->get('q', '');
+        $likeOperator = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
 
         $query = Equipement::with(['marque', 'affectationActive.local.etage.batiment'])
-            ->where(function ($query) use ($q) {
-                $query->where('code_inventaire', 'ilike', "%{$q}%")
-                    ->orWhere('modele', 'ilike', "%{$q}%")
-                    ->orWhere('numero_serie', 'ilike', "%{$q}%")
-                    ->orWhereHas('marque', fn ($m) => $m->where('libelle', 'ilike', "%{$q}%"));
+            ->where(function ($query) use ($q, $likeOperator) {
+                $query->where('code_inventaire', $likeOperator, "%{$q}%")
+                    ->orWhere('modele', $likeOperator, "%{$q}%")
+                    ->orWhere('numero_serie', $likeOperator, "%{$q}%")
+                    ->orWhereHas('marque', fn ($m) => $m->where('libelle', $likeOperator, "%{$q}%"));
             });
 
         if ($request->filled('type')) {
             $type = $request->type;
             if ($type === 'ordinateur') {
-                $query->whereHas('ordinateur');
+                $query->whereHas('categorie', fn ($q) => $q->where('code', 'ordinateur'));
             } elseif ($type === 'serveur') {
-                $query->where(function ($q) {
-                    $q->whereHas('serveur')->orWhereHas('serveurVirtuel');
-                });
+                $query->whereHas('categorie', fn ($q) => $q->whereIn('code', ['serveur', 'serveur-virtuel']));
             } elseif ($type === 'reseau') {
-                $query->whereHas('reseau');
+                $query->whereHas('categorie', fn ($q) => $q->where('code', 'reseau'));
             } elseif ($type === 'mobile') {
-                $query->whereHas('mobile');
+                $query->whereHas('categorie', fn ($q) => $q->where('code', 'mobile'));
             } elseif ($type === 'imprimante') {
-                $query->whereHas('imprimante');
+                $query->whereHas('categorie', fn ($q) => $q->where('code', 'imprimante'));
             } elseif ($type === 'scanner') {
-                $query->whereHas('scanner');
+                $query->whereHas('categorie', fn ($q) => $q->where('code', 'scanner'));
             } elseif ($type === 'telephone') {
-                $query->whereHas('telephone');
+                $query->whereHas('categorie', fn ($q) => $q->where('code', 'telephone'));
             } elseif ($type === 'camera') {
-                $query->whereHas('camera');
+                $query->whereHas('categorie', fn ($q) => $q->where('code', 'camera'));
             }
         }
 

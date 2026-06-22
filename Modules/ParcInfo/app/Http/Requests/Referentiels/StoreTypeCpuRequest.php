@@ -2,27 +2,10 @@
 
 namespace Modules\ParcInfo\Http\Requests\Referentiels;
 
-use Illuminate\Foundation\Http\FormRequest;
-
-class StoreTypeCpuRequest extends FormRequest
+class StoreTypeCpuRequest extends BaseDictionnaireRequest
 {
-    public function authorize(): bool
+    protected function getDictionnaireCode(): string
     {
-        return true;
-    }
-
-    public function rules(): array
-    {
-        return [
-            'libelle' => 'required|string|max:255|unique:parc_info_types_cpus,libelle',
-        ];
-    }
-
-    public function messages(): array
-    {
-        return [
-            'libelle.required' => 'Le libellé est obligatoire',
-            'libelle.unique' => 'Ce libellé existe déjà',
-        ];
+        return 'type_cpu';
     }
 }

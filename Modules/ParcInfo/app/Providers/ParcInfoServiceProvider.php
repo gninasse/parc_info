@@ -43,7 +43,9 @@ class ParcInfoServiceProvider extends ServiceProvider
      */
     protected function registerCommands(): void
     {
-        // $this->commands([]);
+        $this->commands([
+            \Modules\ParcInfo\Console\MigrateEquipmentToDynamic::class,
+        ]);
     }
 
     /**

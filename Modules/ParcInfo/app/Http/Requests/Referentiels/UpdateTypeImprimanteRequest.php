@@ -2,33 +2,10 @@
 
 namespace Modules\ParcInfo\Http\Requests\Referentiels;
 
-use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
-
-class UpdateTypeImprimanteRequest extends FormRequest
+class UpdateTypeImprimanteRequest extends BaseDictionnaireRequest
 {
-    public function authorize(): bool
+    protected function getDictionnaireCode(): string
     {
-        return true;
-    }
-
-    public function rules(): array
-    {
-        return [
-            'libelle' => [
-                'required',
-                'string',
-                'max:255',
-                Rule::unique('parc_info_types_imprimantes', 'libelle')->ignore($this->route('id')),
-            ],
-        ];
-    }
-
-    public function messages(): array
-    {
-        return [
-            'libelle.required' => 'Le libellé est obligatoire',
-            'libelle.unique' => 'Ce libellé existe déjà',
-        ];
+        return 'type_imprimante';
     }
 }

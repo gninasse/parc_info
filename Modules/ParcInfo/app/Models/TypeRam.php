@@ -3,10 +3,16 @@
 namespace Modules\ParcInfo\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Modules\ParcInfo\Models\Traits\MapsToDictionnaireValeur;
 
 class TypeRam extends Model
 {
-    protected $table = 'parc_info_types_rams';
+    use MapsToDictionnaireValeur;
 
-    protected $fillable = ['libelle'];
+    protected $fillable = ['description'];
+
+    protected static function getDictionnaireCode(): string
+    {
+        return 'type_ram';
+    }
 }

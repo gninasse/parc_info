@@ -1,6 +1,6 @@
 @extends('parcinfo::layouts.master')
 
-@section('header', 'Gestion des Types d'Imprimante')
+@section('header', 'Gestion des Types d\'Imprimante')
 
 @section('breadcrumb')
     <li class="breadcrumb-item"><a href="{{ route('parc-info.dashboard') }}">Parc Info</a></li>

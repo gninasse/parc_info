@@ -11,6 +11,8 @@ class ParcInfoDatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // $this->call([]);
+        $this->call([
+            ParcInfoConfigSeeder::class,
+        ]);
     }
 }

@@ -2,13 +2,14 @@
 
 namespace Modules\ParcInfo\Tests\Feature;
 
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Modules\Core\Models\User;
 use Modules\ParcInfo\Models\Contact;
 use Modules\ParcInfo\Models\Editeur;
 use Modules\ParcInfo\Models\Fournisseur;
 use Modules\ParcInfo\Models\Licence;
 use Modules\ParcInfo\Models\Logiciel;
+use Modules\ParcInfo\Models\TypeLicence;
 use Tests\TestCase;
 
 class FournisseurManagementTest extends TestCase
@@ -215,11 +216,13 @@ class FournisseurManagementTest extends TestCase
             'est_actif' => true,
         ]);
 
-        $editeur = Editeur::create(['nom' => 'Test Editeur']);
+        $typeLicence = TypeLicence::create(['code' => 'TEST-LIC', 'libelle' => 'Test Type Licence']);
+        $editeur = Editeur::create(['code' => 'EDIT-TEST', 'nom' => 'Test Editeur']);
         $logiciel = Logiciel::create([
             'code' => 'LOG-TEST',
             'nom' => 'Test Software',
             'editeur_id' => $editeur->id,
+            'type_licence_id' => $typeLicence->id,
         ]);
 
         Licence::create([

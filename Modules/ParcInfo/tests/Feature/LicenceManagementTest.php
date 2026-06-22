@@ -2,8 +2,8 @@
 
 namespace Modules\ParcInfo\Tests\Feature;
 
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Modules\Core\Models\User;
 use Modules\ParcInfo\Models\Editeur;
 use Modules\ParcInfo\Models\Fournisseur;
 use Modules\ParcInfo\Models\Logiciel;

@@ -12,23 +12,13 @@ use Modules\Organisation\Models\Direction;
 use Modules\Organisation\Models\PosteTravail;
 use Modules\Organisation\Models\Service;
 use Modules\ParcInfo\Models\AffectationEquipement;
-use Modules\ParcInfo\Models\CameraIP;
 use Modules\ParcInfo\Models\Consommable;
 use Modules\ParcInfo\Models\ContratMaintenance;
 use Modules\ParcInfo\Models\Equipement;
-use Modules\ParcInfo\Models\EquipementReseau;
 use Modules\ParcInfo\Models\HistoriqueChangement;
-use Modules\ParcInfo\Models\Imprimante;
-use Modules\ParcInfo\Models\Infrastructure;
 use Modules\ParcInfo\Models\Licence;
 use Modules\ParcInfo\Models\Logiciel;
-use Modules\ParcInfo\Models\Mobile;
 use Modules\ParcInfo\Models\MouvementConsommable;
-use Modules\ParcInfo\Models\Ordinateur;
-use Modules\ParcInfo\Models\Scanner;
-use Modules\ParcInfo\Models\Serveur;
-use Modules\ParcInfo\Models\ServeurVirtuel;
-use Modules\ParcInfo\Models\Telephone;
 
 class StatistiquesController extends Controller implements HasMiddleware
 {
@@ -56,18 +46,18 @@ class StatistiquesController extends Controller implements HasMiddleware
         $totalEquipments = Equipement::count();
         $totalValPurchase = Equipement::sum('valeur_achat');
 
-        // Types Counts
+        // Types Counts (using dynamic categories)
         $typesStats = [
-            ['label' => 'Ordinateurs', 'count' => Ordinateur::count()],
-            ['label' => 'Serveurs Physiques', 'count' => Serveur::count()],
-            ['label' => 'Serveurs Virtuels', 'count' => ServeurVirtuel::count()],
-            ['label' => 'Imprimantes', 'count' => Imprimante::count()],
-            ['label' => 'Scanners', 'count' => Scanner::count()],
-            ['label' => 'Équipements Réseau', 'count' => EquipementReseau::count()],
-            ['label' => 'Téléphones IP', 'count' => Telephone::count()],
-            ['label' => 'Mobiles', 'count' => Mobile::count()],
-            ['label' => 'Caméras IP', 'count' => CameraIP::count()],
-            ['label' => 'Infrastructures', 'count' => Infrastructure::count()],
+            ['label' => 'Ordinateurs', 'count' => Equipement::whereHas('categorie', fn ($q) => $q->where('code', 'ordinateur'))->count()],
+            ['label' => 'Serveurs Physiques', 'count' => Equipement::whereHas('categorie', fn ($q) => $q->where('code', 'serveur'))->count()],
+            ['label' => 'Serveurs Virtuels', 'count' => Equipement::whereHas('categorie', fn ($q) => $q->where('code', 'serveur-virtuel'))->count()],
+            ['label' => 'Imprimantes', 'count' => Equipement::whereHas('categorie', fn ($q) => $q->where('code', 'imprimante'))->count()],
+            ['label' => 'Scanners', 'count' => Equipement::whereHas('categorie', fn ($q) => $q->where('code', 'scanner'))->count()],
+            ['label' => 'Équipements Réseau', 'count' => Equipement::whereHas('categorie', fn ($q) => $q->where('code', 'reseau'))->count()],
+            ['label' => 'Téléphones IP', 'count' => Equipement::whereHas('categorie', fn ($q) => $q->where('code', 'telephone'))->count()],
+            ['label' => 'Mobiles', 'count' => Equipement::whereHas('categorie', fn ($q) => $q->where('code', 'mobile'))->count()],
+            ['label' => 'Caméras IP', 'count' => Equipement::whereHas('categorie', fn ($q) => $q->where('code', 'camera'))->count()],
+            ['label' => 'Infrastructures', 'count' => Equipement::whereHas('categorie', fn ($q) => $q->where('code', 'infrastructure'))->count()],
         ];
 
         // Format Types Stats with percentages

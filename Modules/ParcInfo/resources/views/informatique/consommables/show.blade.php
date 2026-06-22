@@ -330,7 +330,7 @@
 
 @include('parcinfo::informatique.consommables._modal_mouvements')
 @include('parcinfo::shared._modal_selection_equipement')
-@include('parcinfo::informatique.ordinateurs._selection_modals')
+@include('parcinfo::informatique._selection_modals')
 
 @endsection
 

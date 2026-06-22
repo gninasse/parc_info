@@ -1,25 +1,19 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Modules\ParcInfo\Http\Controllers\CameraController;
 use Modules\ParcInfo\Http\Controllers\ConsommableController;
 use Modules\ParcInfo\Http\Controllers\ContratMaintenanceController;
+use Modules\ParcInfo\Http\Controllers\EquipementDynamiqueController;
 use Modules\ParcInfo\Http\Controllers\FournisseurController;
-use Modules\ParcInfo\Http\Controllers\ImprimanteController;
 use Modules\ParcInfo\Http\Controllers\LicenceController;
 use Modules\ParcInfo\Http\Controllers\LogicielController;
-use Modules\ParcInfo\Http\Controllers\MobileController;
-use Modules\ParcInfo\Http\Controllers\OrdinateurController;
 use Modules\ParcInfo\Http\Controllers\ParcInfoController;
-use Modules\ParcInfo\Http\Controllers\ScannerController;
-use Modules\ParcInfo\Http\Controllers\ServeurController;
-use Modules\ParcInfo\Http\Controllers\ServeurVirtuelController;
-use Modules\ParcInfo\Http\Controllers\TelephoneController;
-use Modules\ParcInfo\Http\Controllers\TerminalIPController;
 
 Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(function () {
     Route::get('/dashboard', [ParcInfoController::class, 'dashboard'])->name('dashboard');
     Route::get('/search/equipements', [ParcInfoController::class, 'searchEquipements'])->name('search-equipements');
+    Route::get('/informatique/equipements/{id}/json', [EquipementDynamiqueController::class, 'showJson'])->name('equipements.show-json');
+    Route::post('/informatique/dictionnaires/valeurs', [EquipementDynamiqueController::class, 'storeDictionnaireValeur'])->name('dictionnaires.valeurs.store');
 
     // Licences
     Route::prefix('informatique/licences')->group(function () {
@@ -89,296 +83,326 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
 
     // Ordinateurs
     Route::prefix('informatique/ordinateurs')->name('ordinateurs.')->group(function () {
-        Route::get('/', [OrdinateurController::class, 'index'])->name('index');
-        Route::get('/data', [OrdinateurController::class, 'getData'])->name('data');
-        Route::post('/', [OrdinateurController::class, 'store'])->name('store');
-        Route::get('/{id}/json', [OrdinateurController::class, 'showJson'])->name('show-json');
-        Route::get('/{id}', [OrdinateurController::class, 'show'])->name('show');
-        Route::put('/{id}', [OrdinateurController::class, 'update'])->name('update');
-        Route::delete('/{id}', [OrdinateurController::class, 'destroy'])->name('destroy');
-        Route::get('/search/employes', [OrdinateurController::class, 'searchEmployes'])->name('search-employes');
-        Route::get('/search/postes', [OrdinateurController::class, 'searchPostes'])->name('search-postes');
-        Route::get('/search/locaux', [OrdinateurController::class, 'searchLocaux'])->name('search-locaux');
-        Route::post('/marques', [OrdinateurController::class, 'storeMarque'])->name('store-marque');
-        Route::post('/types-ram', [OrdinateurController::class, 'storeTypeRam'])->name('store-type-ram');
-        Route::post('/types-os', [OrdinateurController::class, 'storeTypeOs'])->name('store-type-os');
-        Route::post('/types-disque', [OrdinateurController::class, 'storeTypeDisque'])->name('store-type-disque');
-        Route::post('/types-cpu', [OrdinateurController::class, 'storeTypeCpu'])->name('store-type-cpu');
-        Route::post('/affectation', [OrdinateurController::class, 'storeAffectation'])->name('store-affectation');
-        Route::patch('/{id}/statut', [OrdinateurController::class, 'updateStatut'])->name('update-statut');
-        Route::patch('/{id}/etat', [OrdinateurController::class, 'updateEtat'])->name('update-etat');
-        Route::post('/{id}/desaffecter', [OrdinateurController::class, 'desaffecter'])->name('desaffecter');
+        Route::get('/', [EquipementDynamiqueController::class, 'index'])->defaults('category', 'ordinateur')->name('index');
+        Route::get('/data', [EquipementDynamiqueController::class, 'getData'])->defaults('category', 'ordinateur')->name('data');
+        Route::post('/', [EquipementDynamiqueController::class, 'store'])->defaults('category', 'ordinateur')->name('store');
+        Route::get('/{id}/json', [EquipementDynamiqueController::class, 'showJson'])->name('show-json');
+        Route::get('/{id}', [EquipementDynamiqueController::class, 'show'])->name('show');
+        Route::put('/{id}', [EquipementDynamiqueController::class, 'update'])->name('update');
+        Route::delete('/{id}', [EquipementDynamiqueController::class, 'destroy'])->name('destroy');
+        Route::get('/search/employes', [EquipementDynamiqueController::class, 'searchEmployes'])->name('search-employes');
+        Route::get('/search/postes', [EquipementDynamiqueController::class, 'searchPostes'])->name('search-postes');
+        Route::get('/search/locaux', [EquipementDynamiqueController::class, 'searchLocaux'])->name('search-locaux');
+        Route::post('/marques', [EquipementDynamiqueController::class, 'storeMarque'])->name('store-marque');
+        Route::post('/types-ram', [EquipementDynamiqueController::class, 'storeDictionnaireValeur'])->defaults('dictionnaire_code', 'type_ram')->name('store-type-ram');
+        Route::post('/types-os', [EquipementDynamiqueController::class, 'storeDictionnaireValeur'])->defaults('dictionnaire_code', 'type_os')->name('store-type-os');
+        Route::post('/types-disque', [EquipementDynamiqueController::class, 'storeDictionnaireValeur'])->defaults('dictionnaire_code', 'type_disque')->name('store-type-disque');
+        Route::post('/types-cpu', [EquipementDynamiqueController::class, 'storeDictionnaireValeur'])->defaults('dictionnaire_code', 'type_cpu')->name('store-type-cpu');
+        Route::post('/affectation', [EquipementDynamiqueController::class, 'storeAffectation'])->name('store-affectation');
+        Route::patch('/{id}/statut', [EquipementDynamiqueController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat', [EquipementDynamiqueController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter', [EquipementDynamiqueController::class, 'desaffecter'])->name('desaffecter');
+    });
+
+    // Écrans
+    Route::prefix('informatique/ecrans')->name('ecrans.')->group(function () {
+        Route::get('/', [EquipementDynamiqueController::class, 'index'])->defaults('category', 'ecran')->name('index');
+        Route::get('/data', [EquipementDynamiqueController::class, 'getData'])->defaults('category', 'ecran')->name('data');
+        Route::post('/', [EquipementDynamiqueController::class, 'store'])->defaults('category', 'ecran')->name('store');
+        Route::get('/{id}/json', [EquipementDynamiqueController::class, 'showJson'])->name('show-json');
+        Route::get('/{id}', [EquipementDynamiqueController::class, 'show'])->name('show');
+        Route::put('/{id}', [EquipementDynamiqueController::class, 'update'])->name('update');
+        Route::delete('/{id}', [EquipementDynamiqueController::class, 'destroy'])->name('destroy');
+        Route::get('/search/employes', [EquipementDynamiqueController::class, 'searchEmployes'])->name('search-employes');
+        Route::get('/search/postes', [EquipementDynamiqueController::class, 'searchPostes'])->name('search-postes');
+        Route::get('/search/locaux', [EquipementDynamiqueController::class, 'searchLocaux'])->name('search-locaux');
+        Route::post('/marques', [EquipementDynamiqueController::class, 'storeMarque'])->name('store-marque');
+        Route::post('/affectation', [EquipementDynamiqueController::class, 'storeAffectation'])->name('store-affectation');
+        Route::patch('/{id}/statut', [EquipementDynamiqueController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat', [EquipementDynamiqueController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter', [EquipementDynamiqueController::class, 'desaffecter'])->name('desaffecter');
+    });
+
+    // Unités Centrales
+    Route::prefix('informatique/unites-centrales')->name('unite-centrales.')->group(function () {
+        Route::get('/', [EquipementDynamiqueController::class, 'index'])->defaults('category', 'unite-centrale')->name('index');
+        Route::get('/data', [EquipementDynamiqueController::class, 'getData'])->defaults('category', 'unite-centrale')->name('data');
+        Route::post('/', [EquipementDynamiqueController::class, 'store'])->defaults('category', 'unite-centrale')->name('store');
+        Route::get('/{id}/json', [EquipementDynamiqueController::class, 'showJson'])->name('show-json');
+        Route::get('/{id}', [EquipementDynamiqueController::class, 'show'])->name('show');
+        Route::put('/{id}', [EquipementDynamiqueController::class, 'update'])->name('update');
+        Route::delete('/{id}', [EquipementDynamiqueController::class, 'destroy'])->name('destroy');
+        Route::get('/search/employes', [EquipementDynamiqueController::class, 'searchEmployes'])->name('search-employes');
+        Route::get('/search/postes', [EquipementDynamiqueController::class, 'searchPostes'])->name('search-postes');
+        Route::get('/search/locaux', [EquipementDynamiqueController::class, 'searchLocaux'])->name('search-locaux');
+        Route::post('/marques', [EquipementDynamiqueController::class, 'storeMarque'])->name('store-marque');
+        Route::post('/types-ram', [EquipementDynamiqueController::class, 'storeDictionnaireValeur'])->defaults('dictionnaire_code', 'type_ram')->name('store-type-ram');
+        Route::post('/types-os', [EquipementDynamiqueController::class, 'storeDictionnaireValeur'])->defaults('dictionnaire_code', 'type_os')->name('store-type-os');
+        Route::post('/types-disque', [EquipementDynamiqueController::class, 'storeDictionnaireValeur'])->defaults('dictionnaire_code', 'type_disque')->name('store-type-disque');
+        Route::post('/types-cpu', [EquipementDynamiqueController::class, 'storeDictionnaireValeur'])->defaults('dictionnaire_code', 'type_cpu')->name('store-type-cpu');
+        Route::post('/affectation', [EquipementDynamiqueController::class, 'storeAffectation'])->name('store-affectation');
+        Route::patch('/{id}/statut', [EquipementDynamiqueController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat', [EquipementDynamiqueController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter', [EquipementDynamiqueController::class, 'desaffecter'])->name('desaffecter');
     });
 
     // Serveurs
     Route::prefix('informatique/serveurs')->name('serveurs.')->group(function () {
-        Route::get('/', [ServeurController::class, 'index'])->name('index');
-        Route::get('/data', [ServeurController::class, 'getData'])->name('data');
-        Route::post('/', [ServeurController::class, 'store'])->name('store');
-        Route::get('/{id}/json', [ServeurController::class, 'showJson'])->name('show-json');
-        Route::get('/{id}', [ServeurController::class, 'show'])->name('show');
-        Route::put('/{id}', [ServeurController::class, 'update'])->name('update');
-        Route::delete('/{id}', [ServeurController::class, 'destroy'])->name('destroy');
-        Route::get('/search/hotes', [ServeurController::class, 'searchHotes'])->name('search-hotes');
-        Route::get('/search/locaux', [ServeurController::class, 'searchLocaux'])->name('search-locaux');
-        Route::post('/affectation', [ServeurController::class, 'storeAffectation'])->name('store-affectation');
-        Route::patch('/{id}/statut', [ServeurController::class, 'updateStatut'])->name('update-statut');
-        Route::patch('/{id}/etat', [ServeurController::class, 'updateEtat'])->name('update-etat');
-        Route::post('/{id}/desaffecter', [ServeurController::class, 'desaffecter'])->name('desaffecter');
+        Route::get('/', [EquipementDynamiqueController::class, 'index'])->defaults('category', 'serveur')->name('index');
+        Route::get('/data', [EquipementDynamiqueController::class, 'getData'])->defaults('category', 'serveur')->name('data');
+        Route::post('/', [EquipementDynamiqueController::class, 'store'])->defaults('category', 'serveur')->name('store');
+        Route::get('/{id}/json', [EquipementDynamiqueController::class, 'showJson'])->name('show-json');
+        Route::get('/{id}', [EquipementDynamiqueController::class, 'show'])->name('show');
+        Route::put('/{id}', [EquipementDynamiqueController::class, 'update'])->name('update');
+        Route::delete('/{id}', [EquipementDynamiqueController::class, 'destroy'])->name('destroy');
+        Route::get('/search/hotes', [EquipementDynamiqueController::class, 'searchLocaux'])->name('search-hotes');
+        Route::get('/search/locaux', [EquipementDynamiqueController::class, 'searchLocaux'])->name('search-locaux');
+        Route::post('/affectation', [EquipementDynamiqueController::class, 'storeAffectation'])->name('store-affectation');
+        Route::patch('/{id}/statut', [EquipementDynamiqueController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat', [EquipementDynamiqueController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter', [EquipementDynamiqueController::class, 'desaffecter'])->name('desaffecter');
     });
 
     // Serveurs Virtuels
     Route::prefix('informatique/serveurs-virtuels')->name('serveurs-virtuels.')->group(function () {
-        Route::get('/', [ServeurVirtuelController::class, 'index'])->name('index');
-        Route::get('/data', [ServeurVirtuelController::class, 'getData'])->name('data');
-        Route::post('/', [ServeurVirtuelController::class, 'store'])->name('store');
-        Route::get('/{id}/json', [ServeurVirtuelController::class, 'showJson'])->name('show-json');
-        Route::get('/{id}', [ServeurVirtuelController::class, 'show'])->name('show');
-        Route::put('/{id}', [ServeurVirtuelController::class, 'update'])->name('update');
-        Route::delete('/{id}', [ServeurVirtuelController::class, 'destroy'])->name('destroy');
-        Route::patch('/{id}/statut', [ServeurVirtuelController::class, 'updateStatut'])->name('update-statut');
-        Route::patch('/{id}/etat', [ServeurVirtuelController::class, 'updateEtat'])->name('update-etat');
-        Route::post('/{id}/desaffecter', [ServeurVirtuelController::class, 'desaffecter'])->name('desaffecter');
+        Route::get('/', [EquipementDynamiqueController::class, 'index'])->defaults('category', 'serveur-virtuel')->name('index');
+        Route::get('/data', [EquipementDynamiqueController::class, 'getData'])->defaults('category', 'serveur-virtuel')->name('data');
+        Route::post('/', [EquipementDynamiqueController::class, 'store'])->defaults('category', 'serveur-virtuel')->name('store');
+        Route::get('/{id}/json', [EquipementDynamiqueController::class, 'showJson'])->name('show-json');
+        Route::get('/{id}', [EquipementDynamiqueController::class, 'show'])->name('show');
+        Route::put('/{id}', [EquipementDynamiqueController::class, 'update'])->name('update');
+        Route::delete('/{id}', [EquipementDynamiqueController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/statut', [EquipementDynamiqueController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat', [EquipementDynamiqueController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter', [EquipementDynamiqueController::class, 'desaffecter'])->name('desaffecter');
     });
 
     // Mobiles & Tablettes
     Route::prefix('informatique/mobiles')->name('mobiles.')->group(function () {
-        Route::get('/', [MobileController::class, 'index'])->name('index');
-        Route::get('/data', [MobileController::class, 'getData'])->name('data');
-        Route::post('/', [MobileController::class, 'store'])->name('store');
-        Route::get('/{id}', [MobileController::class, 'show'])->name('show');
-        Route::get('/{id}/json', [MobileController::class, 'showJson'])->name('show-json');
-        Route::put('/{id}', [MobileController::class, 'update'])->name('update');
-        Route::delete('/{id}', [MobileController::class, 'destroy'])->name('destroy');
-        Route::patch('/{id}/statut', [MobileController::class, 'updateStatut'])->name('update-statut');
-        Route::patch('/{id}/etat', [MobileController::class, 'updateEtat'])->name('update-etat');
-        Route::post('/{id}/desaffecter', [MobileController::class, 'desaffecter'])->name('desaffecter');
-        Route::post('/affectation', [MobileController::class, 'storeAffectation'])->name('store-affectation');
-        // QuickAdd
-        Route::post('/marques', [MobileController::class, 'storeMarque'])->name('store-marque');
-        Route::post('/types-mobile', [MobileController::class, 'storeTypeMobile'])->name('store-type-mobile');
-        // AJAX search
-        Route::get('/search/employes', [MobileController::class, 'searchEmployes'])->name('search-employes');
-        Route::get('/search/postes', [MobileController::class, 'searchPostes'])->name('search-postes');
-        Route::get('/search/locaux', [MobileController::class, 'searchLocaux'])->name('search-locaux');
+        Route::get('/', [EquipementDynamiqueController::class, 'index'])->defaults('category', 'mobile')->name('index');
+        Route::get('/data', [EquipementDynamiqueController::class, 'getData'])->defaults('category', 'mobile')->name('data');
+        Route::post('/', [EquipementDynamiqueController::class, 'store'])->defaults('category', 'mobile')->name('store');
+        Route::get('/{id}', [EquipementDynamiqueController::class, 'show'])->name('show');
+        Route::get('/{id}/json', [EquipementDynamiqueController::class, 'showJson'])->name('show-json');
+        Route::put('/{id}', [EquipementDynamiqueController::class, 'update'])->name('update');
+        Route::delete('/{id}', [EquipementDynamiqueController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/statut', [EquipementDynamiqueController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat', [EquipementDynamiqueController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter', [EquipementDynamiqueController::class, 'desaffecter'])->name('desaffecter');
+        Route::post('/affectation', [EquipementDynamiqueController::class, 'storeAffectation'])->name('store-affectation');
+        Route::post('/marques', [EquipementDynamiqueController::class, 'storeMarque'])->name('store-marque');
+        Route::post('/types-mobile', [EquipementDynamiqueController::class, 'storeDictionnaireValeur'])->defaults('dictionnaire_code', 'type_mobile')->name('store-type-mobile');
+        Route::get('/search/employes', [EquipementDynamiqueController::class, 'searchEmployes'])->name('search-employes');
+        Route::get('/search/postes', [EquipementDynamiqueController::class, 'searchPostes'])->name('search-postes');
+        Route::get('/search/locaux', [EquipementDynamiqueController::class, 'searchLocaux'])->name('search-locaux');
     });
 
     // Switches
     Route::prefix('informatique/switches')->name('switches.')->group(function () {
-        Route::get('/', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'index'])->name('index');
-        Route::get('/data', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'getData'])->name('data');
-        Route::post('/', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'store'])->name('store');
-        Route::post('/types/quick-add', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'storeTypeReseau'])->name('store-type');
-        Route::get('/{id}', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'show'])->name('show');
-        Route::put('/{id}', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'update'])->name('update');
-        Route::delete('/{id}', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'destroy'])->name('destroy');
-        Route::patch('/{id}/statut', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'updateStatut'])->name('update-statut');
-        Route::patch('/{id}/etat', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'updateEtat'])->name('update-etat');
-        Route::post('/{id}/desaffecter', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'desaffecter'])->name('desaffecter');
-        Route::post('/affectation', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'storeAffectation'])->name('store-affectation');
-        Route::post('/marques', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'storeMarque'])->name('store-marque');
-        Route::get('/employes/search', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'searchEmployes'])->name('search-employes');
-        Route::get('/postes/search', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'searchPostes'])->name('search-postes');
-        Route::get('/locaux/search', [Modules\ParcInfo\Http\Controllers\SwitchController::class, 'searchLocaux'])->name('search-locaux');
+        Route::get('/', [EquipementDynamiqueController::class, 'index'])->defaults('category', 'switch')->name('index');
+        Route::get('/data', [EquipementDynamiqueController::class, 'getData'])->defaults('category', 'switch')->name('data');
+        Route::post('/', [EquipementDynamiqueController::class, 'store'])->defaults('category', 'switch')->name('store');
+        Route::get('/{id}', [EquipementDynamiqueController::class, 'show'])->name('show');
+        Route::put('/{id}', [EquipementDynamiqueController::class, 'update'])->name('update');
+        Route::delete('/{id}', [EquipementDynamiqueController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/statut', [EquipementDynamiqueController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat', [EquipementDynamiqueController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter', [EquipementDynamiqueController::class, 'desaffecter'])->name('desaffecter');
+        Route::post('/affectation', [EquipementDynamiqueController::class, 'storeAffectation'])->name('store-affectation');
+        Route::post('/marques', [EquipementDynamiqueController::class, 'storeMarque'])->name('store-marque');
+        Route::get('/employes/search', [EquipementDynamiqueController::class, 'searchEmployes'])->name('search-employes');
+        Route::get('/postes/search', [EquipementDynamiqueController::class, 'searchPostes'])->name('search-postes');
+        Route::get('/locaux/search', [EquipementDynamiqueController::class, 'searchLocaux'])->name('search-locaux');
     });
 
     // Routeurs
     Route::prefix('informatique/routeurs')->name('routeurs.')->group(function () {
-        Route::get('/', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'index'])->name('index');
-        Route::get('/data', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'getData'])->name('data');
-        Route::post('/', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'store'])->name('store');
-        Route::post('/types/quick-add', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'storeTypeReseau'])->name('store-type');
-        Route::get('/{id}', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'show'])->name('show');
-        Route::put('/{id}', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'update'])->name('update');
-        Route::delete('/{id}', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'destroy'])->name('destroy');
-        Route::patch('/{id}/statut', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'updateStatut'])->name('update-statut');
-        Route::patch('/{id}/etat', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'updateEtat'])->name('update-etat');
-        Route::post('/{id}/desaffecter', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'desaffecter'])->name('desaffecter');
-        Route::post('/affectation', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'storeAffectation'])->name('store-affectation');
-        Route::post('/marques', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'storeMarque'])->name('store-marque');
-        Route::get('/employes/search', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'searchEmployes'])->name('search-employes');
-        Route::get('/postes/search', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'searchPostes'])->name('search-postes');
-        Route::get('/locaux/search', [Modules\ParcInfo\Http\Controllers\RouteurController::class, 'searchLocaux'])->name('search-locaux');
+        Route::get('/', [EquipementDynamiqueController::class, 'index'])->defaults('category', 'routeur')->name('index');
+        Route::get('/data', [EquipementDynamiqueController::class, 'getData'])->defaults('category', 'routeur')->name('data');
+        Route::post('/', [EquipementDynamiqueController::class, 'store'])->defaults('category', 'routeur')->name('store');
+        Route::get('/{id}', [EquipementDynamiqueController::class, 'show'])->name('show');
+        Route::put('/{id}', [EquipementDynamiqueController::class, 'update'])->name('update');
+        Route::delete('/{id}', [EquipementDynamiqueController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/statut', [EquipementDynamiqueController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat', [EquipementDynamiqueController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter', [EquipementDynamiqueController::class, 'desaffecter'])->name('desaffecter');
+        Route::post('/affectation', [EquipementDynamiqueController::class, 'storeAffectation'])->name('store-affectation');
+        Route::post('/marques', [EquipementDynamiqueController::class, 'storeMarque'])->name('store-marque');
+        Route::get('/employes/search', [EquipementDynamiqueController::class, 'searchEmployes'])->name('search-employes');
+        Route::get('/postes/search', [EquipementDynamiqueController::class, 'searchPostes'])->name('search-postes');
+        Route::get('/locaux/search', [EquipementDynamiqueController::class, 'searchLocaux'])->name('search-locaux');
     });
 
     // WiFi
     Route::prefix('informatique/wifi')->name('wifi.')->group(function () {
-        Route::get('/', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'index'])->name('index');
-        Route::get('/data', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'getData'])->name('data');
-        Route::post('/', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'store'])->name('store');
-        Route::post('/types/quick-add', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'storeTypeReseau'])->name('store-type');
-        Route::get('/{id}', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'show'])->name('show');
-        Route::put('/{id}', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'update'])->name('update');
-        Route::delete('/{id}', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'destroy'])->name('destroy');
-        Route::patch('/{id}/statut', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'updateStatut'])->name('update-statut');
-        Route::patch('/{id}/etat', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'updateEtat'])->name('update-etat');
-        Route::post('/{id}/desaffecter', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'desaffecter'])->name('desaffecter');
-        Route::post('/affectation', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'storeAffectation'])->name('store-affectation');
-        Route::post('/marques', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'storeMarque'])->name('store-marque');
-        Route::get('/locaux/search', [Modules\ParcInfo\Http\Controllers\WifiController::class, 'searchLocaux'])->name('search-locaux');
+        Route::get('/', [EquipementDynamiqueController::class, 'index'])->defaults('category', 'wifi')->name('index');
+        Route::get('/data', [EquipementDynamiqueController::class, 'getData'])->defaults('category', 'wifi')->name('data');
+        Route::post('/', [EquipementDynamiqueController::class, 'store'])->defaults('category', 'wifi')->name('store');
+        Route::get('/{id}', [EquipementDynamiqueController::class, 'show'])->name('show');
+        Route::put('/{id}', [EquipementDynamiqueController::class, 'update'])->name('update');
+        Route::delete('/{id}', [EquipementDynamiqueController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/statut', [EquipementDynamiqueController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat', [EquipementDynamiqueController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter', [EquipementDynamiqueController::class, 'desaffecter'])->name('desaffecter');
+        Route::post('/affectation', [EquipementDynamiqueController::class, 'storeAffectation'])->name('store-affectation');
+        Route::post('/marques', [EquipementDynamiqueController::class, 'storeMarque'])->name('store-marque');
+        Route::get('/locaux/search', [EquipementDynamiqueController::class, 'searchLocaux'])->name('search-locaux');
     });
 
     // Pare-feux
     Route::prefix('informatique/parefeux')->name('parefeux.')->group(function () {
-        Route::get('/', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'index'])->name('index');
-        Route::get('/data', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'getData'])->name('data');
-        Route::post('/', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'store'])->name('store');
-        Route::post('/types/quick-add', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'storeTypeReseau'])->name('store-type');
-        Route::get('/{id}', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'show'])->name('show');
-        Route::put('/{id}', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'update'])->name('update');
-        Route::delete('/{id}', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'destroy'])->name('destroy');
-        Route::patch('/{id}/statut', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'updateStatut'])->name('update-statut');
-        Route::patch('/{id}/etat', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'updateEtat'])->name('update-etat');
-        Route::post('/{id}/desaffecter', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'desaffecter'])->name('desaffecter');
-        Route::post('/affectation', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'storeAffectation'])->name('store-affectation');
-        Route::post('/marques', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'storeMarque'])->name('store-marque');
-        Route::get('/locaux/search', [Modules\ParcInfo\Http\Controllers\PareFeuController::class, 'searchLocaux'])->name('search-locaux');
+        Route::get('/', [EquipementDynamiqueController::class, 'index'])->defaults('category', 'parefeu')->name('index');
+        Route::get('/data', [EquipementDynamiqueController::class, 'getData'])->defaults('category', 'parefeu')->name('data');
+        Route::post('/', [EquipementDynamiqueController::class, 'store'])->defaults('category', 'parefeu')->name('store');
+        Route::get('/{id}', [EquipementDynamiqueController::class, 'show'])->name('show');
+        Route::put('/{id}', [EquipementDynamiqueController::class, 'update'])->name('update');
+        Route::delete('/{id}', [EquipementDynamiqueController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/statut', [EquipementDynamiqueController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat', [EquipementDynamiqueController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter', [EquipementDynamiqueController::class, 'desaffecter'])->name('desaffecter');
+        Route::post('/affectation', [EquipementDynamiqueController::class, 'storeAffectation'])->name('store-affectation');
+        Route::post('/marques', [EquipementDynamiqueController::class, 'storeMarque'])->name('store-marque');
+        Route::get('/locaux/search', [EquipementDynamiqueController::class, 'searchLocaux'])->name('search-locaux');
     });
 
     // Onduleurs
     Route::prefix('informatique/onduleurs')->name('onduleurs.')->group(function () {
-        Route::get('/', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'index'])->name('index');
-        Route::get('/data', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'getData'])->name('data');
-        Route::post('/', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'store'])->name('store');
-        Route::get('/{id}/json', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'showJson'])->name('show-json');
-        Route::get('/{id}', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'show'])->name('show');
-        Route::put('/{id}', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'update'])->name('update');
-        Route::delete('/{id}', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'destroy'])->name('destroy');
-        Route::patch('/{id}/statut', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'updateStatut'])->name('update-statut');
-        Route::patch('/{id}/etat', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'updateEtat'])->name('update-etat');
-        Route::post('/{id}/desaffecter', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'desaffecter'])->name('desaffecter');
-        Route::post('/affectation', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'storeAffectation'])->name('store-affectation');
-        // QuickAdd
-        Route::post('/marques', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'storeMarque'])->name('store-marque');
-        // AJAX search
-        Route::get('/employes/search', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'searchEmployes'])->name('search-employes');
-        Route::get('/postes/search', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'searchPostes'])->name('search-postes');
-        Route::get('/locaux/search', [Modules\ParcInfo\Http\Controllers\OnduleurController::class, 'searchLocaux'])->name('search-locaux');
+        Route::get('/', [EquipementDynamiqueController::class, 'index'])->defaults('category', 'onduleur')->name('index');
+        Route::get('/data', [EquipementDynamiqueController::class, 'getData'])->defaults('category', 'onduleur')->name('data');
+        Route::post('/', [EquipementDynamiqueController::class, 'store'])->defaults('category', 'onduleur')->name('store');
+        Route::get('/{id}/json', [EquipementDynamiqueController::class, 'showJson'])->name('show-json');
+        Route::get('/{id}', [EquipementDynamiqueController::class, 'show'])->name('show');
+        Route::put('/{id}', [EquipementDynamiqueController::class, 'update'])->name('update');
+        Route::delete('/{id}', [EquipementDynamiqueController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/statut', [EquipementDynamiqueController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat', [EquipementDynamiqueController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter', [EquipementDynamiqueController::class, 'desaffecter'])->name('desaffecter');
+        Route::post('/affectation', [EquipementDynamiqueController::class, 'storeAffectation'])->name('store-affectation');
+        Route::post('/marques', [EquipementDynamiqueController::class, 'storeMarque'])->name('store-marque');
+        Route::get('/employes/search', [EquipementDynamiqueController::class, 'searchEmployes'])->name('search-employes');
+        Route::get('/postes/search', [EquipementDynamiqueController::class, 'searchPostes'])->name('search-postes');
+        Route::get('/locaux/search', [EquipementDynamiqueController::class, 'searchLocaux'])->name('search-locaux');
     });
 
     // Baies & Racks
     Route::prefix('informatique/infrastructure/racks')->name('racks.')->group(function () {
-        Route::get('/', [Modules\ParcInfo\Http\Controllers\RackController::class, 'index'])->name('index');
-        Route::get('/data', [Modules\ParcInfo\Http\Controllers\RackController::class, 'getData'])->name('data');
-        Route::post('/', [Modules\ParcInfo\Http\Controllers\RackController::class, 'store'])->name('store');
-        Route::get('/{id}', [Modules\ParcInfo\Http\Controllers\RackController::class, 'show'])->name('show');
-        Route::get('/{id}/json', [Modules\ParcInfo\Http\Controllers\RackController::class, 'showJson'])->name('show-json');
-        Route::put('/{id}', [Modules\ParcInfo\Http\Controllers\RackController::class, 'update'])->name('update');
-        Route::delete('/{id}', [Modules\ParcInfo\Http\Controllers\RackController::class, 'destroy'])->name('destroy');
-        Route::patch('/{id}/statut', [Modules\ParcInfo\Http\Controllers\RackController::class, 'updateStatut'])->name('update-statut');
-        Route::patch('/{id}/etat', [Modules\ParcInfo\Http\Controllers\RackController::class, 'updateEtat'])->name('update-etat');
-        Route::post('/{id}/desaffecter', [Modules\ParcInfo\Http\Controllers\RackController::class, 'desaffecter'])->name('desaffecter');
-        Route::post('/affectation', [Modules\ParcInfo\Http\Controllers\RackController::class, 'storeAffectation'])->name('store-affectation');
-        Route::post('/marques', [Modules\ParcInfo\Http\Controllers\RackController::class, 'storeMarque'])->name('store-marque');
-        Route::get('/locaux/search', [Modules\ParcInfo\Http\Controllers\RackController::class, 'searchLocaux'])->name('search-locaux');
+        Route::get('/', [EquipementDynamiqueController::class, 'index'])->defaults('category', 'rack')->name('index');
+        Route::get('/data', [EquipementDynamiqueController::class, 'getData'])->defaults('category', 'rack')->name('data');
+        Route::post('/', [EquipementDynamiqueController::class, 'store'])->defaults('category', 'rack')->name('store');
+        Route::get('/{id}', [EquipementDynamiqueController::class, 'show'])->name('show');
+        Route::get('/{id}/json', [EquipementDynamiqueController::class, 'showJson'])->name('show-json');
+        Route::put('/{id}', [EquipementDynamiqueController::class, 'update'])->name('update');
+        Route::delete('/{id}', [EquipementDynamiqueController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/statut', [EquipementDynamiqueController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat', [EquipementDynamiqueController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter', [EquipementDynamiqueController::class, 'desaffecter'])->name('desaffecter');
+        Route::post('/affectation', [EquipementDynamiqueController::class, 'storeAffectation'])->name('store-affectation');
+        Route::post('/marques', [EquipementDynamiqueController::class, 'storeMarque'])->name('store-marque');
+        Route::get('/locaux/search', [EquipementDynamiqueController::class, 'searchLocaux'])->name('search-locaux');
     });
 
     // Brassage & Panneaux de brassage
     Route::prefix('informatique/infrastructure/brassage')->name('brassage.')->group(function () {
-        Route::get('/', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'index'])->name('index');
-        Route::get('/data', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'getData'])->name('data');
-        Route::post('/', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'store'])->name('store');
-        Route::get('/locaux/search', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'searchLocaux'])->name('search-locaux');
-        Route::post('/marques', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'storeMarque'])->name('store-marque');
-        Route::post('/affectation', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'storeAffectation'])->name('store-affectation');
-        Route::get('/{id}/json', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'showJson'])->name('show-json');
-        Route::get('/{id}', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'show'])->name('show');
-        Route::put('/{id}', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'update'])->name('update');
-        Route::delete('/{id}', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'destroy'])->name('destroy');
-        Route::patch('/{id}/statut', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'updateStatut'])->name('update-statut');
-        Route::patch('/{id}/etat', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'updateEtat'])->name('update-etat');
-        Route::post('/{id}/desaffecter', [Modules\ParcInfo\Http\Controllers\BrassageController::class, 'desaffecter'])->name('desaffecter');
+        Route::get('/', [EquipementDynamiqueController::class, 'index'])->defaults('category', 'brassage')->name('index');
+        Route::get('/data', [EquipementDynamiqueController::class, 'getData'])->defaults('category', 'brassage')->name('data');
+        Route::post('/', [EquipementDynamiqueController::class, 'store'])->defaults('category', 'brassage')->name('store');
+        Route::get('/locaux/search', [EquipementDynamiqueController::class, 'searchLocaux'])->name('search-locaux');
+        Route::post('/marques', [EquipementDynamiqueController::class, 'storeMarque'])->name('store-marque');
+        Route::post('/affectation', [EquipementDynamiqueController::class, 'storeAffectation'])->name('store-affectation');
+        Route::get('/{id}/json', [EquipementDynamiqueController::class, 'showJson'])->name('show-json');
+        Route::get('/{id}', [EquipementDynamiqueController::class, 'show'])->name('show');
+        Route::put('/{id}', [EquipementDynamiqueController::class, 'update'])->name('update');
+        Route::delete('/{id}', [EquipementDynamiqueController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/statut', [EquipementDynamiqueController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat', [EquipementDynamiqueController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter', [EquipementDynamiqueController::class, 'desaffecter'])->name('desaffecter');
     });
 
     // Imprimantes
     Route::prefix('informatique/imprimantes')->name('imprimantes.')->group(function () {
-        Route::get('/', [ImprimanteController::class, 'index'])->name('index');
-        Route::get('/data', [ImprimanteController::class, 'getData'])->name('data');
-        Route::post('/', [ImprimanteController::class, 'store'])->name('store');
-        Route::get('/{id}', [ImprimanteController::class, 'show'])->name('show');
-        Route::get('/{id}/json', [ImprimanteController::class, 'showJson'])->name('show-json');
-        Route::put('/{id}', [ImprimanteController::class, 'update'])->name('update');
-        Route::delete('/{id}', [ImprimanteController::class, 'destroy'])->name('destroy');
-        Route::patch('/{id}/statut', [ImprimanteController::class, 'updateStatut'])->name('update-statut');
-        Route::patch('/{id}/etat', [ImprimanteController::class, 'updateEtat'])->name('update-etat');
-        Route::post('/{id}/desaffecter', [ImprimanteController::class, 'desaffecter'])->name('desaffecter');
-        Route::post('/affectation', [ImprimanteController::class, 'storeAffectation'])->name('store-affectation');
-        // QuickAdd
-        Route::post('/marques', [ImprimanteController::class, 'storeMarque'])->name('store-marque');
-        Route::post('/types-imprimante', [ImprimanteController::class, 'storeTypeImprimante'])->name('store-type-imprimante');
-        // AJAX search
-        Route::get('/employes/search', [ImprimanteController::class, 'searchEmployes'])->name('search-employes');
-        Route::get('/postes/search', [ImprimanteController::class, 'searchPostes'])->name('search-postes');
-        Route::get('/locaux/search', [ImprimanteController::class, 'searchLocaux'])->name('search-locaux');
+        Route::get('/', [EquipementDynamiqueController::class, 'index'])->defaults('category', 'imprimante')->name('index');
+        Route::get('/data', [EquipementDynamiqueController::class, 'getData'])->defaults('category', 'imprimante')->name('data');
+        Route::post('/', [EquipementDynamiqueController::class, 'store'])->defaults('category', 'imprimante')->name('store');
+        Route::get('/{id}', [EquipementDynamiqueController::class, 'show'])->name('show');
+        Route::get('/{id}/json', [EquipementDynamiqueController::class, 'showJson'])->name('show-json');
+        Route::put('/{id}', [EquipementDynamiqueController::class, 'update'])->name('update');
+        Route::delete('/{id}', [EquipementDynamiqueController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/statut', [EquipementDynamiqueController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat', [EquipementDynamiqueController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter', [EquipementDynamiqueController::class, 'desaffecter'])->name('desaffecter');
+        Route::post('/affectation', [EquipementDynamiqueController::class, 'storeAffectation'])->name('store-affectation');
+        Route::post('/marques', [EquipementDynamiqueController::class, 'storeMarque'])->name('store-marque');
+        Route::post('/types-imprimante', [EquipementDynamiqueController::class, 'storeDictionnaireValeur'])->defaults('dictionnaire_code', 'type_imprimante')->name('store-type-imprimante');
+        Route::get('/employes/search', [EquipementDynamiqueController::class, 'searchEmployes'])->name('search-employes');
+        Route::get('/postes/search', [EquipementDynamiqueController::class, 'searchPostes'])->name('search-postes');
+        Route::get('/locaux/search', [EquipementDynamiqueController::class, 'searchLocaux'])->name('search-locaux');
     });
 
     // Scanners
     Route::prefix('informatique/scanners')->name('scanners.')->group(function () {
-        Route::get('/', [ScannerController::class, 'index'])->name('index');
-        Route::get('/data', [ScannerController::class, 'getData'])->name('data');
-        Route::post('/', [ScannerController::class, 'store'])->name('store');
-        Route::get('/{id}/json', [ScannerController::class, 'showJson'])->name('show-json');
-        Route::get('/{id}', [ScannerController::class, 'show'])->name('show');
-        Route::put('/{id}', [ScannerController::class, 'update'])->name('update');
-        Route::delete('/{id}', [ScannerController::class, 'destroy'])->name('destroy');
-        Route::patch('/{id}/statut', [ScannerController::class, 'updateStatut'])->name('update-statut');
-        Route::patch('/{id}/etat', [ScannerController::class, 'updateEtat'])->name('update-etat');
-        Route::post('/{id}/desaffecter', [ScannerController::class, 'desaffecter'])->name('desaffecter');
-        Route::post('/affectation', [ScannerController::class, 'storeAffectation'])->name('store-affectation');
-        Route::post('/marques', [ScannerController::class, 'storeMarque'])->name('store-marque');
-
-        // AJAX search
-        Route::get('/employes/search', [ScannerController::class, 'searchEmployes'])->name('search-employes');
-        Route::get('/postes/search', [ScannerController::class, 'searchPostes'])->name('search-postes');
-        Route::get('/locaux/search', [ScannerController::class, 'searchLocaux'])->name('search-locaux');
+        Route::get('/', [EquipementDynamiqueController::class, 'index'])->defaults('category', 'scanner')->name('index');
+        Route::get('/data', [EquipementDynamiqueController::class, 'getData'])->defaults('category', 'scanner')->name('data');
+        Route::post('/', [EquipementDynamiqueController::class, 'store'])->defaults('category', 'scanner')->name('store');
+        Route::get('/{id}/json', [EquipementDynamiqueController::class, 'showJson'])->name('show-json');
+        Route::get('/{id}', [EquipementDynamiqueController::class, 'show'])->name('show');
+        Route::put('/{id}', [EquipementDynamiqueController::class, 'update'])->name('update');
+        Route::delete('/{id}', [EquipementDynamiqueController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/statut', [EquipementDynamiqueController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat', [EquipementDynamiqueController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter', [EquipementDynamiqueController::class, 'desaffecter'])->name('desaffecter');
+        Route::post('/affectation', [EquipementDynamiqueController::class, 'storeAffectation'])->name('store-affectation');
+        Route::post('/marques', [EquipementDynamiqueController::class, 'storeMarque'])->name('store-marque');
+        Route::get('/employes/search', [EquipementDynamiqueController::class, 'searchEmployes'])->name('search-employes');
+        Route::get('/postes/search', [EquipementDynamiqueController::class, 'searchPostes'])->name('search-postes');
+        Route::get('/locaux/search', [EquipementDynamiqueController::class, 'searchLocaux'])->name('search-locaux');
     });
 
     // Telephones
     Route::prefix('informatique/telephonie')->name('telephonie.')->group(function () {
-        Route::get('/', [TelephoneController::class, 'index'])->name('index');
-        Route::get('/data', [TelephoneController::class, 'getData'])->name('data');
-        Route::post('/', [TelephoneController::class, 'store'])->name('store');
-        Route::get('/{id}', [TelephoneController::class, 'show'])->name('show');
-        Route::put('/{id}', [TelephoneController::class, 'update'])->name('update');
-        Route::delete('/{id}', [TelephoneController::class, 'destroy'])->name('destroy');
-        Route::patch('/{id}/statut', [TelephoneController::class, 'updateStatut'])->name('update-statut');
-        Route::patch('/{id}/etat', [TelephoneController::class, 'updateEtat'])->name('update-etat');
-        Route::post('/{id}/desaffecter', [TelephoneController::class, 'desaffecter'])->name('desaffecter');
-        Route::post('/affectation', [TelephoneController::class, 'storeAffectation'])->name('store-affectation');
-        Route::post('/marques', [TelephoneController::class, 'storeMarque'])->name('store-marque');
-        Route::get('/locaux/search', [TelephoneController::class, 'searchLocaux'])->name('search-locaux');
+        Route::get('/', [EquipementDynamiqueController::class, 'index'])->defaults('category', 'telephone')->name('index');
+        Route::get('/data', [EquipementDynamiqueController::class, 'getData'])->defaults('category', 'telephone')->name('data');
+        Route::post('/', [EquipementDynamiqueController::class, 'store'])->defaults('category', 'telephone')->name('store');
+        Route::get('/{id}', [EquipementDynamiqueController::class, 'show'])->name('show');
+        Route::put('/{id}', [EquipementDynamiqueController::class, 'update'])->name('update');
+        Route::delete('/{id}', [EquipementDynamiqueController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/statut', [EquipementDynamiqueController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat', [EquipementDynamiqueController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter', [EquipementDynamiqueController::class, 'desaffecter'])->name('desaffecter');
+        Route::post('/affectation', [EquipementDynamiqueController::class, 'storeAffectation'])->name('store-affectation');
+        Route::post('/marques', [EquipementDynamiqueController::class, 'storeMarque'])->name('store-marque');
+        Route::get('/locaux/search', [EquipementDynamiqueController::class, 'searchLocaux'])->name('search-locaux');
     });
 
     // Terminaux IP
     Route::prefix('informatique/terminaux-ip')->name('terminaux-ip.')->group(function () {
-        Route::get('/', [TerminalIPController::class, 'index'])->name('index');
-        Route::get('/data', [TerminalIPController::class, 'getData'])->name('data');
-        Route::post('/', [TerminalIPController::class, 'store'])->name('store');
-        Route::get('/{id}', [TerminalIPController::class, 'show'])->name('show');
-        Route::put('/{id}', [TerminalIPController::class, 'update'])->name('update');
-        Route::delete('/{id}', [TerminalIPController::class, 'destroy'])->name('destroy');
-        Route::patch('/{id}/statut', [TerminalIPController::class, 'updateStatut'])->name('update-statut');
-        Route::patch('/{id}/etat', [TerminalIPController::class, 'updateEtat'])->name('update-etat');
-        Route::post('/{id}/desaffecter', [TerminalIPController::class, 'desaffecter'])->name('desaffecter');
-        Route::post('/affectation', [TerminalIPController::class, 'storeAffectation'])->name('store-affectation');
-        Route::post('/marques', [TerminalIPController::class, 'storeMarque'])->name('store-marque');
-        Route::get('/locaux/search', [TerminalIPController::class, 'searchLocaux'])->name('search-locaux');
+        Route::get('/', [EquipementDynamiqueController::class, 'index'])->defaults('category', 'telephone')->name('index');
+        Route::get('/data', [EquipementDynamiqueController::class, 'getData'])->defaults('category', 'telephone')->name('data');
+        Route::post('/', [EquipementDynamiqueController::class, 'store'])->defaults('category', 'telephone')->name('store');
+        Route::get('/{id}', [EquipementDynamiqueController::class, 'show'])->name('show');
+        Route::put('/{id}', [EquipementDynamiqueController::class, 'update'])->name('update');
+        Route::delete('/{id}', [EquipementDynamiqueController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/statut', [EquipementDynamiqueController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat', [EquipementDynamiqueController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter', [EquipementDynamiqueController::class, 'desaffecter'])->name('desaffecter');
+        Route::post('/affectation', [EquipementDynamiqueController::class, 'storeAffectation'])->name('store-affectation');
+        Route::post('/marques', [EquipementDynamiqueController::class, 'storeMarque'])->name('store-marque');
+        Route::get('/locaux/search', [EquipementDynamiqueController::class, 'searchLocaux'])->name('search-locaux');
     });
 
     // Cameras
     Route::prefix('informatique/cameras')->name('cameras.')->group(function () {
-        Route::get('/', [CameraController::class, 'index'])->name('index');
-        Route::get('/data', [CameraController::class, 'getData'])->name('data');
-        Route::post('/', [CameraController::class, 'store'])->name('store');
-        Route::get('/{id}', [CameraController::class, 'show'])->name('show');
-        Route::put('/{id}', [CameraController::class, 'update'])->name('update');
-        Route::delete('/{id}', [CameraController::class, 'destroy'])->name('destroy');
-        Route::patch('/{id}/statut', [CameraController::class, 'updateStatut'])->name('update-statut');
-        Route::patch('/{id}/etat', [CameraController::class, 'updateEtat'])->name('update-etat');
-        Route::post('/{id}/desaffecter', [CameraController::class, 'desaffecter'])->name('desaffecter');
-        Route::post('/affectation', [CameraController::class, 'storeAffectation'])->name('store-affectation');
-        Route::post('/marques', [CameraController::class, 'storeMarque'])->name('store-marque');
-        Route::get('/locaux/search', [CameraController::class, 'searchLocaux'])->name('search-locaux');
+        Route::get('/', [EquipementDynamiqueController::class, 'index'])->defaults('category', 'camera')->name('index');
+        Route::get('/data', [EquipementDynamiqueController::class, 'getData'])->defaults('category', 'camera')->name('data');
+        Route::post('/', [EquipementDynamiqueController::class, 'store'])->defaults('category', 'camera')->name('store');
+        Route::get('/{id}', [EquipementDynamiqueController::class, 'show'])->name('show');
+        Route::put('/{id}', [EquipementDynamiqueController::class, 'update'])->name('update');
+        Route::delete('/{id}', [EquipementDynamiqueController::class, 'destroy'])->name('destroy');
+        Route::patch('/{id}/statut', [EquipementDynamiqueController::class, 'updateStatut'])->name('update-statut');
+        Route::patch('/{id}/etat', [EquipementDynamiqueController::class, 'updateEtat'])->name('update-etat');
+        Route::post('/{id}/desaffecter', [EquipementDynamiqueController::class, 'desaffecter'])->name('desaffecter');
+        Route::post('/affectation', [EquipementDynamiqueController::class, 'storeAffectation'])->name('store-affectation');
+        Route::post('/marques', [EquipementDynamiqueController::class, 'storeMarque'])->name('store-marque');
+        Route::get('/locaux/search', [EquipementDynamiqueController::class, 'searchLocaux'])->name('search-locaux');
     });
 
     // Référentiels
@@ -453,26 +477,6 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
             Route::delete('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeMobileController::class, 'destroy'])->name('destroy');
         });
 
-        // Types Équipements Réseau
-        Route::prefix('types-reseaux')->name('types-reseaux.')->group(function () {
-            Route::get('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeReseauController::class, 'index'])->name('index');
-            Route::get('/data', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeReseauController::class, 'getData'])->name('data');
-            Route::post('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeReseauController::class, 'store'])->name('store');
-            Route::get('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeReseauController::class, 'show'])->name('show');
-            Route::put('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeReseauController::class, 'update'])->name('update');
-            Route::delete('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeReseauController::class, 'destroy'])->name('destroy');
-        });
-
-        // Types Infrastructure
-        Route::prefix('types-infrastructures')->name('types-infrastructures.')->group(function () {
-            Route::get('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeInfrastructureController::class, 'index'])->name('index');
-            Route::get('/data', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeInfrastructureController::class, 'getData'])->name('data');
-            Route::post('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeInfrastructureController::class, 'store'])->name('store');
-            Route::get('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeInfrastructureController::class, 'show'])->name('show');
-            Route::put('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeInfrastructureController::class, 'update'])->name('update');
-            Route::delete('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeInfrastructureController::class, 'destroy'])->name('destroy');
-        });
-
         // Types de Licences
         Route::prefix('types-licences')->name('types-licences.')->group(function () {
             Route::get('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeLicenceController::class, 'index'])->name('index');
@@ -489,7 +493,7 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
             Route::get('/data', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeConsommableController::class, 'getData'])->name('data');
             Route::post('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeConsommableController::class, 'store'])->name('store');
             Route::get('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeConsommableController::class, 'show'])->name('show');
-            Route::put('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeConsommable::class, 'update'])->name('update');
+            Route::put('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeConsommableController::class, 'update'])->name('update');
             Route::delete('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\TypeConsommableController::class, 'destroy'])->name('destroy');
         });
 
@@ -502,6 +506,41 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
             Route::put('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\EditeurController::class, 'update'])->name('update');
             Route::delete('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\EditeurController::class, 'destroy'])->name('destroy');
         });
+
+        // Catégories d'équipements
+        Route::prefix('categories')->name('categories.')->group(function () {
+            Route::get('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\CategorieController::class, 'index'])->name('index');
+            Route::get('/data', [\Modules\ParcInfo\Http\Controllers\Referentiels\CategorieController::class, 'getData'])->name('data');
+            Route::post('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\CategorieController::class, 'store'])->name('store');
+            Route::get('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\CategorieController::class, 'show'])->name('show');
+            Route::put('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\CategorieController::class, 'update'])->name('update');
+            Route::delete('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\CategorieController::class, 'destroy'])->name('destroy');
+
+            // Nested dynamic fields management
+            Route::get('/{id}/fields/data', [\Modules\ParcInfo\Http\Controllers\Referentiels\CategorieController::class, 'getDataFields'])->name('fields.data');
+            Route::post('/{id}/fields', [\Modules\ParcInfo\Http\Controllers\Referentiels\CategorieController::class, 'storeField'])->name('fields.store');
+            Route::get('/{id}/fields/{fieldId}', [\Modules\ParcInfo\Http\Controllers\Referentiels\CategorieController::class, 'showField'])->name('fields.show');
+            Route::put('/{id}/fields/{fieldId}', [\Modules\ParcInfo\Http\Controllers\Referentiels\CategorieController::class, 'updateField'])->name('fields.update');
+            Route::delete('/{id}/fields/{fieldId}', [\Modules\ParcInfo\Http\Controllers\Referentiels\CategorieController::class, 'destroyField'])->name('fields.destroy');
+        });
+
+        // Dictionnaires Dynamiques
+        Route::prefix('dictionnaires')->name('dictionnaires.')->group(function () {
+            Route::get('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\DictionnaireController::class, 'index'])->name('index');
+            Route::get('/data', [\Modules\ParcInfo\Http\Controllers\Referentiels\DictionnaireController::class, 'getData'])->name('data');
+            Route::post('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\DictionnaireController::class, 'store'])->name('store');
+            Route::put('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\DictionnaireController::class, 'update'])->name('update');
+            Route::delete('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\DictionnaireController::class, 'destroy'])->name('destroy');
+
+            Route::prefix('{code}/valeurs')->name('valeurs.')->group(function () {
+                Route::get('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\DictionnaireController::class, 'indexValues'])->name('index');
+                Route::get('/data', [\Modules\ParcInfo\Http\Controllers\Referentiels\DictionnaireController::class, 'getDataValues'])->name('data');
+                Route::post('/', [\Modules\ParcInfo\Http\Controllers\Referentiels\DictionnaireController::class, 'storeValue'])->name('store');
+                Route::get('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\DictionnaireController::class, 'showValue'])->name('show');
+                Route::put('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\DictionnaireController::class, 'updateValue'])->name('update');
+                Route::delete('/{id}', [\Modules\ParcInfo\Http\Controllers\Referentiels\DictionnaireController::class, 'destroyValue'])->name('destroy');
+            });
+        });
     });
 
     // Analyse
@@ -512,5 +551,41 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::get('/statistiques', [\Modules\ParcInfo\Http\Controllers\Analyse\StatistiquesController::class, 'index'])->name('statistiques.index');
         Route::get('/statistiques/data', [\Modules\ParcInfo\Http\Controllers\Analyse\StatistiquesController::class, 'getData'])->name('statistiques.data');
     });
+
+    // Dynamic Categories Routes (registered dynamically at runtime for all non-hardcoded database categories)
+    try {
+        if (\Illuminate\Support\Facades\Schema::hasTable('parc_info_categories_equipements')) {
+            $hardcodedCodes = [
+                'ordinateur', 'serveur', 'serveur-virtuel', 'mobile', 'switch', 'routeur',
+                'wifi', 'parefeu', 'onduleur', 'rack', 'brassage', 'camera',
+                'imprimante', 'scanner', 'telephone', 'terminal-ip', 'ecran', 'unite-centrale',
+            ];
+
+            $dynamicCategories = \Modules\ParcInfo\Models\CategorieEquipement::whereNotIn('code', $hardcodedCodes)->get();
+            foreach ($dynamicCategories as $cat) {
+                $plural = \Illuminate\Support\Str::plural($cat->code);
+
+                Route::prefix('informatique/'.$plural)->name($plural.'.')->group(function () use ($cat) {
+                    Route::get('/', [\Modules\ParcInfo\Http\Controllers\EquipementDynamiqueController::class, 'index'])->defaults('category', $cat->code)->name('index');
+                    Route::get('/data', [\Modules\ParcInfo\Http\Controllers\EquipementDynamiqueController::class, 'getData'])->defaults('category', $cat->code)->name('data');
+                    Route::post('/', [\Modules\ParcInfo\Http\Controllers\EquipementDynamiqueController::class, 'store'])->defaults('category', $cat->code)->name('store');
+                    Route::get('/{id}/json', [\Modules\ParcInfo\Http\Controllers\EquipementDynamiqueController::class, 'showJson'])->name('show-json');
+                    Route::get('/{id}', [\Modules\ParcInfo\Http\Controllers\EquipementDynamiqueController::class, 'show'])->name('show');
+                    Route::put('/{id}', [\Modules\ParcInfo\Http\Controllers\EquipementDynamiqueController::class, 'update'])->name('update');
+                    Route::delete('/{id}', [\Modules\ParcInfo\Http\Controllers\EquipementDynamiqueController::class, 'destroy'])->name('destroy');
+                    Route::get('/search/employes', [\Modules\ParcInfo\Http\Controllers\EquipementDynamiqueController::class, 'searchEmployes'])->name('search-employes');
+                    Route::get('/search/postes', [\Modules\ParcInfo\Http\Controllers\EquipementDynamiqueController::class, 'searchPostes'])->name('search-postes');
+                    Route::get('/search/locaux', [\Modules\ParcInfo\Http\Controllers\EquipementDynamiqueController::class, 'searchLocaux'])->name('search-locaux');
+                    Route::post('/marques', [\Modules\ParcInfo\Http\Controllers\EquipementDynamiqueController::class, 'storeMarque'])->name('store-marque');
+                    Route::post('/affectation', [\Modules\ParcInfo\Http\Controllers\EquipementDynamiqueController::class, 'storeAffectation'])->name('store-affectation');
+                    Route::patch('/{id}/statut', [\Modules\ParcInfo\Http\Controllers\EquipementDynamiqueController::class, 'updateStatut'])->name('update-statut');
+                    Route::patch('/{id}/etat', [\Modules\ParcInfo\Http\Controllers\EquipementDynamiqueController::class, 'updateEtat'])->name('update-etat');
+                    Route::post('/{id}/desaffecter', [\Modules\ParcInfo\Http\Controllers\EquipementDynamiqueController::class, 'desaffecter'])->name('desaffecter');
+                });
+            }
+        }
+    } catch (\Exception $e) {
+        // Prevent console command crashes
+    }
 
 });

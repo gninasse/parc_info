@@ -731,21 +731,21 @@ class EtatController extends Controller implements HasMiddleware
                     'vlan' => 'VLAN Management',
                     'adresse_ip' => 'Adresse IP',
                 ];
-                $query = Equipement::has('reseau')->with(['marque', 'reseau.typeReseau']);
+                $query = Equipement::whereHas('categorie', function ($q) {
+                    $q->whereIn('code', ['switch', 'routeur', 'wifi', 'parefeu']);
+                })->with(['marque', 'categorie']);
                 $applyEqFilters($query);
                 $rows = $query->get()->map(function ($eq) {
-                    $net = $eq->reseau;
-
                     return [
                         'code_inventaire' => $eq->code_inventaire,
                         'marque_libelle' => $eq->marque ? $eq->marque->libelle : '-',
                         'modele' => $eq->modele,
-                        'type_reseau' => $net->typeReseau ? $net->typeReseau->libelle : '-',
-                        'nb_ports' => $net->nb_ports ?? '-',
-                        'est_poe' => $net->est_poe ? 'Oui' : 'Non',
-                        'est_manageable' => $net->est_manageable ? 'Oui' : 'Non',
-                        'vlan' => $net->vlan_management ?? '-',
-                        'adresse_ip' => $net->adresse_ip ?? '-',
+                        'type_reseau' => $eq->categorie ? $eq->categorie->libelle : '-',
+                        'nb_ports' => $eq->champs_valeurs['nb_ports'] ?? '-',
+                        'est_poe' => $eq->getValeurAffichee('est_poe') ?? '-',
+                        'est_manageable' => $eq->getValeurAffichee('est_manageable') ?? '-',
+                        'vlan' => $eq->champs_valeurs['vlan_management'] ?? '-',
+                        'adresse_ip' => $eq->champs_valeurs['adresse_ip'] ?? '-',
                     ];
                 })->toArray();
                 break;
@@ -843,19 +843,19 @@ class EtatController extends Controller implements HasMiddleware
                     'autonomie' => 'Autonomie (min)',
                     'capacite_u' => 'Capacité (U)',
                 ];
-                $query = Equipement::has('infrastructure')->with(['marque', 'infrastructure.typeInfrastructure']);
+                $query = Equipement::whereHas('categorie', function ($q) {
+                    $q->whereIn('code', ['onduleur', 'rack', 'brassage']);
+                })->with(['marque', 'categorie']);
                 $applyEqFilters($query);
                 $rows = $query->get()->map(function ($eq) {
-                    $infra = $eq->infrastructure;
-
                     return [
                         'code_inventaire' => $eq->code_inventaire,
                         'marque_libelle' => $eq->marque ? $eq->marque->libelle : '-',
                         'modele' => $eq->modele,
-                        'type_infra' => $infra->typeInfrastructure ? $infra->typeInfrastructure->libelle : '-',
-                        'puissance' => $infra->puissance_va ?? '-',
-                        'autonomie' => $infra->autonomie_minutes ?? '-',
-                        'capacite_u' => $infra->u_capacite_totale ?? '-',
+                        'type_infra' => $eq->categorie ? $eq->categorie->libelle : '-',
+                        'puissance' => $eq->champs_valeurs['puissance_va'] ?? '-',
+                        'autonomie' => $eq->champs_valeurs['autonomie_minutes'] ?? '-',
+                        'capacite_u' => $eq->champs_valeurs['u_capacite_totale'] ?? '-',
                     ];
                 })->toArray();
                 break;

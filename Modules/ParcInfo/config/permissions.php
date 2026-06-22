@@ -22,6 +22,18 @@ return [
     'parcinfo.mobiles.update' => 'Modifier un terminal mobile',
     'parcinfo.mobiles.destroy' => 'Supprimer un terminal mobile',
 
+    // Écrans
+    'parcinfo.ecrans.index' => 'Voir la liste des écrans',
+    'parcinfo.ecrans.store' => 'Créer un écran',
+    'parcinfo.ecrans.update' => 'Modifier un écran',
+    'parcinfo.ecrans.destroy' => 'Supprimer un écran',
+
+    // Unités Centrales
+    'parcinfo.unite-centrales.index' => 'Voir la liste des unités centrales',
+    'parcinfo.unite-centrales.store' => 'Créer une unité centrale',
+    'parcinfo.unite-centrales.update' => 'Modifier une unité centrale',
+    'parcinfo.unite-centrales.destroy' => 'Supprimer une unité centrale',
+
     // Logiciels
     'parcinfo.logiciels.index' => 'Voir le catalogue logiciels',
     'parcinfo.logiciels.store' => 'Ajouter un logiciel',
@@ -104,16 +116,6 @@ return [
     'parc-info.referentiels.types-mobiles.update' => 'Référentiel - Modifier un type de mobile',
     'parc-info.referentiels.types-mobiles.destroy' => 'Référentiel - Supprimer un type de mobile',
 
-    'parc-info.referentiels.types-reseaux.index' => 'Référentiel - Voir les types d\'équipement réseau',
-    'parc-info.referentiels.types-reseaux.store' => 'Référentiel - Créer un type d\'équipement réseau',
-    'parc-info.referentiels.types-reseaux.update' => 'Référentiel - Modifier un type d\'équipement réseau',
-    'parc-info.referentiels.types-reseaux.destroy' => 'Référentiel - Supprimer un type d\'équipement réseau',
-
-    'parc-info.referentiels.types-infrastructures.index' => 'Référentiel - Voir les types d\'infrastructure',
-    'parc-info.referentiels.types-infrastructures.store' => 'Référentiel - Créer un type d\'infrastructure',
-    'parc-info.referentiels.types-infrastructures.update' => 'Référentiel - Modifier un type d\'infrastructure',
-    'parc-info.referentiels.types-infrastructures.destroy' => 'Référentiel - Supprimer un type d\'infrastructure',
-
     'parc-info.referentiels.types-licences.index' => 'Référentiel - Voir les types de licence',
     'parc-info.referentiels.types-licences.store' => 'Référentiel - Créer un type de licence',
     'parc-info.referentiels.types-licences.update' => 'Référentiel - Modifier un type de licence',
@@ -128,6 +130,17 @@ return [
     'parc-info.referentiels.editeurs.store' => 'Référentiel - Créer un éditeur',
     'parc-info.referentiels.editeurs.update' => 'Référentiel - Modifier un éditeur',
     'parc-info.referentiels.editeurs.destroy' => 'Référentiel - Supprimer un éditeur',
+
+    'parc-info.referentiels.categories.index' => 'Référentiel - Voir les catégories d\'équipement',
+    'parc-info.referentiels.categories.store' => 'Référentiel - Créer une catégorie d\'équipement',
+    'parc-info.referentiels.categories.update' => 'Référentiel - Modifier une catégorie d\'équipement',
+    'parc-info.referentiels.categories.destroy' => 'Référentiel - Supprimer une catégorie d\'équipement',
+
+    'parc-info.referentiels.dictionnaires.index' => 'Référentiel - Voir les dictionnaires',
+    'parc-info.referentiels.dictionnaires.store' => 'Référentiel - Créer un dictionnaire',
+    'parc-info.referentiels.dictionnaires.update' => 'Référentiel - Modifier un dictionnaire',
+    'parc-info.referentiels.dictionnaires.destroy' => 'Référentiel - Supprimer un dictionnaire',
+    'parc-info.referentiels.dictionnaires.manage' => 'Référentiel - Gérer les valeurs des dictionnaires',
 
     // Analyse
     'parc-info.analyse.etats.view' => 'Analyse - Voir les états des équipements',

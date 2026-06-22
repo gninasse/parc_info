@@ -20,6 +20,9 @@ class ReferentielsTypeCpuTest extends TestCase
 
         // Create a testing user manually
         $this->user = User::factory()->create();
+
+        // Seed dynamic categories and dictionary configurations
+        $this->seed(\Modules\ParcInfo\Database\Seeders\ParcInfoConfigSeeder::class);
     }
 
     /**
@@ -90,8 +93,8 @@ class ReferentielsTypeCpuTest extends TestCase
             'message' => 'Type de CPU créé avec succès',
         ]);
 
-        $this->assertDatabaseHas('parc_info_types_cpus', [
-            'libelle' => 'AMD Ryzen Test CPU',
+        $this->assertDatabaseHas('parc_info_dictionnaire_valeurs', [
+            'valeur' => 'AMD Ryzen Test CPU',
         ]);
     }
 
@@ -155,9 +158,9 @@ class ReferentielsTypeCpuTest extends TestCase
             'message' => 'Type de CPU modifié avec succès',
         ]);
 
-        $this->assertDatabaseHas('parc_info_types_cpus', [
+        $this->assertDatabaseHas('parc_info_dictionnaire_valeurs', [
             'id' => $cpu->id,
-            'libelle' => 'Intel New Name',
+            'valeur' => 'Intel New Name',
         ]);
     }
 
@@ -179,7 +182,7 @@ class ReferentielsTypeCpuTest extends TestCase
             'message' => 'Type de CPU supprimé avec succès',
         ]);
 
-        $this->assertDatabaseMissing('parc_info_types_cpus', [
+        $this->assertDatabaseMissing('parc_info_dictionnaire_valeurs', [
             'id' => $cpu->id,
         ]);
     }

@@ -5,10 +5,9 @@ namespace Modules\ParcInfo\Database\Seeders;
 use Illuminate\Database\Seeder;
 use Modules\Organisation\Models\Local;
 use Modules\ParcInfo\Models\AffectationEquipement;
+use Modules\ParcInfo\Models\CategorieEquipement;
 use Modules\ParcInfo\Models\Equipement;
-use Modules\ParcInfo\Models\Infrastructure;
 use Modules\ParcInfo\Models\Marque;
-use Modules\ParcInfo\Models\TypeInfrastructure;
 
 class RacksSeeder extends Seeder
 {
@@ -27,16 +26,13 @@ class RacksSeeder extends Seeder
             $marques[] = Marque::firstOrCreate($brand, $brand);
         }
 
-        // Create infrastructure type
-        $typeRack = TypeInfrastructure::firstOrCreate(
-            ['libelle' => 'RACK'],
-            ['libelle' => 'RACK']
-        );
+        // Find the dynamic category for rack
+        $rackCategory = CategorieEquipement::where('code', 'rack')->first();
+        if (! $rackCategory) {
+            $this->command->error("Category 'rack' not found. Please run ParcInfoConfigSeeder first.");
 
-        $typeBaie = TypeInfrastructure::firstOrCreate(
-            ['libelle' => 'BAIE'],
-            ['libelle' => 'BAIE']
-        );
+            return;
+        }
 
         // Get local for affectation
         $local = Local::first();
@@ -109,15 +105,14 @@ class RacksSeeder extends Seeder
 
             unset($data['has_affectation'], $data['u_capacite_totale'], $data['nb_prises_pdu'], $data['est_redondant']);
 
-            $equipement = Equipement::create($data);
-
-            Infrastructure::create([
-                'equipement_id' => $equipement->id,
-                'type_infra_id' => $typeRack->id,
+            $data['categorie_id'] = $rackCategory->id;
+            $data['champs_valeurs'] = [
                 'u_capacite_totale' => $uCapacite,
                 'nb_prises_pdu' => $nbPrises,
                 'est_redondant' => $estRedondant,
-            ]);
+            ];
+
+            $equipement = Equipement::create($data);
 
             if ($hasAffectation && $local) {
                 AffectationEquipement::create([

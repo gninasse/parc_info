@@ -1,3 +1,32 @@
+@php
+  $hardcodedCodes = [
+      'ordinateur', 'serveur', 'serveur-virtuel', 'mobile', 'switch', 'routeur',
+      'wifi', 'parefeu', 'onduleur', 'rack', 'brassage', 'camera',
+      'imprimante', 'scanner', 'telephone', 'terminal-ip', 'ecran', 'unite-centrale'
+  ];
+  $dynamicCategories = [];
+  $anyDynamicActive = false;
+  $dynamicDicts = [];
+  $systemDictCodes = [
+      'type_cpu', 'type_ram', 'type_disque', 'type_os',
+      'type_imprimante', 'type_mobile'
+  ];
+  try {
+      if (\Illuminate\Support\Facades\Schema::hasTable('parc_info_categories_equipements')) {
+          $dynamicCategories = \Modules\ParcInfo\Models\CategorieEquipement::whereNotIn('code', $hardcodedCodes)->get();
+          foreach ($dynamicCategories as $cat) {
+              $plural = \Illuminate\Support\Str::plural($cat->code);
+              if (request()->routeIs("parc-info.{$plural}.*")) {
+                  $anyDynamicActive = true;
+                  break;
+              }
+          }
+      }
+      if (\Illuminate\Support\Facades\Schema::hasTable('parc_info_dictionnaires')) {
+          $dynamicDicts = \Modules\ParcInfo\Models\Dictionnaire::whereNotIn('code', $systemDictCodes)->get();
+      }
+  } catch (\Exception $e) {}
+@endphp
       <!--begin::Header-->
       <nav class="app-header navbar navbar-expand bg-body">
         <!--begin::Container-->
@@ -25,6 +54,7 @@
             {{-- Actifs & Logiciels --}}
             @canany([
                 'parcinfo.ordinateurs.index',
+                'parcinfo.unite-centrales.index',
                 'parcinfo.serveurs.index',
                 'parcinfo.mobiles.index',
                 'parcinfo.logiciels.index',
@@ -32,14 +62,17 @@
                 'parcinfo.licences.index'
             ])
             <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle d-flex align-items-center {{ request()->routeIs('parc-info.ordinateurs.*', 'parc-info.serveurs.*', 'parc-info.serveurs-virtuels.*', 'parc-info.mobiles.*', 'parc-info.logiciels.*', 'parc-info.fournisseurs.*', 'parc-info.licences.*') ? 'active fw-bold' : '' }}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <a class="nav-link dropdown-toggle d-flex align-items-center {{ request()->routeIs('parc-info.ordinateurs.*', 'parc-info.unite-centrales.*', 'parc-info.serveurs.*', 'parc-info.serveurs-virtuels.*', 'parc-info.mobiles.*', 'parc-info.logiciels.*', 'parc-info.fournisseurs.*', 'parc-info.licences.*') || $anyDynamicActive ? 'active fw-bold' : '' }}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="bi bi-pc-display-horizontal me-1"></i> Actifs & Logiciels
               </a>
               <ul class="dropdown-menu dropdown-menu-start shadow border-0" style="min-width: 220px;">
-                @canany(['parcinfo.ordinateurs.index', 'parcinfo.serveurs.index', 'parcinfo.mobiles.index'])
+                @canany(['parcinfo.ordinateurs.index', 'parcinfo.unite-centrales.index', 'parcinfo.serveurs.index', 'parcinfo.mobiles.index'])
                 <li><h6 class="dropdown-header fw-bold text-uppercase small text-muted">Gestion des Actifs</h6></li>
                 @can('parcinfo.ordinateurs.index')
                 <li><a class="dropdown-item d-flex align-items-center {{ request()->routeIs('parc-info.ordinateurs.*') ? 'active' : '' }}" href="{{ route('parc-info.ordinateurs.index') }}"><i class="bi bi-pc-display me-2 text-primary"></i> Ordinateurs</a></li>
+                @endcan
+                @can('parcinfo.unite-centrales.index')
+                <li><a class="dropdown-item d-flex align-items-center {{ request()->routeIs('parc-info.unite-centrales.*') ? 'active' : '' }}" href="{{ route('parc-info.unite-centrales.index') }}"><i class="bi bi-pc me-2 text-primary"></i> Unités Centrales</a></li>
                 @endcan
                 @can('parcinfo.serveurs.index')
                 <li><a class="dropdown-item d-flex align-items-center {{ request()->routeIs('parc-info.serveurs.*') ? 'active' : '' }}" href="{{ route('parc-info.serveurs.index') }}"><i class="bi bi-server me-2 text-primary"></i> Serveurs Physiques</a></li>
@@ -48,6 +81,14 @@
                 @can('parcinfo.mobiles.index')
                 <li><a class="dropdown-item d-flex align-items-center {{ request()->routeIs('parc-info.mobiles.*') && !request()->is('*telephonie*') ? 'active' : '' }}" href="{{ route('parc-info.mobiles.index') }}"><i class="bi bi-phone-vibrate me-2 text-primary"></i> Tablettes & Mobiles</a></li>
                 @endcan
+                @foreach($dynamicCategories as $cat)
+                  @php
+                    $plural = \Illuminate\Support\Str::plural($cat->code);
+                  @endphp
+                  @can("parcinfo.{$plural}.index")
+                    <li><a class="dropdown-item d-flex align-items-center {{ request()->routeIs("parc-info.{$plural}.*") ? 'active' : '' }}" href="{{ route("parc-info.{$plural}.index") }}"><i class="bi {{ $cat->icone ?: 'bi-cpu' }} me-2 text-primary"></i> {{ $cat->libelle }}</a></li>
+                  @endcan
+                @endforeach
                 @endcanany
 
                 @canany(['parcinfo.logiciels.index', 'parcinfo.fournisseurs.index', 'parcinfo.licences.index'])
@@ -130,20 +171,24 @@
                 'parcinfo.scanners.index',
                 'parcinfo.cameras.index',
                 'parcinfo.telephonie.index',
-                'parcinfo.terminaux-ip.index'
+                'parcinfo.terminaux-ip.index',
+                'parcinfo.ecrans.index'
             ])
             <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle d-flex align-items-center {{ request()->routeIs('parc-info.imprimantes.*', 'parc-info.scanners.*', 'parc-info.cameras.*', 'parc-info.telephonie.*', 'parc-info.terminaux-ip.*') ? 'active fw-bold' : '' }}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <a class="nav-link dropdown-toggle d-flex align-items-center {{ request()->routeIs('parc-info.imprimantes.*', 'parc-info.scanners.*', 'parc-info.cameras.*', 'parc-info.telephonie.*', 'parc-info.terminaux-ip.*', 'parc-info.ecrans.*') ? 'active fw-bold' : '' }}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="bi bi-printer me-1"></i> Périphériques & Comm
               </a>
               <ul class="dropdown-menu dropdown-menu-start shadow border-0" style="min-width: 220px;">
-                @canany(['parcinfo.imprimantes.index', 'parcinfo.scanners.index', 'parcinfo.cameras.index'])
-                <li><h6 class="dropdown-header fw-bold text-uppercase small text-muted">Impression & Sécurité</h6></li>
+                @canany(['parcinfo.imprimantes.index', 'parcinfo.scanners.index', 'parcinfo.cameras.index', 'parcinfo.ecrans.index'])
+                <li><h6 class="dropdown-header fw-bold text-uppercase small text-muted">Impression, Écrans & Sécurité</h6></li>
                 @can('parcinfo.imprimantes.index')
                 <li><a class="dropdown-item d-flex align-items-center {{ request()->routeIs('parc-info.imprimantes.*') ? 'active' : '' }}" href="{{ route('parc-info.imprimantes.index') }}"><i class="bi bi-printer me-2 text-success"></i> Imprimantes</a></li>
                 @endcan
                 @can('parcinfo.scanners.index')
                 <li><a class="dropdown-item d-flex align-items-center {{ request()->routeIs('parc-info.scanners.*') ? 'active' : '' }}" href="{{ route('parc-info.scanners.index') }}"><i class="bi bi-upc-scan me-2 text-success"></i> Scanners</a></li>
+                @endcan
+                @can('parcinfo.ecrans.index')
+                <li><a class="dropdown-item d-flex align-items-center {{ request()->routeIs('parc-info.ecrans.*') ? 'active' : '' }}" href="{{ route('parc-info.ecrans.index') }}"><i class="bi bi-display me-2 text-success"></i> Écrans</a></li>
                 @endcan
                 @can('parcinfo.cameras.index')
                 <li><a class="dropdown-item d-flex align-items-center {{ request()->routeIs('parc-info.cameras.*') ? 'active' : '' }}" href="{{ route('parc-info.cameras.index') }}"><i class="bi bi-camera-video me-2 text-success"></i> Caméras IP</a></li>
@@ -173,11 +218,10 @@
                 'parc-info.referentiels.marques.index',
                 'parc-info.referentiels.types-imprimantes.index',
                 'parc-info.referentiels.types-mobiles.index',
-                'parc-info.referentiels.types-reseaux.index',
-                'parc-info.referentiels.types-infrastructures.index',
                 'parc-info.referentiels.types-licences.index',
                 'parc-info.referentiels.types-consommables.index',
-                'parc-info.referentiels.editeurs.index'
+                'parc-info.referentiels.editeurs.index',
+                'parc-info.referentiels.dictionnaires.index'
             ])
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle d-flex align-items-center {{ request()->routeIs('parc-info.referentiels.*') ? 'active fw-bold' : '' }}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -215,9 +259,7 @@
                 {{-- Group 2: Types Équipements --}}
                 @canany([
                     'parc-info.referentiels.types-imprimantes.index',
-                    'parc-info.referentiels.types-mobiles.index',
-                    'parc-info.referentiels.types-reseaux.index',
-                    'parc-info.referentiels.types-infrastructures.index'
+                    'parc-info.referentiels.types-mobiles.index'
                 ])
                 <li><h6 class="dropdown-header fw-bold text-uppercase small text-muted">Types Équipements</h6></li>
                 @can('parc-info.referentiels.types-imprimantes.index')
@@ -226,12 +268,7 @@
                 @can('parc-info.referentiels.types-mobiles.index')
                 <li><a class="dropdown-item d-flex align-items-center {{ request()->routeIs('parc-info.referentiels.types-mobiles.*') ? 'active' : '' }}" href="{{ route('parc-info.referentiels.types-mobiles.index') }}"><i class="bi bi-phone me-2 text-info"></i> Types Mobiles</a></li>
                 @endcan
-                @can('parc-info.referentiels.types-reseaux.index')
-                <li><a class="dropdown-item d-flex align-items-center {{ request()->routeIs('parc-info.referentiels.types-reseaux.*') ? 'active' : '' }}" href="{{ route('parc-info.referentiels.types-reseaux.index') }}"><i class="bi bi-diagram-3 me-2 text-info"></i> Types Réseau</a></li>
-                @endcan
-                @can('parc-info.referentiels.types-infrastructures.index')
-                <li><a class="dropdown-item d-flex align-items-center {{ request()->routeIs('parc-info.referentiels.types-infrastructures.*') ? 'active' : '' }}" href="{{ route('parc-info.referentiels.types-infrastructures.index') }}"><i class="bi bi-building me-2 text-info"></i> Types Infrastructure</a></li>
-                @endcan
+
                 @endcanany
 
                 <li><hr class="dropdown-divider"></li>
@@ -252,6 +289,22 @@
                 @can('parc-info.referentiels.editeurs.index')
                 <li><a class="dropdown-item d-flex align-items-center {{ request()->routeIs('parc-info.referentiels.editeurs.*') ? 'active' : '' }}" href="{{ route('parc-info.referentiels.editeurs.index') }}"><i class="bi bi-building me-2 text-success"></i> Éditeurs</a></li>
                 @endcan
+                @can('parc-info.referentiels.categories.index')
+                <li><a class="dropdown-item d-flex align-items-center {{ request()->routeIs('parc-info.referentiels.categories.*') ? 'active' : '' }}" href="{{ route('parc-info.referentiels.categories.index') }}"><i class="bi bi-grid me-2 text-success"></i> Catégories d'équipement</a></li>
+                @endcan
+
+                @can('parc-info.referentiels.dictionnaires.index')
+                <li><hr class="dropdown-divider"></li>
+                <li><h6 class="dropdown-header fw-bold text-uppercase small text-muted">Dictionnaires</h6></li>
+                <li><a class="dropdown-item d-flex align-items-center {{ request()->routeIs('parc-info.referentiels.dictionnaires.*') && !request()->route('code') ? 'active' : '' }}" href="{{ route('parc-info.referentiels.dictionnaires.index') }}"><i class="bi bi-book me-2 text-warning"></i> Gérer Dictionnaires</a></li>
+                @endcan
+                @if(count($dynamicDicts) > 0)
+                @foreach($dynamicDicts as $dict)
+                @can('parc-info.referentiels.dictionnaires.manage')
+                <li><a class="dropdown-item d-flex align-items-center {{ request()->routeIs('parc-info.referentiels.dictionnaires.valeurs.*') && request()->route('code') === $dict->code ? 'active' : '' }}" href="{{ route('parc-info.referentiels.dictionnaires.valeurs.index', $dict->code) }}"><i class="bi bi-circle me-2 text-warning"></i> {{ $dict->libelle }}</a></li>
+                @endcan
+                @endforeach
+                @endif
                 @endcanany
               </ul>
             </li>
