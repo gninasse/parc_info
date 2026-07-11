@@ -106,6 +106,34 @@
     </div>
 </div>
 
+{{-- ── GRAPHICS ROW ── --}}
+<div class="row g-3 mb-4">
+    <div class="col-lg-8">
+        <div class="card border-1 rounded-1 h-100">
+            <div class="card-header bg-white border-0 py-3">
+                <h6 class="mb-0 fw-bold"><i class="fas fa-chart-line me-2 text-primary"></i>Évolution Mensuelle des Dépenses (FCFA)</h6>
+            </div>
+            <div class="card-body">
+                <div style="position: relative; height: 280px; width: 100%;">
+                    <canvas id="monthlyExpendituresChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card border-1 rounded-1 h-100">
+            <div class="card-header bg-white border-0 py-3">
+                <h6 class="mb-0 fw-bold"><i class="fas fa-chart-pie me-2 text-primary"></i>Répartition par Fournisseur (Top 5)</h6>
+            </div>
+            <div class="card-body">
+                <div style="position: relative; height: 280px; width: 100%;">
+                    <canvas id="suppliersChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 {{-- ── RECENT ORDERS & RECENT BLS ── --}}
 <div class="row g-3">
     <div class="col-lg-6">
@@ -210,3 +238,81 @@
 </div>
 
 @endsection
+
+@push('js')
+<script src="{{ asset('plugins/chartjs/chart.min.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 1. Monthly Expenditures Chart (Bar/Line)
+        const expendituresData = @json($expendituresByMonth);
+        const expendituresLabels = expendituresData.map(d => d.label);
+        const expendituresValues = expendituresData.map(d => d.total);
+
+        new Chart(document.getElementById('monthlyExpendituresChart'), {
+            type: 'line',
+            data: {
+                labels: expendituresLabels,
+                datasets: [{
+                    label: 'Dépenses totales',
+                    data: expendituresValues,
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    borderColor: 'rgb(37, 99, 235)',
+                    borderWidth: 2,
+                    tension: 0.1,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF', maximumFractionDigits: 0 }).format(value);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 2. Top Suppliers Chart (Doughnut)
+        const suppliersData = @json($expendituresBySupplier);
+        const suppliersLabels = suppliersData.map(d => d.label);
+        const suppliersValues = suppliersData.map(d => d.total);
+
+        new Chart(document.getElementById('suppliersChart'), {
+            type: 'doughnut',
+            data: {
+                labels: suppliersLabels,
+                datasets: [{
+                    data: suppliersValues,
+                    backgroundColor: [
+                        '#2563eb',
+                        '#10b981',
+                        '#f59e0b',
+                        '#ef4444',
+                        '#8b5cf6'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { boxWidth: 12, font: { size: 10 } }
+                    }
+                }
+            }
+        });
+    });
+</script>
+@endpush

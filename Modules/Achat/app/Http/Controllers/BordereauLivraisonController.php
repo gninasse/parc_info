@@ -143,7 +143,7 @@ class BordereauLivraisonController extends Controller
         $this->authorize('achat.bordereaux.view');
 
         $bl = $bordereaux;
-        $bl->load(['bonCommande.lignesCommande', 'lignesLivraison.article', 'createur']);
+        $bl->load(['bonCommande.lignesCommande', 'lignesLivraison.article', 'createur', 'documents.createur']);
 
         // Charger tous les bons de commande valides ou partiels pour modification éventuelle
         $bonsCommande = BonCommande::whereIn('statut', ['valide', 'partiel'])
@@ -170,7 +170,9 @@ class BordereauLivraisonController extends Controller
             ];
         });
 
-        return view('achat::bordereaux.show', compact('bl', 'bonsCommande', 'existingLines'));
+        $equipements = \Modules\ParcInfo\Models\Equipement::where('ref_bordereau', $bl->numero_livraison)->with(['categorie', 'marque'])->get();
+
+        return view('achat::bordereaux.show', compact('bl', 'bonsCommande', 'existingLines', 'equipements'));
     }
 
     /**
@@ -355,5 +357,20 @@ class BordereauLivraisonController extends Controller
                 'message' => $e->getMessage(),
             ], 422);
         }
+    }
+
+    /**
+     * Imprimer le bordereau de livraison en PDF.
+     */
+    public function imprimer(BordereauLivraison $bordereau): \Symfony\Component\HttpFoundation\Response
+    {
+        $this->authorize('achat.bordereaux.view');
+
+        $bordereau->load(['bonCommande.fournisseur', 'lignesLivraison.article', 'createur']);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('achat::bordereaux.print_pdf', compact('bordereau'));
+        $pdf->setPaper('a4', 'portrait');
+
+        return $pdf->stream("bordereau_livraison_{$bordereau->numero_livraison}.pdf");
     }
 }

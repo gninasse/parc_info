@@ -16,7 +16,7 @@ class ServiceController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:organisation.services.index', only: ['index', 'getData', 'show']),
+            new Middleware('permission:organisation.services.index', only: ['index', 'getData', 'show', 'getApiData']),
             new Middleware('permission:organisation.services.store', only: ['store']),
             new Middleware('permission:organisation.services.update', only: ['update']),
             new Middleware('permission:organisation.services.destroy', only: ['destroy']),
@@ -187,6 +187,33 @@ class ServiceController extends Controller implements HasMiddleware
             return [
                 'id' => $emp->id,
                 'text' => $emp->full_name." ({$emp->matricule})",
+            ];
+        }));
+    }
+
+    public function getApiData(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $query = Service::query()->with('direction');
+
+        if ($request->filled('direction_id')) {
+            $query->where('direction_id', $request->direction_id);
+        }
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function ($q) use ($s) {
+                $q->where('code', 'ilike', "%{$s}%")
+                    ->orWhere('libelle', 'ilike', "%{$s}%");
+            });
+        }
+
+        return response()->json($query->get()->map(function ($srv) {
+            return [
+                'id' => $srv->id,
+                'code' => $srv->code ?? '',
+                'libelle' => $srv->libelle ?? '',
+                'direction' => $srv->direction?->libelle ?? '—',
+                'statut' => $srv->actif ? 'actif' : 'inactif',
             ];
         }));
     }

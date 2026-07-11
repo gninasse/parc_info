@@ -62,6 +62,9 @@
             <button id="btn-show" class="btn btn-sm btn-info text-white rounded-1" disabled data-bs-toggle="tooltip" title="Voir les détails / Modifier">
                 <i class="fas fa-eye"></i>
             </button>
+            <button id="btn-print" class="btn btn-sm btn-success rounded-1 text-white" disabled data-bs-toggle="tooltip" title="Imprimer le bordereau">
+                <i class="fas fa-print"></i>
+            </button>
             @can('achat.bordereaux.edit')
             <button id="btn-wizard" class="btn btn-sm btn-success rounded-1 text-white" disabled data-bs-toggle="tooltip" title="Assistant d'intégration (Wizard)">
                 <i class="fas fa-magic"></i>
@@ -101,6 +104,26 @@
                 </tr>
             </thead>
         </table>
+    </div>
+</div>
+
+{{-- Modal d'impression uniforme --}}
+<div class="modal fade" id="printBlModal" tabindex="-1" aria-labelledby="printBlModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary border-0 text-primary py-3">
+                <h5 class="modal-title fw-bold" id="printBlModalLabel">
+                    <i class="fas fa-file-pdf me-2 text-danger"></i>Impression du Bordereau de Livraison
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <iframe id="print-bl-iframe" class="w-100" style="height: 70vh; border: none; border-radius: 4px;" src=""></iframe>
+            </div>
+            <div class="modal-footer bg-light border-0 py-2">
+                <button type="button" class="btn btn-sm btn-secondary rounded-1 px-3" data-bs-dismiss="modal">Fermer</button>
+            </div>
+        </div>
     </div>
 </div>
 

@@ -241,7 +241,23 @@ class ParcInfoController extends Controller implements HasMiddleware
             ],
         ];
 
-        return view('parcinfo::dashboard.index', compact('stats', 'recentEquipements', 'repartitionParType'));
+        // Répartition par statut pour le graphique
+        $statusStats = [
+            ['label' => 'En service', 'count' => $stats['en_service'], 'color' => '#198754'],
+            ['label' => 'En stock', 'count' => $stats['en_stock'], 'color' => '#6c757d'],
+            ['label' => 'En réparation', 'count' => $stats['en_maintenance'], 'color' => '#ffc107'],
+            ['label' => 'Perdu/Réformé', 'count' => $stats['hors_service'], 'color' => '#dc3545'],
+        ];
+
+        // Répartition par état physique pour le graphique
+        $etatStats = [
+            ['label' => 'Bon', 'count' => Equipement::where('etat', 'bon')->count(), 'color' => '#198754'],
+            ['label' => 'Passable', 'count' => Equipement::where('etat', 'passable')->count(), 'color' => '#0dcaf0'],
+            ['label' => 'Mauvais', 'count' => Equipement::where('etat', 'mauvais')->count(), 'color' => '#ffc107'],
+            ['label' => 'Avarié', 'count' => Equipement::where('etat', 'avarie')->count(), 'color' => '#dc3545'],
+        ];
+
+        return view('parcinfo::dashboard.index', compact('stats', 'recentEquipements', 'repartitionParType', 'statusStats', 'etatStats'));
     }
 
     public function searchEquipements(Request $request)

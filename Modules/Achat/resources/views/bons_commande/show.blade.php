@@ -101,6 +101,16 @@
                 </button>
             </li>
             <li class="nav-item" role="presentation">
+                <button class="nav-link fw-bold small text-muted px-3 py-2 border-0" id="equipements-tab" data-bs-toggle="tab" data-bs-target="#equipements" type="button" role="tab" aria-controls="equipements" aria-selected="false">
+                    <i class="fas fa-laptop me-1"></i>Équipements intégrés
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link fw-bold small text-muted px-3 py-2 border-0" id="documents-tab" data-bs-toggle="tab" data-bs-target="#documents" type="button" role="tab" aria-controls="documents" aria-selected="false">
+                    <i class="fas fa-paperclip me-1"></i>Documents joints <span class="badge bg-light text-dark border ms-1" id="doc-count-badge">{{ $bonCommande->documents->count() }}</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
                 <button class="nav-link fw-bold small text-muted px-3 py-2 border-0" id="historique-tab" data-bs-toggle="tab" data-bs-target="#historique" type="button" role="tab" aria-controls="historique" aria-selected="false">
                     <i class="fas fa-history me-1"></i>Historique
                 </button>
@@ -426,6 +436,166 @@
                 </div>
             </div>
 
+            {{-- TAB 6: EQUIPEMENTS INTEGRES --}}
+            <div class="tab-pane fade" id="equipements" role="tabpanel" aria-labelledby="equipements-tab">
+                <div class="card border-1 rounded-1">
+                    <div class="card-header bg-light border-0 py-2">
+                        <h6 class="mb-0 fw-bold small text-dark"><i class="fas fa-laptop me-1"></i>Équipements générés à partir des livraisons de ce BC</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 small">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Code Inventaire</th>
+                                        <th>Catégorie</th>
+                                        <th>Marque & Modèle</th>
+                                        <th>N° Série</th>
+                                        <th>Statut</th>
+                                        <th>État</th>
+                                        <th class="text-end" style="width: 15%;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($equipements as $eq)
+                                        <tr>
+                                            <td class="fw-bold text-dark font-monospace">{{ $eq->code_inventaire }}</td>
+                                            <td>
+                                                <span class="text-muted">
+                                                    <i class="bi {{ $eq->categorie->icone }} me-1"></i>{{ $eq->categorie->libelle }}
+                                                </span>
+                                            </td>
+                                            <td class="fw-semibold">{{ $eq->marque?->libelle }} {{ $eq->modele }}</td>
+                                            <td class="text-muted">{{ $eq->numero_serie ?: '-' }}</td>
+                                            <td>
+                                                <span class="badge bg-light text-dark border">{{ str_replace('_', ' ', $eq->statut) }}</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-light text-dark border">{{ ucfirst($eq->etat) }}</span>
+                                            </td>
+                                            <td class="text-end">
+                                                <a href="{{ $eq->detail_route }}" target="_blank" class="btn btn-xs btn-outline-primary" title="Voir la fiche">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{{ route('parc-info.equipements.imprimer-etiquette', $eq->id) }}" target="_blank" class="btn btn-xs btn-outline-secondary" title="Imprimer l'étiquette">
+                                                    <i class="fas fa-print"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="7" class="text-center py-4 text-muted">
+                                                <i class="fas fa-info-circle me-1"></i> Aucun équipement n'a été généré pour ce bon de commande.
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- TAB 7: DOCUMENTS JOINTS --}}
+            <div class="tab-pane fade" id="documents" role="tabpanel" aria-labelledby="documents-tab">
+                <div class="row g-3">
+                    {{-- Upload Form --}}
+                    <div class="col-md-4">
+                        <div class="card border-1 rounded-1">
+                            <div class="card-header bg-light border-0 py-2">
+                                <h6 class="mb-0 fw-bold small text-dark"><i class="fas fa-upload me-1"></i>Ajouter un Document</h6>
+                            </div>
+                            <div class="card-body p-3">
+                                <form id="form-upload-document" enctype="multipart/form-data">
+                                    @csrf
+                                    <input type="hidden" name="documentable_type" value="bon_commande">
+                                    <input type="hidden" name="documentable_id" value="{{ $bonCommande->id }}">
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold">Nom du document (Optionnel)</label>
+                                        <input type="text" name="nom" class="form-control form-control-sm" placeholder="Ex: Contrat signé, Devis...">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold">Fichier <span class="text-danger">*</span></label>
+                                        <input type="file" name="document" class="form-control form-control-sm" required>
+                                        <div class="form-text small" style="font-size: 0.75rem;">PDF, Images, Word, Excel. Max 10 Mo.</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold">Notes / Description</label>
+                                        <textarea name="notes" class="form-control form-control-sm" rows="2" placeholder="Informations complémentaires..."></textarea>
+                                    </div>
+                                    <button type="submit" class="btn btn-sm btn-primary w-100 rounded-1">
+                                        <i class="fas fa-plus-circle me-1"></i> Téléverser le document
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {{-- Documents List --}}
+                    <div class="col-md-8">
+                        <div class="card border-1 rounded-1">
+                            <div class="card-header bg-light border-0 py-2">
+                                <h6 class="mb-0 fw-bold small text-dark"><i class="fas fa-folder-open me-1"></i>Liste des documents joints</h6>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0 small" id="table-bc-documents">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Nom du Fichier</th>
+                                                <th>Notes</th>
+                                                <th>Taille</th>
+                                                <th>Ajouté par</th>
+                                                <th class="text-end" style="width: 15%;">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @forelse($bonCommande->documents as $doc)
+                                                <tr id="doc-row-{{ $doc->id }}">
+                                                    <td>
+                                                        <div class="d-flex align-items-center gap-2">
+                                                            @if(str_contains($doc->type_mime, 'pdf'))
+                                                                <i class="far fa-file-pdf text-danger fs-5"></i>
+                                                            @elseif(str_contains($doc->type_mime, 'image'))
+                                                                <i class="far fa-file-image text-success fs-5"></i>
+                                                            @else
+                                                                <i class="far fa-file text-primary fs-5"></i>
+                                                            @endif
+                                                            <div>
+                                                                <div class="fw-bold text-dark">{{ $doc->nom }}</div>
+                                                                <div class="text-muted" style="font-size: 0.75rem;">Ajouté le {{ $doc->created_at->format('d/m/Y H:i') }}</div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td class="text-muted">{{ $doc->notes ?: '-' }}</td>
+                                                    <td class="text-muted">{{ number_format($doc->taille / 1024, 1) }} Ko</td>
+                                                    <td>{{ $doc->createur ? $doc->createur->name : 'Système' }}</td>
+                                                    <td class="text-end">
+                                                        <a href="{{ route('achat.documents.telecharger', $doc->id) }}" class="btn btn-xs btn-outline-primary" title="Télécharger">
+                                                            <i class="fas fa-download"></i>
+                                                        </a>
+                                                        <button type="button" class="btn btn-xs btn-outline-danger btn-delete-doc" data-id="{{ $doc->id }}" title="Supprimer">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            @empty
+                                                <tr class="empty-docs-row">
+                                                    <td colspan="5" class="text-center py-4 text-muted">
+                                                        <i class="fas fa-info-circle me-1"></i> Aucun document joint pour ce bon de commande.
+                                                    </td>
+                                                </tr>
+                                            @endforelse
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
         {{-- ── PIED DE PAGE DE LA FICHE DÉTAIL ── --}}
@@ -511,6 +681,127 @@
                     },
                     error: function(xhr) {
                         Swal.fire('Erreur', xhr.responseJSON?.message || 'Erreur lors de l\'annulation', 'error');
+                    }
+                });
+            }
+        });
+    });
+
+    // Soumission du formulaire d'upload de document
+    $('#form-upload-document').on('submit', function(e) {
+        e.preventDefault();
+        
+        let formData = new FormData(this);
+        
+        $.ajax({
+            url: "{{ route('achat.documents.store') }}",
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(res) {
+                if (res.success) {
+                    Swal.fire('Succès !', res.message, 'success');
+                    
+                    // Increment count badge
+                    let badge = $('#doc-count-badge');
+                    let count = parseInt(badge.text()) || 0;
+                    badge.text(count + 1);
+                    
+                    // Append document row
+                    let doc = res.document;
+                    let fileIcon = '';
+                    if (doc.type_mime.includes('pdf')) {
+                        fileIcon = '<i class="far fa-file-pdf text-danger fs-5"></i>';
+                    } else if (doc.type_mime.includes('image')) {
+                        fileIcon = '<i class="far fa-file-image text-success fs-5"></i>';
+                    } else {
+                        fileIcon = '<i class="far fa-file text-primary fs-5"></i>';
+                    }
+                    
+                    let newRow = `
+                        <tr id="doc-row-${doc.id}">
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    ${fileIcon}
+                                    <div>
+                                        <div class="fw-bold text-dark">${doc.nom}</div>
+                                        <div class="text-muted" style="font-size: 0.75rem;">Ajouté le ${doc.date}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-muted">${$('#form-upload-document textarea[name="notes"]').val() || '-'}</td>
+                            <td class="text-muted">${(doc.taille / 1024).toFixed(1)} Ko</td>
+                            <td>{{ auth()->user()->name }}</td>
+                            <td class="text-end">
+                                <a href="${route('achat.documents.telecharger', doc.id)}" class="btn btn-xs btn-outline-primary" title="Télécharger">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                                <button type="button" class="btn btn-xs btn-outline-danger btn-delete-doc" data-id="${doc.id}" title="Supprimer">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                    
+                    // Remove empty row if exists
+                    $('.empty-docs-row').remove();
+                    $('#table-bc-documents tbody').append(newRow);
+                    
+                    // Clear form
+                    $('#form-upload-document')[0].reset();
+                }
+            },
+            error: function(xhr) {
+                Swal.fire('Erreur', xhr.responseJSON?.message || 'Erreur lors de l\'upload du document', 'error');
+            }
+        });
+    });
+
+    // Suppression d'un document
+    $(document).on('click', '.btn-delete-doc', function() {
+        const id = $(this).data('id');
+        Swal.fire({
+            title: 'Supprimer ce document ?',
+            text: 'Voulez-vous vraiment supprimer ce document joint ?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            confirmButtonText: 'Oui, supprimer'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: route('achat.documents.destroy', id),
+                    method: 'DELETE',
+                    data: {
+                        _token: $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function(res) {
+                        if (res.success) {
+                            Swal.fire('Supprimé !', res.message, 'success');
+                            
+                            // Decrement count badge
+                            let badge = $('#doc-count-badge');
+                            let count = parseInt(badge.text()) || 0;
+                            if (count > 0) badge.text(count - 1);
+                            
+                            // Remove row
+                            $(`#doc-row-${id}`).remove();
+                            
+                            // If table is empty, show empty message
+                            if ($('#table-bc-documents tbody tr').length === 0) {
+                                $('#table-bc-documents tbody').append(`
+                                    <tr class="empty-docs-row">
+                                        <td colspan="5" class="text-center py-4 text-muted">
+                                            <i class="fas fa-info-circle me-1"></i> Aucun document joint pour ce bon de commande.
+                                        </td>
+                                    </tr>
+                                `);
+                            }
+                        }
+                    },
+                    error: function(xhr) {
+                        Swal.fire('Erreur', xhr.responseJSON?.message || 'Erreur lors de la suppression', 'error');
                     }
                 });
             }

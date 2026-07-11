@@ -1,10 +1,10 @@
 <!-- Modal Sélection Fournisseur -->
 <div class="modal fade shadow" id="modal-select-fournisseur" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content border-0 rounded-1">
-            <div class="modal-header bg-dark text-white border-0 py-3">
-                <h5 class="modal-title fs-6 fw-bold"><i class="fas fa-truck me-2 text-success"></i>Sélectionner un Fournisseur</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary border-0 py-3">
+                <h5 class="modal-title fs-6 fw-bold text-primary"><i class="fas fa-truck me-2"></i>Sélectionner un Fournisseur</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
             </div>
             <div class="modal-body p-4">
                 <div class="input-group input-group-sm mb-3">
@@ -53,10 +53,10 @@
 <!-- Modal Sélection Article -->
 <div class="modal fade shadow" id="modal-select-article" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content border-0 rounded-1">
-            <div class="modal-header bg-dark text-white border-0 py-3">
-                <h5 class="modal-title fs-6 fw-bold"><i class="fas fa-box me-2 text-success"></i>Sélectionner un Article</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary border-0 py-3">
+                <h5 class="modal-title fs-6 fw-bold text-primary"><i class="fas fa-box me-2"></i>Sélectionner un Article</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
             </div>
             <div class="modal-body p-4">
                 <div class="row g-2 mb-3">

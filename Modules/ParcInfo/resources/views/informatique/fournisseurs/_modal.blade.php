@@ -1,7 +1,7 @@
 <div class="modal fade" id="modal-fournisseur" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-primary bg-opacity-10 border-0">
+            <div class="modal-header bg-primary border-0">
                 <h5 class="modal-title fw-bold text-primary">
                     <i class="fas fa-truck me-2"></i><span>Nouveau Fournisseur</span>
                 </h5>

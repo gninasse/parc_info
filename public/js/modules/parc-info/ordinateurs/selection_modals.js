@@ -157,7 +157,13 @@ $(document).ready(function () {
                     <tr data-id="${p.id}"
                         data-code="${p.code}"
                         data-libelle="${p.libelle}"
-                        data-emplacement="${p.emplacement || '—'}">
+                        data-emplacement="${p.emplacement || '—'}"
+                        data-local-id="${p.local_id || ''}"
+                        data-local-site="${p.local_site || '—'}"
+                        data-local-batiment="${p.local_batiment || '—'}"
+                        data-local-etage="${p.local_etage || '—'}"
+                        data-local-libelle="${p.local_libelle || '—'}"
+                        data-local-code="${p.local_code || '—'}">
                         <td><input type="radio" name="poste_select" value="${p.id}" class="form-check-input"></td>
                         <td>${p.code}</td>
                         <td>${p.libelle}</td>
@@ -180,21 +186,31 @@ $(document).ready(function () {
     });
 
     $(document).on('click', '#poste-list tr', function () {
-        $(this).find('input[type="radio"]').prop('checked', true).trigger('change');
+        if ($(this).closest('#poste-list').length) {
+            $(this).find('input[type="radio"]').prop('checked', true).trigger('change');
+        }
     });
 
     $(document).on('dblclick', '#poste-list tr', function () {
-        $(this).find('input[type="radio"]').prop('checked', true).trigger('change');
-        setTimeout(() => $('#poste-confirm').trigger('click'), 100);
+        if ($(this).closest('#poste-list').length) {
+            $(this).find('input[type="radio"]').prop('checked', true).trigger('change');
+            setTimeout(() => $('#poste-confirm').trigger('click'), 100);
+        }
     });
 
     $(document).on('change', 'input[name="poste_select"]', function () {
         const row = $(this).closest('tr');
         selectedPoste = {
-            id:          row.data('id'),
-            code:        row.data('code'),
-            libelle:     row.data('libelle'),
-            emplacement: row.data('emplacement'),
+            id:             row.data('id'),
+            code:           row.data('code'),
+            libelle:        row.data('libelle'),
+            emplacement:    row.data('emplacement'),
+            local_id:       row.data('local-id'),
+            local_site:     row.data('local-site'),
+            local_batiment: row.data('local-batiment'),
+            local_etage:    row.data('local-etage'),
+            local_libelle:  row.data('local-libelle'),
+            local_code:     row.data('local-code'),
         };
         $('#poste-confirm').prop('disabled', false);
         $('#poste-list tr').removeClass('table-active');
@@ -265,7 +281,8 @@ $(document).ready(function () {
                         data-libelle="${l.libelle}"
                         data-type="${l.type || '—'}"
                         data-etage="${l.etage || '—'}"
-                        data-batiment="${l.batiment || '—'}">
+                        data-batiment="${l.batiment || '—'}"
+                        data-site="${l.site || '—'}">
                         <td><input type="radio" name="local_select" value="${l.id}" class="form-check-input"></td>
                         <td>${l.code}</td>
                         <td>${l.libelle}</td>
@@ -289,12 +306,16 @@ $(document).ready(function () {
     });
 
     $(document).on('click', '#local-list tr', function () {
-        $(this).find('input[type="radio"]').prop('checked', true).trigger('change');
+        if ($(this).closest('#local-list').length) {
+            $(this).find('input[type="radio"]').prop('checked', true).trigger('change');
+        }
     });
 
     $(document).on('dblclick', '#local-list tr', function () {
-        $(this).find('input[type="radio"]').prop('checked', true).trigger('change');
-        setTimeout(() => $('#local-confirm').trigger('click'), 100);
+        if ($(this).closest('#local-list').length) {
+            $(this).find('input[type="radio"]').prop('checked', true).trigger('change');
+            setTimeout(() => $('#local-confirm').trigger('click'), 100);
+        }
     });
 
     $(document).on('change', 'input[name="local_select"]', function () {
@@ -306,6 +327,7 @@ $(document).ready(function () {
             type:     row.data('type'),
             etage:    row.data('etage'),
             batiment: row.data('batiment'),
+            site:     row.data('site'),
         };
         $('#local-confirm').prop('disabled', false);
         $('#local-list tr').removeClass('table-active');
@@ -368,6 +390,470 @@ $(document).ready(function () {
         if (val === 'EMPLOYE') { $('#employeSelectionModal').modal('show'); }
         else if (val === 'POSTE') { $('#posteSelectionModal').modal('show'); }
         else if (val === 'LOCAL') { $('#localSelectionModal').modal('show'); }
+        else if (val === 'DIRECTION') { $('#directionSelectionModal').modal('show'); }
+        else if (val === 'SERVICE') { $('#serviceSelectionModal').modal('show'); }
+        else if (val === 'UNITE') { $('#uniteSelectionModal').modal('show'); }
+    });
+
+    // ════════════════════════════════════════════════════════════════════════
+    // MODALE DIRECTION
+    // ════════════════════════════════════════════════════════════════════════
+
+    let selectedDirection = null;
+
+    function loadDirections() {
+        $('#dir-skeleton').removeClass('d-none');
+        $('#dir-list').html('');
+        $('#dir-confirm').prop('disabled', true);
+        selectedDirection = null;
+
+        const filters = {
+            search: $('#dir-search').val(),
+        };
+
+        $.get('/organisation/directions/api', filters)
+            .done(function (data) {
+                $('#dir-skeleton').addClass('d-none');
+                if (!data.length) {
+                    $('#dir-list').html('<tr><td colspan="5" class="text-center text-muted py-3">Aucun résultat</td></tr>');
+                    return;
+                }
+                const html = data.map(dir => `
+                    <tr data-id="${dir.id}"
+                        data-nom="${dir.libelle}"
+                        data-code="${dir.code}">
+                        <td><input type="radio" name="dir_select" value="${dir.id}" class="form-check-input"></td>
+                        <td>${dir.code}</td>
+                        <td>${dir.libelle}</td>
+                        <td>${dir.site}</td>
+                        <td><span class="badge bg-${dir.statut === 'actif' ? 'success' : 'secondary'}">${dir.statut}</span></td>
+                    </tr>`).join('');
+                $('#dir-list').html(html);
+            })
+            .fail(function () {
+                $('#dir-skeleton').addClass('d-none');
+                $('#dir-list').html('<tr><td colspan="5" class="text-center text-danger py-3">Erreur de chargement</td></tr>');
+            });
+    }
+
+    $('#directionSelectionModal').on('show.bs.modal', function () {
+        loadDirections();
+    });
+
+    $(document).on('click', '#dir-list tr', function () {
+        if ($(this).closest('#dir-list').length) {
+            $(this).find('input[type="radio"]').prop('checked', true).trigger('change');
+        }
+    });
+
+    $(document).on('dblclick', '#dir-list tr', function () {
+        if ($(this).closest('#dir-list').length) {
+            $(this).find('input[type="radio"]').prop('checked', true).trigger('change');
+            setTimeout(() => $('#dir-confirm').trigger('click'), 100);
+        }
+    });
+
+    $(document).on('change', 'input[name="dir_select"]', function () {
+        const row = $(this).closest('tr');
+        selectedDirection = {
+            id:      row.data('id'),
+            nom:     row.data('nom'),
+            code:    row.data('code'),
+        };
+        $('#dir-confirm').prop('disabled', false);
+        $('#dir-list tr').removeClass('table-active');
+        row.addClass('table-active');
+    });
+
+    $('#dir-confirm').on('click', function () {
+        if (!selectedDirection) return;
+        $(document).trigger('direction:selected', [selectedDirection]);
+        $('#directionSelectionModal').modal('hide');
+    });
+
+    let dirSearchTimer;
+    $('#dir-search').on('input', function () {
+        clearTimeout(dirSearchTimer);
+        dirSearchTimer = setTimeout(loadDirections, 300);
+    });
+
+    $('#directionSelectionModal').on('hidden.bs.modal', function () {
+        selectedDirection = null;
+        $('#dir-confirm').prop('disabled', true);
+        $('#dir-search').val('');
+    });
+
+
+    // ════════════════════════════════════════════════════════════════════════
+    // MODALE SERVICE
+    // ════════════════════════════════════════════════════════════════════════
+
+    let selectedService = null;
+
+    function loadServices() {
+        $('#srv-skeleton').removeClass('d-none');
+        $('#srv-list').html('');
+        $('#srv-confirm').prop('disabled', true);
+        selectedService = null;
+
+        const filters = {
+            direction_id: $('#srv-filter-direction').val(),
+            search:       $('#srv-search').val(),
+        };
+
+        $.get('/organisation/services/api', filters)
+            .done(function (data) {
+                $('#srv-skeleton').addClass('d-none');
+                if (!data.length) {
+                    $('#srv-list').html('<tr><td colspan="5" class="text-center text-muted py-3">Aucun résultat</td></tr>');
+                    return;
+                }
+                const html = data.map(srv => `
+                    <tr data-id="${srv.id}"
+                        data-nom="${srv.libelle}"
+                        data-code="${srv.code}"
+                        data-direction="${srv.direction}">
+                        <td><input type="radio" name="srv_select" value="${srv.id}" class="form-check-input"></td>
+                        <td>${srv.code}</td>
+                        <td>${srv.libelle}</td>
+                        <td>${srv.direction}</td>
+                        <td><span class="badge bg-${srv.statut === 'actif' ? 'success' : 'secondary'}">${srv.statut}</span></td>
+                    </tr>`).join('');
+                $('#srv-list').html(html);
+            })
+            .fail(function () {
+                $('#srv-skeleton').addClass('d-none');
+                $('#srv-list').html('<tr><td colspan="5" class="text-center text-danger py-3">Erreur de chargement</td></tr>');
+            });
+    }
+
+    $('#serviceSelectionModal').on('show.bs.modal', function () {
+        loadServices();
+    });
+
+    $(document).on('click', '#srv-list tr', function () {
+        if ($(this).closest('#srv-list').length) {
+            $(this).find('input[type="radio"]').prop('checked', true).trigger('change');
+        }
+    });
+
+    $(document).on('dblclick', '#srv-list tr', function () {
+        if ($(this).closest('#srv-list').length) {
+            $(this).find('input[type="radio"]').prop('checked', true).trigger('change');
+            setTimeout(() => $('#srv-confirm').trigger('click'), 100);
+        }
+    });
+
+    $(document).on('change', 'input[name="srv_select"]', function () {
+        const row = $(this).closest('tr');
+        selectedService = {
+            id:        row.data('id'),
+            nom:       row.data('nom'),
+            code:      row.data('code'),
+            direction: row.data('direction'),
+        };
+        $('#srv-confirm').prop('disabled', false);
+        $('#srv-list tr').removeClass('table-active');
+        row.addClass('table-active');
+    });
+
+    $('#srv-confirm').on('click', function () {
+        if (!selectedService) return;
+        $(document).trigger('service:selected', [selectedService]);
+        $('#serviceSelectionModal').modal('hide');
+    });
+
+    $('#srv-filter-direction').on('change', loadServices);
+    let srvSearchTimer;
+    $('#srv-search').on('input', function () {
+        clearTimeout(srvSearchTimer);
+        srvSearchTimer = setTimeout(loadServices, 300);
+    });
+
+    $('#serviceSelectionModal').on('hidden.bs.modal', function () {
+        selectedService = null;
+        $('#srv-confirm').prop('disabled', true);
+        $('#srv-filter-direction').val('');
+        $('#srv-search').val('');
+    });
+
+
+    // ════════════════════════════════════════════════════════════════════════
+    // MODALE UNITE
+    // ════════════════════════════════════════════════════════════════════════
+
+    let selectedUnite = null;
+
+    function loadUnites() {
+        $('#unt-skeleton').removeClass('d-none');
+        $('#unt-list').html('');
+        $('#unt-confirm').prop('disabled', true);
+        selectedUnite = null;
+
+        const filters = {
+            direction_id: $('#unt-filter-direction').val(),
+            service_id:   $('#unt-filter-service').val(),
+            search:       $('#unt-search').val(),
+        };
+
+        $.get('/organisation/unites/api', filters)
+            .done(function (data) {
+                $('#unt-skeleton').addClass('d-none');
+                if (!data.length) {
+                    $('#unt-list').html('<tr><td colspan="6" class="text-center text-muted py-3">Aucun résultat</td></tr>');
+                    return;
+                }
+                const html = data.map(unt => `
+                    <tr data-id="${unt.id}"
+                        data-nom="${unt.libelle}"
+                        data-code="${unt.code}"
+                        data-service="${unt.service}"
+                        data-direction="${unt.direction}">
+                        <td><input type="radio" name="unt_select" value="${unt.id}" class="form-check-input"></td>
+                        <td>${unt.code}</td>
+                        <td>${unt.libelle}</td>
+                        <td>${unt.service}</td>
+                        <td>${unt.direction}</td>
+                        <td><span class="badge bg-${unt.statut === 'actif' ? 'success' : 'secondary'}">${unt.statut}</span></td>
+                    </tr>`).join('');
+                $('#unt-list').html(html);
+            })
+            .fail(function () {
+                $('#unt-skeleton').addClass('d-none');
+                $('#unt-list').html('<tr><td colspan="6" class="text-center text-danger py-3">Erreur de chargement</td></tr>');
+            });
+    }
+
+    $('#uniteSelectionModal').on('show.bs.modal', function () {
+        loadUnites();
+    });
+
+    $(document).on('click', '#unt-list tr', function () {
+        if ($(this).closest('#unt-list').length) {
+            $(this).find('input[type="radio"]').prop('checked', true).trigger('change');
+        }
+    });
+
+    $(document).on('dblclick', '#unt-list tr', function () {
+        if ($(this).closest('#unt-list').length) {
+            $(this).find('input[type="radio"]').prop('checked', true).trigger('change');
+            setTimeout(() => $('#unt-confirm').trigger('click'), 100);
+        }
+    });
+
+    $(document).on('change', 'input[name="unt_select"]', function () {
+        const row = $(this).closest('tr');
+        selectedUnite = {
+            id:        row.data('id'),
+            nom:       row.data('nom'),
+            code:      row.data('code'),
+            service:   row.data('service'),
+            direction: row.data('direction'),
+        };
+        $('#unt-confirm').prop('disabled', false);
+        $('#unt-list tr').removeClass('table-active');
+        row.addClass('table-active');
+    });
+
+    $('#unt-confirm').on('click', function () {
+        if (!selectedUnite) return;
+        $(document).trigger('unite:selected', [selectedUnite]);
+        $('#uniteSelectionModal').modal('hide');
+    });
+
+    // Cascade direction → service in Unite Modal
+    $('#unt-filter-direction').on('change', function () {
+        const dirId = $(this).val();
+        $('#unt-filter-service').html('<option value="">Tous les services</option>');
+        loadUnites();
+        if (!dirId) return;
+        $.get(`/organisation/directions/${dirId}/services`, function (services) {
+            const opts = services.map(s => `<option value="${s.id}">${s.libelle}</option>`).join('');
+            $('#unt-filter-service').append(opts);
+        });
+    });
+
+    $('#unt-filter-service').on('change', loadUnites);
+    let untSearchTimer;
+    $('#unt-search').on('input', function () {
+        clearTimeout(untSearchTimer);
+        untSearchTimer = setTimeout(loadUnites, 300);
+    });
+    $('#uniteSelectionModal').on('hidden.bs.modal', function () {
+        selectedUnite = null;
+        $('#unt-confirm').prop('disabled', true);
+        $('#unt-filter-direction').val('');
+        $('#unt-filter-service').html('<option value="">Tous les services</option>');
+        $('#unt-search').val('');
+    });
+
+    // ════════════════════════════════════════════════════════════════════════
+    // AFFECTATION SELECTIONS & WIZARD INTEGRATION
+    // ════════════════════════════════════════════════════════════════════════
+
+    $(document).on('direction:selected', function (e, dir) {
+        const activeContainer = $('.wizard-step:visible, .modal.show');
+        if (!activeContainer.length) return;
+
+        activeContainer.find('.aff-type-card').removeClass('selected');
+        activeContainer.find('.aff-type-card[data-value="DIRECTION"]').addClass('selected')
+            .find('input[type="radio"]').prop('checked', true);
+
+        // Update summaries
+        $('#direction-summary-code').text(dir.code);
+        $('#direction-summary-libelle').text(dir.nom);
+
+        activeContainer.find('input[name="direction_id"]').val(dir.id);
+        activeContainer.find('input[name="service_id"], input[name="unite_id"], input[name="dossier_employe_id"], input[name="poste_travail_id"]').val('');
+
+        activeContainer.find('.aff-summary').addClass('d-none');
+        activeContainer.find('#aff-direction-summary').removeClass('d-none');
+        activeContainer.find('#emplacement-section').removeClass('d-none');
+        $('#aff-skip-hint').addClass('d-none');
+
+        // Reset and enable local selection
+        activeContainer.find('.emp-site-display, .emp-batiment-display, .emp-etage-display, .emp-local-display').val('');
+        activeContainer.find('input[name="local_id"]').val('');
+        activeContainer.find('.emp-local-display')
+            .removeClass('bg-light text-muted')
+            .addClass('border-primary text-primary')
+            .css('cursor', 'pointer');
+    });
+
+    $(document).on('service:selected', function (e, srv) {
+        const activeContainer = $('.wizard-step:visible, .modal.show');
+        if (!activeContainer.length) return;
+
+        activeContainer.find('.aff-type-card').removeClass('selected');
+        activeContainer.find('.aff-type-card[data-value="SERVICE"]').addClass('selected')
+            .find('input[type="radio"]').prop('checked', true);
+
+        // Update summaries
+        $('#service-summary-code').text(srv.code);
+        $('#service-summary-libelle').text(srv.nom);
+        $('#service-summary-direction').text(srv.direction);
+
+        activeContainer.find('input[name="service_id"]').val(srv.id);
+        activeContainer.find('input[name="direction_id"]').val(srv.direction_id || '');
+        activeContainer.find('input[name="unite_id"], input[name="dossier_employe_id"], input[name="poste_travail_id"]').val('');
+
+        activeContainer.find('.aff-summary').addClass('d-none');
+        activeContainer.find('#aff-service-summary').removeClass('d-none');
+        activeContainer.find('#emplacement-section').removeClass('d-none');
+        $('#aff-skip-hint').addClass('d-none');
+
+        // Reset and enable local selection
+        activeContainer.find('.emp-site-display, .emp-batiment-display, .emp-etage-display, .emp-local-display').val('');
+        activeContainer.find('input[name="local_id"]').val('');
+        activeContainer.find('.emp-local-display')
+            .removeClass('bg-light text-muted')
+            .addClass('border-primary text-primary')
+            .css('cursor', 'pointer');
+    });
+
+    $(document).on('unite:selected', function (e, unt) {
+        const activeContainer = $('.wizard-step:visible, .modal.show');
+        if (!activeContainer.length) return;
+
+        activeContainer.find('.aff-type-card').removeClass('selected');
+        activeContainer.find('.aff-type-card[data-value="UNITE"]').addClass('selected')
+            .find('input[type="radio"]').prop('checked', true);
+
+        // Update summaries
+        $('#unite-summary-code').text(unt.code);
+        $('#unite-summary-libelle').text(unt.nom);
+        $('#unite-summary-service').text(unt.service);
+
+        activeContainer.find('input[name="unite_id"]').val(unt.id);
+        activeContainer.find('input[name="direction_id"], input[name="service_id"], input[name="dossier_employe_id"], input[name="poste_travail_id"]').val('');
+
+        activeContainer.find('.aff-summary').addClass('d-none');
+        activeContainer.find('#aff-unite-summary').removeClass('d-none');
+        activeContainer.find('#emplacement-section').removeClass('d-none');
+        $('#aff-skip-hint').addClass('d-none');
+
+        // Reset and enable local selection
+        activeContainer.find('.emp-site-display, .emp-batiment-display, .emp-etage-display, .emp-local-display').val('');
+        activeContainer.find('input[name="local_id"]').val('');
+        activeContainer.find('.emp-local-display')
+            .removeClass('bg-light text-muted')
+            .addClass('border-primary text-primary')
+            .css('cursor', 'pointer');
+    });
+
+    $(document).on('employe:selected', function (e, emp) {
+        const activeContainer = $('.wizard-step:visible, .modal.show');
+        if (!activeContainer.length) return;
+        activeContainer.find('#emplacement-section').removeClass('d-none');
+        $('#aff-skip-hint').addClass('d-none');
+
+        // Reset and enable local selection
+        activeContainer.find('.emp-site-display, .emp-batiment-display, .emp-etage-display, .emp-local-display').val('');
+        activeContainer.find('input[name="local_id"]').val('');
+        activeContainer.find('.emp-local-display')
+            .removeClass('bg-light text-muted')
+            .addClass('border-primary text-primary')
+            .css('cursor', 'pointer');
+    });
+
+    $(document).on('poste:selected', function (e, poste) {
+        const activeContainer = $('.wizard-step:visible, .modal.show');
+        if (!activeContainer.length) return;
+        activeContainer.find('#emplacement-section').removeClass('d-none');
+        $('#aff-skip-hint').addClass('d-none');
+
+        // Auto populate and lock if workstation has room
+        if (poste.local_id) {
+            activeContainer.find('.emp-site-display').val(poste.local_site);
+            activeContainer.find('.emp-batiment-display').val(poste.local_batiment);
+            activeContainer.find('.emp-etage-display').val(poste.local_etage);
+            activeContainer.find('.emp-local-display')
+                .val(`${poste.local_libelle} (${poste.local_code})`)
+                .addClass('bg-light text-muted')
+                .removeClass('border-primary text-primary')
+                .css('cursor', 'not-allowed');
+            activeContainer.find('input[name="local_id"]').val(poste.local_id);
+        } else {
+            // Otherwise reset and let user choose
+            activeContainer.find('.emp-site-display, .emp-batiment-display, .emp-etage-display, .emp-local-display').val('');
+            activeContainer.find('input[name="local_id"]').val('');
+            activeContainer.find('.emp-local-display')
+                .removeClass('bg-light text-muted')
+                .addClass('border-primary text-primary')
+                .css('cursor', 'pointer');
+        }
+    });
+
+    // ════════════════════════════════════════════════════════════════════════
+    // SELECTION DE LOCAL EN MODALE
+    // ════════════════════════════════════════════════════════════════════════
+
+    // Ouvrir la modale de sélection de local lors du clic sur le champ Bureau / Local
+    $(document).on('click', '.emp-local-display', function () {
+        const activeContainer = $('.wizard-step:visible, #affectationModal.show');
+        if (activeContainer.length) {
+            const hasPoste = activeContainer.find('input[name="poste_travail_id"]').val();
+            if (hasPoste) {
+                // Emplacement est verrouillé pour les postes de travail
+                return;
+            }
+        }
+        $('#localSelectionModal').modal('show');
+    });
+
+    // Peupler les champs d'affichage après sélection d'un local
+    $(document).on('local:selected', function (e, local) {
+        const activeContainer = $('.wizard-step:visible, #affectationModal.show');
+        if (activeContainer.length) {
+            activeContainer.find('.emp-site-display').val(local.site);
+            activeContainer.find('.emp-batiment-display').val(local.batiment);
+            activeContainer.find('.emp-etage-display').val(local.etage);
+            activeContainer.find('.emp-local-display').val(`${local.libelle} (${local.code})`);
+            activeContainer.find('input[name="local_id"]').val(local.id);
+        } else {
+            // Fiche équipement
+            $('#f_local_id').html(new Option(local.libelle, local.id, true, true));
+        }
     });
 
 });

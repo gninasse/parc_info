@@ -5,6 +5,7 @@ use Modules\Achat\Http\Controllers\AchatController;
 use Modules\Achat\Http\Controllers\ArticleController;
 use Modules\Achat\Http\Controllers\BonCommandeController;
 use Modules\Achat\Http\Controllers\BordereauLivraisonController;
+use Modules\Achat\Http\Controllers\DocumentController;
 use Modules\Achat\Http\Controllers\StockController;
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -29,8 +30,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('bordereaux/{bordereau}/wizard', [BordereauLivraisonController::class, 'wizard'])->name('bordereaux.wizard');
     Route::post('bordereaux/{bordereau}/wizard/{article}/sauvegarder', [BordereauLivraisonController::class, 'sauvegarderWizardEtape'])->name('bordereaux.wizard.sauvegarder');
     Route::post('bordereaux/{bordereau}/wizard/valider', [BordereauLivraisonController::class, 'validerBordereau'])->name('bordereaux.wizard.valider');
+    Route::get('bordereaux/{bordereau}/imprimer', [BordereauLivraisonController::class, 'imprimer'])->name('bordereaux.imprimer');
     Route::resource('bordereaux', BordereauLivraisonController::class)->names('bordereaux');
 
     // Stocks
     Route::get('stocks', [StockController::class, 'index'])->name('stocks.index');
+
+    // Statistiques & États
+    Route::get('statistiques', [\Modules\Achat\Http\Controllers\StatistiquesController::class, 'index'])->name('statistiques.index');
+    Route::get('statistiques/data', [\Modules\Achat\Http\Controllers\StatistiquesController::class, 'getData'])->name('statistiques.data');
+    Route::get('statistiques/pdf', [\Modules\Achat\Http\Controllers\StatistiquesController::class, 'generatePdf'])->name('statistiques.pdf');
+
+    // Documents
+    Route::post('documents', [DocumentController::class, 'store'])->name('documents.store');
+    Route::get('documents/{document}/telecharger', [DocumentController::class, 'download'])->name('documents.telecharger');
+    Route::delete('documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
 });

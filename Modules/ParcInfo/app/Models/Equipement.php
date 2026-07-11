@@ -141,6 +141,11 @@ class Equipement extends Model
             ->where('statut', true);
     }
 
+    public function lignesBon(): HasMany
+    {
+        return $this->hasMany(LigneBonRepartition::class, 'equipement_id');
+    }
+
     // Historique ──
     public function historique(): HasMany
     {
@@ -206,8 +211,40 @@ class Equipement extends Model
             'en_reparation' => '<span class="badge bg-warning"><i class="bi bi-tools me-1"></i>En réparation</span>',
             'perdu' => '<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Perdu/Volé</span>',
             'reforme' => '<span class="badge bg-dark"><i class="bi bi-trash me-1"></i>Réformé</span>',
-            default => '<span class="badge bg-light text-dark">Inconnu</span>',
         };
+    }
+
+    public function getDetailRouteAttribute(): string
+    {
+        $code = $this->categorie?->code;
+
+        $prefix = match ($code) {
+            'ordinateur' => 'ordinateurs',
+            'ecran' => 'ecrans',
+            'unite-centrale' => 'unite-centrales',
+            'serveur' => 'serveurs',
+            'serveur-virtuel' => 'serveurs-virtuels',
+            'mobile' => 'mobiles',
+            'switch' => 'switches',
+            'routeur' => 'routeurs',
+            'wifi' => 'wifi',
+            'parefeu' => 'parefeux',
+            'onduleur' => 'onduleurs',
+            'rack' => 'racks',
+            'brassage' => 'brassage',
+            'imprimante' => 'imprimantes',
+            'scanner' => 'scanners',
+            'telephone' => 'telephonie',
+            'terminal-ip' => 'terminaux-ip',
+            'camera' => 'cameras',
+            default => null,
+        };
+
+        if ($prefix) {
+            return route('parc-info.'.$prefix.'.show', $this->id);
+        }
+
+        return '#';
     }
 
     /**

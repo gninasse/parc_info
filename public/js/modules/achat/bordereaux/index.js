@@ -6,6 +6,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     const $table = $('#bordereaux-table');
     const $btnShow = $('#btn-show');
+    const $btnPrint = $('#btn-print');
     const $btnWizard = $('#btn-wizard');
     const $btnDelete = $('#btn-delete');
 
@@ -29,7 +30,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const hasOne = selections.length === 1;
         
         $btnShow.prop('disabled', !hasOne);
-
+        $btnPrint.prop('disabled', !hasOne);
+        
         if (hasOne) {
             const row = selections[0];
             $btnWizard.prop('disabled', !(row.statut === 'brouillon' || row.statut === 'wizard'));
@@ -59,6 +61,17 @@ document.addEventListener('DOMContentLoaded', function() {
         const row = $table.bootstrapTable('getSelections')[0];
         if (row) {
             window.location.href = route('achat.bordereaux.wizard', row.id);
+        }
+    });
+
+    // ── ACTION PRINT ──
+    $btnPrint.on('click', function() {
+        const row = $table.bootstrapTable('getSelections')[0];
+        if (row) {
+            const url = route('achat.bordereaux.imprimer', row.id);
+            $('#print-bl-iframe').attr('src', url);
+            const printModal = new bootstrap.Modal(document.getElementById('printBlModal'));
+            printModal.show();
         }
     });
 

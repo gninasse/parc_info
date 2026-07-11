@@ -183,7 +183,7 @@ class BonCommandeController extends Controller
     {
         $this->authorize('achat.bons_commande.view');
 
-        $bonCommande->load(['fournisseur', 'lignesCommande.article', 'validateur', 'bordereauxLivraison.lignesLivraison', 'creator', 'updater']);
+        $bonCommande->load(['fournisseur', 'lignesCommande.article', 'validateur', 'bordereauxLivraison.lignesLivraison', 'creator', 'updater', 'documents.createur']);
         $fournisseurs = Fournisseur::where('est_actif', true)->orderBy('nom')->get();
         $articles = Article::where('actif', true)->orderBy('designation')->get();
 
@@ -207,7 +207,10 @@ class BonCommandeController extends Controller
             ];
         });
 
-        return view('achat::bons_commande.show', compact('bonCommande', 'fournisseurs', 'articles', 'existingLines', 'articlesCatalogue'));
+        $equipementsIds = $bonCommande->bordereauxLivraison->pluck('numero_livraison');
+        $equipements = \Modules\ParcInfo\Models\Equipement::whereIn('ref_bordereau', $equipementsIds)->with(['categorie', 'marque'])->get();
+
+        return view('achat::bons_commande.show', compact('bonCommande', 'fournisseurs', 'articles', 'existingLines', 'articlesCatalogue', 'equipements'));
     }
 
     /**

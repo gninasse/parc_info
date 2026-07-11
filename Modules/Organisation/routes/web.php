@@ -26,6 +26,7 @@ Route::middleware(['auth'])->prefix('organisation')->name('organisation.')->grou
     Route::prefix('directions')->name('directions.')->group(function () {
         Route::get('/', [DirectionController::class, 'index'])->name('index');
         Route::get('/data', [DirectionController::class, 'getData'])->name('data');
+        Route::get('/api', [DirectionController::class, 'getApiData'])->name('api');
         Route::get('/responsables', [DirectionController::class, 'getResponsables'])->name('responsables');
         Route::post('/', [DirectionController::class, 'store'])->name('store');
         Route::get('/{id}', [DirectionController::class, 'show'])->name('show');
@@ -38,6 +39,7 @@ Route::middleware(['auth'])->prefix('organisation')->name('organisation.')->grou
     Route::prefix('services')->name('services.')->group(function () {
         Route::get('/', [ServiceController::class, 'index'])->name('index');
         Route::get('/data', [ServiceController::class, 'getData'])->name('data');
+        Route::get('/api', [ServiceController::class, 'getApiData'])->name('api');
         Route::get('/directions-by-site/{siteId}', [ServiceController::class, 'getDirectionsBySite'])->name('directions-by-site');
         Route::get('/chefs-service', [ServiceController::class, 'getChefsService'])->name('chefs-service');
         Route::post('/', [ServiceController::class, 'store'])->name('store');
@@ -51,6 +53,7 @@ Route::middleware(['auth'])->prefix('organisation')->name('organisation.')->grou
     Route::prefix('unites')->name('unites.')->group(function () {
         Route::get('/', [UniteController::class, 'index'])->name('index');
         Route::get('/data', [UniteController::class, 'getData'])->name('data');
+        Route::get('/api', [UniteController::class, 'getApiData'])->name('api');
         Route::get('/majors', [UniteController::class, 'getMajors'])->name('majors');
         Route::get('/services-by-direction/{directionId}', [UniteController::class, 'getServicesByDirection'])->name('services-by-direction');
         Route::post('/', [UniteController::class, 'store'])->name('store');

@@ -1,8 +1,8 @@
 <div class="modal fade" id="createDirectionModal" tabindex="-1" aria-labelledby="createDirectionModalLabel" aria-hidden="true">
     <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="createDirectionModalLabel">Nouvelle Direction</h5>
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary border-0">
+                <h5 class="modal-title fw-bold text-primary" id="createDirectionModalLabel">Nouvelle Direction</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="directionForm">

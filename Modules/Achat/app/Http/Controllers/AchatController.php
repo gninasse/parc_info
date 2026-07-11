@@ -34,6 +34,52 @@ class AchatController extends Controller
             ->whereRaw('stock_actuel <= seuil_alerte')
             ->count();
 
+        // Stats Dépenses par Mois
+        $expendituresByMonth = BonCommande::whereIn('statut', ['valide', 'partiel', 'livre'])
+            ->selectRaw("TO_CHAR(date_commande, 'YYYY-MM') as month, SUM(montant_total) as total")
+            ->groupBy('month')
+            ->orderBy('month', 'asc')
+            ->limit(6)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'label' => $item->month,
+                    'total' => (float) $item->total,
+                ];
+            });
+
+        // Stats Dépenses par Fournisseur
+        $expendituresBySupplier = BonCommande::whereIn('statut', ['valide', 'partiel', 'livre'])
+            ->join('parc_info_fournisseurs', 'achat_bons_commande.fournisseur_id', '=', 'parc_info_fournisseurs.id')
+            ->selectRaw('parc_info_fournisseurs.nom as supplier_name, SUM(montant_total) as total')
+            ->groupBy('parc_info_fournisseurs.nom')
+            ->orderBy('total', 'desc')
+            ->limit(5)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'label' => $item->supplier_name,
+                    'total' => (float) $item->total,
+                ];
+            });
+
+        // Répartition catalogue
+        $articlesByType = Article::selectRaw('type_article, COUNT(*) as count')
+            ->groupBy('type_article')
+            ->get()
+            ->map(function ($item) {
+                $labels = [
+                    'equipement' => 'Équipements',
+                    'licence' => 'Licences',
+                    'consommable' => 'Consommables',
+                ];
+
+                return [
+                    'label' => $labels[$item->type_article] ?? $item->type_article,
+                    'count' => $item->count,
+                ];
+            });
+
         return view('achat::index', compact(
             'totalArticles',
             'totalBC',
@@ -43,7 +89,10 @@ class AchatController extends Controller
             'totalBL',
             'blBrouillon',
             'blValide',
-            'stockAlerts'
+            'stockAlerts',
+            'expendituresByMonth',
+            'expendituresBySupplier',
+            'articlesByType'
         ));
     }
 

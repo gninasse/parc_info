@@ -4,23 +4,13 @@
         <div class="sidebar-brand">
           <!--begin::Brand Link-->
           <a href="{{ url('/') }}" class="brand-link d-flex align-items-center gap-2 px-3 py-2">
-            <!--begin::Brand Icon-->
             <img
               src="{{ asset('images/chuyo_icon.png') }}"
               alt="CHU-YO Icon"
               class="brand-image"
               style="width: 36px; height: 36px; object-fit: contain; border-radius: 8px;"
             />
-            CHU-YO
-            <!--end::Brand Icon-->
-            <!--begin::Brand Logo-->
-            {{-- <img
-              src="{{ asset('images/chuyo_logo.png') }}"
-              alt="CHU-YO KEYSTONE"
-              class="brand-text"
-              style="height: 32px; object-fit: contain; max-width: 140px;"
-            /> --}}
-            <!--end::Brand Logo-->
+            <span class="brand-text fw-semibold">CHU-YO | Administration</span>
           </a>
           <!--end::Brand Link-->
         </div>

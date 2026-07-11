@@ -341,30 +341,7 @@ const Wizard = (() => {
             $('#aff-skip-hint').addClass('d-none');
         });
 
-        $(document).on('local:selected', function (e, local) {
-            if (!$('#step-3').is(':visible')) return;
-            $('.aff-type-card').removeClass('selected');
-            $('.aff-type-card[data-value="LOCAL"]').addClass('selected')
-                .find('input[type="radio"]').prop('checked', true);
-            $('#local-summary-code').text(local.code);
-            $('#local-summary-libelle').text(local.libelle);
-            $('#local-summary-type').text(local.type);
-            $('#local-summary-etage').text(local.etage);
-            $('#local-summary-batiment').text(local.batiment);
-            $('#local_id').val(local.id);
-            $('#dossier_employe_id, #poste_travail_id').val('');
-            $('.aff-summary').addClass('d-none');
-            $('#aff-local-summary').removeClass('d-none');
-            $('#aff-skip-hint').addClass('d-none');
-        });
 
-        // Choix direct du type d'affectation
-        $(document).on('click', '.aff-type-card', function () {
-            const val = $(this).data('value');
-            if (val === 'EMPLOYE') $('#employeSelectionModal').modal('show');
-            if (val === 'POSTE') $('#posteSelectionModal').modal('show');
-            if (val === 'LOCAL') $('#localSelectionModal').modal('show');
-        });
 
         // Ajout marque rapide
         $('.btn-add-marque-global').on('click', () => {

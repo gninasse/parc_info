@@ -267,11 +267,11 @@
                     <img class="logo" src="{{ public_path('images/chuyo_logo.png') }}" alt="CHU-YO">
                 @endif
                 <div class="hospital-name">CHU-YO Achat</div>
-                <div class="hospital-sub">CENTRE HOSPITALIER UNIVERSITAIRE SOUROU SANOU</div>
+                <div class="hospital-sub">CENTRE HOSPITALIER UNIVERSITAIRE YALGADO OUEDRAOGO</div>
                 <div class="hospital-address">
-                    BP 1024, Avenue Houari Boumédiène<br>
-                    Bobo-Dioulasso, Burkina Faso<br>
-                    Tél: (+226) 20 97 00 44 / 45
+                    03 BP 7022 Ouagadougou 03, Burkina Faso<br>
+                    Avenue du Capitaine Thomas Sankara<br>
+                    Tél: (+226) 25 31 16 55 / 56 / 57
                 </div>
             </td>
             <td class="document-title-container">
@@ -317,10 +317,10 @@
                 <div class="info-card">
                     <div class="info-card-title">Adresse de Livraison</div>
                     <div class="info-card-text">
-                        <strong>CHU Sourou Sanou</strong><br>
+                        <strong>CHU Yalgado Ouédraogo</strong><br>
                         Service Destinataire: Service des Achats & Approvisionnements<br>
                         Bâtiment: Direction Générale, Rez-de-chaussée<br>
-                        Bobo-Dioulasso, Burkina Faso
+                        Ouagadougou, Burkina Faso
                     </div>
                 </div>
             </td>

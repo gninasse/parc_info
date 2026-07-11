@@ -3,18 +3,14 @@
         <!--begin::Sidebar Brand-->
         <div class="sidebar-brand">
           <!--begin::Brand Link-->
-          <a href="{{ url('/') }}" class="brand-link">
-            <!--begin::Brand Image-->
+          <a href="{{ url('/') }}" class="brand-link d-flex align-items-center gap-2 px-3 py-2">
             <img
-              src="{{ asset('img/grh-logo.png') }}"
-              alt="GRH Logo"
-              class="brand-image shadow"
-              style="max-height: 33px; width: auto;"
+              src="{{ asset('images/chuyo_icon.png') }}"
+              alt="CHU-YO Icon"
+              class="brand-image"
+              style="width: 36px; height: 36px; object-fit: contain; border-radius: 8px;"
             />
-            <!--end::Brand Image-->
-            <!--begin::Brand Text-->
-            <span class="brand-text fw-light">CHU-YO | GRH</span>
-            <!--end::Brand Text-->
+            <span class="brand-text fw-semibold">CHU-YO | GRH</span>
           </a>
           <!--end::Brand Link-->
         </div>

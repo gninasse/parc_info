@@ -16,7 +16,7 @@ class DirectionController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:organisation.directions.index', only: ['index', 'getData', 'show']),
+            new Middleware('permission:organisation.directions.index', only: ['index', 'getData', 'show', 'getApiData']),
             new Middleware('permission:organisation.directions.store', only: ['store']),
             new Middleware('permission:organisation.directions.update', only: ['update']),
             new Middleware('permission:organisation.directions.destroy', only: ['destroy']),
@@ -177,7 +177,7 @@ class DirectionController extends Controller implements HasMiddleware
         }));
     }
 
-    public function getServices($id)
+    public function getServices($id): \Illuminate\Http\JsonResponse
     {
         return response()->json(
             Service::where('direction_id', $id)
@@ -185,5 +185,28 @@ class DirectionController extends Controller implements HasMiddleware
                 ->orderBy('libelle')
                 ->get(['id', 'libelle'])
         );
+    }
+
+    public function getApiData(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $query = Direction::query()->with('site');
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function ($q) use ($s) {
+                $q->where('code', 'ilike', "%{$s}%")
+                    ->orWhere('libelle', 'ilike', "%{$s}%");
+            });
+        }
+
+        return response()->json($query->get()->map(function ($dir) {
+            return [
+                'id' => $dir->id,
+                'code' => $dir->code ?? '',
+                'libelle' => $dir->libelle ?? '',
+                'site' => $dir->site?->libelle ?? '—',
+                'statut' => $dir->actif ? 'actif' : 'inactif',
+            ];
+        }));
     }
 }

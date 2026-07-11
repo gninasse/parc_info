@@ -3,6 +3,8 @@
 namespace Modules\Organisation\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Modules\Grh\Models\Employe;
 use Modules\Organisation\Http\Requests\PosteTravailRequest;
@@ -14,7 +16,7 @@ use Modules\Organisation\Models\Unite;
 
 class PosteTravailController extends Controller
 {
-    public function index()
+    public function index(): View
     {
         $directions = Direction::actif()->get();
         $sites = Site::actif()->get();
@@ -22,7 +24,7 @@ class PosteTravailController extends Controller
         return view('organisation::organisation.postes.index', compact('directions', 'sites'));
     }
 
-    public function getData(Request $request)
+    public function getData(Request $request): JsonResponse
     {
         $query = PosteTravail::query()->with(['direction', 'service', 'unite', 'local.etage.batiment.site', 'agent']);
 
@@ -84,7 +86,7 @@ class PosteTravailController extends Controller
         ]);
     }
 
-    public function getApiData(Request $request)
+    public function getApiData(Request $request): JsonResponse
     {
         $query = PosteTravail::query()->with(['direction', 'service', 'unite', 'local.etage.batiment.site', 'agent']);
 
@@ -115,14 +117,20 @@ class PosteTravailController extends Controller
                 'emplacement' => $poste->local ? $poste->local->nom_complet : '—',
                 'occupant' => $poste->agent ? $poste->agent->full_name : '—',
                 'statut' => $poste->actif ? 'actif' : 'inactif',
+                'local_id' => $poste->local_id,
+                'local_site' => $poste->local?->etage?->batiment?->site?->libelle ?? '—',
+                'local_batiment' => $poste->local?->etage?->batiment?->libelle ?? '—',
+                'local_etage' => $poste->local?->etage?->libelle ?? '—',
+                'local_libelle' => $poste->local?->libelle ?? '—',
+                'local_code' => $poste->local?->code ?? '—',
             ];
         }));
     }
 
-    public function store(PosteTravailRequest $request)
+    public function store(PosteTravailRequest $request): JsonResponse
     {
         try {
-            $data = $request->validated();
+            $data = $request->safe()->except(['site_id', 'batiment_id', 'etage_id']);
 
             $parentId = $request->service_id ?? $request->direction_id;
             $isService = ! empty($request->service_id);
@@ -136,7 +144,7 @@ class PosteTravailController extends Controller
         }
     }
 
-    public function searchEmployes(Request $request)
+    public function searchEmployes(Request $request): JsonResponse
     {
         $search = $request->get('q');
         $employes = Employe::where('est_actif', true)
@@ -156,21 +164,21 @@ class PosteTravailController extends Controller
         }));
     }
 
-    public function getServicesByDirection($directionId)
+    public function getServicesByDirection(int $directionId): JsonResponse
     {
         $services = Service::where('direction_id', $directionId)->where('actif', true)->get(['id', 'libelle']);
 
         return response()->json($services);
     }
 
-    public function getUnitesByService($serviceId)
+    public function getUnitesByService(int $serviceId): JsonResponse
     {
         $unites = Unite::where('service_id', $serviceId)->where('actif', true)->get(['id', 'libelle']);
 
         return response()->json($unites);
     }
 
-    public function show($id)
+    public function show(int $id): JsonResponse
     {
         try {
             $poste = PosteTravail::with(['direction', 'service', 'unite', 'local.etage.batiment.site', 'agent'])->findOrFail($id);
@@ -181,11 +189,11 @@ class PosteTravailController extends Controller
         }
     }
 
-    public function update(PosteTravailRequest $request, $id)
+    public function update(PosteTravailRequest $request, int $id): JsonResponse
     {
         try {
             $poste = PosteTravail::findOrFail($id);
-            $poste->update($request->validated());
+            $poste->update($request->safe()->except(['site_id', 'batiment_id', 'etage_id']));
 
             return response()->json(['success' => true, 'message' => 'Poste de travail modifié avec succès', 'data' => $poste]);
         } catch (\Exception $e) {
@@ -193,7 +201,7 @@ class PosteTravailController extends Controller
         }
     }
 
-    public function destroy($id)
+    public function destroy(int $id): JsonResponse
     {
         try {
             $poste = PosteTravail::findOrFail($id);
@@ -205,7 +213,7 @@ class PosteTravailController extends Controller
         }
     }
 
-    public function toggleStatus($id)
+    public function toggleStatus(int $id): JsonResponse
     {
         try {
             $item = PosteTravail::findOrFail($id);

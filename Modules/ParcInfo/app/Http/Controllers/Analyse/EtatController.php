@@ -576,21 +576,19 @@ class EtatController extends Controller implements HasMiddleware
                     'statut' => 'Statut',
                     'etat' => 'État',
                 ];
-                $query = Equipement::has('ordinateur')->with(['marque', 'ordinateur.typeRam', 'ordinateur.typeCpu', 'ordinateur.typeDisque', 'ordinateur.typeOs']);
+                $query = Equipement::whereHas('categorie', fn ($q) => $q->where('code', 'ordinateur'))->with(['marque']);
                 $applyEqFilters($query);
                 $rows = $query->get()->map(function ($eq) {
-                    $pc = $eq->ordinateur;
-
                     return [
                         'code_inventaire' => $eq->code_inventaire,
                         'numero_serie' => $eq->numero_serie,
                         'marque_libelle' => $eq->marque ? $eq->marque->libelle : '-',
                         'modele' => $eq->modele,
-                        'type_pc' => $pc->type_pc ?? '-',
-                        'ram_capacite' => $pc->ram_capacite_go ?? '-',
-                        'cpu_processeur' => $pc->processeur_model ?? '-',
-                        'stockage_capacite' => $pc->stockage_capacite_go ?? '-',
-                        'os_libelle' => $pc->typeOs ? $pc->typeOs->libelle : '-',
+                        'type_pc' => $eq->champs_valeurs['type_pc'] ?? '-',
+                        'ram_capacite' => $eq->champs_valeurs['ram_capacite_go'] ?? '-',
+                        'cpu_processeur' => $eq->champs_valeurs['processeur_model'] ?? '-',
+                        'stockage_capacite' => $eq->champs_valeurs['stockage_capacite_go'] ?? '-',
+                        'os_libelle' => $eq->getValeurAffichee('os_type_id') ?? '-',
                         'statut' => $eq->statut,
                         'etat' => $eq->etat,
                     ];
@@ -611,21 +609,22 @@ class EtatController extends Controller implements HasMiddleware
                     'position_u' => 'Position Rack',
                     'statut' => 'Statut',
                 ];
-                $query = Equipement::has('serveur')->with(['marque', 'serveur']);
+                $query = Equipement::whereHas('categorie', fn ($q) => $q->where('code', 'serveur'))->with(['marque']);
                 $applyEqFilters($query);
                 $rows = $query->get()->map(function ($eq) {
-                    $srv = $eq->serveur;
+                    $posD = $eq->champs_valeurs['u_position_depart'] ?? null;
+                    $posF = $eq->champs_valeurs['u_position_fin'] ?? null;
 
                     return [
                         'code_inventaire' => $eq->code_inventaire,
                         'numero_serie' => $eq->numero_serie,
                         'marque_libelle' => $eq->marque ? $eq->marque->libelle : '-',
                         'modele' => $eq->modele,
-                        'role_serveur' => $srv->role_serveur ?? '-',
-                        'ram_capacite' => $srv->ram_capacite_go ?? '-',
-                        'stockage_capacite' => $srv->stockage_capacite_go ?? '-',
-                        'adresse_ip' => $srv->adresse_ip ?? '-',
-                        'position_u' => ($srv->u_position_depart && $srv->u_position_fin) ? "U{$srv->u_position_depart}-U{$srv->u_position_fin}" : '-',
+                        'role_serveur' => $eq->champs_valeurs['role_serveur'] ?? '-',
+                        'ram_capacite' => $eq->champs_valeurs['ram_capacite_go'] ?? '-',
+                        'stockage_capacite' => $eq->champs_valeurs['stockage_capacite_go'] ?? '-',
+                        'adresse_ip' => $eq->champs_valeurs['adresse_ip'] ?? '-',
+                        'position_u' => ($posD && $posF) ? "U{$posD}-U{$posF}" : '-',
                         'statut' => $eq->statut,
                     ];
                 })->toArray();
@@ -643,20 +642,20 @@ class EtatController extends Controller implements HasMiddleware
                     'hyperviseur' => 'Hyperviseur',
                     'hote_physique' => 'Hôte Physique',
                 ];
-                $query = Equipement::has('serveurVirtuel')->with(['serveurVirtuel.serveurHote.equipement']);
+                $query = Equipement::whereHas('categorie', fn ($q) => $q->where('code', 'serveur-virtuel'))->with(['marque']);
                 $applyEqFilters($query);
                 $rows = $query->get()->map(function ($eq) {
-                    $vs = $eq->serveurVirtuel;
-                    $hote = $vs->serveurHote ? ($vs->serveurHote->equipement ? $vs->serveurHote->equipement->code_inventaire : '-') : '-';
+                    $hoteId = $eq->champs_valeurs['serveur_hote_id'] ?? null;
+                    $hote = $hoteId ? (Equipement::find($hoteId)?->code_inventaire ?? '-') : '-';
 
                     return [
                         'code_inventaire' => $eq->code_inventaire,
                         'modele' => $eq->modele,
-                        'role_serveur' => $vs->role_serveur ?? '-',
-                        'ram_capacite' => $vs->ram_capacite_go ?? '-',
-                        'stockage_capacite' => $vs->stockage_capacite_go ?? '-',
-                        'adresse_ip' => $vs->adresse_ip ?? '-',
-                        'hyperviseur' => $vs->hyperviseur ?? '-',
+                        'role_serveur' => $eq->champs_valeurs['role_serveur'] ?? '-',
+                        'ram_capacite' => $eq->champs_valeurs['ram_capacite_go'] ?? '-',
+                        'stockage_capacite' => $eq->champs_valeurs['stockage_capacite_go'] ?? '-',
+                        'adresse_ip' => $eq->champs_valeurs['adresse_ip'] ?? '-',
+                        'hyperviseur' => $eq->champs_valeurs['hyperviseur'] ?? '-',
                         'hote_physique' => $hote,
                     ];
                 })->toArray();
@@ -673,19 +672,17 @@ class EtatController extends Controller implements HasMiddleware
                     'est_couleur' => 'Couleur',
                     'adresse_ip' => 'Adresse IP',
                 ];
-                $query = Equipement::has('imprimante')->with(['marque', 'imprimante.typeImprimante']);
+                $query = Equipement::whereHas('categorie', fn ($q) => $q->where('code', 'imprimante'))->with(['marque']);
                 $applyEqFilters($query);
                 $rows = $query->get()->map(function ($eq) {
-                    $prn = $eq->imprimante;
-
                     return [
                         'code_inventaire' => $eq->code_inventaire,
                         'marque_libelle' => $eq->marque ? $eq->marque->libelle : '-',
                         'modele' => $eq->modele,
-                        'type_imprimante' => $prn->typeImprimante ? $prn->typeImprimante->libelle : '-',
-                        'est_multifonction' => $prn->est_multifonction ? 'Oui' : 'Non',
-                        'est_couleur' => $prn->est_couleur ? 'Oui' : 'Non',
-                        'adresse_ip' => $prn->adresse_ip ?? '-',
+                        'type_imprimante' => $eq->getValeurAffichee('type_imprimante_id') ?? '-',
+                        'est_multifonction' => $eq->getValeurAffichee('est_multifonction') ?? 'Non',
+                        'est_couleur' => $eq->getValeurAffichee('est_couleur') ?? 'Non',
+                        'adresse_ip' => $eq->champs_valeurs['adresse_ip'] ?? '-',
                     ];
                 })->toArray();
                 break;
@@ -701,19 +698,17 @@ class EtatController extends Controller implements HasMiddleware
                     'est_recto_verso' => 'Recto Verso',
                     'a_chargeur' => 'Chargeur Auto',
                 ];
-                $query = Equipement::has('scanner')->with(['marque', 'scanner']);
+                $query = Equipement::whereHas('categorie', fn ($q) => $q->where('code', 'scanner'))->with(['marque']);
                 $applyEqFilters($query);
                 $rows = $query->get()->map(function ($eq) {
-                    $scan = $eq->scanner;
-
                     return [
                         'code_inventaire' => $eq->code_inventaire,
                         'marque_libelle' => $eq->marque ? $eq->marque->libelle : '-',
                         'modele' => $eq->modele,
-                        'resolution_dpi' => $scan->resolution_dpi_max ?? '-',
-                        'format_max' => $scan->format_max ?? '-',
-                        'est_recto_verso' => $scan->est_recto_verso ? 'Oui' : 'Non',
-                        'a_chargeur' => $scan->a_chargeur_auto ? 'Oui' : 'Non',
+                        'resolution_dpi' => $eq->champs_valeurs['resolution_dpi_max'] ?? '-',
+                        'format_max' => $eq->champs_valeurs['format_max'] ?? '-',
+                        'est_recto_verso' => $eq->getValeurAffichee('est_recto_verso') ?? 'Non',
+                        'a_chargeur' => $eq->getValeurAffichee('a_chargeur_auto') ?? 'Non',
                     ];
                 })->toArray();
                 break;
@@ -760,18 +755,16 @@ class EtatController extends Controller implements HasMiddleware
                     'protocole' => 'Protocole',
                     'adresse_ip' => 'Adresse IP',
                 ];
-                $query = Equipement::has('telephone')->with(['marque', 'telephone']);
+                $query = Equipement::whereHas('categorie', fn ($q) => $q->where('code', 'telephone'))->with(['marque']);
                 $applyEqFilters($query);
                 $rows = $query->get()->map(function ($eq) {
-                    $tel = $eq->telephone;
-
                     return [
                         'code_inventaire' => $eq->code_inventaire,
                         'marque_libelle' => $eq->marque ? $eq->marque->libelle : '-',
                         'modele' => $eq->modele,
-                        'extension' => $tel->extension ?? '-',
-                        'protocole' => $tel->protocole ?? '-',
-                        'adresse_ip' => $tel->adresse_ip ?? '-',
+                        'extension' => $eq->champs_valeurs['extension'] ?? '-',
+                        'protocole' => $eq->champs_valeurs['protocole'] ?? '-',
+                        'adresse_ip' => $eq->champs_valeurs['adresse_ip'] ?? '-',
                     ];
                 })->toArray();
                 break;
@@ -787,19 +780,17 @@ class EtatController extends Controller implements HasMiddleware
                     'statut_mdm' => 'Statut MDM',
                     'num_tel' => 'Numéro Associé',
                 ];
-                $query = Equipement::has('mobile')->with(['marque', 'mobile']);
+                $query = Equipement::whereHas('categorie', fn ($q) => $q->where('code', 'mobile'))->with(['marque']);
                 $applyEqFilters($query);
                 $rows = $query->get()->map(function ($eq) {
-                    $mob = $eq->mobile;
-
                     return [
                         'code_inventaire' => $eq->code_inventaire,
                         'marque_libelle' => $eq->marque ? $eq->marque->libelle : '-',
                         'modele' => $eq->modele,
-                        'imei' => $mob->imei_1 ?? '-',
-                        'os_version' => $mob->version_os ?? '-',
-                        'statut_mdm' => $mob->statut_mdm ?? '-',
-                        'num_tel' => $mob->num_tel_associe ?? '-',
+                        'imei' => $eq->champs_valeurs['imei_1'] ?? '-',
+                        'os_version' => $eq->champs_valeurs['version_os'] ?? '-',
+                        'statut_mdm' => $eq->champs_valeurs['statut_mdm'] ?? '-',
+                        'num_tel' => $eq->champs_valeurs['num_tel_associe'] ?? '-',
                     ];
                 })->toArray();
                 break;
@@ -815,19 +806,17 @@ class EtatController extends Controller implements HasMiddleware
                     'emplacement' => 'Emplacement',
                     'adresse_ip' => 'Adresse IP',
                 ];
-                $query = Equipement::has('camera')->with(['marque', 'camera']);
+                $query = Equipement::whereHas('categorie', fn ($q) => $q->where('code', 'camera'))->with(['marque']);
                 $applyEqFilters($query);
                 $rows = $query->get()->map(function ($eq) {
-                    $cam = $eq->camera;
-
                     return [
                         'code_inventaire' => $eq->code_inventaire,
                         'marque_libelle' => $eq->marque ? $eq->marque->libelle : '-',
                         'modele' => $eq->modele,
-                        'resolution' => $cam->resolution ?? '-',
-                        'type_camera' => $cam->type_camera ?? '-',
-                        'emplacement' => $cam->emplacement ?? '-',
-                        'adresse_ip' => $cam->adresse_ip ?? '-',
+                        'resolution' => $eq->champs_valeurs['resolution'] ?? '-',
+                        'type_camera' => $eq->champs_valeurs['type_camera'] ?? '-',
+                        'emplacement' => $eq->champs_valeurs['emplacement'] ?? '-',
+                        'adresse_ip' => $eq->champs_valeurs['adresse_ip'] ?? '-',
                     ];
                 })->toArray();
                 break;

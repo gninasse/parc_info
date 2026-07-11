@@ -176,14 +176,14 @@
                         <img class="hospital-logo" src="{{ asset('images/chuyo_logo.png') }}" alt="Logo CHU-YO">
                     @endif
                     <div>
-                        <h4 class="fw-bold text-dark mb-0 uppercase">CHU-YO Achat</h4>
-                        <div class="text-muted fw-bold small" style="font-size: 0.75rem;">CENTRE HOSPITALIER UNIVERSITAIRE SOUROU SANOU</div>
+                        <h4 class="fw-bold text-dark mb-0 uppercase">CHU-YO</h4>
+                        <div class="text-muted fw-bold small" style="font-size: 0.75rem;">CENTRE HOSPITALIER UNIVERSITAIRE YALGADO OUEDRAOGO</div>
                     </div>
                 </div>
                 <div class="small text-secondary" style="font-size: 0.8rem; line-height: 1.4;">
-                    BP 1024, Avenue Houari Boumédiène<br>
-                    Bobo-Dioulasso, Burkina Faso<br>
-                    Tél: (+226) 20 97 00 44 / 45
+                    03 BP 7022 Ouagadougou 03, Burkina Faso<br>
+                    Avenue du Capitaine Thomas Sankara<br>
+                    Tél: (+226) 25 31 16 55 / 56 / 57
                 </div>
             </div>
             
@@ -229,10 +229,10 @@
                 <div class="info-card">
                     <div class="info-card-title">Adresse de Livraison</div>
                     <div class="small text-dark" style="line-height: 1.5;">
-                        <h6 class="fw-bold text-dark mb-1">CHU Sourou Sanou</h6>
+                        <h6 class="fw-bold text-dark mb-1">CHU Yalgado Ouédraogo</h6>
                         <span class="text-muted">Service:</span> Service des Achats & Approvisionnements<br>
                         <span class="text-muted">Bâtiment:</span> Direction Générale, Rez-de-chaussée<br>
-                        <span class="text-muted">Ville:</span> Bobo-Dioulasso, Burkina Faso
+                        <span class="text-muted">Ville:</span> Ouagadougou, Burkina Faso
                     </div>
                 </div>
             </div>
@@ -328,7 +328,7 @@
         <div class="print-footer mt-5">
             Les conditions générales d'achat du CHU-YO s'appliquent à cette commande. Le paiement sera effectué à 30 jours fin de mois après réception conforme du matériel et de la facture.
             <div class="mt-2 text-muted font-monospace" style="font-size: 0.65rem;">
-                Page 1/1 - Généré le {{ now()->format('d/m/Y H:i') }} - CHU-YO Achats
+                Page 1/1 - Généré le {{ now()->format('d/m/Y H:i') }} - CHU-YO
             </div>
         </div>
 

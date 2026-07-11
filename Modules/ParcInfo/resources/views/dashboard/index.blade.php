@@ -222,6 +222,40 @@
         </div>
     </div>
 
+    {{-- ── Ligne 2.5 : Graphiques Interactifs ── --}}
+    <div class="row g-4 mb-4">
+        {{-- Graphique des Statuts --}}
+        <div class="col-lg-6">
+            <div class="card dashboard-card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+                    <h5 class="card-title fw-bold text-dark mb-0">
+                        <i class="bi bi-bar-chart-fill text-primary me-2"></i>Statuts des Actifs
+                    </h5>
+                </div>
+                <div class="card-body px-4 py-3">
+                    <div class="chart-container" style="position: relative; height: 260px; width: 100%;">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {{-- Graphique des États Physiques --}}
+        <div class="col-lg-6">
+            <div class="card dashboard-card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+                    <h5 class="card-title fw-bold text-dark mb-0">
+                        <i class="bi bi-activity text-success me-2"></i>État Physique du Parc
+                    </h5>
+                </div>
+                <div class="card-body px-4 py-3">
+                    <div class="chart-container" style="position: relative; height: 260px; width: 100%;">
+                        <canvas id="statesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- ── Ligne 3 : Derniers équipements enregistrés ── --}}
     <div class="row">
         <div class="col-lg-12">
@@ -383,4 +417,76 @@
     }
 </style>
 @endpush
-@push('js'){{-- aucun JS requis --}}@endpush
+@push('js')
+<script src="{{ asset('plugins/chartjs/chart.min.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 1. Status Chart
+        const statusData = @json($statusStats);
+        const statusLabels = statusData.map(s => s.label);
+        const statusCounts = statusData.map(s => s.count);
+        const statusColors = statusData.map(s => s.color);
+
+        new Chart(document.getElementById('statusChart'), {
+            type: 'bar',
+            data: {
+                labels: statusLabels,
+                datasets: [{
+                    label: 'Nombre d\'actifs',
+                    data: statusCounts,
+                    backgroundColor: statusColors,
+                    borderWidth: 0,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                }
+            }
+        });
+
+        // 2. States Chart
+        const statesData = @json($etatStats);
+        const statesLabels = statesData.map(e => e.label);
+        const statesCounts = statesData.map(e => e.count);
+        const statesColors = statesData.map(e => e.color);
+
+        new Chart(document.getElementById('statesChart'), {
+            type: 'doughnut',
+            data: {
+                labels: statesLabels,
+                datasets: [{
+                    data: statesCounts,
+                    backgroundColor: statesColors,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            boxWidth: 12,
+                            padding: 15
+                        }
+                    }
+                },
+                cutout: '60%'
+            }
+        });
+    });
+</script>
+@endpush

@@ -18,8 +18,6 @@ class PosteTravail extends Model
         'direction_id',
         'service_id',
         'unite_id',
-        'batiment_id',
-        'etage_id',
         'local_id',
         'dossier_employe_id',
         'statut',
@@ -43,16 +41,6 @@ class PosteTravail extends Model
     public function unite(): BelongsTo
     {
         return $this->belongsTo(Unite::class);
-    }
-
-    public function batiment(): BelongsTo
-    {
-        return $this->belongsTo(Batiment::class);
-    }
-
-    public function etage(): BelongsTo
-    {
-        return $this->belongsTo(Etage::class);
     }
 
     public function local(): BelongsTo

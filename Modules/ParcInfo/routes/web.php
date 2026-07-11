@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\ParcInfo\Http\Controllers\BonRepartitionController;
 use Modules\ParcInfo\Http\Controllers\ConsommableController;
 use Modules\ParcInfo\Http\Controllers\ContratMaintenanceController;
 use Modules\ParcInfo\Http\Controllers\EquipementDynamiqueController;
@@ -13,6 +14,10 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
     Route::get('/dashboard', [ParcInfoController::class, 'dashboard'])->name('dashboard');
     Route::get('/search/equipements', [ParcInfoController::class, 'searchEquipements'])->name('search-equipements');
     Route::get('/informatique/equipements/{id}/json', [EquipementDynamiqueController::class, 'showJson'])->name('equipements.show-json');
+    Route::get('/informatique/equipements/{id}/etiquette', [EquipementDynamiqueController::class, 'imprimerEtiquette'])->name('equipements.imprimer-etiquette');
+    Route::get('/informatique/equipements/etiquettes/centre', [EquipementDynamiqueController::class, 'centreImpression'])->name('equipements.centre-impression');
+    Route::get('/informatique/equipements/etiquettes/data', [EquipementDynamiqueController::class, 'getEquipementsData'])->name('equipements.etiquettes-data');
+    Route::get('/informatique/equipements/etiquettes/imprimer-selection', [EquipementDynamiqueController::class, 'imprimerEtiquettesSelectionnees'])->name('equipements.imprimer-etiquettes');
     Route::post('/informatique/dictionnaires/valeurs', [EquipementDynamiqueController::class, 'storeDictionnaireValeur'])->name('dictionnaires.valeurs.store');
 
     // Licences
@@ -79,6 +84,21 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::post('/{id}/consommer', [ConsommableController::class, 'consommer'])->name('consommables.consommer');
         Route::post('/{id}/approvisionner', [ConsommableController::class, 'approvisionner'])->name('consommables.approvisionner');
         Route::post('/types/quick-add', [ConsommableController::class, 'storeType'])->name('consommables.store-type');
+    });
+
+    // Bons de Répartition
+    Route::prefix('informatique/bons-repartition')->name('bons-repartition.')->group(function () {
+        Route::get('/', [BonRepartitionController::class, 'index'])->name('index');
+        Route::get('/data', [BonRepartitionController::class, 'data'])->name('data');
+        Route::post('/', [BonRepartitionController::class, 'store'])->name('store');
+        Route::get('/{bon}', [BonRepartitionController::class, 'show'])->name('show');
+        Route::put('/{bon}', [BonRepartitionController::class, 'update'])->name('update');
+        Route::delete('/{bon}', [BonRepartitionController::class, 'destroy'])->name('destroy');
+        Route::get('/{bon}/imprimer', [BonRepartitionController::class, 'imprimer'])->name('imprimer');
+        Route::post('/{bon}/lignes', [BonRepartitionController::class, 'addLigne'])->name('lignes.add');
+        Route::put('/{bon}/lignes/{ligne}', [BonRepartitionController::class, 'updateLigne'])->name('lignes.update');
+        Route::delete('/{bon}/lignes/{ligne}', [BonRepartitionController::class, 'removeLigne'])->name('lignes.remove');
+        Route::post('/{bon}/lignes/{ligne}/signer', [BonRepartitionController::class, 'signerLigne'])->name('lignes.signer');
     });
 
     // Ordinateurs

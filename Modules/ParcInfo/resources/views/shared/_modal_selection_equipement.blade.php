@@ -2,7 +2,7 @@
 <div class="modal fade" id="equipementSelectionModal" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-primary bg-opacity-10 border-0">
+            <div class="modal-header bg-primary border-0">
                 <h5 class="modal-title fw-bold text-primary">
                     <i class="bi bi-pc-display me-2"></i>Sélectionner un équipement
                 </h5>

@@ -77,6 +77,9 @@
                 <button class="btn btn-outline-secondary btn-sm" id="btn-nouvelle-affectation">
                     <i class="bi bi-person-plus me-1"></i> Affecter
                 </button>
+                <a href="{{ route('parc-info.equipements.imprimer-etiquette', $equipement->id) }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-qr-code-scan me-1"></i> Étiquette
+                </a>
                 <button class="btn btn-primary btn-sm" id="btn-edit-toggle">
                     <i class="bi bi-pencil me-1"></i> Modifier
                 </button>
@@ -93,6 +96,7 @@
         ['licences',    'bi-file-lock',     'Licences'],
         ['historique-aff','bi-clock-history','Historique Affectations'],
         ['historique-chg','bi-journal-text', 'Journal des Changements'],
+        ['bons',         'bi-clipboard-check','Bons de Répartition'],
     ] as [$id,$icon,$label])
     <li class="nav-item" role="presentation">
         <button class="nav-link {{ $loop->first ? 'active' : '' }} fw-semibold small px-3"
@@ -191,6 +195,26 @@
                             </select>
                             <button type="button" class="btn btn-outline-secondary d-none btn-add-ref btn-select-local" id="btn-select-local" title="Sélectionner le local"><i class="bi bi-search"></i></button>
                         </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="field-label">Date de mise en service</label>
+                        <input type="date" class="form-control field-input" name="date_mise_en_service"
+                               value="{{ $equipement->date_mise_en_service?->format('Y-m-d') }}" disabled>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="field-label">Durée de vie probable (ans)</label>
+                        <input type="number" class="form-control field-input" name="duree_vie_probable"
+                               value="{{ $equipement->duree_vie_probable }}" disabled>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="field-label">Réf. Bordereau Achat</label>
+                        <input type="text" class="form-control field-input" name="ref_bordereau"
+                               value="{{ $equipement->ref_bordereau }}" disabled>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="field-label">Tags (séparés par virgules)</label>
+                        <input type="text" class="form-control field-input" name="tags"
+                               value="{{ is_array($equipement->tags) ? implode(', ', $equipement->tags) : '' }}" placeholder="ex: DSI, Bureau" disabled>
                     </div>
                 </div>
             </div>
@@ -372,7 +396,7 @@
                                 {{ $a->direction?->libelle ?? ($a->service?->libelle ?? ($a->unite?->libelle ?? '—')) }}
                             </td>
                             <td class="small">{{ $a->date_debut?->format('d/m/Y') ?? '—' }}</td>
-                            <td class="small">{{ $a->date_fin?->format('d/m/Y') ?? '<span class="text-muted">En cours</span>' }}</td>
+                            <td class="small">{!! $a->date_fin?->format('d/m/Y') ?? '<span class="text-muted">En cours</span>' !!}</td>
                             <td>
                                 @if($a->statut)
                                 <span class="badge bg-success-subtle text-success border border-success-subtle">Active</span>
@@ -403,7 +427,7 @@
             <div class="timeline">
                 @foreach($equipement->historique->sortByDesc('date_changement') as $h)
                 @php
-                    $typeColors = ['STATUT'=>'primary','ETAT'=>'warning','AFFECTATION'=>'info','TECHNIQUE'=>'secondary'];
+                    $typeColors = ['STATUT'=>'primary','ETAT'=>'warning','AFFECTATION'=>'info','MOUVEMENT'=>'success','TECHNIQUE'=>'secondary'];
                     $tc = $typeColors[$h->type_changement] ?? 'secondary';
                 @endphp
                 <div class="timeline-item d-flex gap-3 mb-4">
@@ -435,6 +459,66 @@
             </div>
             @endif
         </div>
+</div>
+
+{{-- ══ TAB 5 : BONS DE RÉPARTITION ══ --}}
+<div class="tab-pane fade" id="pane-bons" role="tabpanel">
+    <div class="card border-0 shadow-sm" style="border-radius:12px">
+        <div class="card-body p-4">
+            @if($equipement->lignesBon && $equipement->lignesBon->count() > 0)
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>N° Bon</th>
+                            <th>Date Bon</th>
+                            <th>Fournisseur</th>
+                            <th>Destination</th>
+                            <th>Réceptionniste</th>
+                            <th>Date Livraison</th>
+                            <th>Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($equipement->lignesBon->sortByDesc('created_at') as $l)
+                        <tr>
+                            <td>
+                                <a href="{{ route('parc-info.bons-repartition.show', $l->bon->id) }}" class="fw-semibold text-decoration-none">
+                                    <i class="bi bi-clipboard2-check me-1"></i>{{ $l->bon->numero_bon }}
+                                </a>
+                            </td>
+                            <td>{{ $l->bon->date_bon?->format('d/m/Y') }}</td>
+                            <td>{{ $l->bon->fournisseur?->nom ?? '—' }}</td>
+                            <td>
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle small">{{ $l->type_cible }}</span>
+                                <div class="fw-semibold mt-1 small">{{ $l->cible_label }}</div>
+                            </td>
+                            <td>{{ $l->nom_receptionniste ?: '—' }}</td>
+                            <td>{{ $l->date_livraison?->format('d/m/Y') ?: '—' }}</td>
+                            <td>
+                                @if($l->est_signe)
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                        <i class="bi bi-check-circle me-1"></i>Signé
+                                    </span>
+                                    <div class="text-muted small mt-1" style="font-size: 8px;">le {{ $l->date_signature?->format('d/m/Y H:i') }}</div>
+                                @else
+                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle">
+                                        <i class="bi bi-hourglass me-1"></i>En attente
+                                    </span>
+                                @endif
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @else
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-clipboard-x fs-1 opacity-25 d-block mb-2"></i>
+                Cet équipement ne figure sur aucun bon de répartition.
+            </div>
+            @endif
+        </div>
     </div>
 </div>
 
@@ -455,15 +539,21 @@
                 @csrf
                 <div class="modal-body px-4 py-3">
                     {{-- Type cible --}}
-                    <h6 class="fw-bold mb-3 small text-uppercase text-muted" style="letter-spacing:.5px">Mode d'affectation</h6>
-                    <div class="row g-3 mb-4">
-                        @foreach([['EMPLOYE','bi-person-badge','Affecter à un employé'],['POSTE','bi-pc-display','Poste de travail'],['LOCAL','bi-door-open','Local']] as [$v,$ic,$lb])
-                        <div class="col-4">
-                            <label class="aff-type-card d-flex flex-column align-items-center justify-content-center gap-2 p-3 rounded-3 border cursor-pointer text-center position-relative" data-value="{{ $v }}">
+                    <h6 class="fw-bold mb-3 small text-uppercase text-muted" style="letter-spacing:.5px">Étape 1 : Responsabilité (Qui ?)</h6>
+                    <div class="row g-2 mb-4" id="affectation-type-cards">
+                        @foreach([
+                            ['EMPLOYE',   'bi-person-badge',   'Employé'],
+                            ['POSTE',     'bi-pc-display',     'Poste de Travail'],
+                            ['DIRECTION', 'bi-building',       'Direction'],
+                            ['SERVICE',   'bi-diagram-3',      'Service'],
+                            ['UNITE',     'bi-grid-3x3-gap',   'Unité'],
+                        ] as [$v,$ic,$lb])
+                        <div class="col">
+                            <label class="aff-type-card d-flex flex-column align-items-center justify-content-center gap-2 p-2 rounded-3 border cursor-pointer text-center position-relative h-100" data-value="{{ $v }}">
                                 <input type="radio" name="type_cible" value="{{ $v }}" class="d-none">
-                                <div class="aff-type-icon rounded-3 p-3 bg-light"><i class="bi {{ $ic }} fs-3 text-secondary"></i></div>
-                                <small class="fw-semibold" style="font-size:.78rem">{{ $lb }}</small>
-                                <i class="bi bi-check-circle-fill text-primary position-absolute top-0 end-0 m-2 d-none check-icon" style="font-size:.9rem"></i>
+                                <div class="aff-type-icon rounded-3 p-2 bg-light"><i class="bi {{ $ic }} fs-4 text-secondary"></i></div>
+                                <span class="fw-semibold text-wrap" style="font-size:.72rem">{{ $lb }}</span>
+                                <i class="bi bi-check-circle-fill text-primary position-absolute top-0 end-0 m-1 d-none check-icon" style="font-size:.8rem"></i>
                             </label>
                         </div>
                         @endforeach
@@ -525,35 +615,99 @@
                         <input type="hidden" name="poste_travail_id" id="poste_travail_id">
                     </div>
 
-                    {{-- Carte récapitulative Local --}}
-                    <div id="aff-local-summary" class="aff-summary d-none">
+                    {{-- Carte récapitulative Direction --}}
+                    <div id="aff-direction-summary" class="aff-summary d-none">
                         <div class="card border-primary">
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <h6 class="mb-0"><i class="bi bi-door-open text-primary me-2"></i>Local sélectionné</h6>
+                                    <h6 class="mb-0"><i class="bi bi-building text-primary me-2"></i>Direction sélectionnée</h6>
                                 </div>
                                 <div class="row g-2 mt-2">
-                                    <div class="col-md-2">
-                                        <small class="text-muted d-block">Code</small>
-                                        <strong id="local-summary-code">—</strong>
-                                    </div>
                                     <div class="col-md-4">
+                                        <small class="text-muted d-block">Code</small>
+                                        <strong id="direction-summary-code">—</strong>
+                                    </div>
+                                    <div class="col-md-8">
                                         <small class="text-muted d-block">Libellé</small>
-                                        <strong id="local-summary-libelle">—</strong>
-                                    </div>
-                                    <div class="col-md-2">
-                                        <small class="text-muted d-block">Type</small>
-                                        <span id="local-summary-type">—</span>
-                                    </div>
-                                    <div class="col-md-2">
-                                        <small class="text-muted d-block">Étage</small>
-                                        <span id="local-summary-etage">—</span>
-                                    </div>
-                                    <div class="col-md-2">
-                                        <small class="text-muted d-block">Bâtiment</small>
-                                        <span id="local-summary-batiment">—</span>
+                                        <strong id="direction-summary-libelle">—</strong>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                        <input type="hidden" name="direction_id" id="direction_id">
+                    </div>
+
+                    {{-- Carte récapitulative Service --}}
+                    <div id="aff-service-summary" class="aff-summary d-none">
+                        <div class="card border-primary">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="mb-0"><i class="bi bi-diagram-3 text-primary me-2"></i>Service sélectionné</h6>
+                                </div>
+                                <div class="row g-2 mt-2">
+                                    <div class="col-md-3">
+                                        <small class="text-muted d-block">Code</small>
+                                        <strong id="service-summary-code">—</strong>
+                                    </div>
+                                    <div class="col-md-5">
+                                        <small class="text-muted d-block">Libellé</small>
+                                        <strong id="service-summary-libelle">—</strong>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <small class="text-muted d-block">Direction</small>
+                                        <span id="service-summary-direction">—</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" name="service_id" id="service_id">
+                    </div>
+
+                    {{-- Carte récapitulative Unité --}}
+                    <div id="aff-unite-summary" class="aff-summary d-none">
+                        <div class="card border-primary">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="mb-0"><i class="bi bi-grid-3x3-gap text-primary me-2"></i>Unité sélectionnée</h6>
+                                </div>
+                                <div class="row g-2 mt-2">
+                                    <div class="col-md-3">
+                                        <small class="text-muted d-block">Code</small>
+                                        <strong id="unite-summary-code">—</strong>
+                                    </div>
+                                    <div class="col-md-5">
+                                        <small class="text-muted d-block">Libellé</small>
+                                        <strong id="unite-summary-libelle">—</strong>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <small class="text-muted d-block">Service</small>
+                                        <span id="unite-summary-service">—</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" name="unite_id" id="unite_id">
+                    </div>
+
+                    {{-- Section Emplacement Physique (Où ?) --}}
+                    <div id="emplacement-section" class="mt-4 pt-3 border-top d-none">
+                        <h6 class="fw-bold mb-3"><i class="bi bi-geo-alt text-primary me-2"></i>Étape 2 : Emplacement Physique (Où ?)</h6>
+                        <div class="row g-2">
+                            <div class="col-md-3">
+                                <label class="form-label field-label">Site <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control field-input emp-site-display bg-light text-muted" readonly disabled placeholder="Automatique">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label field-label">Bâtiment <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control field-input emp-batiment-display bg-light text-muted" readonly disabled placeholder="Automatique">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label field-label">Étage <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control field-input emp-etage-display bg-light text-muted" readonly disabled placeholder="Automatique">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label field-label">Bureau / Local <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control field-input emp-local-display border-primary cursor-pointer fw-semibold text-primary" placeholder="Sélectionner un local..." readonly style="background-color: #fff; cursor: pointer;">
                             </div>
                         </div>
                         <input type="hidden" name="local_id" id="local_id">
@@ -708,34 +862,7 @@ $(function () {
         $('#affectationModal #aff-poste-summary').removeClass('d-none');
     });
 
-    $(document).on('local:selected', function (e, local) {
-        if ($('#affectationModal').hasClass('show')) {
-            $('#affectationModal .aff-type-card').removeClass('selected');
-            $('#affectationModal .aff-type-card[data-value="LOCAL"]').addClass('selected')
-                .find('input[type="radio"]').prop('checked', true);
-            $('#local-summary-code').text(local.code);
-            $('#local-summary-libelle').text(local.libelle);
-            $('#local-summary-type').text(local.type);
-            $('#local-summary-etage').text(local.etage);
-            $('#local-summary-batiment').text(local.batiment);
-            $('#affectationModal #local_id').val(local.id);
-            $('#affectationModal #dossier_employe_id, #affectationModal #poste_travail_id').val('');
-            $('#affectationModal .aff-summary').addClass('d-none');
-            $('#affectationModal #aff-local-summary').removeClass('d-none');
-        } else if ($('#localSelectionModal').hasClass('show')) {
-            // Edit physical localization on show page
-            $('#f_local_id').html(new Option(local.libelle, local.id, true, true));
-            $('#localSelectionModal').modal('hide');
-        }
-    });
 
-    // Choix direct du type d'affectation
-    $(document).on('click', '#affectationModal .aff-type-card', function () {
-        const val = $(this).data('value');
-        if (val === 'EMPLOYE') $('#employeSelectionModal').modal('show');
-        if (val === 'POSTE') $('#posteSelectionModal').modal('show');
-        if (val === 'LOCAL') $('#localSelectionModal').modal('show');
-    });
 
     // Soumission affectation
     $('#affectationForm').on('submit', function (e) {
@@ -769,6 +896,7 @@ $(function () {
         $(this).find('form')[0].reset();
         $('#affectationModal .aff-type-card').removeClass('selected');
         $('#affectationModal .aff-summary').addClass('d-none');
+        $('#affectationModal #emplacement-section').addClass('d-none');
         $('#affectationModal #dossier_employe_id, #affectationModal #poste_travail_id, #affectationModal #local_id').val('');
     });
 

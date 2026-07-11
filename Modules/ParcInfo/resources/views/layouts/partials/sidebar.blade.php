@@ -3,10 +3,10 @@
 
   <!--begin::Sidebar Brand-->
   <div class="sidebar-brand">
-    <a href="{{ url('/') }}" class="brand-link">
-      <img src="{{ asset('adminlte/assets/img/AdminLTELogo.png') }}" alt="AdminLTE Logo"
-           class="brand-image opacity-75 shadow" />
-      <span class="brand-text fw-light">CHU-YO | Parc Info</span>
+    <a href="{{ url('/') }}" class="brand-link d-flex align-items-center gap-2 px-3 py-2">
+      <img src="{{ asset('images/chuyo_icon.png') }}" alt="CHU-YO Icon"
+           class="brand-image" style="width: 36px; height: 36px; object-fit: contain; border-radius: 8px;" />
+      <span class="brand-text fw-semibold">CHU-YO | Parc Info</span>
     </a>
   </div>
   <!--end::Sidebar Brand-->
@@ -44,6 +44,7 @@
           $licencesActive = request()->routeIs('parc-info.licences.*');
           $consommablesActive = request()->routeIs('parc-info.consommables.*');
           $fournisseursActive = request()->routeIs('parc-info.fournisseurs.*');
+          $bonsRepartitionActive = request()->routeIs('parc-info.bons-repartition.*');
 
           $switchesActive = request()->routeIs('parc-info.switches.*');
           $routeursActive = request()->routeIs('parc-info.routeurs.*');
@@ -58,6 +59,7 @@
 
           $etatsActive = request()->routeIs('parc-info.analyse.etats.*');
           $statsActive = request()->routeIs('parc-info.analyse.statistiques.*');
+          $etiquettesActive = request()->routeIs('parc-info.equipements.centre-impression');
 
           $refCpusActive = request()->routeIs('parc-info.referentiels.types-cpus.*');
           $refDisquesActive = request()->routeIs('parc-info.referentiels.types-disques.*');
@@ -298,7 +300,7 @@
         @endcanany
 
         {{-- ── SECTION 3: LOGICIELS & STOCKS ── --}}
-        @canany(['parcinfo.logiciels.index', 'parcinfo.licences.index', 'parcinfo.consommables.index', 'parcinfo.fournisseurs.index'])
+        @canany(['parcinfo.logiciels.index', 'parcinfo.licences.index', 'parcinfo.consommables.index', 'parcinfo.fournisseurs.index', 'parcinfo.bons-repartition.index'])
         <li class="nav-header text-uppercase small opacity-50">Logiciels & Stocks</li>
 
         @can('parcinfo.logiciels.index')
@@ -337,6 +339,16 @@
              class="nav-link {{ $fournisseursActive ? 'active' : '' }}">
             <i class="nav-icon bi bi-truck"></i>
             <p>Fournisseurs</p>
+          </a>
+        </li>
+        @endcan
+
+        @can('parcinfo.bons-repartition.index')
+        <li class="nav-item">
+          <a href="{{ route('parc-info.bons-repartition.index') }}"
+             class="nav-link {{ $bonsRepartitionActive ? 'active' : '' }}">
+            <i class="nav-icon bi bi-clipboard-check"></i>
+            <p>Bons de Répartition</p>
           </a>
         </li>
         @endcan
@@ -434,7 +446,7 @@
         @endcanany
 
         {{-- ── SECTION 5: ANALYSE & RAPPORTS ── --}}
-        @canany(['parc-info.analyse.etats.view', 'parc-info.analyse.statistiques.view'])
+        @canany(['parc-info.analyse.etats.view', 'parc-info.analyse.statistiques.view', 'parcinfo.dashboard.view'])
         <li class="nav-header text-uppercase small opacity-50">Analyse & Rapports</li>
 
         @can('parc-info.analyse.etats.view')
@@ -451,6 +463,15 @@
           <a href="{{ route('parc-info.analyse.statistiques.index') }}" class="nav-link {{ $statsActive ? 'active' : '' }}">
             <i class="nav-icon bi bi-graph-up text-success"></i>
             <p>Statistiques</p>
+          </a>
+        </li>
+        @endcan
+
+        @can('parcinfo.dashboard.view')
+        <li class="nav-item">
+          <a href="{{ route('parc-info.equipements.centre-impression') }}" class="nav-link {{ $etiquettesActive ? 'active' : '' }}">
+            <i class="nav-icon bi bi-qr-code text-primary"></i>
+            <p>Impression d'étiquettes</p>
           </a>
         </li>
         @endcan

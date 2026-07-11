@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const $btnSaveEdit = $('#btn-save-edit');
     const $btnCancelEdit = $('#btn-cancel-edit');
     const $btnWizard = $('.btn-success, .btn-warning'); // Bouton lancer/continuer wizard
+    const $btnPrint = $('#btn-print-bl');
 
     let isEditing = false;
     let originalBcId = '';
@@ -241,6 +242,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Gérer la visibilité des boutons
             $btnToggleEdit.addClass('d-none');
             $btnWizard.addClass('d-none');
+            $btnPrint.addClass('d-none');
             $btnSaveEdit.removeClass('d-none');
             $btnCancelEdit.removeClass('d-none');
 
@@ -265,6 +267,7 @@ document.addEventListener('DOMContentLoaded', function() {
         $form.find('.field-input').prop('disabled', true);
         $btnToggleEdit.removeClass('d-none');
         $btnWizard.removeClass('d-none');
+        $btnPrint.removeClass('d-none');
         $btnSaveEdit.addClass('d-none');
         $btnCancelEdit.addClass('d-none');
 
@@ -322,6 +325,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 $btnSaveEdit.prop('disabled', false).html('<i class="fas fa-save me-1"></i>Enregistrer');
             }
         });
+    });
+
+    // ── ACTION PRINT ──
+    $btnPrint.on('click', function() {
+        const id = $('#bl-id').val();
+        if (id) {
+            const url = route('achat.bordereaux.imprimer', id);
+            $('#print-bl-iframe').attr('src', url);
+            const printModal = new bootstrap.Modal(document.getElementById('printBlModal'));
+            printModal.show();
+        }
     });
 
     // Initialisation

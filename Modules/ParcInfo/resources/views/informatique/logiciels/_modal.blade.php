@@ -1,7 +1,7 @@
 <div class="modal fade" id="modal-logiciel" tabindex="-1" aria-labelledby="modalLogicielLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-primary bg-opacity-10 border-0">
+            <div class="modal-header bg-primary border-0">
                 <h5 class="modal-title fw-bold text-primary" id="modalLogicielLabel">
                     <i class="fas fa-compact-disc me-2"></i><span>Nouveau Logiciel</span>
                 </h5>

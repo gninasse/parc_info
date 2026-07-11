@@ -137,6 +137,9 @@ class EquipementDynamiqueController extends Controller
             'date_mise_en_service' => 'nullable|date',
             'date_fin_garantie' => 'nullable|date',
             'valeur_achat' => 'nullable|numeric',
+            'duree_vie_probable' => 'nullable|integer',
+            'ref_bordereau' => 'nullable|string|max:255',
+            'tags' => 'nullable|string',
             'statut' => 'required|in:en_stock_magasin,en_stock_dsi,en_stock,en_service,en_reparation,perdu,reforme',
             'etat' => 'required|in:bon,passable,mauvais,avarie',
             'type_cible' => 'nullable|in:EMPLOYE,POSTE,LOCAL,DIRECTION,SERVICE,UNITE',
@@ -163,9 +166,11 @@ class EquipementDynamiqueController extends Controller
                 'date_mise_en_service' => $request->date_mise_en_service,
                 'date_fin_garantie' => $request->date_fin_garantie,
                 'valeur_achat' => $request->valeur_achat,
+                'duree_vie_probable' => $request->duree_vie_probable,
+                'ref_bordereau' => $request->ref_bordereau,
                 'statut' => $request->statut,
                 'etat' => $request->etat ?? 'bon',
-                'tags' => $request->tags ? explode(',', $request->tags) : null,
+                'tags' => $request->tags ? array_map('trim', explode(',', $request->tags)) : null,
                 'champs_valeurs' => $request->input('champs_valeurs', []),
             ]);
 
@@ -180,6 +185,7 @@ class EquipementDynamiqueController extends Controller
                 $direction_id = null;
                 $service_id = null;
                 $unite_id = null;
+                $cibleNom = 'Inconnu';
 
                 if ($request->type_cible === 'EMPLOYE' && $request->dossier_employe_id) {
                     $employe = Employe::find($request->dossier_employe_id);
@@ -188,6 +194,7 @@ class EquipementDynamiqueController extends Controller
                         $direction_id = $employe->direction_id;
                         $service_id = $employe->service_id;
                         $unite_id = $employe->unite_id;
+                        $cibleNom = $employe->full_name;
                     }
                 } elseif ($request->type_cible === 'POSTE' && $request->poste_travail_id) {
                     $poste = PosteTravail::find($request->poste_travail_id);
@@ -196,18 +203,31 @@ class EquipementDynamiqueController extends Controller
                         $direction_id = $poste->direction_id;
                         $service_id = $poste->service_id;
                         $unite_id = $poste->unite_id;
+                        $cibleNom = $poste->libelle.' ('.$poste->code.')';
                     }
                 } elseif ($request->type_cible === 'DIRECTION') {
-                    $direction_id = $request->direction_id_aff;
+                    $direction_id = $request->direction_id ?: $request->direction_id_aff;
+                    $direction = \Modules\Organisation\Models\Direction::find($direction_id);
+                    if ($direction) {
+                        $cibleNom = $direction->libelle;
+                    }
                     $niveau_rattachement = 'DIRECTION';
                 } elseif ($request->type_cible === 'SERVICE') {
-                    $service_id = $request->service_id_aff;
-                    $direction_id = $request->direction_id_aff;
+                    $service_id = $request->service_id ?: $request->service_id_aff;
+                    $direction_id = $request->direction_id ?: $request->direction_id_aff;
+                    $service = \Modules\Organisation\Models\Service::find($service_id);
+                    if ($service) {
+                        $cibleNom = $service->libelle;
+                    }
                     $niveau_rattachement = 'SERVICE';
                 } elseif ($request->type_cible === 'UNITE') {
-                    $unite_id = $request->unite_id_aff;
-                    $service_id = $request->service_id_aff;
-                    $direction_id = $request->direction_id_aff;
+                    $unite_id = $request->unite_id ?: $request->unite_id_aff;
+                    $service_id = $request->service_id ?: $request->service_id_aff;
+                    $direction_id = $request->direction_id ?: $request->direction_id_aff;
+                    $unite = \Modules\Organisation\Models\Unite::find($unite_id);
+                    if ($unite) {
+                        $cibleNom = $unite->libelle;
+                    }
                     $niveau_rattachement = 'UNITE';
                 }
 
@@ -227,6 +247,29 @@ class EquipementDynamiqueController extends Controller
                     'service_id' => $service_id,
                     'unite_id' => $unite_id,
                 ]);
+
+                \Modules\ParcInfo\Models\HistoriqueChangement::create([
+                    'equipement_id' => $equipement->id,
+                    'date_changement' => now(),
+                    'utilisateur_id' => auth()->id(),
+                    'type_changement' => 'AFFECTATION',
+                    'ancien_statut' => null,
+                    'nouveau_statut' => $equipement->statut,
+                    'motif' => 'Affectation initiale : '.$request->type_cible.' - '.$cibleNom,
+                ]);
+
+                if ($request->local_id) {
+                    $local = \Modules\Organisation\Models\Local::find($request->local_id);
+                    $localNom = $local ? $local->nom_complet : 'Inconnu';
+
+                    \Modules\ParcInfo\Models\HistoriqueChangement::create([
+                        'equipement_id' => $equipement->id,
+                        'date_changement' => now(),
+                        'utilisateur_id' => auth()->id(),
+                        'type_changement' => 'MOUVEMENT',
+                        'motif' => "Localisation initiale : {$localNom}",
+                    ]);
+                }
             }
 
             return $equipement->id;
@@ -256,6 +299,8 @@ class EquipementDynamiqueController extends Controller
             'affectations.posteTravail',
             'affectations.local',
             'affectations.direction', 'affectations.service', 'affectations.unite',
+            'affectations.ligneBon.bon',
+            'lignesBon.bon',
             'historique',
             'affectationsLicences.licence.logiciel',
         ])->findOrFail($id);
@@ -320,6 +365,9 @@ class EquipementDynamiqueController extends Controller
             'date_mise_en_service' => 'nullable|date',
             'date_fin_garantie' => 'nullable|date',
             'valeur_achat' => 'nullable|numeric',
+            'duree_vie_probable' => 'nullable|integer',
+            'ref_bordereau' => 'nullable|string|max:255',
+            'tags' => 'nullable|string',
             'statut' => 'required|in:en_stock_magasin,en_stock_dsi,en_stock,en_service,en_reparation,perdu,reforme',
             'etat' => 'required|in:bon,passable,mauvais,avarie',
             'local_id' => 'nullable|exists:organisation_locaux,id',
@@ -334,6 +382,8 @@ class EquipementDynamiqueController extends Controller
         $request->validate($rules);
 
         DB::transaction(function () use ($request, $equipement) {
+            $ancienLocalId = $equipement->local_id;
+
             $equipement->update([
                 'numero_serie' => $request->numero_serie,
                 'marque_id' => $request->marque_id,
@@ -342,11 +392,30 @@ class EquipementDynamiqueController extends Controller
                 'date_mise_en_service' => $request->date_mise_en_service,
                 'date_fin_garantie' => $request->date_fin_garantie,
                 'valeur_achat' => $request->valeur_achat,
+                'duree_vie_probable' => $request->duree_vie_probable,
+                'ref_bordereau' => $request->ref_bordereau,
                 'statut' => $request->statut,
                 'etat' => $request->etat,
                 'local_id' => $request->local_id,
+                'tags' => $request->tags ? array_map('trim', explode(',', $request->tags)) : null,
                 'champs_valeurs' => $request->input('champs_valeurs', []),
             ]);
+
+            if ($ancienLocalId != $request->local_id) {
+                $ancienLocal = \Modules\Organisation\Models\Local::find($ancienLocalId);
+                $nouveauLocal = \Modules\Organisation\Models\Local::find($request->local_id);
+
+                $descAncien = $ancienLocal ? $ancienLocal->nom_complet : 'Aucun';
+                $descNouveau = $nouveauLocal ? $nouveauLocal->nom_complet : 'Aucun';
+
+                \Modules\ParcInfo\Models\HistoriqueChangement::create([
+                    'equipement_id' => $equipement->id,
+                    'date_changement' => now(),
+                    'utilisateur_id' => auth()->id(),
+                    'type_changement' => 'MOUVEMENT',
+                    'motif' => "Changement d'emplacement physique : {$descAncien} ➔ {$descNouveau}",
+                ]);
+            }
         });
 
         return response()->json([
@@ -425,7 +494,7 @@ class EquipementDynamiqueController extends Controller
     /**
      * Create a new assignment.
      */
-    public function storeAffectation(Request $request)
+    public function storeAffectation(Request $request): \Illuminate\Http\JsonResponse
     {
         $request->validate([
             'equipement_id' => 'required|exists:parc_info_equipements,id',
@@ -444,6 +513,7 @@ class EquipementDynamiqueController extends Controller
             $direction_id = null;
             $service_id = null;
             $unite_id = null;
+            $cibleNom = 'Inconnu';
 
             if ($request->type_cible === 'EMPLOYE' && $request->dossier_employe_id) {
                 $employe = Employe::find($request->dossier_employe_id);
@@ -452,6 +522,7 @@ class EquipementDynamiqueController extends Controller
                     $direction_id = $employe->direction_id;
                     $service_id = $employe->service_id;
                     $unite_id = $employe->unite_id;
+                    $cibleNom = $employe->full_name;
                 }
             } elseif ($request->type_cible === 'POSTE' && $request->poste_travail_id) {
                 $poste = PosteTravail::find($request->poste_travail_id);
@@ -460,18 +531,31 @@ class EquipementDynamiqueController extends Controller
                     $direction_id = $poste->direction_id;
                     $service_id = $poste->service_id;
                     $unite_id = $poste->unite_id;
+                    $cibleNom = $poste->libelle.' ('.$poste->code.')';
                 }
             } elseif ($request->type_cible === 'DIRECTION') {
-                $direction_id = $request->direction_id_aff;
+                $direction_id = $request->direction_id ?: $request->direction_id_aff;
+                $direction = \Modules\Organisation\Models\Direction::find($direction_id);
+                if ($direction) {
+                    $cibleNom = $direction->libelle;
+                }
                 $niveau_rattachement = 'DIRECTION';
             } elseif ($request->type_cible === 'SERVICE') {
-                $service_id = $request->service_id_aff;
-                $direction_id = $request->direction_id_aff;
+                $service_id = $request->service_id ?: $request->service_id_aff;
+                $direction_id = $request->direction_id ?: $request->direction_id_aff;
+                $service = \Modules\Organisation\Models\Service::find($service_id);
+                if ($service) {
+                    $cibleNom = $service->libelle;
+                }
                 $niveau_rattachement = 'SERVICE';
             } elseif ($request->type_cible === 'UNITE') {
-                $unite_id = $request->unite_id_aff;
-                $service_id = $request->service_id_aff;
-                $direction_id = $request->direction_id_aff;
+                $unite_id = $request->unite_id ?: $request->unite_id_aff;
+                $service_id = $request->service_id ?: $request->service_id_aff;
+                $direction_id = $request->direction_id ?: $request->direction_id_aff;
+                $unite = \Modules\Organisation\Models\Unite::find($unite_id);
+                if ($unite) {
+                    $cibleNom = $unite->libelle;
+                }
                 $niveau_rattachement = 'UNITE';
             }
 
@@ -514,8 +598,21 @@ class EquipementDynamiqueController extends Controller
                 'type_changement' => 'AFFECTATION',
                 'ancien_statut' => $ancienStatut,
                 'nouveau_statut' => $equipement->statut,
-                'motif' => 'Nouvelle affectation',
+                'motif' => 'Nouvelle affectation : '.$request->type_cible.' - '.$cibleNom,
             ]);
+
+            if ($request->local_id) {
+                $local = \Modules\Organisation\Models\Local::find($request->local_id);
+                $localNom = $local ? $local->nom_complet : 'Inconnu';
+
+                HistoriqueChangement::create([
+                    'equipement_id' => $request->equipement_id,
+                    'date_changement' => now(),
+                    'utilisateur_id' => auth()->id(),
+                    'type_changement' => 'MOUVEMENT',
+                    'motif' => "Mise en place physique : {$localNom}",
+                ]);
+            }
         });
 
         return response()->json(['success' => true, 'message' => 'Affectation enregistrée avec succès.']);
@@ -524,7 +621,7 @@ class EquipementDynamiqueController extends Controller
     /**
      * Close the active assignment.
      */
-    public function desaffecter(Request $request, $id)
+    public function desaffecter(Request $request, $id): \Illuminate\Http\JsonResponse
     {
         $request->validate([
             'motif' => 'required|string',
@@ -533,12 +630,14 @@ class EquipementDynamiqueController extends Controller
         DB::transaction(function () use ($request, $id) {
             $equipement = Equipement::findOrFail($id);
             $ancienStatut = $equipement->statut;
+            $ancienLocal = $equipement->local;
+            $descAncien = $ancienLocal ? $ancienLocal->nom_complet : 'Aucun';
 
             AffectationEquipement::where('equipement_id', $id)
                 ->where('statut', true)
                 ->update(['statut' => false, 'date_fin' => now()]);
 
-            $equipement->update(['statut' => 'en_stock']);
+            $equipement->update(['statut' => 'en_stock', 'local_id' => null]);
 
             HistoriqueChangement::create([
                 'equipement_id' => $id,
@@ -558,6 +657,14 @@ class EquipementDynamiqueController extends Controller
                 'ancien_statut' => $ancienStatut,
                 'nouveau_statut' => 'en_stock',
                 'motif' => 'Mise en stock automatique suite à désaffectation',
+            ]);
+
+            HistoriqueChangement::create([
+                'equipement_id' => $id,
+                'date_changement' => now(),
+                'utilisateur_id' => auth()->id(),
+                'type_changement' => 'MOUVEMENT',
+                'motif' => "Retrait de l'emplacement physique (Retour en stock) : {$descAncien}",
             ]);
         });
 
@@ -658,6 +765,134 @@ class EquipementDynamiqueController extends Controller
                     'text' => $l->nom_complet,
                 ])
         );
+    }
+
+    public function imprimerEtiquette(int $id): \Illuminate\Contracts\View\View
+    {
+        $equipement = Equipement::with(['categorie', 'marque'])->findOrFail($id);
+
+        return view('parcinfo::informatique.equipements.etiquette', compact('equipement'));
+    }
+
+    public function centreImpression(Request $request): \Illuminate\Contracts\View\View
+    {
+        $categories = CategorieEquipement::orderBy('libelle')->get(['id', 'libelle']);
+        $sites = Site::orderBy('libelle')->get(['id', 'libelle']);
+        $directions = Direction::where('actif', true)->orderBy('libelle')->get(['id', 'libelle']);
+
+        return view('parcinfo::informatique.equipements.centre_impression', compact('categories', 'sites', 'directions'));
+    }
+
+    public function getEquipementsData(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $query = Equipement::query()
+            ->with([
+                'categorie',
+                'marque',
+                'affectationActive.employe',
+                'affectationActive.posteTravail',
+                'affectationActive.local',
+                'affectationActive.direction',
+                'affectationActive.service',
+                'affectationActive.unite',
+            ]);
+
+        // Filter by category
+        if ($request->filled('categorie_id')) {
+            $query->where('categorie_id', $request->categorie_id);
+        }
+
+        // Apply general filters
+        if ($request->filled('statut')) {
+            $query->where('statut', $request->statut);
+        }
+
+        if ($request->filled('site_id')) {
+            $siteId = $request->site_id;
+            $query->where(function ($q) use ($siteId) {
+                $q->whereHas('affectationActive.posteTravail.local.etage.batiment', fn ($q2) => $q2->where('site_id', $siteId))
+                    ->orWhereHas('affectationActive.local.etage.batiment', fn ($q2) => $q2->where('site_id', $siteId));
+            });
+        }
+
+        if ($request->filled('direction_id')) {
+            $query->whereHas('affectationActive', fn ($q) => $q->where('direction_id', $request->direction_id));
+        }
+
+        $likeOperator = DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
+        if ($request->filled('search') && $request->search !== '') {
+            $s = $request->search;
+            $query->where(fn ($q) => $q
+                ->where('code_inventaire', $likeOperator, "%{$s}%")
+                ->orWhere('numero_serie', $likeOperator, "%{$s}%")
+                ->orWhere('modele', $likeOperator, "%{$s}%")
+                ->orWhereHas('marque', fn ($q2) => $q2->where('libelle', $likeOperator, "%{$s}%"))
+            );
+        }
+
+        $sortField = $request->get('sort', 'id');
+        $sortOrder = $request->get('order', 'desc');
+
+        if ($sortField === 'categorie_libelle') {
+            $query->join('parc_info_categories_equipements', 'parc_info_equipements.categorie_id', '=', 'parc_info_categories_equipements.id')
+                ->select('parc_info_equipements.*')
+                ->orderBy('parc_info_categories_equipements.libelle', $sortOrder);
+        } elseif ($sortField === 'marque_modele') {
+            $query->leftJoin('parc_info_marques', 'parc_info_equipements.marque_id', '=', 'parc_info_marques.id')
+                ->select('parc_info_equipements.*')
+                ->orderBy('parc_info_marques.libelle', $sortOrder)
+                ->orderBy('parc_info_equipements.modele', $sortOrder);
+        } else {
+            $query->orderBy($sortField, $sortOrder);
+        }
+
+        $total = $query->count();
+        $rows = $query->offset($request->get('offset', 0))->limit($request->get('limit', 25))->get();
+
+        return response()->json([
+            'total' => $total,
+            'rows' => $rows->map(function ($e) {
+                $aff = $e->affectationActive;
+                $affLabel = '—';
+                if ($aff) {
+                    $affLabel = match ($aff->type_cible) {
+                        'EMPLOYE' => $aff->employe?->full_name ?? '—',
+                        'POSTE' => $aff->posteTravail?->code ?? '—',
+                        'LOCAL' => $aff->local?->libelle ?? '—',
+                        'DIRECTION' => $aff->direction?->libelle ?? '—',
+                        'SERVICE' => $aff->service?->libelle ?? '—',
+                        'UNITE' => $aff->unite?->libelle ?? '—',
+                        default => '—',
+                    };
+                }
+
+                return [
+                    'id' => $e->id,
+                    'code_inventaire' => $e->code_inventaire,
+                    'categorie_libelle' => $e->categorie?->libelle ?? '—',
+                    'marque_modele' => ($e->marque?->libelle ?? '—').' '.$e->modele,
+                    'numero_serie' => $e->numero_serie ?? '—',
+                    'statut' => $e->statut,
+                    'statut_label' => $e->statut_label,
+                    'affectation' => $affLabel,
+                    'etat' => $e->etat,
+                ];
+            }),
+        ]);
+    }
+
+    public function imprimerEtiquettesSelectionnees(Request $request): \Illuminate\Contracts\View\View
+    {
+        $idsStr = $request->get('ids', '');
+        $ids = array_filter(explode(',', $idsStr));
+
+        if (empty($ids)) {
+            abort(400, 'Aucun équipement sélectionné.');
+        }
+
+        $equipements = Equipement::with(['categorie', 'marque'])->whereIn('id', $ids)->get();
+
+        return view('parcinfo::informatique.equipements.etiquettes_multiples', compact('equipements'));
     }
 
     // ── Helper formatRow ────────────────────────────────────────────────────────

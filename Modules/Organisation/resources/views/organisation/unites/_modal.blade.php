@@ -1,8 +1,8 @@
 <div class="modal fade" id="createUniteModal" tabindex="-1" aria-labelledby="createUniteModalLabel" aria-hidden="true">
     <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="createUniteModalLabel">Nouvelle Unité</h5>
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary border-0">
+                <h5 class="modal-title fw-bold text-primary" id="createUniteModalLabel">Nouvelle Unité</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="uniteForm">

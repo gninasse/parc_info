@@ -6,6 +6,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     const $table = $('#bons-commande-table');
     const $btnShow = $('#btn-show');
+    const $btnPrint = $('#btn-print');
     const $btnAnnuler = $('#btn-annuler');
     const $btnDelete = $('#btn-delete');
 
@@ -29,6 +30,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const hasOne = selections.length === 1;
         
         $btnShow.prop('disabled', !hasOne);
+        $btnPrint.prop('disabled', !hasOne);
 
         if (hasOne) {
             const row = selections[0];
@@ -86,6 +88,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
         });
+    });
+
+    // ── ACTION PRINT ──
+    $btnPrint.on('click', function() {
+        const row = $table.bootstrapTable('getSelections')[0];
+        if (row) {
+            const url = route('achat.bons-commande.imprimer', row.id) + '?pdf=1';
+            $('#print-bc-iframe').attr('src', url);
+            const printModal = new bootstrap.Modal(document.getElementById('printBcModal'));
+            printModal.show();
+        }
     });
 
     // ── ACTION SUPPRIMER ──

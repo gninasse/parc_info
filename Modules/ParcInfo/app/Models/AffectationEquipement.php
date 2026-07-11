@@ -3,6 +3,7 @@
 namespace Modules\ParcInfo\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Modules\Grh\Models\Employe;
 use Modules\Organisation\Models\Direction;
 use Modules\Organisation\Models\Local;
@@ -74,6 +75,14 @@ class AffectationEquipement extends Model
         return $this->belongsTo(Unite::class, 'unite_id');
     }
 
+    /**
+     * The ligne de bon that created this affectation (if applicable).
+     */
+    public function ligneBon(): HasOne
+    {
+        return $this->hasOne(LigneBonRepartition::class, 'affectation_id');
+    }
+
     protected static function booted(): void
     {
         static::saved(function (AffectationEquipement $affectation) {
@@ -84,6 +93,7 @@ class AffectationEquipement extends Model
                         'direction_id' => $affectation->direction_id,
                         'service_id' => $affectation->service_id,
                         'unite_id' => $affectation->unite_id,
+                        'local_id' => $affectation->local_id,
                     ]);
                 } else {
                     $hasActive = AffectationEquipement::where('equipement_id', $equipement->id)
@@ -94,6 +104,7 @@ class AffectationEquipement extends Model
                             'direction_id' => null,
                             'service_id' => null,
                             'unite_id' => null,
+                            'local_id' => null,
                         ]);
                     }
                 }

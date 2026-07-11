@@ -169,19 +169,21 @@
 
                     {{-- ── ÉTAPE 3 : AFFECTATION ── --}}
                     <div id="step-3" class="wizard-step d-none">
-                        <h6 class="fw-bold mb-3">Type d'affectation</h6>
-                        <div class="row g-3 mb-4" id="affectation-type-cards">
+                        <h6 class="fw-bold mb-3">Étape 1 : Responsabilité (Qui ?)</h6>
+                        <div class="row g-2 mb-4" id="affectation-type-cards">
                             @foreach([
-                                ['EMPLOYE','bi-person-badge','Affecter à un employé'],
-                                ['POSTE',  'bi-pc-display',  'Affecter à un poste'],
-                                ['LOCAL',  'bi-door-open',   'Affecter à un local'],
+                                ['EMPLOYE',   'bi-person-badge',   'Employé'],
+                                ['POSTE',     'bi-pc-display',     'Poste de Travail'],
+                                ['DIRECTION', 'bi-building',       'Direction'],
+                                ['SERVICE',   'bi-diagram-3',      'Service'],
+                                ['UNITE',     'bi-grid-3x3-gap',   'Unité'],
                             ] as [$val,$icon,$label])
-                            <div class="col-4">
-                                <label class="aff-type-card d-flex flex-column align-items-center justify-content-center gap-2 p-3 rounded-3 border cursor-pointer text-center" data-value="{{ $val }}">
+                            <div class="col">
+                                <label class="aff-type-card d-flex flex-column align-items-center justify-content-center gap-2 p-2 rounded-3 border cursor-pointer text-center h-100 position-relative" data-value="{{ $val }}">
                                     <input type="radio" name="type_cible" value="{{ $val }}" class="d-none">
-                                    <div class="aff-type-icon rounded-3 p-3 bg-light"><i class="bi {{ $icon }} fs-3 text-secondary"></i></div>
-                                    <small class="fw-semibold" style="font-size:.78rem">{{ $label }}</small>
-                                    <i class="bi bi-check-circle-fill text-primary position-absolute top-0 end-0 m-2 d-none check-icon" style="font-size:.9rem"></i>
+                                    <div class="aff-type-icon rounded-3 p-2 bg-light"><i class="bi {{ $icon }} fs-4 text-secondary"></i></div>
+                                    <span class="fw-semibold text-wrap" style="font-size:.72rem">{{ $label }}</span>
+                                    <i class="bi bi-check-circle-fill text-primary position-absolute top-0 end-0 m-1 d-none check-icon" style="font-size:.8rem"></i>
                                 </label>
                             </div>
                             @endforeach
@@ -243,35 +245,99 @@
                             <input type="hidden" name="poste_travail_id" id="poste_travail_id">
                         </div>
 
-                        {{-- Carte récapitulative Local --}}
-                        <div id="aff-local-summary" class="aff-summary d-none">
+                        {{-- Carte récapitulative Direction --}}
+                        <div id="aff-direction-summary" class="aff-summary d-none">
                             <div class="card border-primary">
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between align-items-start mb-2">
-                                        <h6 class="mb-0"><i class="bi bi-door-open text-primary me-2"></i>Local sélectionné</h6>
+                                        <h6 class="mb-0"><i class="bi bi-building text-primary me-2"></i>Direction sélectionnée</h6>
                                     </div>
                                     <div class="row g-2 mt-2">
-                                        <div class="col-md-2">
-                                            <small class="text-muted d-block">Code</small>
-                                            <strong id="local-summary-code">—</strong>
-                                        </div>
                                         <div class="col-md-4">
+                                            <small class="text-muted d-block">Code</small>
+                                            <strong id="direction-summary-code">—</strong>
+                                        </div>
+                                        <div class="col-md-8">
                                             <small class="text-muted d-block">Libellé</small>
-                                            <strong id="local-summary-libelle">—</strong>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <small class="text-muted d-block">Type</small>
-                                            <span id="local-summary-type">—</span>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <small class="text-muted d-block">Étage</small>
-                                            <span id="local-summary-etage">—</span>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <small class="text-muted d-block">Bâtiment</small>
-                                            <span id="local-summary-batiment">—</span>
+                                            <strong id="direction-summary-libelle">—</strong>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+                            <input type="hidden" name="direction_id" id="direction_id">
+                        </div>
+
+                        {{-- Carte récapitulative Service --}}
+                        <div id="aff-service-summary" class="aff-summary d-none">
+                            <div class="card border-primary">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="mb-0"><i class="bi bi-diagram-3 text-primary me-2"></i>Service sélectionné</h6>
+                                    </div>
+                                    <div class="row g-2 mt-2">
+                                        <div class="col-md-3">
+                                            <small class="text-muted d-block">Code</small>
+                                            <strong id="service-summary-code">—</strong>
+                                        </div>
+                                        <div class="col-md-5">
+                                            <small class="text-muted d-block">Libellé</small>
+                                            <strong id="service-summary-libelle">—</strong>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <small class="text-muted d-block">Direction</small>
+                                            <span id="service-summary-direction">—</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" name="service_id" id="service_id">
+                        </div>
+
+                        {{-- Carte récapitulative Unité --}}
+                        <div id="aff-unite-summary" class="aff-summary d-none">
+                            <div class="card border-primary">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="mb-0"><i class="bi bi-grid-3x3-gap text-primary me-2"></i>Unité sélectionnée</h6>
+                                    </div>
+                                    <div class="row g-2 mt-2">
+                                        <div class="col-md-3">
+                                            <small class="text-muted d-block">Code</small>
+                                            <strong id="unite-summary-code">—</strong>
+                                        </div>
+                                        <div class="col-md-5">
+                                            <small class="text-muted d-block">Libellé</small>
+                                            <strong id="unite-summary-libelle">—</strong>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <small class="text-muted d-block">Service</small>
+                                            <span id="unite-summary-service">—</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" name="unite_id" id="unite_id">
+                        </div>
+
+                        {{-- Section Emplacement Physique (Où ?) --}}
+                        <div id="emplacement-section" class="mt-4 pt-3 border-top d-none">
+                            <h6 class="fw-bold mb-3"><i class="bi bi-geo-alt text-primary me-2"></i>Étape 2 : Emplacement Physique (Où ?)</h6>
+                            <div class="row g-2">
+                                <div class="col-md-3">
+                                    <label class="form-label field-label">Site <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control field-input emp-site-display bg-light text-muted" readonly disabled placeholder="Automatique">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label field-label">Bâtiment <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control field-input emp-batiment-display bg-light text-muted" readonly disabled placeholder="Automatique">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label field-label">Étage <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control field-input emp-etage-display bg-light text-muted" readonly disabled placeholder="Automatique">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label field-label">Bureau / Local <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control field-input emp-local-display border-primary cursor-pointer fw-semibold text-primary" placeholder="Sélectionner un local..." readonly style="background-color: #fff; cursor: pointer;">
                                 </div>
                             </div>
                             <input type="hidden" name="local_id" id="local_id">

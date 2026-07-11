@@ -149,7 +149,7 @@
 <div class="modal fade" id="item-modal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content rounded-2 border-0 shadow-lg">
-            <div class="modal-header border-0 bg-light py-3">
+            <div class="modal-header border-0 bg-primary  py-3">
                 <h5 class="modal-title fw-bold text-dark" id="modalLabel">
                     <span class="text-primary">Nouveau</span> Article
                 </h5>

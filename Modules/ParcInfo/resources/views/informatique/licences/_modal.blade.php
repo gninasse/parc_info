@@ -1,7 +1,7 @@
 <div class="modal fade" id="modal-licence" tabindex="-1" aria-labelledby="modalLicenceLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-primary bg-opacity-10 border-0">
+            <div class="modal-header bg-primary border-0">
                 <h5 class="modal-title fw-bold text-primary" id="modalLicenceLabel">
                     <i class="fas fa-key me-2"></i><span>Nouvelle Licence</span>
                 </h5>

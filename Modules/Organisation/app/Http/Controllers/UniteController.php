@@ -17,7 +17,7 @@ class UniteController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:organisation.unites.index', only: ['index', 'getData', 'show']),
+            new Middleware('permission:organisation.unites.index', only: ['index', 'getData', 'show', 'getApiData']),
             new Middleware('permission:organisation.unites.store', only: ['store']),
             new Middleware('permission:organisation.unites.update', only: ['update']),
             new Middleware('permission:organisation.unites.destroy', only: ['destroy']),
@@ -164,7 +164,7 @@ class UniteController extends Controller implements HasMiddleware
     }
 
     // Helper cascades
-    public function getServicesByDirection($directionId)
+    public function getServicesByDirection($directionId): \Illuminate\Http\JsonResponse
     {
         $services = Service::where('direction_id', $directionId)->actif()->get();
 
@@ -174,7 +174,7 @@ class UniteController extends Controller implements HasMiddleware
     /**
      * Toggle status (actif/inactif).
      */
-    public function toggleStatus($id)
+    public function toggleStatus($id): \Illuminate\Http\JsonResponse
     {
         try {
             $item = Unite::findOrFail($id);
@@ -192,5 +192,39 @@ class UniteController extends Controller implements HasMiddleware
                 'message' => 'Erreur lors du changement de statut',
             ], 500);
         }
+    }
+
+    public function getApiData(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $query = Unite::query()->with('service.direction');
+
+        if ($request->filled('direction_id')) {
+            $query->whereHas('service', function ($q) use ($request) {
+                $q->where('direction_id', $request->direction_id);
+            });
+        }
+
+        if ($request->filled('service_id')) {
+            $query->where('service_id', $request->service_id);
+        }
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function ($q) use ($s) {
+                $q->where('code', 'ilike', "%{$s}%")
+                    ->orWhere('libelle', 'ilike', "%{$s}%");
+            });
+        }
+
+        return response()->json($query->get()->map(function ($unt) {
+            return [
+                'id' => $unt->id,
+                'code' => $unt->code ?? '',
+                'libelle' => $unt->libelle ?? '',
+                'service' => $unt->service?->libelle ?? '—',
+                'direction' => $unt->service?->direction?->libelle ?? '—',
+                'statut' => $unt->actif ? 'actif' : 'inactif',
+            ];
+        }));
     }
 }
