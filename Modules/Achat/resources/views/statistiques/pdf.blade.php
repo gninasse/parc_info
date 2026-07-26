@@ -4,141 +4,89 @@
     <meta charset="UTF-8">
     <title>{{ $title }}</title>
     <style>
-        body {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            font-size: 11px;
-            color: #333333;
-            margin: 0;
-            padding: 0;
+        @page { margin: 12mm 10mm 16mm 10mm; }
+
+        body { font-family: DejaVu Sans, sans-serif; font-size: 9px; color: #212529; margin: 0; }
+
+        .entete { border-bottom: 2px solid #0d2060; padding-bottom: 6px; margin-bottom: 10px; }
+        .etablissement { font-size: 12px; font-weight: bold; color: #0d2060; }
+        .sous-titre { font-size: 8px; color: #6c757d; }
+        .titre-rapport {
+            font-size: 14px; font-weight: bold; color: #0d2060;
+            text-transform: uppercase; margin-top: 6px;
         }
-        .header {
-            border-bottom: 2px solid #0d6efd;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
+
+        .filtres {
+            border: 1px solid #dee2e6; background-color: #f8f9fa;
+            padding: 6px 8px; margin-bottom: 10px; font-size: 8.5px;
         }
-        .title {
-            font-size: 18px;
-            font-weight: bold;
-            color: #0d6efd;
-            margin: 0 0 5px 0;
+        .filtres strong { color: #0d2060; }
+
+        table.donnees { width: 100%; border-collapse: collapse; }
+        table.donnees th {
+            background-color: #0d2060; color: #ffffff; font-size: 8.5px;
+            text-transform: uppercase; padding: 5px 4px; text-align: left;
         }
-        .subtitle {
-            font-size: 11px;
-            color: #666666;
-            margin: 0;
-        }
-        .filter-section {
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 4px;
-            padding: 10px;
-            margin-bottom: 20px;
-        }
-        .filter-title {
-            font-weight: bold;
-            margin-bottom: 5px;
-            color: #495057;
-            text-transform: uppercase;
-            font-size: 9px;
-        }
-        .filter-item {
-            display: inline-block;
-            margin-right: 15px;
-        }
-        .filter-label {
-            font-weight: bold;
-            color: #6c757d;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        th {
-            background-color: #f1f3f5;
-            color: #495057;
-            font-weight: bold;
-            text-align: left;
-            padding: 8px;
-            border-bottom: 1px solid #dee2e6;
-        }
-        td {
-            padding: 8px;
-            border-bottom: 1px solid #dee2e6;
-        }
-        tr:nth-child(even) {
-            background-color: #f8f9fa;
-        }
-        .footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 30px;
-            text-align: center;
-            border-top: 1px solid #dee2e6;
-            padding-top: 5px;
-            font-size: 9px;
-            color: #999999;
-        }
-        .page-number:before {
-            content: counter(page);
+        table.donnees td { padding: 4px; border-bottom: 1px solid #e9ecef; }
+        table.donnees tr:nth-child(even) td { background-color: #f8f9fa; }
+
+        .vide { text-align: center; padding: 16px; color: #6c757d; font-style: italic; }
+
+        .pied {
+            position: fixed; bottom: -8mm; left: 0; right: 0;
+            font-size: 7px; color: #6c757d;
+            border-top: 1px solid #dee2e6; padding-top: 3px;
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <table style="width: 100%; border: none; margin: 0;">
-            <tr style="background: none;">
-                <td style="border: none; padding: 0; width: 70%;">
-                    <div class="title">{{ $title }}</div>
-                    <div class="subtitle">CHU-YO — Module de Gestion des Achats & Approvisionnements</div>
-                </td>
-                <td style="border: none; padding: 0; text-align: right; width: 30%;">
-                    <div style="font-weight: bold; color: #495057;">Date d'édition : {{ date('d/m/Y H:i') }}</div>
-                </td>
-            </tr>
-        </table>
-    </div>
 
-    @if(count($filters) > 0)
-        <div class="filter-section">
-            <div class="filter-title">Filtres de recherche appliqués</div>
-            @foreach($filters as $label => $val)
-                <div class="filter-item">
-                    <span class="filter-label">{{ $label }} :</span> <span>{{ $val }}</span>
-                </div>
+<div class="entete">
+    <div class="etablissement">CENTRE HOSPITALIER UNIVERSITAIRE YALGADO OUÉDRAOGO</div>
+    <div class="sous-titre">Direction des Systèmes d'Information &mdash; Service Approvisionnement</div>
+    <div class="titre-rapport">{{ $title }}</div>
+</div>
+
+<div class="filtres">
+    <strong>Critères appliqués :</strong>
+    @forelse($filters as $libelle => $valeur)
+        {{ $libelle }} = {{ $valeur }}@if(! $loop->last) &nbsp;|&nbsp; @endif
+    @empty
+        aucun filtre (portée complète)
+    @endforelse
+    &nbsp;|&nbsp; <strong>{{ count($rows) }}</strong> ligne(s)
+</div>
+
+<table class="donnees">
+    <thead>
+        <tr>
+            @foreach($columns as $entete)
+                <th>{{ $entete }}</th>
             @endforeach
-        </div>
-    @endif
-
-    <table>
-        <thead>
+        </tr>
+    </thead>
+    <tbody>
+        @forelse($rows as $ligne)
             <tr>
-                @foreach($columns as $key => $label)
-                    <th>{{ $label }}</th>
+                @foreach(array_keys($columns) as $cle)
+                    <td>{{ $ligne[$cle] ?? '—' }}</td>
                 @endforeach
             </tr>
-        </thead>
-        <tbody>
-            @forelse($rows as $row)
-                <tr>
-                    @foreach($columns as $key => $label)
-                        <td>{{ $row[$key] ?? '-' }}</td>
-                    @endforeach
-                </tr>
-            @empty
-                <tr>
-                    <td colspan="{{ count($columns) }}" style="text-align: center; color: #999999;">
-                        Aucun enregistrement ne correspond aux critères sélectionnés.
-                    </td>
-                </tr>
-            @endforelse
-        </tbody>
-    </table>
+        @empty
+            <tr>
+                <td colspan="{{ max(count($columns), 1) }}" class="vide">
+                    Aucune donnée ne correspond aux critères sélectionnés.
+                </td>
+            </tr>
+        @endforelse
+    </tbody>
+</table>
 
-    <div class="footer">
-        © {{ date('Y') }} CHU-YO - Gestion du Parc Informatique & Achats | Page <span class="page-number"></span>
-    </div>
+<div class="pied">
+    {{ $title }} &mdash; édité le {{ $genereLe->format('d/m/Y à H:i') }}
+    @if($genrePar) par {{ $genrePar }} @endif
+    &mdash; CHU Yalgado Ouédraogo, système de gestion du parc informatique.
+</div>
+
 </body>
 </html>

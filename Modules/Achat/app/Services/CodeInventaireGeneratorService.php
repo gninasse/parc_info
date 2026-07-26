@@ -2,67 +2,69 @@
 
 namespace Modules\Achat\Services;
 
-use Illuminate\Support\Facades\DB;
+use Modules\Achat\Contracts\ParcInfoIntegrationInterface;
 use Modules\Achat\Models\Parametre;
+use Modules\Achat\Traits\GeneratesDocumentNumbers;
 
+/**
+ * Génération des codes inventaire (RG-INT-04 / RG-NUM-03).
+ *
+ * Le compteur est porté par achat_sequences et verrouillé pendant la
+ * génération : deux intégrations concurrentes ne peuvent pas produire le même
+ * code. L'unicité est en outre revérifiée dans le parc avant restitution.
+ */
 class CodeInventaireGeneratorService
 {
-    /**
-     * Génère le prochain code inventaire unique.
-     */
+    use GeneratesDocumentNumbers;
+
+    /** Garde-fou contre une collision persistante due à un pattern trop étroit. */
+    protected const MAX_TENTATIVES = 50;
+
+    public function __construct(protected ParcInfoIntegrationInterface $parcInfo) {}
+
     public function generer(): string
     {
-        $pattern = Parametre::getVal('pattern_code_inventaire', 'INV-{YYYY}-{SEQUENCE:4}');
+        $pattern = Parametre::getVal('pattern_code_inventaire', config('achat.code_inventaire_pattern'));
+        $annee = date('Y');
 
-        return DB::transaction(function () use ($pattern) {
-            // Verrouiller la ligne pour éviter les accès concurrents
-            $compteurParam = Parametre::where('cle', 'compteur_inventaire_annee')->lockForUpdate()->first();
+        for ($tentative = 0; $tentative < self::MAX_TENTATIVES; $tentative++) {
+            $sequence = $this->prochaineSequence();
+            $code = $this->appliquerPattern($pattern, $annee, $sequence);
 
-            if (! $compteurParam) {
-                $compteurParam = Parametre::create([
-                    'cle' => 'compteur_inventaire_annee',
-                    'valeur' => '0',
-                    'description' => 'Dernier numéro séquentiel de code inventaire utilisé',
-                ]);
+            if (! $this->parcInfo->existeCodeInventaire($code)) {
+                return $code;
             }
-
-            $anneeEnCours = date('Y');
-            $sequence = (int) $compteurParam->valeur;
-
-            do {
-                $sequence++;
-                $code = $this->appliquerPattern($pattern, $anneeEnCours, $sequence);
-
-                // Vérifier l'unicité dans la table parc_info_equipements
-                $exists = DB::table('parc_info_equipements')
-                    ->where('code_inventaire', $code)
-                    ->exists();
-
-            } while ($exists);
-
-            // Mettre à jour le compteur en DB
-            $compteurParam->update(['valeur' => (string) $sequence]);
-
-            return $code;
-        });
-    }
-
-    /**
-     * Applique les variables de remplacement sur le pattern.
-     */
-    protected function appliquerPattern(string $pattern, string $annee, int $sequence): string
-    {
-        $code = str_replace('{YYYY}', $annee, $pattern);
-
-        // Chercher {SEQUENCE:X}
-        if (preg_match('/\{SEQUENCE:(\d+)\}/', $code, $matches)) {
-            $padding = (int) $matches[1];
-            $seqStr = str_pad((string) $sequence, $padding, '0', STR_PAD_LEFT);
-            $code = str_replace($matches[0], $seqStr, $code);
-        } else {
-            $code = str_replace('{SEQUENCE}', (string) $sequence, $code);
         }
 
-        return $code;
+        throw new \RuntimeException(
+            'Impossible de générer un code inventaire unique après '.self::MAX_TENTATIVES.' tentatives. '.
+            'Vérifiez le pattern de génération dans le paramétrage du module.'
+        );
+    }
+
+    /** Incrémente le compteur annuel et retourne sa nouvelle valeur. */
+    protected function prochaineSequence(): int
+    {
+        // Le trait renvoie « CODEINV-2026-0042 » : seule la séquence nous importe.
+        $numero = $this->genererNumero('code_inventaire', 'SEQ');
+
+        return (int) substr($numero, strrpos($numero, '-') + 1);
+    }
+
+    protected function appliquerPattern(string $pattern, string $annee, int $sequence): string
+    {
+        $code = str_replace(['{YYYY}', '{YY}'], [$annee, substr($annee, -2)], $pattern);
+
+        if (preg_match('/\{SEQUENCE:(\d+)\}/', $code, $correspondances)) {
+            $remplissage = (int) $correspondances[1];
+
+            return str_replace(
+                $correspondances[0],
+                str_pad((string) $sequence, $remplissage, '0', STR_PAD_LEFT),
+                $code
+            );
+        }
+
+        return str_replace('{SEQUENCE}', (string) $sequence, $code);
     }
 }

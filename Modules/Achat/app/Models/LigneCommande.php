@@ -14,50 +14,71 @@ class LigneCommande extends Model
         'article_id',
         'quantite',
         'prix_unitaire',
+        'taux_tva',
         'quantite_livree',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     */
     protected function casts(): array
     {
         return [
             'quantite' => 'integer',
             'prix_unitaire' => 'decimal:2',
+            'taux_tva' => 'decimal:2',
             'quantite_livree' => 'integer',
         ];
     }
 
-    /**
-     * Get the purchase order parent.
-     */
+    // ── Relations ──────────────────────────────────────────────────────────
+
     public function bonCommande(): BelongsTo
     {
         return $this->belongsTo(BonCommande::class, 'bon_de_commande_id');
     }
 
-    /**
-     * Get the referenced article.
-     */
     public function article(): BelongsTo
     {
         return $this->belongsTo(Article::class, 'article_id');
     }
 
-    /**
-     * Get the remaining quantity to deliver.
-     */
+    // ── Accesseurs calculés ────────────────────────────────────────────────
+
+    /** RG-BL-03 : plafond de saisie d'une réception. */
     public function getResteALivrerAttribute(): int
     {
         return max(0, $this->quantite - $this->quantite_livree);
     }
 
     /**
-     * Get the line amount HT.
+     * ENF-FIA-04 — Source unique de vérité du montant d'une ligne.
+     * Tout écran et tout export doivent passer par ces accesseurs.
      */
-    public function getMontantLigneAttribute(): float
+    public function getMontantHtAttribute(): float
     {
-        return $this->quantite * $this->prix_unitaire;
+        return round((float) $this->quantite * (float) $this->prix_unitaire, 2);
+    }
+
+    public function getMontantTvaAttribute(): float
+    {
+        return round($this->montant_ht * ((float) $this->taux_tva / 100), 2);
+    }
+
+    public function getMontantTtcAttribute(): float
+    {
+        return round($this->montant_ht + $this->montant_tva, 2);
+    }
+
+    public function getEstEntierementLivreeAttribute(): bool
+    {
+        return $this->quantite_livree >= $this->quantite;
+    }
+
+    /** État de livraison de la ligne : attente | partiel | livre */
+    public function getEtatLivraisonAttribute(): string
+    {
+        if ($this->quantite_livree <= 0) {
+            return 'attente';
+        }
+
+        return $this->est_entierement_livree ? 'livre' : 'partiel';
     }
 }

@@ -1,111 +1,80 @@
 /**
- * Gestion de la liste des Bordereaux de Livraison - Module Achat
- * Pattern: AJAX + Bootstrap Table
+ * Liste des bordereaux de livraison.
  */
-
-document.addEventListener('DOMContentLoaded', function() {
-    const $table = $('#bordereaux-table');
-    const $btnShow = $('#btn-show');
-    const $btnPrint = $('#btn-print');
+document.addEventListener('DOMContentLoaded', function () {
+    const $table = $('#items-table');
+    const $btnVoir = $('#btn-show');
+    const $btnImprimer = $('#btn-print');
     const $btnWizard = $('#btn-wizard');
-    const $btnDelete = $('#btn-delete');
+    const $btnSupprimer = $('#btn-delete');
 
-    // ── FILTRES RECHERCHE ──
-    $('#filter-bc, #filter-statut').on('change', function() {
-        $table.bootstrapTable('refresh');
-    });
-
-    // Passer les filtres à l'AJAX
     $table.bootstrapTable('refreshOptions', {
-        queryParams: function(params) {
+        queryParams: function (params) {
             params.bon_de_commande_id = $('#filter-bc').val();
             params.statut = $('#filter-statut').val();
             return params;
-        }
+        },
     });
 
-    // ── SELECTION EVENT ──
+    $('#filter-bc, #filter-statut').on('change', () => $table.bootstrapTable('refresh'));
+
     $table.on('check.bs.table uncheck.bs.table check-all.bs.table uncheck-all.bs.table', function () {
-        const selections = $table.bootstrapTable('getSelections');
-        const hasOne = selections.length === 1;
-        
-        $btnShow.prop('disabled', !hasOne);
-        $btnPrint.prop('disabled', !hasOne);
-        
-        if (hasOne) {
-            const row = selections[0];
-            $btnWizard.prop('disabled', !(row.statut === 'brouillon' || row.statut === 'wizard'));
-            $btnDelete.prop('disabled', !(row.statut === 'brouillon'));
-        } else {
-            $btnWizard.prop('disabled', true);
-            $btnDelete.prop('disabled', true);
-        }
+        const selection = $table.bootstrapTable('getSelections');
+        const ligne = selection.length === 1 ? selection[0] : null;
+
+        $btnVoir.prop('disabled', !ligne);
+        $btnImprimer.prop('disabled', !ligne);
+        // RG-WZ-01 : l'assistant reste accessible tant que le bordereau n'est pas validé.
+        $btnWizard.prop('disabled', !ligne || ligne.statut === 'valide');
+        // RG-BL-06 : suppression réservée aux brouillons.
+        $btnSupprimer.prop('disabled', !ligne || ligne.statut !== 'brouillon');
     });
 
-    // ── ACTION SHOW ──
-    function showItem(id) {
+    const ligneSelectionnee = () => $table.bootstrapTable('getSelections')[0];
+
+    function ouvrir(id) {
         window.location.href = route('achat.bordereaux.show', id);
     }
 
-    $btnShow.on('click', function() {
-        const row = $table.bootstrapTable('getSelections')[0];
-        if (row) showItem(row.id);
+    $btnVoir.on('click', function () {
+        const ligne = ligneSelectionnee();
+        if (ligne) ouvrir(ligne.id);
     });
 
-    $table.on('dbl-click-row.bs.table', function(e, row) {
-        showItem(row.id);
+    $table.on('dbl-click-row.bs.table', (e, ligne) => ouvrir(ligne.id));
+
+    $btnWizard.on('click', function () {
+        const ligne = ligneSelectionnee();
+        if (ligne) window.location.href = route('achat.bordereaux.wizard', ligne.id);
     });
 
-    // ── ACTION WIZARD ──
-    $btnWizard.on('click', function() {
-        const row = $table.bootstrapTable('getSelections')[0];
-        if (row) {
-            window.location.href = route('achat.bordereaux.wizard', row.id);
-        }
+    $btnImprimer.on('click', function () {
+        const ligne = ligneSelectionnee();
+        if (!ligne) return;
+
+        $('#modal-pdf-iframe').attr('src', route('achat.bordereaux.imprimer', ligne.id));
+        new bootstrap.Modal(document.getElementById('modal-pdf')).show();
     });
 
-    // ── ACTION PRINT ──
-    $btnPrint.on('click', function() {
-        const row = $table.bootstrapTable('getSelections')[0];
-        if (row) {
-            const url = route('achat.bordereaux.imprimer', row.id);
-            $('#print-bl-iframe').attr('src', url);
-            const printModal = new bootstrap.Modal(document.getElementById('printBlModal'));
-            printModal.show();
-        }
-    });
+    $btnSupprimer.on('click', function () {
+        const ligne = ligneSelectionnee();
+        if (!ligne) return;
 
-    // ── ACTION SUPPRIMER ──
-    $btnDelete.on('click', function() {
-        const row = $table.bootstrapTable('getSelections')[0];
-        if (!row) return;
+        Achat.confirmer({
+            titre: 'Supprimer ce bordereau ?',
+            texte: `<strong>${ligne.numero_livraison}</strong><br>Cette action est irréversible.`,
+            confirmer: 'Oui, supprimer',
+        }).then(function (resultat) {
+            if (!resultat.isConfirmed) return;
 
-        Swal.fire({
-            title: 'Supprimer ce bordereau ?',
-            text: 'Cette action est irréversible !',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#dc3545',
-            confirmButtonText: 'Oui, supprimer'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $.ajax({
-                    url: route('achat.bordereaux.destroy', row.id),
-                    method: 'DELETE',
-                    data: {
-                        _token: $('meta[name="csrf-token"]').attr('content')
-                    },
-                    success: function(res) {
-                        if (res.success) {
-                            Swal.fire('Supprimé !', res.message, 'success');
-                            $table.bootstrapTable('refresh');
-                        }
-                    },
-                    error: function(xhr) {
-                        Swal.fire('Erreur', xhr.responseJSON?.message || 'Erreur lors de la suppression', 'error');
-                    }
+            $.ajax({ url: route('achat.bordereaux.destroy', ligne.id), method: 'DELETE' })
+                .done(function (reponse) {
+                    Achat.succes(reponse.message);
+                    $table.bootstrapTable('refresh');
+                })
+                .fail(function (xhr) {
+                    Achat.erreur(Achat.messageErreur(xhr, 'La suppression a échoué.'));
                 });
-            }
         });
     });
 });

@@ -4,36 +4,37 @@ namespace Modules\Achat\Providers;
 
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use Modules\Achat\Events\BonCommandeAnnule;
+use Modules\Achat\Events\BonCommandeCloture;
 use Modules\Achat\Events\BonCommandeValide;
 use Modules\Achat\Events\BordereauLivraisonValide;
-use Modules\Achat\Events\EquipementCreeViaAchat;
-use Modules\Achat\Listeners\CreerEquipementsDansParcInfo;
-use Modules\Achat\Listeners\CreerLicences;
-use Modules\Achat\Listeners\HistoriserAcquisition;
-use Modules\Achat\Listeners\MettreAJourStockConsommables;
-use Modules\Achat\Listeners\NotifierUtilisateurs;
+use Modules\Achat\Listeners\JournaliserEvenementAchat;
 
+/**
+ * Correction AN-08 : la table d'écoute ne référence plus que des écouteurs
+ * réellement implémentés. Les quatre stubs vides de la version précédente
+ * (CreerEquipementsDansParcInfo, CreerLicences, MettreAJourStockConsommables,
+ * HistoriserAcquisition) ont été supprimés : leur logique s'exécute dans
+ * WizardValidationService, à l'intérieur de la transaction d'intégration.
+ */
 class EventServiceProvider extends ServiceProvider
 {
     protected $listen = [
         BonCommandeValide::class => [
-            NotifierUtilisateurs::class,
+            JournaliserEvenementAchat::class,
         ],
 
         BonCommandeAnnule::class => [
-            NotifierUtilisateurs::class,
+            JournaliserEvenementAchat::class,
+        ],
+
+        BonCommandeCloture::class => [
+            JournaliserEvenementAchat::class,
         ],
 
         BordereauLivraisonValide::class => [
-            CreerEquipementsDansParcInfo::class,
-            MettreAJourStockConsommables::class,
-            CreerLicences::class,
-            HistoriserAcquisition::class,
-            NotifierUtilisateurs::class,
-        ],
-
-        EquipementCreeViaAchat::class => [
-            HistoriserAcquisition::class,
+            JournaliserEvenementAchat::class,
         ],
     ];
+
+    protected static $shouldDiscoverEvents = false;
 }

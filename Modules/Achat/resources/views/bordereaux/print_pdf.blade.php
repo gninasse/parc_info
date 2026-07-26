@@ -1,346 +1,170 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-    <meta charset="utf-8">
-    <title>Bordereau de Livraison {{ $bordereau->numero_livraison }}</title>
+    <meta charset="UTF-8">
+    <title>Bordereau de livraison {{ $bordereau->numero_livraison }}</title>
     <style>
-        body {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            font-size: 11px;
-            color: #333;
-            margin: 0;
-            padding: 0;
-            line-height: 1.4;
+        @page { margin: 15mm 14mm 18mm 14mm; }
+
+        body { font-family: DejaVu Sans, sans-serif; font-size: 10px; color: #212529; margin: 0; }
+
+        .entete { width: 100%; border-bottom: 2px solid #0d2060; padding-bottom: 8px; margin-bottom: 14px; }
+        .entete td { vertical-align: middle; }
+        .etablissement { font-size: 14px; font-weight: bold; color: #0d2060; }
+        .sous-titre { font-size: 9px; color: #6c757d; }
+        .titre-document {
+            text-align: right; font-size: 16px; font-weight: bold;
+            color: #0d2060; text-transform: uppercase;
         }
-        @page {
-            margin: 40px;
+        .numero { text-align: right; font-size: 12px; font-weight: bold; }
+
+        .bloc { width: 100%; margin-bottom: 12px; }
+        .bloc td { vertical-align: top; width: 50%; }
+        .encadre { border: 1px solid #dee2e6; padding: 8px 10px; }
+        .encadre-titre {
+            font-size: 8px; text-transform: uppercase; letter-spacing: .5px;
+            color: #6c757d; font-weight: bold; margin-bottom: 4px;
         }
-        .header-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 25px;
+
+        table.lignes { width: 100%; border-collapse: collapse; margin-top: 6px; }
+        table.lignes th {
+            background-color: #0d2060; color: #ffffff; font-size: 9px;
+            text-transform: uppercase; padding: 6px 5px; text-align: left;
         }
-        .header-table td {
-            vertical-align: top;
-            border: 0;
+        table.lignes td { padding: 5px; border-bottom: 1px solid #e9ecef; }
+        table.lignes tr:nth-child(even) td { background-color: #f8f9fa; }
+        .centre { text-align: center; }
+
+        .recapitulatif {
+            margin-top: 12px; border: 1px solid #dee2e6;
+            padding: 8px 10px; background-color: #f8f9fa;
         }
-        .logo {
-            max-height: 65px;
-            margin-bottom: 5px;
+
+        .signatures { width: 100%; margin-top: 28px; }
+        .signatures td { width: 50%; padding-top: 6px; font-size: 9px; }
+        .cadre-signature { border: 1px solid #dee2e6; height: 55px; margin-top: 4px; }
+
+        .pied {
+            position: fixed; bottom: -10mm; left: 0; right: 0;
+            font-size: 7.5px; color: #6c757d;
+            border-top: 1px solid #dee2e6; padding-top: 4px;
         }
-        .hospital-name {
-            font-size: 13px;
-            font-weight: bold;
-            color: #212529;
-            text-transform: uppercase;
-        }
-        .hospital-sub {
-            font-size: 9px;
-            color: #6c757d;
-            font-weight: bold;
-            margin-bottom: 4px;
-        }
-        .hospital-address {
-            font-size: 8.5px;
-            color: #495057;
-            line-height: 1.3;
-        }
-        .document-title-container {
-            text-align: right;
-        }
-        .document-title {
-            font-size: 18px;
-            font-weight: 900;
-            color: #28a745;
-            text-transform: uppercase;
-            margin-bottom: 8px;
-            letter-spacing: 0.5px;
-        }
-        .bc-box {
-            display: inline-block;
-            border: 2px solid #28a745;
-            padding: 8px 12px;
-            text-align: left;
-            background-color: #f8fafc;
-            border-radius: 4px;
-        }
-        .bc-box table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .bc-box td {
-            padding: 2px 4px;
-            font-size: 10px;
-        }
-        .bc-box td.label {
-            font-weight: bold;
-            color: #495057;
-        }
-        .bc-box td.value {
-            font-weight: bold;
-            color: #212529;
-            font-family: monospace;
-        }
-        .divider {
-            border-top: 2px solid #28a745;
-            margin-bottom: 20px;
-        }
-        .info-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        .info-table td {
-            width: 50%;
-            vertical-align: top;
-            border: 0;
-        }
-        .info-table td.left-col {
-            padding-right: 10px;
-        }
-        .info-table td.right-col {
-            padding-left: 10px;
-        }
-        .info-card {
-            border: 1px solid #cbd5e1;
-            background-color: #f8fafc;
-            padding: 10px;
-            border-radius: 4px;
-            min-height: 105px;
-        }
-        .info-card-title {
-            font-size: 10px;
-            font-weight: bold;
-            color: #1e3a8a;
-            border-bottom: 1px solid #cbd5e1;
-            padding-bottom: 4px;
-            margin-bottom: 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .info-card-text {
-            font-size: 9.5px;
-            color: #334155;
-            line-height: 1.4;
-        }
-        .observations-section {
-            border: 1px solid #e2e8f0;
-            background-color: #fafafa;
-            padding: 8px 12px;
-            margin-bottom: 20px;
-            border-radius: 4px;
-        }
-        .observations-title {
-            font-weight: bold;
-            font-size: 9.5px;
-            color: #475569;
-            margin-bottom: 4px;
-        }
-        .observations-body {
-            font-size: 9px;
-            color: #334155;
-        }
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        .items-table th {
-            background-color: #28a745;
-            color: white;
-            font-weight: bold;
-            text-align: left;
-            padding: 6px 8px;
-            border: 1px solid #28a745;
-            font-size: 9.5px;
-            text-transform: uppercase;
-        }
-        .items-table td {
-            padding: 6px 8px;
-            border: 1px solid #e2e8f0;
-            font-size: 9px;
-            vertical-align: middle;
-        }
-        .items-table tr:nth-child(even) {
-            background-color: #f8fafc;
-        }
-        .text-right {
-            text-align: right;
-        }
-        .text-center {
-            text-align: center;
-        }
-        .clear {
-            clear: both;
-        }
-        .signatures-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            margin-bottom: 40px;
-        }
-        .signatures-table td {
-            width: 50%;
-            border: 0;
-            vertical-align: top;
-        }
-        .signature-box {
-            border: 1px dashed #cbd5e1;
-            padding: 10px;
-            border-radius: 4px;
-            min-height: 100px;
-        }
-        .signature-title {
-            font-weight: bold;
-            font-size: 10px;
-            color: #334155;
-            text-align: center;
-            margin-bottom: 50px;
-            text-decoration: underline;
-        }
-        .signature-line {
-            text-align: center;
-            font-size: 9px;
-            color: #64748b;
-        }
-        .footer {
-            position: fixed;
-            bottom: -15px;
-            left: 0;
-            right: 0;
-            text-align: center;
-            font-size: 8px;
-            color: #64748b;
-            border-top: 1px solid #cbd5e1;
-            padding-top: 6px;
-        }
-        .page-number:after {
-            content: counter(page);
-        }
+        .reserve { margin-top: 10px; border-left: 3px solid #ffc107; padding: 6px 10px; background: #fff9e6; }
     </style>
 </head>
 <body>
 
-    <table class="header-table">
+<table class="entete">
+    <tr>
+        <td style="width: 60%;">
+            <div class="etablissement">CENTRE HOSPITALIER UNIVERSITAIRE YALGADO OUÉDRAOGO</div>
+            <div class="sous-titre">Direction des Systèmes d'Information &mdash; Magasin</div>
+        </td>
+        <td style="width: 40%;">
+            <div class="titre-document">Bordereau de réception</div>
+            <div class="numero">{{ $bordereau->numero_livraison }}</div>
+        </td>
+    </tr>
+</table>
+
+<table class="bloc">
+    <tr>
+        <td style="padding-right: 6px;">
+            <div class="encadre">
+                <div class="encadre-titre">Fournisseur</div>
+                <div style="font-weight: bold; font-size: 11px;">
+                    {{ $bordereau->bonCommande?->fournisseur?->nom }}
+                </div>
+                <div>Code : {{ $bordereau->bonCommande?->fournisseur?->code }}</div>
+                <div style="margin-top: 6px;">
+                    <strong>Bon de commande :</strong> {{ $bordereau->bonCommande?->numero_commande }}
+                </div>
+            </div>
+        </td>
+        <td style="padding-left: 6px;">
+            <div class="encadre">
+                <div class="encadre-titre">Réception</div>
+                <div><strong>Date de livraison :</strong> {{ $bordereau->date_livraison?->format('d/m/Y') }}</div>
+                <div><strong>Réf. bordereau fournisseur :</strong> {{ $bordereau->ref_bordereau_physique }}</div>
+                <div><strong>Statut :</strong> {{ $bordereau->statut_label }}</div>
+                <div><strong>Réceptionné par :</strong> {{ $bordereau->creator?->name ?? '—' }}</div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<table class="lignes">
+    <thead>
         <tr>
-            <td>
-                @if(file_exists(public_path('images/chuyo_logo.png')))
-                    <img class="logo" src="{{ public_path('images/chuyo_logo.png') }}" alt="CHU-YO">
-                @endif
-                <div class="hospital-name">CHU-YO Achat</div>
-                <div class="hospital-sub">CENTRE HOSPITALIER UNIVERSITAIRE YALGADO OUEDRAOGO</div>
-                <div class="hospital-address">
-                    03 BP 7022 Ouagadougou 03, Burkina Faso<br>
-                    Avenue du Capitaine Thomas Sankara<br>
-                    Tél: (+226) 25 31 16 55 / 56 / 57
-                </div>
-            </td>
-            <td class="document-title-container">
-                <div class="document-title">Bordereau de Livraison</div>
-                <div class="bc-box">
-                    <table>
-                        <tr>
-                            <td class="label">N° Livraison :</td>
-                            <td class="value">{{ $bordereau->numero_livraison }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label">Date Réception :</td>
-                            <td class="value">{{ $bordereau->date_livraison->format('d/m/Y') }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label">Statut :</td>
-                            <td class="value" style="color: {{ $bordereau->statut === 'valide' ? '#28a745' : '#4b5563' }};">
-                                {{ strtoupper($bordereau->statut) }}
-                            </td>
-                        </tr>
-                    </table>
-                </div>
-            </td>
+            <th style="width: 13%;">Code</th>
+            <th style="width: 41%;">Désignation</th>
+            <th style="width: 13%;" class="centre">Type</th>
+            <th style="width: 11%;" class="centre">Commandé</th>
+            <th style="width: 11%;" class="centre">Reçu</th>
+            <th style="width: 11%;" class="centre">Refusé</th>
         </tr>
-    </table>
-
-    <div class="divider"></div>
-
-    <table class="info-table">
-        <tr>
-            <td class="left-col">
-                <div class="info-card">
-                    <div class="info-card-title">Fournisseur & Commande</div>
-                    <div class="info-card-text">
-                        <strong>{{ $bordereau->bonCommande->fournisseur->nom }}</strong><br>
-                        N° Bon de Commande: <strong>{{ $bordereau->bonCommande->numero_commande }}</strong><br>
-                        Réf. Bordereau Physique: <strong>{{ $bordereau->ref_bordereau_physique ?: '-' }}</strong><br>
-                        Date de commande: {{ $bordereau->bonCommande->date_commande->format('d/m/Y') }}
-                    </div>
-                </div>
-            </td>
-            <td class="right-col">
-                <div class="info-card">
-                    <div class="info-card-title">Lieu de Réception</div>
-                    <div class="info-card-text">
-                        <strong>CHU Yalgado Ouédraogo</strong><br>
-                        Service Réceptionnaire: Service des Achats & Approvisionnements<br>
-                        Bâtiment: Direction Générale, Rez-de-chaussée<br>
-                        Réceptionné par: {{ $bordereau->createur?->name ?? 'DSI / Service Approvisionnement' }}
-                    </div>
-                </div>
-            </td>
-        </tr>
-    </table>
-
-    @if($bordereau->commentaire)
-        <div class="observations-section">
-            <div class="observations-title">Observations / Notes de réception :</div>
-            <div class="observations-body">{{ $bordereau->commentaire }}</div>
-        </div>
-    @endif
-
-    <table class="items-table">
-        <thead>
+    </thead>
+    <tbody>
+        @php $totalRecu = 0; @endphp
+        @forelse($bordereau->lignesLivraison as $ligne)
+            @php
+                $totalRecu += $ligne->quantite_livree;
+                $ligneCommande = $bordereau->bonCommande?->lignesCommande
+                    ->firstWhere('article_id', $ligne->article_id);
+            @endphp
             <tr>
-                <th style="width: 20%;">Code Article</th>
-                <th style="width: 50%;">Désignation</th>
-                <th style="width: 15%;">Catégorie</th>
-                <th style="width: 15%; text-align: right;">Qté Livrée</th>
+                <td style="font-size: 8.5px;">{{ $ligne->article?->code_article }}</td>
+                <td><strong>{{ $ligne->article?->designation }}</strong></td>
+                <td class="centre">{{ $ligne->article?->type_label }}</td>
+                <td class="centre">{{ $ligneCommande?->quantite ?? '—' }}</td>
+                <td class="centre" style="font-weight: bold;">{{ $ligne->quantite_livree }}</td>
+                <td class="centre">{{ $ligne->quantite_refusee ?: '—' }}</td>
             </tr>
-        </thead>
-        <tbody>
-            @foreach($bordereau->lignesLivraison as $l)
-                <tr>
-                    <td style="font-family: monospace;">{{ $l->article->code_article }}</td>
-                    <td><strong>{{ $l->article->designation }}</strong></td>
-                    <td>{{ config("achat.types_articles.{$l->article->type_article}", $l->article->type_article) }}</td>
-                    <td class="text-right" style="font-weight: bold;">{{ $l->quantite_livree }}</td>
-                </tr>
-            @endforeach
-        </tbody>
-    </table>
+        @empty
+            <tr><td colspan="6" class="centre" style="padding: 12px;">Aucune ligne.</td></tr>
+        @endforelse
+    </tbody>
+</table>
 
-    <table class="signatures-table">
-        <tr>
-            <td style="padding-right: 15px;">
-                <div class="signature-box">
-                    <div class="signature-title">L'Agent de Réception (Signature)</div>
-                    <div class="signature-line">
-                        Réceptionné par: {{ $bordereau->createur?->name ?? 'DSI' }}<br>
-                        Le: {{ $bordereau->created_at->format('d/m/Y à H:i') }}
-                    </div>
-                </div>
-            </td>
-            <td style="padding-left: 15px;">
-                <div class="signature-box">
-                    <div class="signature-title">Le Livreur (Signature & Cachet)</div>
-                    <div class="signature-line">Date: ____/____/________<br>Nom & Signature</div>
-                </div>
-            </td>
-        </tr>
-    </table>
+<div class="recapitulatif">
+    <strong>Total reçu :</strong> {{ $totalRecu }} unité(s)
+    &nbsp;&nbsp;|&nbsp;&nbsp;
+    <strong>Nombre de références :</strong> {{ $bordereau->lignesLivraison->count() }}
+</div>
 
-    <div class="footer">
-        Bordereau de livraison généré par le portail CHU-YO. Réf. interne: {{ $bordereau->numero_livraison }}.
-        <br>
-        Page <span class="page-number"></span> / CHU-YO Achats - Bordereau de Livraison {{ $bordereau->numero_livraison }}
+@foreach($bordereau->lignesLivraison->where('quantite_refusee', '>', 0) as $ligne)
+    <div class="reserve">
+        <strong>Réserve &mdash; {{ $ligne->article?->designation }} :</strong>
+        {{ $ligne->quantite_refusee }} unité(s) refusée(s).
+        {{ $ligne->motif_refus ? 'Motif : '.$ligne->motif_refus : '' }}
     </div>
+@endforeach
+
+@if($bordereau->commentaire)
+    <div class="encadre" style="margin-top: 12px;">
+        <div class="encadre-titre">Observations de réception</div>
+        <div>{{ $bordereau->commentaire }}</div>
+    </div>
+@endif
+
+<table class="signatures">
+    <tr>
+        <td style="padding-right: 8px;">
+            <div>Le magasinier</div>
+            <div class="cadre-signature"></div>
+        </td>
+        <td style="padding-left: 8px;">
+            <div>Le livreur / transporteur</div>
+            <div class="cadre-signature"></div>
+        </td>
+    </tr>
+</table>
+
+<div class="pied">
+    Bordereau {{ $bordereau->numero_livraison }} &mdash;
+    édité le {{ now()->format('d/m/Y à H:i') }} &mdash;
+    CHU Yalgado Ouédraogo, système de gestion du parc informatique.
+</div>
 
 </body>
 </html>

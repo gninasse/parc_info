@@ -17,9 +17,6 @@ class WizardData extends Model
         'completed',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     */
     protected function casts(): array
     {
         return [
@@ -29,19 +26,18 @@ class WizardData extends Model
         ];
     }
 
-    /**
-     * Get the associated delivery slip.
-     */
     public function bordereauLivraison(): BelongsTo
     {
         return $this->belongsTo(BordereauLivraison::class, 'bordereau_livraison_id');
     }
 
-    /**
-     * Get the associated article.
-     */
     public function article(): BelongsTo
     {
         return $this->belongsTo(Article::class, 'article_id');
+    }
+
+    public function getNombreUnitesAttribute(): int
+    {
+        return count($this->unites_data ?? []);
     }
 }

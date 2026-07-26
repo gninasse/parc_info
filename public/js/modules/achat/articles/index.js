@@ -1,287 +1,199 @@
 /**
- * Gestion du Catalogue d'Articles - Module Achat
- * Pattern: AJAX + Bootstrap Table + Modales
+ * Catalogue des articles : liste, création, modification, duplication.
  */
-
-window.dateFormatter = function (value) {
-    if (!value) return '-';
-    return new Date(value).toLocaleDateString('fr-FR', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-};
-
-window.priceFormatter = function (value) {
-    if (value === null || value === undefined) return '-';
-    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF', minimumFractionDigits: 0 }).format(value);
-};
-
-window.statusFormatter = function (value) {
-    return value 
-        ? '<span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Actif</span>' 
-        : '<span class="badge bg-danger"><i class="fas fa-times-circle me-1"></i>Inactif</span>';
-};
-
-window.typeFormatter = function (value, row) {
-    return `<span class="badge bg-secondary">${row.type_label}</span>`;
-};
-
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const $table = $('#items-table');
-    const $modal = new bootstrap.Modal('#item-modal');
-    const $form = $('#item-form');
-    const $btnSave = $('#btn-save');
-    
-    const $btnAdd = $('#btn-add');
-    const $btnEdit = $('#btn-edit');
-    const $btnDelete = $('#btn-delete');
-    const $btnToggle = $('#btn-toggle');
-    const $btnDuplicate = $('#btn-duplicate');
+    const $formulaire = $('#item-form');
+    const modale = new bootstrap.Modal('#item-modal');
 
-    // ── FILTRES RECHERCHE ──
-    $('#filter-type, #filter-marque, #filter-categorie, #filter-status').on('change', function() {
-        $table.bootstrapTable('refresh');
-    });
+    const $btnAjouter = $('#btn-add');
+    const $btnModifier = $('#btn-edit');
+    const $btnDupliquer = $('#btn-duplicate');
+    const $btnBasculer = $('#btn-toggle');
+    const $btnSupprimer = $('#btn-delete');
 
-    // Passer les filtres à l'AJAX
+    // ── Filtres ────────────────────────────────────────────────────────────
     $table.bootstrapTable('refreshOptions', {
-        queryParams: function(params) {
+        queryParams: function (params) {
             params.type_article = $('#filter-type').val();
             params.marque_id = $('#filter-marque').val();
             params.categorie_equipement_id = $('#filter-categorie').val();
-            params.actif = $('#filter-status').val();
+            params.actif = $('#filter-actif').val();
             return params;
-        }
+        },
     });
 
-    // ── GESTION DES CHAMPS CONDITIONNELS (TABS) ──
-    function ajusterChampsParType(type) {
-        // Cacher tous les blocs conditionnels
-        $('#group-categorie').addClass('d-none');
-        $('#group-seuil-alerte').addClass('d-none');
-        $('#group-duree-validite').addClass('d-none');
+    $('#filter-type, #filter-marque, #filter-categorie, #filter-actif')
+        .on('change', () => $table.bootstrapTable('refresh'));
 
-        // Afficher selon le type
-        if (type === 'equipement') {
-            $('#group-categorie').removeClass('d-none');
-        } else if (type === 'consommable') {
-            $('#group-seuil-alerte').removeClass('d-none');
-        } else if (type === 'licence') {
-            $('#group-duree-validite').removeClass('d-none');
-        }
-    }
-
-    $form.find('[name="type_article"]').on('change', function() {
-        ajusterChampsParType($(this).val());
-    });
-
-    // ── SELECTION EVENT ──
+    // ── Sélection ──────────────────────────────────────────────────────────
     $table.on('check.bs.table uncheck.bs.table check-all.bs.table uncheck-all.bs.table', function () {
-        const selections = $table.bootstrapTable('getSelections');
-        const hasOne = selections.length === 1;
-        $btnEdit.prop('disabled', !hasOne);
-        $btnDelete.prop('disabled', !hasOne);
-        $btnToggle.prop('disabled', !hasOne);
-        $btnDuplicate.prop('disabled', !hasOne);
+        const uneSeule = $table.bootstrapTable('getSelections').length === 1;
+        $btnModifier.prop('disabled', !uneSeule);
+        $btnDupliquer.prop('disabled', !uneSeule);
+        $btnBasculer.prop('disabled', !uneSeule);
+        $btnSupprimer.prop('disabled', !uneSeule);
     });
 
-    // ── ADD BUTTON ──
-    if ($btnAdd.length) {
-        $btnAdd.on('click', function() {
-            $form[0].reset();
-            $('#item-id').val('');
-            
-            // Activer le premier onglet
-            const firstTab = document.querySelector('#item-modal-tabs button[data-bs-target="#tab-general"]');
-            if (firstTab) bootstrap.Tab.getInstance(firstTab)?.show() || new bootstrap.Tab(firstTab).show();
-            
-            // Forcer le type par défaut et ajuster les champs
-            $form.find('[name="type_article"]').val('equipement').trigger('change');
-            
-            $('#modalLabel span').text('Nouveau');
-            $modal.show();
-        });
+    const ligneSelectionnee = () => $table.bootstrapTable('getSelections')[0];
+
+    // ── Champs conditionnels selon la nature de l'article ──────────────────
+    function ajusterChamps(type) {
+        $('#group-categorie').toggleClass('d-none', type !== 'equipement');
+        $('#group-seuil-alerte').toggleClass('d-none', type !== 'consommable');
+        $('#group-duree-validite').toggleClass('d-none', type !== 'licence');
     }
 
-    // ── EDIT FUNCTION ──
-    function editItem(id) {
-        $.ajax({
-            url: route('achat.articles.show', id),
-            method: 'GET',
-            success: function(res) {
-                if (res.success) {
-                    const d = res.article;
-                    $('#item-id').val(d.id);
-                    $form.find('[name="code_article"]').val(d.code_article);
-                    $form.find('[name="designation"]').val(d.designation);
-                    $form.find('[name="description"]').val(d.description);
-                    $form.find('[name="type_article"]').val(d.type_article).trigger('change');
-                    $form.find('[name="reference_constructeur"]').val(d.reference_constructeur);
-                    $form.find('[name="marque_id"]').val(d.marque_id);
-                    $form.find('[name="categorie_equipement_id"]').val(d.categorie_equipement_id);
-                    $form.find('[name="fournisseur_prefere_id"]').val(d.fournisseur_prefere_id);
-                    $form.find('[name="prix_indicatif"]').val(d.prix_indicatif);
-                    $form.find('[name="unite_mesure"]').val(d.unite_mesure);
-                    $form.find('[name="taux_tva"]').val(d.taux_tva);
-                    $form.find('[name="compte_comptable"]').val(d.compte_comptable);
-                    $form.find('[name="seuil_alerte"]').val(d.seuil_alerte);
-                    $form.find('[name="duree_validite_mois"]').val(d.duree_validite_mois);
-                    $form.find('[name="url_fiche_technique"]').val(d.url_fiche_technique);
-                    
-                    // Activer le premier onglet
-                    const firstTab = document.querySelector('#item-modal-tabs button[data-bs-target="#tab-general"]');
-                    if (firstTab) bootstrap.Tab.getInstance(firstTab)?.show() || new bootstrap.Tab(firstTab).show();
-
-                    $('#modalLabel span').text('Modifier');
-                    $modal.show();
-                }
-            },
-            error: function() {
-                Swal.fire('Erreur', 'Impossible de charger les données de l\'article', 'error');
-            }
-        });
-    }
-
-    if ($btnEdit.length) {
-        $btnEdit.on('click', function() {
-            const row = $table.bootstrapTable('getSelections')[0];
-            if (row) editItem(row.id);
-        });
-    }
-
-    // Double-clic sur une ligne pour éditer
-    $table.on('dbl-click-row.bs.table', function(e, row) {
-        editItem(row.id);
+    $formulaire.find('[name="type_article"]').on('change', function () {
+        ajusterChamps($(this).val());
     });
 
-    // ── SUBMIT FORM ──
-    $form.on('submit', function(e) {
-        e.preventDefault();
+    function ouvrirOnglet(cible) {
+        const bouton = document.querySelector(`#item-modal-tabs [data-bs-target="${cible}"]`);
+        if (bouton) bootstrap.Tab.getOrCreateInstance(bouton).show();
+    }
+
+    // ── Création ───────────────────────────────────────────────────────────
+    $btnAjouter.on('click', function () {
+        $formulaire[0].reset();
+        Achat.effacerErreurs($formulaire);
+        $('#item-id').val('');
+        $('#item-modal-action').text('Nouvel');
+        $formulaire.find('[name="type_article"]').val('equipement').trigger('change');
+        ouvrirOnglet('#tab-general');
+        modale.show();
+    });
+
+    // ── Modification ───────────────────────────────────────────────────────
+    function ouvrirModification(id) {
+        $.get(route('achat.articles.show', id))
+            .done(function (reponse) {
+                if (!reponse.success) return;
+
+                const article = reponse.data;
+                Achat.effacerErreurs($formulaire);
+                $('#item-id').val(article.id);
+
+                [
+                    'code_article', 'designation', 'description', 'reference_constructeur',
+                    'marque_id', 'categorie_equipement_id', 'fournisseur_prefere_id',
+                    'prix_indicatif', 'unite_mesure', 'taux_tva', 'compte_comptable',
+                    'seuil_alerte', 'duree_validite_mois', 'url_fiche_technique',
+                ].forEach(function (champ) {
+                    $formulaire.find(`[name="${champ}"]`).val(article[champ] ?? '');
+                });
+
+                $formulaire.find('[name="type_article"]').val(article.type_article).trigger('change');
+
+                $('#item-modal-action').text('Modifier l’');
+                ouvrirOnglet('#tab-general');
+                modale.show();
+            })
+            .fail(function (xhr) {
+                Achat.erreur(Achat.messageErreur(xhr, "L'article n'a pas pu être chargé."));
+            });
+    }
+
+    $btnModifier.on('click', function () {
+        const ligne = ligneSelectionnee();
+        if (ligne) ouvrirModification(ligne.id);
+    });
+
+    $table.on('dbl-click-row.bs.table', (e, ligne) => ouvrirModification(ligne.id));
+
+    // ── Enregistrement ─────────────────────────────────────────────────────
+    $formulaire.on('submit', function (evenement) {
+        evenement.preventDefault();
+
         const id = $('#item-id').val();
-        const url = id 
-            ? route('achat.articles.update', id) 
-            : route('achat.articles.store');
-        
-        // On utilise FormData pour supporter les uploads d'images
-        const formData = new FormData($form[0]);
+        const donnees = new FormData(this);
+        const restaurer = Achat.chargement($('#btn-save'), 'Enregistrement…');
+
+        Achat.effacerErreurs($formulaire);
+
         if (id) {
-            // Emuler PUT en AJAX avec FormData
-            formData.append('_method', 'PUT');
+            donnees.append('_method', 'PUT');
         }
 
-        $btnSave.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Enregistrement...');
-
         $.ajax({
-            url: url,
-            method: 'POST', // Toujours POST pour supporter FormData
-            data: formData,
+            url: id ? route('achat.articles.update', id) : route('achat.articles.store'),
+            method: 'POST', // FormData impose POST, la méthode réelle passe par _method
+            data: donnees,
             processData: false,
             contentType: false,
-            success: function(res) {
-                if (res.success) {
-                    $modal.hide();
-                    Swal.fire({ icon: 'success', title: 'Succès', text: res.message, timer: 1500 });
-                    $table.bootstrapTable('refresh');
-                }
-            },
-            error: function(xhr) {
-                const errors = xhr.responseJSON?.errors || {};
-                let msg = '';
-                Object.values(errors).forEach(e => msg += e[0] + '<br>');
-                Swal.fire('Erreur', msg || xhr.responseJSON?.message || 'Une erreur est survenue', 'error');
-            },
-            complete: function() {
-                $btnSave.prop('disabled', false).html('<i class="fas fa-save me-2"></i>Enregistrer');
+        }).done(function (reponse) {
+            if (!reponse.success) return;
+            modale.hide();
+            Achat.succes(reponse.message);
+            $table.bootstrapTable('refresh');
+        }).fail(function (xhr) {
+            if (xhr.status === 422 && xhr.responseJSON?.errors) {
+                Achat.afficherErreurs($formulaire, xhr.responseJSON.errors);
+                ouvrirOnglet($formulaire.find('.is-invalid').closest('.tab-pane').length
+                    ? `#${$formulaire.find('.is-invalid').closest('.tab-pane').attr('id')}`
+                    : '#tab-general');
+            } else {
+                Achat.erreur(Achat.messageErreur(xhr));
             }
-        });
+        }).always(restaurer);
     });
 
-    // ── DUPLICATE BUTTON ──
-    if ($btnDuplicate.length) {
-        $btnDuplicate.on('click', function() {
-            const row = $table.bootstrapTable('getSelections')[0];
-            if (!row) return;
+    // ── Duplication ────────────────────────────────────────────────────────
+    $btnDupliquer.on('click', function () {
+        const ligne = ligneSelectionnee();
+        if (!ligne) return;
 
-            $.ajax({
-                url: route('achat.articles.dupliquer', row.id),
-                method: 'POST',
-                data: {
-                    _token: $('meta[name="csrf-token"]').attr('content')
-                },
-                success: function(res) {
-                    if (res.success) {
-                        Swal.fire('Dupliqué !', res.message, 'success');
-                        $table.bootstrapTable('refresh');
+        $.post(route('achat.articles.dupliquer', ligne.id))
+            .done(function (reponse) {
+                Achat.succes(reponse.message);
+                $table.bootstrapTable('refresh');
+            })
+            .fail(function (xhr) {
+                Achat.erreur(Achat.messageErreur(xhr, 'La duplication a échoué.'));
+            });
+    });
+
+    // ── Activation / désactivation ─────────────────────────────────────────
+    $btnBasculer.on('click', function () {
+        const ligne = ligneSelectionnee();
+        if (!ligne) return;
+
+        $.post(route('achat.articles.toggle-actif', ligne.id))
+            .done(function (reponse) {
+                Achat.succes(reponse.message);
+                $table.bootstrapTable('refresh');
+            })
+            .fail(function (xhr) {
+                Achat.erreur(Achat.messageErreur(xhr, 'Le changement de statut a échoué.'));
+            });
+    });
+
+    // ── Suppression ────────────────────────────────────────────────────────
+    $btnSupprimer.on('click', function () {
+        const ligne = ligneSelectionnee();
+        if (!ligne) return;
+
+        Achat.confirmer({
+            titre: 'Supprimer cet article ?',
+            texte: `<strong>${$('<div>').text(ligne.designation).html()}</strong><br>` +
+                   "S'il est référencé dans un bon de commande, il sera désactivé plutôt que supprimé.",
+            confirmer: 'Oui, supprimer',
+        }).then(function (resultat) {
+            if (!resultat.isConfirmed) return;
+
+            $.ajax({ url: route('achat.articles.destroy', ligne.id), method: 'DELETE' })
+                .done(function (reponse) {
+                    // ENF-FIA-06 : une désactivation n'est pas annoncée comme une suppression.
+                    if (reponse.supprime) {
+                        Achat.succes(reponse.message);
+                    } else {
+                        Achat.attention(reponse.message);
                     }
-                },
-                error: function(xhr) {
-                    Swal.fire('Erreur', xhr.responseJSON?.message || 'Erreur lors de la duplication', 'error');
-                }
-            });
+                    $table.bootstrapTable('refresh');
+                })
+                .fail(function (xhr) {
+                    Achat.erreur(Achat.messageErreur(xhr, 'La suppression a échoué.'));
+                });
         });
-    }
-
-    // ── TOGGLE ACTIVE BUTTON ──
-    if ($btnToggle.length) {
-        $btnToggle.on('click', function() {
-            const row = $table.bootstrapTable('getSelections')[0];
-            if (!row) return;
-
-            $.ajax({
-                url: route('achat.articles.toggle-actif', row.id),
-                method: 'POST',
-                data: {
-                    _token: $('meta[name="csrf-token"]').attr('content')
-                },
-                success: function(res) {
-                    if (res.success) {
-                        Swal.fire('Statut modifié !', res.message, 'success');
-                        $table.bootstrapTable('refresh');
-                    }
-                },
-                error: function(xhr) {
-                    Swal.fire('Erreur', xhr.responseJSON?.message || 'Erreur lors du changement de statut', 'error');
-                }
-            });
-        });
-    }
-
-    // ── DELETE BUTTON ──
-    if ($btnDelete.length) {
-        $btnDelete.on('click', function() {
-            const row = $table.bootstrapTable('getSelections')[0];
-            if (!row) return;
-
-            Swal.fire({
-                title: 'Supprimer cet article ?',
-                text: "Cette action peut désactiver l'article s'il est déjà lié à des commandes !",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#dc3545',
-                confirmButtonText: 'Oui, supprimer'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        url: route('achat.articles.destroy', row.id),
-                        method: 'DELETE',
-                        data: {
-                            _token: $('meta[name="csrf-token"]').attr('content')
-                        },
-                        success: function(res) {
-                            if (res.success) {
-                                Swal.fire('Résultat', res.message, 'success');
-                                $table.bootstrapTable('refresh');
-                            }
-                        },
-                        error: function(xhr) {
-                            Swal.fire('Erreur', xhr.responseJSON?.message || 'Erreur lors de la suppression', 'error');
-                        }
-                    });
-                }
-            });
-        });
-    }
+    });
 });

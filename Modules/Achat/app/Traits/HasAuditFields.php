@@ -2,9 +2,9 @@
 
 namespace Modules\Achat\Traits;
 
-use App\Models\User;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Auth;
+use Modules\Core\Models\User;
 
 trait HasAuditFields
 {

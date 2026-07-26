@@ -7,71 +7,40 @@ use Illuminate\Validation\Rule;
 
 class UpdateBordereauLivraisonRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return $this->user()->can('achat.bordereaux.edit');
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     */
     public function rules(): array
     {
-        $blId = $this->route('bordereaux') ?? $this->route('bordereau') ?? $this->input('id');
-        if (is_object($blId)) {
-            $blId = $blId->id;
-        }
+        $bordereau = $this->route('bordereau');
+        $bordereauId = is_object($bordereau) ? $bordereau->id : $bordereau;
 
         return [
-            'bon_de_commande_id' => [
-                'required',
-                'exists:achat_bons_commande,id',
-            ],
-            'date_livraison' => [
-                'required',
-                'date',
-            ],
+            // EF-BL-14 : le rattachement au bon de commande n'est plus modifiable.
+            // Toute valeur transmise est ignorée par le service.
+            'date_livraison' => ['required', 'date'],
             'ref_bordereau_physique' => [
-                'required',
-                'string',
-                'max:100',
-                Rule::unique('achat_bordereaux_livraison', 'ref_bordereau_physique')
-                    ->ignore($blId),
+                'required', 'string', 'max:100',
+                Rule::unique('achat_bordereaux_livraison', 'ref_bordereau_physique')->ignore($bordereauId),
             ],
-            'commentaire' => [
-                'nullable',
-                'string',
-                'max:1000',
-            ],
-            'lignes' => [
-                'required',
-                'array',
-                'min:1',
-            ],
-            'lignes.*.article_id' => [
-                'required',
-                'exists:achat_articles,id',
-            ],
-            'lignes.*.quantite_livree' => [
-                'required',
-                'integer',
-                'min:1',
-            ],
+            'commentaire' => ['nullable', 'string', 'max:1000'],
+            'lignes' => ['required', 'array', 'min:1'],
+            'lignes.*.article_id' => ['required', 'distinct', 'exists:achat_articles,id'],
+            'lignes.*.quantite_livree' => ['required', 'integer', 'min:0'],
+            'lignes.*.quantite_refusee' => ['nullable', 'integer', 'min:0'],
+            'lignes.*.motif_refus' => ['nullable', 'string', 'max:500'],
         ];
     }
 
-    /**
-     * Get custom messages for validator errors.
-     */
     public function messages(): array
     {
         return [
             'ref_bordereau_physique.unique' => 'Cette référence de bordereau physique existe déjà.',
-            'lignes.required' => 'Le bordereau de livraison doit contenir au moins une ligne livrée.',
-            'lignes.*.quantite_livree.min' => 'La quantité livrée doit être supérieure ou égale à 1.',
+            'lignes.required' => 'Le bordereau de livraison doit contenir au moins une ligne.',
+            'lignes.*.article_id.distinct' => 'Un même article ne peut figurer qu\'une seule fois dans un bordereau.',
+            'lignes.*.quantite_livree.min' => 'La quantité reçue ne peut pas être négative.',
         ];
     }
 }

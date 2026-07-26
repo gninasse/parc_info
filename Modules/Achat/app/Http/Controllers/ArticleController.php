@@ -3,10 +3,12 @@
 namespace Modules\Achat\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use Exception;
+use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Modules\Achat\Http\Controllers\Concerns\RepondEnJson;
 use Modules\Achat\Http\Requests\StoreArticleRequest;
 use Modules\Achat\Http\Requests\UpdateArticleRequest;
 use Modules\Achat\Models\Article;
@@ -17,200 +19,161 @@ use Modules\ParcInfo\Models\Marque;
 
 class ArticleController extends Controller
 {
-    use AuthorizesRequests;
+    use AuthorizesRequests, RepondEnJson;
 
     public function __construct(protected ArticleService $articleService) {}
 
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(Request $request)
+    /** Écran du catalogue (E-02). */
+    public function index(): View
     {
         $this->authorize('achat.articles.view');
 
-        if ($request->ajax() || $request->wantsJson()) {
-            $filtres = [
-                'type_article' => $request->input('type_article'),
-                'marque_id' => $request->input('marque_id'),
-                'categorie_equipement_id' => $request->input('categorie_equipement_id'),
-                'actif' => $request->input('actif'),
-                'recherche' => $request->input('search'), // Bootstrap Table utilise 'search'
-            ];
-
-            $query = $this->articleService->lister($filtres);
-
-            // Pagination Bootstrap Table
-            $limit = $request->input('limit', 10);
-            $offset = $request->input('offset', 0);
-
-            $total = $query->count();
-
-            $rows = $query->limit($limit)
-                ->offset($offset)
-                ->get()
-                ->map(function ($article) {
-                    return [
-                        'id' => $article->id,
-                        'code_article' => $article->code_article,
-                        'designation' => $article->designation,
-                        'type_article' => $article->type_article,
-                        'type_label' => config("achat.types_articles.{$article->type_article}", $article->type_article),
-                        'reference_constructeur' => $article->reference_constructeur ?? '-',
-                        'marque' => $article->marque->libelle,
-                        'categorie' => $article->categorie ? $article->categorie->libelle : '-',
-                        'prix_indicatif' => $article->prix_indicatif,
-                        'stock_actuel' => $article->stock_actuel,
-                        'seuil_alerte' => $article->seuil_alerte,
-                        'actif' => $article->actif,
-                        'created_at' => $article->created_at->toDateTimeString(),
-                    ];
-                });
-
-            return response()->json([
-                'total' => $total,
-                'rows' => $rows,
-            ]);
-        }
-
-        $marques = Marque::orderBy('libelle')->get();
-        $categories = CategorieEquipement::orderBy('libelle')->get();
-        $fournisseurs = Fournisseur::where('est_actif', true)->orderBy('nom')->get();
-
-        return view('achat::articles.index', compact('marques', 'categories', 'fournisseurs'));
+        return view('achat::articles.index', [
+            'marques' => Marque::orderBy('libelle')->get(),
+            'categories' => CategorieEquipement::orderBy('libelle')->get(),
+            'fournisseurs' => Fournisseur::where('est_actif', true)->orderBy('nom')->get(),
+            'typesArticles' => config('achat.types_articles'),
+        ]);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Alimentation de Bootstrap Table.
+     *
+     * PATTERNS §4 — Route dédiée, distincte de index(). La version précédente
+     * détectait $request->ajax() dans index(), ce que la convention interdit.
      */
-    public function store(StoreArticleRequest $request): JsonResponse
+    public function getData(Request $request): JsonResponse
     {
-        try {
-            $data = $request->validated();
+        $this->authorize('achat.articles.view');
 
-            // Gérer l'upload de l'image si présente
-            if ($request->hasFile('image')) {
-                $path = $request->file('image')->store('articles', 'public');
-                $data['image'] = $path;
-            }
+        $query = $this->articleService->lister([
+            'type_article' => $request->input('type_article'),
+            'marque_id' => $request->input('marque_id'),
+            'categorie_equipement_id' => $request->input('categorie_equipement_id'),
+            'actif' => $request->input('actif'),
+            'recherche' => $request->input('search'),
+        ]);
 
-            $article = $this->articleService->creer($data);
+        $total = $query->count();
 
-            return response()->json([
-                'success' => true,
-                'message' => "L'article '{$article->designation}' a été créé avec succès.",
-                'article' => $article,
+        $rows = $query->limit($request->integer('limit', 25))
+            ->offset($request->integer('offset', 0))
+            ->get()
+            ->map(fn (Article $article) => [
+                'id' => $article->id,
+                'code_article' => $article->code_article,
+                'designation' => $article->designation,
+                'type_article' => $article->type_article,
+                'type_label' => $article->type_label,
+                'reference_constructeur' => $article->reference_constructeur ?: '-',
+                'marque' => $article->marque?->libelle ?? '-',
+                'categorie' => $article->categorie?->libelle ?? '-',
+                'prix_indicatif' => (float) $article->prix_indicatif,
+                'taux_tva' => (float) $article->taux_tva,
+                'stock_actuel' => $article->stock_actuel,
+                'seuil_alerte' => $article->seuil_alerte,
+                'actif' => $article->actif,
+                'created_at' => $article->created_at?->toDateTimeString(),
             ]);
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 422);
-        }
+
+        return $this->table($total, $rows);
     }
 
-    /**
-     * Show the specified resource.
-     */
+    /** Pré-remplissage du formulaire de modification (PATTERNS §5). */
     public function show(Article $article): JsonResponse
     {
         $this->authorize('achat.articles.view');
 
         $article->load(['marque', 'categorie', 'fournisseurPrefere']);
 
-        return response()->json([
-            'success' => true,
-            'article' => $article,
-        ]);
+        return $this->donnees($article);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateArticleRequest $request, Article $article): JsonResponse
+    public function store(StoreArticleRequest $request): JsonResponse
     {
-        try {
-            $data = $request->validated();
+        return $this->executer(function () use ($request) {
+            $donnees = $request->validated();
 
-            // Gérer l'upload de l'image
             if ($request->hasFile('image')) {
-                $path = $request->file('image')->store('articles', 'public');
-                $data['image'] = $path;
+                $donnees['image'] = $request->file('image')->store('articles', 'public');
             }
 
-            $this->articleService->modifier($article, $data);
+            $article = $this->articleService->creer($donnees);
 
-            return response()->json([
-                'success' => true,
-                'message' => "L'article '{$article->designation}' a été mis à jour avec succès.",
-            ]);
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 422);
-        }
+            return $this->succes(
+                "L'article « {$article->designation} » a été créé sous le code {$article->code_article}.",
+                ['data' => $article]
+            );
+        });
+    }
+
+    public function update(UpdateArticleRequest $request, Article $article): JsonResponse
+    {
+        return $this->executer(function () use ($request, $article) {
+            $donnees = $request->validated();
+
+            if ($request->hasFile('image')) {
+                if ($article->image) {
+                    Storage::disk('public')->delete($article->image);
+                }
+
+                $donnees['image'] = $request->file('image')->store('articles', 'public');
+            }
+
+            $this->articleService->modifier($article, $donnees);
+
+            return $this->succes("L'article « {$article->designation} » a été mis à jour.");
+        });
     }
 
     /**
-     * Remove the specified resource from storage.
+     * RG-ART-10 — Suppression, ou désactivation si l'article est engagé.
+     *
+     * Correction AN-11 : la désactivation est signalée comme telle et non
+     * comme une suppression réussie.
      */
     public function destroy(Article $article): JsonResponse
     {
         $this->authorize('achat.articles.delete');
 
-        try {
-            $this->articleService->supprimer($article);
+        return $this->executer(function () use ($article) {
+            $supprime = $this->articleService->supprimer($article);
 
-            return response()->json([
-                'success' => true,
-                'message' => "L'article a été supprimé avec succès.",
-            ]);
-        } catch (Exception $e) {
-            // L'exception peut être levée s'il est déjà référencé (il est alors seulement désactivé)
-            return response()->json([
-                'success' => true, // On renvoie true car la désactivation a fonctionné
-                'message' => $e->getMessage(),
-            ]);
-        }
+            return $this->succes(
+                $supprime
+                    ? "L'article « {$article->designation} » a été supprimé."
+                    : "L'article « {$article->designation} » est référencé dans des bons de commande : "
+                        .'il a été désactivé et ne sera plus proposé à la commande.',
+                ['supprime' => $supprime]
+            );
+        });
     }
 
-    /**
-     * Toggle the active state of an article.
-     */
     public function toggleActif(Article $article): JsonResponse
     {
         $this->authorize('achat.articles.edit');
 
-        $article->update(['actif' => ! $article->actif]);
+        return $this->executer(function () use ($article) {
+            $article->update(['actif' => ! $article->actif]);
 
-        $etat = $article->actif ? 'activé' : 'désactivé';
-
-        return response()->json([
-            'success' => true,
-            'message' => "L'article a été {$etat} avec succès.",
-        ]);
+            return $this->succes(
+                "L'article « {$article->designation} » a été "
+                .($article->actif ? 'activé' : 'désactivé').'.'
+            );
+        });
     }
 
-    /**
-     * Duplicate an article.
-     */
     public function dupliquer(Article $article): JsonResponse
     {
         $this->authorize('achat.articles.create');
 
-        try {
-            $clone = $this->articleService->dupliquer($article);
+        return $this->executer(function () use ($article) {
+            $copie = $this->articleService->dupliquer($article);
 
-            return response()->json([
-                'success' => true,
-                'message' => "L'article a été dupliqué sous le code '{$clone->code_article}'.",
-                'article' => $clone,
-            ]);
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 422);
-        }
+            return $this->succes(
+                "L'article a été dupliqué sous le code {$copie->code_article}.",
+                ['data' => $copie]
+            );
+        });
     }
 }

@@ -5,12 +5,34 @@ return [
     'icon' => 'fas fa-shopping-cart',
     'order' => 3,
 
-    // Patterns de génération
-    'code_inventaire_pattern' => env('ACHAT_CODE_INVENTAIRE_PATTERN', 'INV-{YYYY}-{SEQUENCE:4}'),
+    /*
+    |--------------------------------------------------------------------------
+    | Numérotation
+    |--------------------------------------------------------------------------
+    | Les préfixes sont surchargeables en base via la table achat_parametres
+    | (Parametre::getVal). Les valeurs ci-dessous ne servent que de repli.
+    */
     'prefix_bon_commande' => env('ACHAT_PREFIX_BC', 'BC'),
     'prefix_bordereau_livraison' => env('ACHAT_PREFIX_BL', 'BL'),
+    'code_inventaire_pattern' => env('ACHAT_CODE_INVENTAIRE_PATTERN', 'INV-{YYYY}-{SEQUENCE:4}'),
 
-    // Types d'articles
+    /*
+    |--------------------------------------------------------------------------
+    | Fiscalité
+    |--------------------------------------------------------------------------
+    | RG-BC-05 : le taux de TVA appliqué est celui de l'article, figé sur la
+    | ligne de commande au moment de la création du bon. Le taux ci-dessous
+    | n'est que la valeur proposée par défaut au référencement d'un article.
+    */
+    'taux_tva_defaut' => env('ACHAT_TAUX_TVA', 18.00),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Types d'articles
+    |--------------------------------------------------------------------------
+    | 'wizard' : le type impose une saisie d'inventaire unitaire (RG-WZ-03).
+    | 'stock'  : le type alimente le stock physique à la réception.
+    */
     'types_articles' => [
         'equipement' => 'Équipement',
         'consommable' => 'Consommable',
@@ -18,27 +40,105 @@ return [
         'prestation' => 'Prestation',
     ],
 
-    // Statuts BC
+    'types_avec_wizard' => ['equipement', 'licence'],
+
+    'types_avec_stock' => ['consommable'],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Statuts
+    |--------------------------------------------------------------------------
+    */
     'statuts_bc' => [
-        'brouillon' => ['label' => 'Brouillon', 'color' => 'secondary'],
-        'valide' => ['label' => 'Validé', 'color' => 'primary'],
-        'partiel' => ['label' => 'Partiel', 'color' => 'warning'],
-        'livre' => ['label' => 'Livré', 'color' => 'success'],
-        'annule' => ['label' => 'Annulé', 'color' => 'danger'],
+        'brouillon' => ['label' => 'Brouillon', 'color' => 'secondary', 'icon' => 'fa-edit'],
+        'valide' => ['label' => 'Validé', 'color' => 'primary', 'icon' => 'fa-check-circle'],
+        'partiel' => ['label' => 'Livré partiel', 'color' => 'warning', 'icon' => 'fa-truck-loading'],
+        'livre' => ['label' => 'Livré complet', 'color' => 'success', 'icon' => 'fa-truck'],
+        'annule' => ['label' => 'Annulé', 'color' => 'danger', 'icon' => 'fa-times-circle'],
+        'cloture' => ['label' => 'Clôturé', 'color' => 'dark', 'icon' => 'fa-lock'],
     ],
 
-    // Statuts BL
     'statuts_bl' => [
-        'brouillon' => ['label' => 'Brouillon', 'color' => 'secondary'],
-        'wizard' => ['label' => 'En cours', 'color' => 'warning'],
-        'valide' => ['label' => 'Validé', 'color' => 'success'],
+        'brouillon' => ['label' => 'Brouillon', 'color' => 'secondary', 'icon' => 'fa-edit'],
+        'wizard' => ['label' => 'En cours d\'intégration', 'color' => 'warning', 'icon' => 'fa-magic'],
+        'valide' => ['label' => 'Validé & intégré', 'color' => 'success', 'icon' => 'fa-check-double'],
     ],
 
-    // Seuils stock
+    /*
+    |--------------------------------------------------------------------------
+    | Seuils de stock (EF-STK-07)
+    |--------------------------------------------------------------------------
+    | Exprimés en ratio du seuil d'alerte de l'article. Évalués dans l'ordre.
+    */
     'seuils_stock' => [
-        'rupture' => 0,      // 0 unités
-        'critique' => 0.2,   // 20% du seuil d'alerte
-        'alerte' => 0.5,     // 50% du seuil d'alerte
-        'faible' => 1.0,     // 100% du seuil d'alerte
+        'rupture' => ['max_ratio' => 0.0, 'label' => 'Rupture', 'color' => 'danger'],
+        'critique' => ['max_ratio' => 0.5, 'label' => 'Critique', 'color' => 'danger'],
+        'alerte' => ['max_ratio' => 1.0, 'label' => 'Alerte', 'color' => 'warning'],
+        'normal' => ['max_ratio' => null, 'label' => 'Stock correct', 'color' => 'success'],
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Intégration inter-modules
+    |--------------------------------------------------------------------------
+    | EF-STK-05 — Référentiel de stock faisant foi.
+    |
+    | Le module Stock est le référentiel de valorisation et de quantité
+    | (mouvements + lots FIFO). Le compteur achat_articles.stock_actuel est une
+    | projection dénormalisée entretenue pour l'écran de suivi ; il ne fait
+    | jamais foi.
+    |
+    | 'consommables_parcinfo' pilote la double écriture historique vers
+    | parc_info_consommables. Conservée active par défaut pour ne pas rompre le
+    | circuit d'affectation de ParcInfo : à arbitrer par la maîtrise d'ouvrage.
+    */
+    'integration' => [
+        'stock' => env('ACHAT_INTEGRATION_STOCK', true),
+        'consommables_parcinfo' => env('ACHAT_INTEGRATION_CONSOMMABLES_PARCINFO', true),
+
+        /*
+         | Type de consommable ParcInfo attribué d'office lorsqu'un article
+         | acheté n'a pas d'équivalent existant.
+         |
+         | « categorie » doit appartenir à l'énumération de
+         | parc_info_types_consommables : Impression, Fournitures Bureau,
+         | Maintenance, Reseau, Securite, Accessoires.
+         */
+        'type_consommable_defaut' => [
+            'code' => env('ACHAT_TYPE_CONSOMMABLE_CODE', 'GEN-CONS'),
+            'nom' => 'Consommables divers (achat)',
+            'categorie' => env('ACHAT_TYPE_CONSOMMABLE_CATEGORIE', 'Accessoires'),
+            'unite_stock' => 'Unité',
+            'seul_reapprovisionnement' => 5,
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Documents joints
+    |--------------------------------------------------------------------------
+    */
+    'documents' => [
+        'taille_max_ko' => 10240,
+        'disque' => 'public',
+        'repertoire' => 'achat_documents',
+        'mimes' => ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'doc', 'docx', 'xls', 'xlsx', 'csv'],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Restitutions
+    |--------------------------------------------------------------------------
+    */
+    'rapports' => [
+        'mois_glissants' => 12,
+        'top_fournisseurs' => 5,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Reliquats (EF-BC-19)
+    |--------------------------------------------------------------------------
+    */
+    'reliquat_alerte_jours' => env('ACHAT_RELIQUAT_ALERTE_JOURS', 60),
 ];

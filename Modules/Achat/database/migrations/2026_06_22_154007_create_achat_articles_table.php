@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('achat_articles', function (Blueprint $table) {
@@ -20,7 +17,7 @@ return new class extends Migration
                 ->default('equipement');
             $table->string('reference_constructeur', 100)->nullable();
 
-            // Foreign Keys to ParcInfo tables
+            // Référentiels détenus par le module ParcInfo (EXI-INT-00)
             $table->foreignId('marque_id')->constrained('parc_info_marques');
             $table->foreignId('categorie_equipement_id')->nullable()
                 ->constrained('parc_info_categories_equipements');
@@ -28,35 +25,35 @@ return new class extends Migration
                 ->constrained('parc_info_fournisseurs');
 
             $table->decimal('prix_indicatif', 12, 2)->default(0);
-            $table->string('unite_mesure', 20)->default('unite');
-            $table->decimal('taux_tva', 5, 2)->default(20.00);
+            $table->string('unite_mesure', 20)->default('Unité');
+
+            // RG-BC-05 : taux proposé par défaut, figé sur la ligne à la commande
+            $table->decimal('taux_tva', 5, 2)->default(18.00);
+
             $table->string('compte_comptable', 20)->nullable();
             $table->unsignedInteger('seuil_alerte')->default(0);
+
+            // EF-STK-05 : projection dénormalisée entretenue par le service
+            // d'intégration. Le référentiel faisant foi est le module Stock.
             $table->unsignedInteger('stock_actuel')->default(0);
+
             $table->unsignedInteger('duree_validite_mois')->nullable();
             $table->string('url_fiche_technique', 500)->nullable();
             $table->string('image', 500)->nullable();
             $table->boolean('actif')->default(true);
 
-            // Audit fields
-            $table->foreignId('created_by')->nullable()->constrained('users');
-            $table->foreignId('updated_by')->nullable()->constrained('users');
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
 
             $table->timestamps();
             $table->softDeletes();
 
-            // Indexes
             $table->index(['type_article', 'categorie_equipement_id']);
             $table->index('actif');
-
-            // Unique composite constraint (reference constructeur unique par marque)
             $table->unique(['marque_id', 'reference_constructeur'], 'unique_ref_marque');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('achat_articles');

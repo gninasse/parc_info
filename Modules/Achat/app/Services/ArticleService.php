@@ -2,16 +2,16 @@
 
 namespace Modules\Achat\Services;
 
-use Exception;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Modules\Achat\Exceptions\RegleMetierException;
 use Modules\Achat\Models\Article;
 
 class ArticleService
 {
-    /**
-     * Liste les articles avec filtres.
-     */
-    public function lister(array $filtres = [])
+    /** Requête filtrée du catalogue (EF-CAT-10). */
+    public function lister(array $filtres = []): Builder
     {
         $query = Article::query()->with(['marque', 'categorie', 'fournisseurPrefere']);
 
@@ -27,95 +27,184 @@ class ArticleService
             $query->where('categorie_equipement_id', $filtres['categorie_equipement_id']);
         }
 
-        if (isset($filtres['actif']) && $filtres['actif'] !== '') {
-            $query->where('actif', (bool) $filtres['actif']);
+        if (isset($filtres['actif']) && $filtres['actif'] !== '' && $filtres['actif'] !== null) {
+            $query->where('actif', filter_var($filtres['actif'], FILTER_VALIDATE_BOOLEAN));
         }
 
         if (! empty($filtres['recherche'])) {
-            $search = '%'.$filtres['recherche'].'%';
-            $query->where(function (Builder $q) use ($search) {
-                $q->where('code_article', 'like', $search)
-                    ->orWhere('designation', 'like', $search)
-                    ->orWhere('description', 'like', $search)
-                    ->orWhere('reference_constructeur', 'like', $search);
+            $recherche = '%'.$filtres['recherche'].'%';
+
+            $query->where(function (Builder $sousRequete) use ($recherche) {
+                $sousRequete->where('code_article', 'like', $recherche)
+                    ->orWhere('designation', 'like', $recherche)
+                    ->orWhere('description', 'like', $recherche)
+                    ->orWhere('reference_constructeur', 'like', $recherche);
             });
         }
 
         return $query->orderBy('designation');
     }
 
-    /**
-     * Enregistre un nouvel article.
-     *
-     * @throws Exception
-     */
-    public function creer(array $data): Article
+    public function creer(array $donnees): Article
     {
-        $this->validerReglesMetier($data);
+        $donnees = $this->normaliser($donnees);
+        $this->validerReglesMetier($donnees);
 
-        return Article::create($data);
+        return DB::transaction(function () use ($donnees) {
+            $article = Article::create($donnees);
+
+            activity()->performedOn($article)->log('Article référencé');
+
+            return $article;
+        });
+    }
+
+    public function modifier(Article $article, array $donnees): Article
+    {
+        $donnees = $this->normaliser($donnees);
+        $this->validerReglesMetier($donnees);
+
+        return DB::transaction(function () use ($article, $donnees) {
+            $article->update($donnees);
+
+            activity()->performedOn($article)->log('Article modifié');
+
+            return $article->refresh();
+        });
     }
 
     /**
-     * Met à jour un article existant.
+     * RG-ART-10 — Un article engagé dans une commande n'est jamais supprimé.
      *
-     * @throws Exception
+     * @return bool true si l'article a été supprimé, false s'il a été désactivé
      */
-    public function modifier(Article $article, array $data): Article
+    public function supprimer(Article $article): bool
     {
-        $this->validerReglesMetier($data, $article->id);
-        $article->update($data);
+        return DB::transaction(function () use ($article) {
+            if (! $article->estSupprimable()) {
+                $article->update(['actif' => false]);
 
-        return $article;
+                activity()->performedOn($article)->log('Article désactivé (référencé en commande)');
+
+                return false;
+            }
+
+            $article->delete();
+
+            activity()->performedOn($article)->log('Article supprimé');
+
+            return true;
+        });
     }
 
-    /**
-     * Supprime ou désactive un article.
-     *
-     * @throws Exception
-     */
-    public function supprimer(Article $article): void
-    {
-        // R-ART-10 : Interdire la suppression physique si référencé dans une commande
-        if ($article->lignesCommande()->exists()) {
-            // Désactiver automatiquement à la place
-            $article->update(['actif' => false]);
-            throw new Exception("L'article est référencé dans des bons de commande. Il a été désactivé au lieu d'être supprimé.");
-        }
-
-        $article->delete();
-    }
-
-    /**
-     * Duplique un article.
-     */
+    /** RG-ART-11 — Duplication pour accélérer le référencement de variantes. */
     public function dupliquer(Article $article): Article
     {
-        $clone = $article->replicate();
-        $clone->code_article = $article->code_article.'-COPY';
-        $clone->designation = $article->designation.' (Copie)';
-        $clone->save();
+        return DB::transaction(function () use ($article) {
+            $copie = $article->replicate();
+            $copie->code_article = $this->codeDisponible($article->code_article.'-COPY');
+            $copie->designation = Str::limit($article->designation.' (Copie)', 255, '');
+            $copie->reference_constructeur = null; // RG-ART-03 : unique par marque
+            $copie->stock_actuel = 0;
+            $copie->save();
 
-        return $clone;
+            activity()->performedOn($copie)->log("Article dupliqué depuis {$article->code_article}");
+
+            return $copie;
+        });
+    }
+
+    /** EF-CAT-13 — Génère un code à partir du type et d'un compteur. */
+    public function genererCode(string $typeArticle): string
+    {
+        $prefixe = match ($typeArticle) {
+            'equipement' => 'EQP',
+            'consommable' => 'CNS',
+            'licence' => 'LIC',
+            'prestation' => 'PRE',
+            default => 'ART',
+        };
+
+        $dernier = Article::withTrashed()
+            ->where('code_article', 'like', $prefixe.'-%')
+            ->orderByDesc('id')
+            ->value('code_article');
+
+        $sequence = $dernier ? ((int) substr($dernier, strrpos($dernier, '-') + 1)) + 1 : 1;
+
+        do {
+            $code = sprintf('%s-%05d', $prefixe, $sequence);
+            $sequence++;
+        } while (Article::withTrashed()->where('code_article', $code)->exists());
+
+        return $code;
+    }
+
+    /** Normalise les entrées et applique les valeurs par défaut. */
+    protected function normaliser(array $donnees): array
+    {
+        $type = $donnees['type_article'] ?? 'equipement';
+
+        // EF-CAT-13 : génération automatique si le code n'est pas fourni
+        if (empty($donnees['code_article'])) {
+            $donnees['code_article'] = $this->genererCode($type);
+        }
+
+        $donnees['code_article'] = mb_strtoupper(trim($donnees['code_article']));
+
+        // RG-ART-05 : la catégorie n'a de sens que pour un équipement
+        if ($type !== 'equipement') {
+            $donnees['categorie_equipement_id'] = null;
+        }
+
+        // Seuls les consommables portent un seuil, seules les licences une durée
+        if ($type !== 'consommable') {
+            $donnees['seuil_alerte'] = 0;
+        }
+
+        if ($type !== 'licence') {
+            $donnees['duree_validite_mois'] = null;
+        }
+
+        if (! isset($donnees['taux_tva']) || $donnees['taux_tva'] === '') {
+            $donnees['taux_tva'] = config('achat.taux_tva_defaut', 18.00);
+        }
+
+        if (empty($donnees['reference_constructeur'])) {
+            $donnees['reference_constructeur'] = null;
+        }
+
+        return $donnees;
     }
 
     /**
-     * Valide les règles métier du catalogue.
+     * Règles sémantiques non exprimables en validation de formulaire.
      *
-     * @throws Exception
+     * @throws RegleMetierException
      */
-    protected function validerReglesMetier(array $data, ?int $id = null): void
+    protected function validerReglesMetier(array $donnees): void
     {
-        $type = $data['type_article'] ?? 'equipement';
+        $type = $donnees['type_article'] ?? 'equipement';
 
-        // R-ART-04 : Si type_article = 'equipement', categorie_equipement_id est obligatoire
-        if ($type === 'equipement' && empty($data['categorie_equipement_id'])) {
-            throw new Exception("La catégorie d'équipement est obligatoire pour les articles de type Équipement.");
+        // RG-ART-04
+        if ($type === 'equipement' && empty($donnees['categorie_equipement_id'])) {
+            throw new RegleMetierException(
+                "La catégorie d'équipement est obligatoire pour les articles de type Équipement."
+            );
+        }
+    }
+
+    /** Retourne un code libre en suffixant si nécessaire. */
+    protected function codeDisponible(string $codeSouhaite): string
+    {
+        $code = mb_substr(mb_strtoupper($codeSouhaite), 0, 50);
+        $suffixe = 1;
+
+        while (Article::withTrashed()->where('code_article', $code)->exists()) {
+            $suffixe++;
+            $code = mb_substr(mb_strtoupper($codeSouhaite), 0, 46).'-'.$suffixe;
         }
 
-        // R-ART-05 : Si type_article != 'equipement', alors categorie_equipement_id doit être NULL
-        if ($type !== 'equipement' && ! empty($data['categorie_equipement_id'])) {
-            throw new Exception("La catégorie d'équipement doit être nulle pour les articles qui ne sont pas des Équipements.");
-        }
+        return $code;
     }
 }

@@ -4,8 +4,15 @@ namespace Modules\Achat\Providers;
 
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
+use Modules\Achat\Contracts\ParcInfoIntegrationInterface;
+use Modules\Achat\Contracts\StockIntegrationInterface;
+use Modules\Achat\Services\ArticleService;
+use Modules\Achat\Services\BonCommandeService;
+use Modules\Achat\Services\BordereauLivraisonService;
 use Modules\Achat\Services\CodeInventaireGeneratorService;
-use Modules\Achat\Services\EquipementIntegrationService;
+use Modules\Achat\Services\ParcInfoIntegrationService;
+use Modules\Achat\Services\StatistiquesService;
+use Modules\Achat\Services\StockIntegrationService;
 use Modules\Achat\Services\WizardValidationService;
 
 class AchatServiceProvider extends ServiceProvider
@@ -28,10 +35,18 @@ class AchatServiceProvider extends ServiceProvider
         $this->app->register(RouteServiceProvider::class);
         $this->app->register(EventServiceProvider::class);
 
-        // Enregistrer les services
+        // PATTERNS §11 — Les accès aux autres modules passent par un contrat,
+        // ce qui permet de les substituer en test.
+        $this->app->bind(ParcInfoIntegrationInterface::class, ParcInfoIntegrationService::class);
+        $this->app->bind(StockIntegrationInterface::class, StockIntegrationService::class);
+
+        // PATTERNS §6 — Services sans état, enregistrés en singleton.
+        $this->app->singleton(ArticleService::class);
+        $this->app->singleton(BonCommandeService::class);
+        $this->app->singleton(BordereauLivraisonService::class);
         $this->app->singleton(WizardValidationService::class);
-        $this->app->singleton(EquipementIntegrationService::class);
         $this->app->singleton(CodeInventaireGeneratorService::class);
+        $this->app->singleton(StatistiquesService::class);
     }
 
     protected function registerConfig(): void
@@ -41,11 +56,19 @@ class AchatServiceProvider extends ServiceProvider
         ], 'config');
 
         $this->mergeConfigFrom(
-            module_path($this->moduleName, 'config/config.php'), $this->moduleNameLower
+            module_path($this->moduleName, 'config/config.php'),
+            $this->moduleNameLower
+        );
+
+        // Format plat imposé par Core\Services\PermissionService
+        $this->mergeConfigFrom(
+            module_path($this->moduleName, 'config/permissions.php'),
+            $this->moduleNameLower.'.permissions'
         );
 
         $this->mergeConfigFrom(
-            module_path($this->moduleName, 'config/permissions.php'), $this->moduleNameLower.'.permissions'
+            module_path($this->moduleName, 'config/roles.php'),
+            $this->moduleNameLower.'.roles'
         );
     }
 
@@ -61,15 +84,16 @@ class AchatServiceProvider extends ServiceProvider
 
     protected function registerBladeComponents(): void
     {
-        Blade::component('achat::shared._badge_statut_bc', 'achat-badge-statut-bc');
-        Blade::component('achat::shared._badge_statut_bl', 'achat-badge-statut-bl');
-        Blade::component('achat::shared._badge_type_article', 'achat-badge-type-article');
-        Blade::component('achat::shared._stats_card', 'achat-stats-card');
+        Blade::component('achat::shared._badge_statut', 'achat-badge-statut');
+        Blade::component('achat::shared._badge_type_article', 'achat-badge-type');
+        Blade::component('achat::shared._carte_indicateur', 'achat-carte-indicateur');
+        Blade::component('achat::shared._etat_vide', 'achat-etat-vide');
     }
 
     protected function getPublishableViewPaths(): array
     {
         $paths = [];
+
         foreach ($this->app['config']->get('view.paths') as $path) {
             if (is_dir($path.'/modules/'.$this->moduleNameLower)) {
                 $paths[] = $path.'/modules/'.$this->moduleNameLower;
@@ -93,9 +117,14 @@ class AchatServiceProvider extends ServiceProvider
     public function provides(): array
     {
         return [
+            ParcInfoIntegrationInterface::class,
+            StockIntegrationInterface::class,
+            ArticleService::class,
+            BonCommandeService::class,
+            BordereauLivraisonService::class,
             WizardValidationService::class,
-            EquipementIntegrationService::class,
             CodeInventaireGeneratorService::class,
+            StatistiquesService::class,
         ];
     }
 }

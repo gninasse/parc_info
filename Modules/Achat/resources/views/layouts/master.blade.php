@@ -149,7 +149,11 @@
     <!--begin::Ziggy Routes-->
     @routes
     <!--end::Ziggy Routes-->
-    
+
+    <!--begin::Socle commun du module Achat (formatters, notifications, erreurs)-->
+    <script src="{{ asset('js/modules/achat/commun.js') }}?v={{ time() }}"></script>
+    <!--end::Socle commun du module Achat-->
+
     @stack('js')
   </body>
   <!--end::Body-->

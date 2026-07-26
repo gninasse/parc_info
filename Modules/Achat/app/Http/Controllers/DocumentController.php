@@ -3,91 +3,117 @@
 namespace Modules\Achat\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Modules\Achat\Http\Controllers\Concerns\RepondEnJson;
+use Modules\Achat\Http\Requests\StoreDocumentRequest;
 use Modules\Achat\Models\BonCommande;
 use Modules\Achat\Models\BordereauLivraison;
 use Modules\Achat\Models\Document;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
+/**
+ * Pièces jointes des bons de commande et des bordereaux.
+ *
+ * EF-DOC-06 — Correction AN-17. La version précédente n'effectuait aucun
+ * contrôle d'habilitation : tout utilisateur authentifié pouvait téléverser,
+ * télécharger ou supprimer la pièce jointe de n'importe quel document.
+ */
 class DocumentController extends Controller
 {
-    public function store(Request $request): JsonResponse
+    use AuthorizesRequests, RepondEnJson;
+
+    /** Types rattachables, exposés sous un alias stable côté client. */
+    protected const TYPES = [
+        'bon_commande' => BonCommande::class,
+        'bordereau' => BordereauLivraison::class,
+    ];
+
+    public function store(StoreDocumentRequest $request): JsonResponse
     {
-        $request->validate([
-            'document' => 'required|file|max:10240', // 10MB max
-            'documentable_type' => 'required|string',
-            'documentable_id' => 'required|integer',
-            'nom' => 'nullable|string|max:255',
-            'notes' => 'nullable|string',
-        ]);
+        return $this->executer(function () use ($request) {
+            $classe = self::TYPES[$request->input('documentable_type')];
+            $porteur = $classe::findOrFail($request->integer('documentable_id'));
 
-        $docType = $request->input('documentable_type');
-        $docId = $request->input('documentable_id');
+            // L'accès à la pièce suit l'accès au document porteur.
+            $this->authorize($this->permissionDeConsultation($porteur));
 
-        if ($docType === 'bon_commande') {
-            $modelClass = BonCommande::class;
-        } elseif ($docType === 'bordereau') {
-            $modelClass = BordereauLivraison::class;
-        } else {
-            return response()->json(['success' => false, 'message' => 'Type de document invalide.'], 400);
-        }
+            $fichier = $request->file('document');
 
-        $model = $modelClass::findOrFail($docId);
-
-        if ($request->hasFile('document')) {
-            $file = $request->file('document');
-            $originalName = $file->getClientOriginalName();
-            $nom = $request->input('nom') ?: $originalName;
-            $mimeType = $file->getClientMimeType();
-            $size = $file->getSize();
-            $path = $file->store('achat_documents', 'public');
-
-            $document = $model->documents()->create([
-                'nom' => $nom,
-                'fichier_path' => $path,
-                'taille' => $size,
-                'type_mime' => $mimeType,
+            $document = $porteur->documents()->create([
+                'nom' => $request->input('nom') ?: $fichier->getClientOriginalName(),
+                'fichier_path' => $fichier->store(
+                    config('achat.documents.repertoire', 'achat_documents'),
+                    config('achat.documents.disque', 'public')
+                ),
+                'taille' => $fichier->getSize(),
+                'type_mime' => $fichier->getClientMimeType(),
                 'notes' => $request->input('notes'),
             ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Document ajouté avec succès.',
-                'document' => [
+            activity()->performedOn($porteur)->log("Document « {$document->nom} » joint");
+
+            return $this->succes('Document ajouté.', [
+                'data' => [
                     'id' => $document->id,
                     'nom' => $document->nom,
-                    'taille' => $document->taille,
-                    'type_mime' => $document->type_mime,
-                    'fichier_url' => asset('storage/'.$document->fichier_path),
+                    'notes' => $document->notes,
+                    'taille_lisible' => $document->taille_lisible,
+                    'icone' => $document->icone,
+                    'auteur' => auth()->user()?->name,
                     'date' => $document->created_at->format('d/m/Y H:i'),
+                    'url_telechargement' => route('achat.documents.telecharger', $document),
                 ],
             ]);
-        }
-
-        return response()->json(['success' => false, 'message' => 'Aucun fichier fourni.'], 400);
+        });
     }
 
-    public function download(int $id)
+    public function download(Document $document): StreamedResponse
     {
-        $document = Document::findOrFail($id);
+        $this->authorize('achat.documents.view');
+        $this->authorize($this->permissionDeConsultation($document->documentable));
 
-        if (! Storage::disk('public')->exists($document->fichier_path)) {
-            abort(404, 'Fichier introuvable.');
-        }
+        $disque = config('achat.documents.disque', 'public');
 
-        return Storage::disk('public')->download($document->fichier_path, $document->nom);
+        abort_unless(
+            Storage::disk($disque)->exists($document->fichier_path),
+            404,
+            'Le fichier est introuvable sur le serveur.'
+        );
+
+        return Storage::disk($disque)->download($document->fichier_path, $document->nom);
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(Document $document): JsonResponse
     {
-        try {
-            $document = Document::findOrFail($id);
+        $this->authorize('achat.documents.delete');
+
+        return $this->executer(function () use ($document) {
+            $this->authorize($this->permissionDeConsultation($document->documentable));
+
+            $nom = $document->nom;
+            $porteur = $document->documentable;
+
+            // Suppression logique : le fichier physique est conservé pour la
+            // piste d'audit (ENF-TRA-02).
             $document->delete();
 
-            return response()->json(['success' => true, 'message' => 'Document supprimé avec succès.']);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Erreur lors de la suppression.'], 500);
-        }
+            if ($porteur) {
+                activity()->performedOn($porteur)->log("Document « {$nom} » supprimé");
+            }
+
+            return $this->succes('Document supprimé.');
+        });
+    }
+
+    /** Permission de consultation du document porteur. */
+    protected function permissionDeConsultation(mixed $porteur): string
+    {
+        return match (true) {
+            $porteur instanceof BonCommande => 'achat.bons_commande.view',
+            $porteur instanceof BordereauLivraison => 'achat.bordereaux.view',
+            default => 'achat.documents.view',
+        };
     }
 }

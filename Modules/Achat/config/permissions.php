@@ -1,85 +1,54 @@
 <?php
 
+/*
+|--------------------------------------------------------------------------
+| Permissions du module Achat
+|--------------------------------------------------------------------------
+| Format plat { nom => libellé } imposé par Core\Services\PermissionService,
+| qui itère directement sur ce tableau (cores:sync-permissions achat).
+|
+| Convention : {module}.{ressource}.{action}
+| Actions standard : view, create, edit, delete, valider, annuler, export
+|
+| Règle EF-ADM-05 : toute permission déclarée ici est effectivement contrôlée
+| dans le code. Aucune permission « en attente de fonctionnalité ».
+*/
+
 return [
-    // Permissions du module Achat
-    'permissions' => [
-        // Dashboard
-        'achat.dashboard.view' => 'Voir le tableau de bord Achat',
+    // Tableau de bord
+    'achat.dashboard.view' => 'Voir le tableau de bord Achat',
 
-        // Catalogue
-        'achat.articles.view' => 'Voir les articles',
-        'achat.articles.create' => 'Créer des articles',
-        'achat.articles.edit' => 'Modifier les articles',
-        'achat.articles.delete' => 'Supprimer les articles',
+    // Catalogue des articles
+    'achat.articles.view' => 'Voir le catalogue des articles',
+    'achat.articles.create' => 'Créer un article',
+    'achat.articles.edit' => 'Modifier un article',
+    'achat.articles.delete' => 'Supprimer un article',
 
-        // Bons de Commande
-        'achat.bons_commande.view' => 'Voir les bons de commande',
-        'achat.bons_commande.create' => 'Créer des bons de commande',
-        'achat.bons_commande.edit' => 'Modifier les bons de commande (brouillon)',
-        'achat.bons_commande.valider' => 'Valider les bons de commande',
-        'achat.bons_commande.annuler' => 'Annuler les bons de commande',
+    // Bons de commande
+    'achat.bons_commande.view' => 'Voir les bons de commande',
+    'achat.bons_commande.create' => 'Créer un bon de commande',
+    'achat.bons_commande.edit' => 'Modifier un bon de commande en brouillon',
+    'achat.bons_commande.delete' => 'Supprimer un bon de commande en brouillon',
+    'achat.bons_commande.valider' => 'Valider un bon de commande',
+    'achat.bons_commande.annuler' => 'Annuler un bon de commande',
+    'achat.bons_commande.cloturer' => 'Clôturer le reliquat d\'un bon de commande',
 
-        // Bordereaux de Livraison
-        'achat.bordereaux.view' => 'Voir les bordereaux de livraison',
-        'achat.bordereaux.create' => 'Créer des bordereaux de livraison',
-        'achat.bordereaux.edit' => 'Modifier les bordereaux (brouillon)',
-        'achat.bordereaux.valider' => 'Valider les bordereaux via wizard',
+    // Bordereaux de livraison
+    'achat.bordereaux.view' => 'Voir les bordereaux de livraison',
+    'achat.bordereaux.create' => 'Créer un bordereau de livraison',
+    'achat.bordereaux.edit' => 'Modifier un bordereau de livraison en brouillon',
+    'achat.bordereaux.delete' => 'Supprimer un bordereau de livraison en brouillon',
+    'achat.bordereaux.valider' => 'Valider un bordereau et intégrer au parc',
 
-        // Stocks
-        'achat.stocks.view' => 'Voir les stocks consommables',
-        'achat.stocks.entree' => 'Enregistrer des entrées de stock',
-        'achat.stocks.sortie' => 'Enregistrer des sorties de stock',
-        'achat.stocks.inventaire' => 'Effectuer un inventaire',
+    // Stocks
+    'achat.stocks.view' => 'Voir le stock des consommables',
 
-        // Licences
-        'achat.licences.view' => 'Voir les licences',
-        'achat.licences.manage' => 'Gérer les licences',
+    // Documents joints
+    'achat.documents.view' => 'Consulter et télécharger les documents joints',
+    'achat.documents.create' => 'Joindre un document',
+    'achat.documents.delete' => 'Supprimer un document joint',
 
-        // Rapports
-        'achat.rapports.view' => 'Voir les rapports',
-        'achat.rapports.export' => 'Exporter les rapports',
-    ],
-
-    // Rôles suggérés
-    'roles' => [
-        'acheteur' => [
-            'name' => 'Acheteur',
-            'description' => 'Peut créer et gérer les commandes',
-            'permissions' => [
-                'achat.dashboard.view',
-                'achat.articles.*',
-                'achat.bons_commande.view',
-                'achat.bons_commande.create',
-                'achat.bons_commande.edit',
-                'achat.bordereaux.view',
-                'achat.stocks.view',
-                'achat.licences.view',
-                'achat.rapports.view',
-            ],
-        ],
-        'validateur_achat' => [
-            'name' => 'Validateur Achat',
-            'description' => 'Peut valider et annuler les commandes',
-            'permissions' => [
-                'achat.dashboard.view',
-                'achat.articles.view',
-                'achat.bons_commande.*',
-                'achat.bordereaux.view',
-                'achat.rapports.view',
-                'achat.rapports.export',
-            ],
-        ],
-        'magasinier' => [
-            'name' => 'Magasinier',
-            'description' => 'Peut réceptionner les livraisons et gérer les stocks',
-            'permissions' => [
-                'achat.dashboard.view',
-                'achat.articles.view',
-                'achat.bons_commande.view',
-                'achat.bordereaux.*',
-                'achat.stocks.*',
-                'achat.licences.view',
-            ],
-        ],
-    ],
+    // Rapports
+    'achat.rapports.view' => 'Consulter les états et statistiques',
+    'achat.rapports.export' => 'Exporter les états en PDF',
 ];

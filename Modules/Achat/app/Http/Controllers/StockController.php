@@ -3,74 +3,81 @@
 namespace Modules\Achat\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Modules\Achat\Http\Controllers\Concerns\RepondEnJson;
 use Modules\Achat\Models\Article;
 
+/**
+ * Suivi du stock des consommables (E-14).
+ *
+ * EF-STK-05 — Écran de consultation. Les quantités présentées proviennent de
+ * la projection portée par l'article ; le référentiel faisant foi est le
+ * module Stock, qui porte les mouvements et les lots de valorisation.
+ */
 class StockController extends Controller
 {
-    use AuthorizesRequests;
+    use AuthorizesRequests, RepondEnJson;
 
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(Request $request)
+    public function index(): View
     {
         $this->authorize('achat.stocks.view');
 
-        if ($request->ajax() || $request->wantsJson()) {
-            $query = Article::where('type_article', 'consommable')
-                ->with('marque');
+        return view('achat::stocks.index', [
+            'niveaux' => config('achat.seuils_stock'),
+        ]);
+    }
 
-            // Filtres
-            if ($request->filled('statut_stock')) {
-                if ($request->input('statut_stock') === 'alerte') {
-                    $query->whereRaw('stock_actuel <= seuil_alerte');
-                } elseif ($request->input('statut_stock') === 'ok') {
-                    $query->whereRaw('stock_actuel > seuil_alerte');
-                }
-            }
+    public function getData(Request $request): JsonResponse
+    {
+        $this->authorize('achat.stocks.view');
 
-            if ($request->filled('search')) {
-                $search = $request->input('search');
-                $query->where(function ($q) use ($search) {
-                    $q->where('code_article', 'like', "%{$search}%")
-                        ->orWhere('designation', 'like', "%{$search}%");
-                });
-            }
+        $query = Article::consommables()->with('marque');
 
-            // Pagination
-            $limit = $request->input('limit', 10);
-            $offset = $request->input('offset', 0);
-
-            $total = $query->count();
-
-            $rows = $query->limit($limit)
-                ->offset($offset)
-                ->get()
-                ->map(function ($art) {
-                    $sousSeuil = $art->stock_actuel <= $art->seuil_alerte;
-
-                    return [
-                        'id' => $art->id,
-                        'code_article' => $art->code_article,
-                        'designation' => $art->designation,
-                        'marque' => $art->marque->libelle,
-                        'stock_actuel' => $art->stock_actuel,
-                        'seuil_alerte' => $art->seuil_alerte,
-                        'sous_seuil' => $sousSeuil,
-                        'status_badge' => $sousSeuil
-                            ? '<span class="badge bg-danger"><i class="fas fa-exclamation-triangle me-1"></i>Alerte stock</span>'
-                            : '<span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Stock Correct</span>',
-                    ];
-                });
-
-            return response()->json([
-                'total' => $total,
-                'rows' => $rows,
-            ]);
+        // EF-STK-03 / EF-STK-07 : filtrage par niveau qualifié
+        if ($request->filled('niveau')) {
+            match ($request->input('niveau')) {
+                'rupture' => $query->where('stock_actuel', '<=', 0),
+                'alerte' => $query->sousSeuil()->where('stock_actuel', '>', 0),
+                'normal' => $query->whereColumn('stock_actuel', '>', 'seuil_alerte'),
+                default => null,
+            };
         }
 
-        return view('achat::stocks.index');
+        if ($request->filled('search')) {
+            $recherche = '%'.$request->input('search').'%';
+
+            $query->where(function ($sousRequete) use ($recherche) {
+                $sousRequete->where('code_article', 'like', $recherche)
+                    ->orWhere('designation', 'like', $recherche);
+            });
+        }
+
+        $total = $query->count();
+
+        $rows = $query->orderBy('designation')
+            ->limit($request->integer('limit', 25))
+            ->offset($request->integer('offset', 0))
+            ->get()
+            ->map(function (Article $article) {
+                $niveau = $article->niveau_stock;
+
+                return [
+                    'id' => $article->id,
+                    'code_article' => $article->code_article,
+                    'designation' => $article->designation,
+                    'marque' => $article->marque?->libelle ?? '-',
+                    'unite_mesure' => $article->unite_mesure,
+                    'stock_actuel' => $article->stock_actuel,
+                    'seuil_alerte' => $article->seuil_alerte,
+                    'niveau' => $niveau,
+                    'niveau_label' => config("achat.seuils_stock.{$niveau}.label", $niveau),
+                    'niveau_color' => config("achat.seuils_stock.{$niveau}.color", 'secondary'),
+                ];
+            });
+
+        return $this->table($total, $rows);
     }
 }

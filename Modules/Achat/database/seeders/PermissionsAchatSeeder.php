@@ -5,65 +5,81 @@ namespace Modules\Achat\Database\Seeders;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
+/**
+ * Permissions et rôles du module Achat.
+ *
+ * EF-ADM-05 — Toutes les permissions déclarées sont effectivement contrôlées
+ * dans le code. La lecture se fait sur le format plat de config/permissions.php,
+ * identique à celui attendu par Core\Services\PermissionService.
+ */
 class PermissionsAchatSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        $permissions = config('achat.permissions.permissions', []);
+        $this->creerPermissions();
+        $this->creerRoles();
 
-        foreach ($permissions as $name => $label) {
-            $parts = explode('.', $name);
-            $category = count($parts) >= 3 ? end($parts) : null;
-            $group = count($parts) >= 2 ? $parts[1] : 'general';
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+    }
+
+    protected function creerPermissions(): void
+    {
+        foreach (config('achat.permissions', []) as $nom => $libelle) {
+            $segments = explode('.', $nom);
 
             Permission::updateOrCreate(
-                ['name' => $name],
+                ['name' => $nom, 'guard_name' => 'web'],
                 [
-                    'label' => $label,
-                    'module' => 'Achat',
-                    'category' => $category,
-                    'description' => $label,
-                    'group' => $group,
+                    'label' => $libelle,
+                    'description' => $libelle,
+                    'module' => 'achat',
+                    'category' => end($segments),
+                    'group' => $segments[1] ?? 'general',
                     'is_visible' => true,
                     'sort_order' => 0,
                 ]
             );
         }
+    }
 
-        // Assigner toutes les permissions Achat au rôle Admin
-        $roleAdmin = Role::findOrCreate('Admin');
-        $roleAdmin->givePermissionTo(Permission::where('module', 'Achat')->get());
+    protected function creerRoles(): void
+    {
+        $permissionsDuModule = Permission::where('module', 'achat')->get();
 
-        // Créer les rôles spécifiques et leur assigner les permissions configurées
-        $roles = config('achat.permissions.roles', []);
-        foreach ($roles as $roleData) {
-            $role = Role::findOrCreate($roleData['name']);
-            if (isset($roleData['description'])) {
-                $role->update(['description' => $roleData['description']]);
+        // Administrateur : accès complet au module.
+        Role::findOrCreate('Admin')->givePermissionTo($permissionsDuModule);
+
+        foreach (config('achat.roles', []) as $definition) {
+            $role = Role::findOrCreate($definition['name']);
+
+            if (isset($definition['description'])) {
+                $role->forceFill(['description' => $definition['description']])->save();
             }
 
-            $assignedPerms = [];
-            foreach ($roleData['permissions'] as $permPattern) {
-                if (str_ends_with($permPattern, '.*')) {
-                    $prefix = substr($permPattern, 0, -2);
-                    $rolePerms = Permission::where('name', 'like', $prefix.'.%')->get();
-                    foreach ($rolePerms as $rp) {
-                        $assignedPerms[] = $rp;
+            $accordees = collect($definition['permissions'])
+                ->flatMap(function (string $motif) use ($permissionsDuModule) {
+                    if (str_ends_with($motif, '.*')) {
+                        $prefixe = substr($motif, 0, -1); // conserve le point final
+
+                        return $permissionsDuModule->filter(
+                            fn (Permission $p) => str_starts_with($p->name, $prefixe)
+                        );
                     }
-                } else {
-                    $rolePerm = Permission::where('name', $permPattern)->first();
-                    if ($rolePerm) {
-                        $assignedPerms[] = $rolePerm;
-                    }
-                }
-            }
-            $role->syncPermissions($assignedPerms);
+
+                    return $permissionsDuModule->where('name', $motif);
+                })
+                ->unique('id')
+                ->values();
+
+            // syncPermissions ne touche qu'aux permissions du module : un rôle
+            // partagé avec d'autres modules conserve les siennes.
+            $autresModules = $role->permissions()->where('module', '!=', 'achat')->get();
+
+            $role->syncPermissions($accordees->merge($autresModules));
         }
     }
 }

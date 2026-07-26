@@ -2,211 +2,354 @@
 
 namespace Modules\Achat\Services;
 
-use Exception;
 use Illuminate\Support\Facades\DB;
+use Modules\Achat\Contracts\ParcInfoIntegrationInterface;
+use Modules\Achat\Contracts\StockIntegrationInterface;
+use Modules\Achat\Events\BordereauLivraisonValide;
+use Modules\Achat\Exceptions\RegleMetierException;
 use Modules\Achat\Models\Article;
 use Modules\Achat\Models\BordereauLivraison;
 use Modules\Achat\Models\LigneCommande;
+use Modules\Achat\Models\LigneLivraison;
 use Modules\Achat\Models\WizardData;
-use Modules\ParcInfo\Models\Consommable;
-use Modules\ParcInfo\Models\Licence;
-use Modules\ParcInfo\Models\Logiciel;
-use Modules\ParcInfo\Models\MouvementConsommable;
-use Modules\ParcInfo\Models\TypeConsommable;
 
+/**
+ * Assistant d'intégration : saisie d'inventaire puis création définitive des
+ * enregistrements dans ParcInfo et Stock.
+ *
+ * RGC-05 / RG-INT-02 — L'intégration est atomique. Toute exception, à
+ * n'importe quelle étape, annule l'ensemble : aucun équipement partiellement
+ * créé, aucun compteur incrémenté, aucun statut modifié.
+ */
 class WizardValidationService
 {
     public function __construct(
-        protected EquipementIntegrationService $equipementService,
-        protected CodeInventaireGeneratorService $codeGenerator
+        protected ParcInfoIntegrationInterface $parcInfo,
+        protected StockIntegrationInterface $stock,
+        protected CodeInventaireGeneratorService $generateurCodeInventaire,
+        protected BonCommandeService $bonCommandeService,
     ) {}
 
     /**
-     * Sauvegarde temporairement les données du wizard pour un article.
+     * RG-WZ-07 — Enregistrement d'une étape, reprise possible ultérieurement.
      */
-    public function sauvegarderEtape(BordereauLivraison $bl, Article $article, array $unitesData, ?array $attributsCommuns = null, bool $completed = false): WizardData
-    {
+    public function sauvegarderEtape(
+        BordereauLivraison $bordereau,
+        Article $article,
+        array $unites,
+        ?array $attributsCommuns = null,
+        bool $complete = false
+    ): WizardData {
+        if ($bordereau->estValide()) {
+            throw new RegleMetierException('Ce bordereau est déjà validé : sa saisie ne peut plus être modifiée.');
+        }
+
         return WizardData::updateOrCreate(
             [
-                'bordereau_livraison_id' => $bl->id,
+                'bordereau_livraison_id' => $bordereau->id,
                 'article_id' => $article->id,
             ],
             [
-                'unites_data' => $unitesData,
+                'unites_data' => array_values($unites),
                 'attributs_communs' => $attributsCommuns,
-                'completed' => $completed,
+                'completed' => $complete,
             ]
         );
     }
 
     /**
-     * Valide le bordereau de livraison et intègre les données dans le parc informatique.
+     * Valide le bordereau et intègre son contenu au parc.
      *
-     * @throws Exception
+     * @return array{equipements: array<int>, licences: array<int>, lignes_stock: int}
+     *
+     * @throws RegleMetierException
      */
-    public function validerBordereau(BordereauLivraison $bl, int $userId): array
+    public function validerBordereau(BordereauLivraison $bordereau, int $userId): array
     {
-        if ($bl->statut === 'valide') {
-            throw new Exception('Ce bordereau de livraison a déjà été validé.');
+        // RG-INT-01
+        if ($bordereau->estValide()) {
+            throw new RegleMetierException('Ce bordereau de livraison a déjà été validé.');
         }
 
-        return DB::transaction(function () use ($bl, $userId) {
-            $bl->load(['lignesLivraison.article', 'bonCommande.lignesCommande']);
-            $createdEquipements = [];
-            $createdLicences = [];
+        $bordereau->load(['lignesLivraison.article', 'bonCommande.lignesCommande']);
 
-            // 1. Valider que toutes les données obligatoires du wizard sont complètes
-            foreach ($bl->lignesLivraison as $line) {
-                $article = $line->article;
+        $this->controlerCompletude($bordereau);
 
-                if (in_array($article->type_article, ['equipement', 'licence'])) {
-                    $wizardData = WizardData::where('bordereau_livraison_id', $bl->id)
-                        ->where('article_id', $article->id)
-                        ->first();
+        return DB::transaction(function () use ($bordereau, $userId) {
+            $equipements = [];
+            $licences = [];
 
-                    if (! $wizardData || ! $wizardData->completed) {
-                        throw new Exception("Les informations d'inventaire pour l'article '{$article->designation}' ne sont pas finalisées.");
-                    }
+            foreach ($bordereau->lignesLivraison as $ligne) {
+                $article = $ligne->article;
+                $ligneCommande = $this->ligneCommandeDe($bordereau, $article->id);
 
-                    if (count($wizardData->unites_data) !== (int) $line->quantite_livree) {
-                        throw new Exception("La quantité saisie dans l'assistant pour '{$article->designation}' ne correspond pas à la quantité livrée.");
-                    }
-                }
+                match ($article->type_article) {
+                    'equipement' => $equipements = array_merge(
+                        $equipements,
+                        $this->integrerEquipements($bordereau, $ligne, $ligneCommande, $userId)
+                    ),
+                    'licence' => $licences = array_merge(
+                        $licences,
+                        $this->integrerLicences($bordereau, $ligne, $ligneCommande, $userId)
+                    ),
+                    'consommable' => $this->integrerConsommable($bordereau, $ligne, $ligneCommande, $userId),
+                    default => null, // prestation : aucun objet physique à créer
+                };
+
+                // RG-INT-10
+                $ligneCommande->increment('quantite_livree', $ligne->quantite_livree);
             }
 
-            // 2. Traiter chaque ligne de livraison
-            foreach ($bl->lignesLivraison as $line) {
-                $article = $line->article;
+            // EF-STK-05 — Référentiel de stock faisant foi, consommables seuls.
+            $lignesStock = $this->stock->enregistrerEntreesDepuisBordereau($bordereau, $userId);
 
-                // Récupérer le prix unitaire d'origine sur le bon de commande
-                $ligneCommande = LigneCommande::where('bon_de_commande_id', $bl->bon_de_commande_id)
-                    ->where('article_id', $article->id)
-                    ->first();
+            // RG-BC-11
+            $this->bonCommandeService->actualiserStatutApresLivraison($bordereau->bonCommande);
 
-                if (! $ligneCommande) {
-                    throw new Exception("L'article '{$article->designation}' n'est pas présent dans le bon de commande associé.");
-                }
+            // RGC-03
+            $bordereau->update([
+                'statut' => 'valide',
+                'valide_par' => $userId,
+                'date_validation' => now(),
+            ]);
 
-                $prixUnitaire = $ligneCommande->prix_unitaire;
+            // RG-WZ-08
+            $bordereau->wizardData()->delete();
 
-                // Charger les données du wizard
-                $wizardData = WizardData::where('bordereau_livraison_id', $bl->id)
-                    ->where('article_id', $article->id)
-                    ->first();
+            activity()->performedOn($bordereau)
+                ->withProperties([
+                    'equipements' => count($equipements),
+                    'licences' => count($licences),
+                    'lignes_stock' => $lignesStock,
+                ])
+                ->log("Bordereau {$bordereau->numero_livraison} validé et intégré au parc");
 
-                if ($article->type_article === 'equipement') {
-                    // Création de fiches équipements physiques
-                    foreach ($wizardData->unites_data as $unit) {
-                        // S'assurer que le code inventaire est défini
-                        $unit['code_inventaire'] = $unit['code_inventaire'] ?? $this->codeGenerator->generer();
-
-                        $createdEquipements[] = $this->equipementService->creerEquipement(
-                            $article,
-                            $unit,
-                            $bl,
-                            $prixUnitaire,
-                            $userId
-                        );
-                    }
-                } elseif ($article->type_article === 'licence') {
-                    // Création de licences logicielles
-                    $logiciel = Logiciel::firstOrCreate(
-                        ['nom' => $article->designation],
-                        [
-                            'code' => strtoupper(substr($article->code_article, 0, 50)),
-                            'est_actif' => true,
-                        ]
-                    );
-
-                    foreach ($wizardData->unites_data as $unit) {
-                        $createdLicences[] = Licence::create([
-                            'logiciel_id' => $logiciel->id,
-                            'cle_licence' => $unit['cle_licence'] ?? 'N/A',
-                            'date_acquisition' => $bl->date_livraison,
-                            'date_activation' => $unit['date_activation'] ?? now()->toDateString(),
-                            'date_expiration' => $unit['date_expiration'] ?? null,
-                            'cout_unitaire' => $prixUnitaire,
-                            'cout_total' => $prixUnitaire,
-                            'fournisseur_id' => $bl->bonCommande->fournisseur_id,
-                            'actif' => true,
-                            'statut' => 'VALIDE',
-                            'notes' => "Acquisition automatique via la validation du BL n° {$bl->numero_livraison}",
-                        ]);
-                    }
-                } elseif ($article->type_article === 'consommable') {
-                    // 1. Incrémenter le stock de l'article catalogue
-                    $article->increment('stock_actuel', $line->quantite_livree);
-
-                    // 2. Intégrer également dans parc_info_consommables
-                    $consommable = Consommable::where('code', $article->code_article)->first();
-                    if (! $consommable) {
-                        $typeCons = TypeConsommable::firstOrCreate(
-                            ['code' => 'GEN-CONS'],
-                            [
-                                'nom' => 'Consommables Divers',
-                                'categorie' => 'Achat',
-                                'unite_stock' => 'Unité',
-                                'seul_reapprovisionnement' => 5,
-                            ]
-                        );
-
-                        $consommable = Consommable::create([
-                            'code' => $article->code_article,
-                            'nom' => $article->designation,
-                            'type_consommable_id' => $typeCons->id,
-                            'marque_id' => $article->marque_id,
-                            'modele_reference' => $article->reference_constructeur ?? '',
-                            'fournisseur_principal_id' => $bl->bonCommande->fournisseur_id,
-                            'cout_unitaire' => $prixUnitaire,
-                            'quantite_stock_actuel' => 0,
-                            'quantite_stock_min' => $article->seuil_alerte,
-                            'est_actif' => true,
-                        ]);
-                    }
-
-                    $consommable->increment('quantite_stock_actuel', $line->quantite_livree);
-                    $consommable->update(['date_dernier_approvisionnement' => $bl->date_livraison]);
-
-                    // 3. Ajouter un mouvement de stock dans parc_info_mouvements_consommables
-                    MouvementConsommable::create([
-                        'consommable_id' => $consommable->id,
-                        'type_mouvement' => 'entree',
-                        'quantite' => $line->quantite_livree,
-                        'prix_unitaire' => $prixUnitaire,
-                        'date_mouvement' => now(),
-                        'reference_commande' => $bl->bonCommande->numero_commande,
-                        'utilisateur_id' => $userId,
-                        'raison' => "Entrée de stock automatique via validation du BL n° {$bl->numero_livraison}",
-                    ]);
-                }
-
-                // Mettre à jour la quantité livrée sur le bon de commande
-                $ligneCommande->increment('quantite_livree', $line->quantite_livree);
-            }
-
-            // 3. Mettre à jour le statut du Bon de Commande
-            $bc = $bl->bonCommande;
-            $bc->load('lignesCommande');
-
-            $totalCommandee = $bc->lignesCommande->sum('quantite');
-            $totalLivree = $bc->lignesCommande->sum('quantite_livree');
-
-            if ($totalLivree >= $totalCommandee) {
-                $bc->update(['statut' => 'livre']);
-            } else {
-                $bc->update(['statut' => 'partiel']);
-            }
-
-            // 4. Mettre à jour le statut du Bordereau de Livraison
-            $bl->update(['statut' => 'valide']);
-
-            // Supprimer les données temporaires du wizard
-            WizardData::where('bordereau_livraison_id', $bl->id)->delete();
+            event(new BordereauLivraisonValide($bordereau, $userId, $equipements, $licences));
 
             return [
-                'equipements' => $createdEquipements,
-                'licences' => $createdLicences,
+                'equipements' => $equipements,
+                'licences' => $licences,
+                'lignes_stock' => $lignesStock,
             ];
         });
+    }
+
+    /**
+     * RG-WZ-05 / RG-WZ-06 — Contrôle préalable, hors transaction.
+     *
+     * @throws RegleMetierException
+     */
+    protected function controlerCompletude(BordereauLivraison $bordereau): void
+    {
+        if ($bordereau->lignesLivraison->isEmpty()) {
+            throw new RegleMetierException('Ce bordereau ne comporte aucune ligne : il ne peut pas être validé.');
+        }
+
+        foreach ($bordereau->lignesLivraison as $ligne) {
+            $article = $ligne->article;
+
+            if (! $article->necessiteWizard()) {
+                continue;
+            }
+
+            $saisie = $bordereau->wizardData
+                ->firstWhere('article_id', $article->id)
+                ?? WizardData::where('bordereau_livraison_id', $bordereau->id)
+                    ->where('article_id', $article->id)
+                    ->first();
+
+            if (! $saisie || ! $saisie->completed) {
+                throw new RegleMetierException(
+                    "Les informations d'inventaire pour l'article « {$article->designation} » ne sont pas finalisées."
+                );
+            }
+
+            if (count($saisie->unites_data ?? []) !== (int) $ligne->quantite_livree) {
+                throw new RegleMetierException(
+                    "La quantité saisie dans l'assistant pour « {$article->designation} » ne correspond pas ".
+                    "à la quantité livrée ({$ligne->quantite_livree})."
+                );
+            }
+        }
+    }
+
+    /**
+     * RG-INT-03 à RG-INT-06 — Création des fiches équipement.
+     *
+     * @return array<int> Identifiants des équipements créés
+     */
+    protected function integrerEquipements(
+        BordereauLivraison $bordereau,
+        LigneLivraison $ligne,
+        LigneCommande $ligneCommande,
+        int $userId
+    ): array {
+        $article = $ligne->article;
+        $saisie = $this->saisieDe($bordereau, $article->id);
+        $attributsCommuns = $saisie->attributs_communs ?? [];
+        $creees = [];
+
+        foreach ($saisie->unites_data as $index => $unite) {
+            $numeroSerie = mb_strtoupper(trim($unite['numero_serie'] ?? ''));
+
+            if ($numeroSerie === '') {
+                throw new RegleMetierException(
+                    "Le numéro de série est obligatoire pour l'unité #".($index + 1).
+                    " de l'article « {$article->designation} »."
+                );
+            }
+
+            if ($this->parcInfo->existeNumeroSerie($numeroSerie)) {
+                throw new RegleMetierException("Le numéro de série « {$numeroSerie} » existe déjà dans le parc.");
+            }
+
+            $codeInventaire = mb_strtoupper(trim($unite['code_inventaire'] ?? ''));
+
+            if ($codeInventaire === '') {
+                // RG-INT-04 : génération par séquence verrouillée
+                $codeInventaire = $this->generateurCodeInventaire->generer();
+            } elseif ($this->parcInfo->existeCodeInventaire($codeInventaire)) {
+                throw new RegleMetierException("Le code inventaire « {$codeInventaire} » existe déjà dans le parc.");
+            }
+
+            // EF-INT-18 : les attributs communs sont appliqués puis surchargés
+            // par la saisie propre à l'unité.
+            $champsValeurs = array_merge($attributsCommuns, $unite['champs_valeurs'] ?? []);
+
+            $equipementId = $this->parcInfo->creerEquipement([
+                'categorie_id' => $article->categorie_equipement_id,
+                'code_inventaire' => $codeInventaire,
+                'numero_serie' => $numeroSerie,
+                'marque_id' => $article->marque_id,
+                'modele' => $article->designation,
+                'date_acquisition' => $bordereau->date_livraison,
+                // RG-INT-05 / RGC-06 : valeur d'acquisition = prix commandé
+                'valeur_achat' => (float) $ligneCommande->prix_unitaire,
+                'ref_bordereau' => $bordereau->numero_livraison,
+                'champs_valeurs' => $champsValeurs,
+            ]);
+
+            $this->parcInfo->historiserAcquisition(
+                $equipementId,
+                $userId,
+                "Acquisition via la validation du BL n° {$bordereau->numero_livraison} ".
+                "(BC n° {$bordereau->bonCommande->numero_commande})",
+                $bordereau->numero_livraison
+            );
+
+            $creees[] = $equipementId;
+        }
+
+        return $creees;
+    }
+
+    /**
+     * RG-INT-07 — Création des licences logicielles.
+     *
+     * @return array<int> Identifiants des licences créées
+     */
+    protected function integrerLicences(
+        BordereauLivraison $bordereau,
+        LigneLivraison $ligne,
+        LigneCommande $ligneCommande,
+        int $userId
+    ): array {
+        $article = $ligne->article;
+        $saisie = $this->saisieDe($bordereau, $article->id);
+
+        $logicielId = $this->parcInfo->trouverOuCreerLogiciel(
+            $article->designation,
+            mb_strtoupper($article->code_article)
+        );
+
+        $creees = [];
+
+        foreach ($saisie->unites_data as $index => $unite) {
+            $cle = trim($unite['cle_licence'] ?? '');
+
+            if ($cle === '') {
+                throw new RegleMetierException(
+                    'La clé de licence est obligatoire pour l\'unité #'.($index + 1).
+                    " de l'article « {$article->designation} »."
+                );
+            }
+
+            $creees[] = $this->parcInfo->creerLicence([
+                'logiciel_id' => $logicielId,
+                'cle_licence' => $cle,
+                'date_acquisition' => $bordereau->date_livraison,
+                'date_activation' => $unite['date_activation'] ?? now()->toDateString(),
+                'date_expiration' => $unite['date_expiration'] ?: null,
+                'cout_unitaire' => (float) $ligneCommande->prix_unitaire,
+                'fournisseur_id' => $bordereau->bonCommande->fournisseur_id,
+                'notes' => "Acquisition via la validation du BL n° {$bordereau->numero_livraison}",
+            ]);
+        }
+
+        return $creees;
+    }
+
+    /**
+     * RG-INT-08 — Entrée d'un consommable.
+     *
+     * Le stock faisant foi est tenu par le module Stock. Le compteur porté par
+     * l'article n'est qu'une projection destinée à l'écran de suivi.
+     */
+    protected function integrerConsommable(
+        BordereauLivraison $bordereau,
+        LigneLivraison $ligne,
+        LigneCommande $ligneCommande,
+        int $userId
+    ): void {
+        $article = $ligne->article;
+
+        // Projection dénormalisée (EF-STK-05)
+        $article->increment('stock_actuel', $ligne->quantite_livree);
+
+        // Double écriture ParcInfo, pilotée par configuration
+        $this->parcInfo->enregistrerEntreeConsommable([
+            'code_article' => $article->code_article,
+            'designation' => $article->designation,
+            'marque_id' => $article->marque_id,
+            'reference_constructeur' => $article->reference_constructeur,
+            'fournisseur_id' => $bordereau->bonCommande->fournisseur_id,
+            'prix_unitaire' => (float) $ligneCommande->prix_unitaire,
+            'seuil_alerte' => $article->seuil_alerte,
+            'quantite' => $ligne->quantite_livree,
+            'date_mouvement' => $bordereau->date_livraison,
+            'reference_commande' => $bordereau->bonCommande->numero_commande,
+            'user_id' => $userId,
+            'raison' => "Entrée de stock via la validation du BL n° {$bordereau->numero_livraison}",
+        ]);
+    }
+
+    /** @throws RegleMetierException */
+    protected function ligneCommandeDe(BordereauLivraison $bordereau, int $articleId): LigneCommande
+    {
+        $ligneCommande = LigneCommande::where('bon_de_commande_id', $bordereau->bon_de_commande_id)
+            ->where('article_id', $articleId)
+            ->first();
+
+        if (! $ligneCommande) {
+            throw new RegleMetierException(
+                "Un article livré n'est pas présent dans le bon de commande associé."
+            );
+        }
+
+        return $ligneCommande;
+    }
+
+    /** @throws RegleMetierException */
+    protected function saisieDe(BordereauLivraison $bordereau, int $articleId): WizardData
+    {
+        $saisie = WizardData::where('bordereau_livraison_id', $bordereau->id)
+            ->where('article_id', $articleId)
+            ->first();
+
+        if (! $saisie) {
+            throw new RegleMetierException("Aucune saisie d'inventaire trouvée pour cet article.");
+        }
+
+        return $saisie;
     }
 }

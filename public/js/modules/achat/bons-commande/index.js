@@ -1,137 +1,109 @@
 /**
- * Gestion de la liste des Bons de Commande - Module Achat
- * Pattern: AJAX + Bootstrap Table
+ * Liste des bons de commande.
  */
-
-document.addEventListener('DOMContentLoaded', function() {
-    const $table = $('#bons-commande-table');
-    const $btnShow = $('#btn-show');
-    const $btnPrint = $('#btn-print');
+document.addEventListener('DOMContentLoaded', function () {
+    const $table = $('#items-table');
+    const $btnVoir = $('#btn-show');
+    const $btnImprimer = $('#btn-print');
     const $btnAnnuler = $('#btn-annuler');
-    const $btnDelete = $('#btn-delete');
+    const $btnSupprimer = $('#btn-delete');
 
-    // ── FILTRES RECHERCHE ──
-    $('#filter-fournisseur, #filter-statut').on('change', function() {
-        $table.bootstrapTable('refresh');
-    });
-
-    // Passer les filtres à l'AJAX
+    // ── Filtres ────────────────────────────────────────────────────────────
     $table.bootstrapTable('refreshOptions', {
-        queryParams: function(params) {
+        queryParams: function (params) {
             params.fournisseur_id = $('#filter-fournisseur').val();
             params.statut = $('#filter-statut').val();
+            params.date_debut = $('#filter-date-debut').val();
+            params.date_fin = $('#filter-date-fin').val();
             return params;
-        }
+        },
     });
 
-    // ── SELECTION EVENT ──
+    $('#filter-fournisseur, #filter-statut, #filter-date-debut, #filter-date-fin')
+        .on('change', () => $table.bootstrapTable('refresh'));
+
+    // ── Sélection : les actions suivent le statut de la ligne ──────────────
     $table.on('check.bs.table uncheck.bs.table check-all.bs.table uncheck-all.bs.table', function () {
-        const selections = $table.bootstrapTable('getSelections');
-        const hasOne = selections.length === 1;
-        
-        $btnShow.prop('disabled', !hasOne);
-        $btnPrint.prop('disabled', !hasOne);
+        const selection = $table.bootstrapTable('getSelections');
+        const ligne = selection.length === 1 ? selection[0] : null;
 
-        if (hasOne) {
-            const row = selections[0];
-            $btnAnnuler.prop('disabled', !(row.statut === 'brouillon' || row.statut === 'valide'));
-            $btnDelete.prop('disabled', !(row.statut === 'brouillon'));
-        } else {
-            $btnAnnuler.prop('disabled', true);
-            $btnDelete.prop('disabled', true);
-        }
+        $btnVoir.prop('disabled', !ligne);
+        $btnImprimer.prop('disabled', !ligne);
+
+        // RG-BC-05 : annulation possible avant toute livraison intégrée.
+        $btnAnnuler.prop('disabled', !ligne || !['brouillon', 'valide'].includes(ligne.statut));
+        // RG-BC-03 : suppression réservée aux brouillons.
+        $btnSupprimer.prop('disabled', !ligne || ligne.statut !== 'brouillon');
     });
 
-    // ── ACTION SHOW/EDIT ──
-    function showItem(id) {
+    const ligneSelectionnee = () => $table.bootstrapTable('getSelections')[0];
+
+    // ── Consultation ───────────────────────────────────────────────────────
+    function ouvrir(id) {
         window.location.href = route('achat.bons-commande.show', id);
     }
 
-    $btnShow.on('click', function() {
-        const row = $table.bootstrapTable('getSelections')[0];
-        if (row) showItem(row.id);
+    $btnVoir.on('click', function () {
+        const ligne = ligneSelectionnee();
+        if (ligne) ouvrir(ligne.id);
     });
 
-    $table.on('dbl-click-row.bs.table', function(e, row) {
-        showItem(row.id);
+    $table.on('dbl-click-row.bs.table', (e, ligne) => ouvrir(ligne.id));
+
+    // ── Impression ─────────────────────────────────────────────────────────
+    $btnImprimer.on('click', function () {
+        const ligne = ligneSelectionnee();
+        if (!ligne) return;
+
+        $('#modal-pdf-iframe').attr('src', `${route('achat.bons-commande.imprimer', ligne.id)}?pdf=1`);
+        new bootstrap.Modal(document.getElementById('modal-pdf')).show();
     });
 
-    // ── ACTION ANNULER ──
-    $btnAnnuler.on('click', function() {
-        const row = $table.bootstrapTable('getSelections')[0];
-        if (!row) return;
+    // ── Annulation (motif obligatoire) ─────────────────────────────────────
+    $btnAnnuler.on('click', function () {
+        const ligne = ligneSelectionnee();
+        if (!ligne) return;
 
-        Swal.fire({
-            title: 'Annuler cette commande ?',
-            text: `Êtes-vous sûr de vouloir annuler le bon de commande ${row.numero_commande} ?`,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#ffc107',
-            confirmButtonText: 'Oui, annuler'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $.ajax({
-                    url: route('achat.bons-commande.annuler', row.id),
-                    method: 'POST',
-                    data: {
-                        _token: $('meta[name="csrf-token"]').attr('content')
-                    },
-                    success: function(res) {
-                        if (res.success) {
-                            Swal.fire('Annulé !', res.message, 'success');
-                            $table.bootstrapTable('refresh');
-                        }
-                    },
-                    error: function(xhr) {
-                        Swal.fire('Erreur', xhr.responseJSON?.message || 'Erreur lors de l\'annulation', 'error');
-                    }
+        Achat.demanderMotif({
+            titre: 'Annuler ce bon de commande ?',
+            texte: `<strong>${ligne.numero_commande}</strong><br>` +
+                   "L'annulation est définitive : le bon ne pourra plus être livré.",
+            libelle: "Motif de l'annulation",
+            confirmer: 'Oui, annuler',
+        }).then(function (motif) {
+            if (!motif) return;
+
+            $.post(route('achat.bons-commande.annuler', ligne.id), { motif })
+                .done(function (reponse) {
+                    Achat.succes(reponse.message);
+                    $table.bootstrapTable('refresh');
+                })
+                .fail(function (xhr) {
+                    Achat.erreur(Achat.messageErreur(xhr, "L'annulation a échoué."));
                 });
-            }
         });
     });
 
-    // ── ACTION PRINT ──
-    $btnPrint.on('click', function() {
-        const row = $table.bootstrapTable('getSelections')[0];
-        if (row) {
-            const url = route('achat.bons-commande.imprimer', row.id) + '?pdf=1';
-            $('#print-bc-iframe').attr('src', url);
-            const printModal = new bootstrap.Modal(document.getElementById('printBcModal'));
-            printModal.show();
-        }
-    });
+    // ── Suppression ────────────────────────────────────────────────────────
+    $btnSupprimer.on('click', function () {
+        const ligne = ligneSelectionnee();
+        if (!ligne) return;
 
-    // ── ACTION SUPPRIMER ──
-    $btnDelete.on('click', function() {
-        const row = $table.bootstrapTable('getSelections')[0];
-        if (!row) return;
+        Achat.confirmer({
+            titre: 'Supprimer ce bon de commande ?',
+            texte: `<strong>${ligne.numero_commande}</strong><br>Cette action est irréversible.`,
+            confirmer: 'Oui, supprimer',
+        }).then(function (resultat) {
+            if (!resultat.isConfirmed) return;
 
-        Swal.fire({
-            title: 'Supprimer ce bon de commande ?',
-            text: 'Cette action est irréversible !',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#dc3545',
-            confirmButtonText: 'Oui, supprimer'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $.ajax({
-                    url: route('achat.bons-commande.destroy', row.id),
-                    method: 'DELETE',
-                    data: {
-                        _token: $('meta[name="csrf-token"]').attr('content')
-                    },
-                    success: function(res) {
-                        if (res.success) {
-                            Swal.fire('Supprimé !', res.message, 'success');
-                            $table.bootstrapTable('refresh');
-                        }
-                    },
-                    error: function(xhr) {
-                        Swal.fire('Erreur', xhr.responseJSON?.message || 'Erreur lors de la suppression', 'error');
-                    }
+            $.ajax({ url: route('achat.bons-commande.destroy', ligne.id), method: 'DELETE' })
+                .done(function (reponse) {
+                    Achat.succes(reponse.message);
+                    $table.bootstrapTable('refresh');
+                })
+                .fail(function (xhr) {
+                    Achat.erreur(Achat.messageErreur(xhr, 'La suppression a échoué.'));
                 });
-            }
         });
     });
 });

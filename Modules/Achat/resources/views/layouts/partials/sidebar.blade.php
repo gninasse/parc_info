@@ -4,7 +4,7 @@
   <!--begin::Sidebar Brand-->
   <div class="sidebar-brand">
     <a href="{{ url('/') }}" class="brand-link d-flex align-items-center gap-2 px-3 py-2">
-      <img src="{{ asset('images/chuyo_icon.png') }}" alt="CHU-YO Icon"
+      <img src="{{ asset('images/chuyo_icon.png') }}" alt="CHU-YO"
            class="brand-image" style="width: 36px; height: 36px; object-fit: contain; border-radius: 8px;" />
       <span class="brand-text fw-semibold">CHU-YO | Achats</span>
     </a>
@@ -14,69 +14,68 @@
   <!--begin::Sidebar Wrapper-->
   <div class="sidebar-wrapper">
     <nav class="mt-2">
-      <!--begin::Sidebar Menu-->
       <ul class="nav sidebar-menu flex-column"
           data-lte-toggle="treeview"
           role="navigation"
-          aria-label="Main navigation"
+          aria-label="Navigation principale"
           data-accordion="false"
           id="navigation">
 
-        @php
-          $dashboardActive = request()->routeIs('achat.dashboard.index');
-          $articlesActive = request()->routeIs('achat.articles.*');
-          $bonsCommandeActive = request()->routeIs('achat.bons-commande.*');
-          $bordereauxActive = request()->routeIs('achat.bordereaux.*');
-          $stocksActive = request()->routeIs('achat.stocks.*');
-        @endphp
+        {{-- ENF-SEC-03 : une entrée de menu non autorisée n'est pas rendue. --}}
 
-        {{-- Tableau de bord --}}
+        @can('achat.dashboard.view')
         <li class="nav-item">
           <a href="{{ route('achat.dashboard.index') }}"
-             class="nav-link {{ $dashboardActive ? 'active' : '' }}">
+             class="nav-link {{ request()->routeIs('achat.dashboard.*') ? 'active' : '' }}">
             <i class="nav-icon bi bi-speedometer2"></i>
             <p>Tableau de bord</p>
           </a>
         </li>
+        @endcan
 
         <li class="nav-header">GESTION DES ACHATS</li>
 
-        {{-- Articles --}}
+        @can('achat.articles.view')
         <li class="nav-item">
           <a href="{{ route('achat.articles.index') }}"
-             class="nav-link {{ $articlesActive ? 'active' : '' }}">
+             class="nav-link {{ request()->routeIs('achat.articles.*') ? 'active' : '' }}">
             <i class="nav-icon bi bi-card-list"></i>
             <p>Catalogue Articles</p>
           </a>
         </li>
+        @endcan
 
-        {{-- Bons de commande --}}
+        @can('achat.bons_commande.view')
         <li class="nav-item">
           <a href="{{ route('achat.bons-commande.index') }}"
-             class="nav-link {{ $bonsCommandeActive ? 'active' : '' }}">
+             class="nav-link {{ request()->routeIs('achat.bons-commande.*') ? 'active' : '' }}">
             <i class="nav-icon bi bi-file-earmark-text"></i>
             <p>Bons de Commande</p>
           </a>
         </li>
+        @endcan
 
-        {{-- Bordereaux de livraison --}}
+        @can('achat.bordereaux.view')
         <li class="nav-item">
           <a href="{{ route('achat.bordereaux.index') }}"
-             class="nav-link {{ $bordereauxActive ? 'active' : '' }}">
+             class="nav-link {{ request()->routeIs('achat.bordereaux.*') ? 'active' : '' }}">
             <i class="nav-icon bi bi-truck"></i>
             <p>Bordereaux Livraison</p>
           </a>
         </li>
+        @endcan
 
-        {{-- Stocks --}}
+        @can('achat.stocks.view')
         <li class="nav-item">
           <a href="{{ route('achat.stocks.index') }}"
-             class="nav-link {{ $stocksActive ? 'active' : '' }}">
+             class="nav-link {{ request()->routeIs('achat.stocks.*') ? 'active' : '' }}">
             <i class="nav-icon bi bi-box-seam"></i>
             <p>Suivi des Stocks</p>
           </a>
         </li>
+        @endcan
 
+        @can('achat.rapports.view')
         <li class="nav-header">ANALYSE & RAPPORTS</li>
         <li class="nav-item">
           <a href="{{ route('achat.statistiques.index') }}"
@@ -85,10 +84,9 @@
             <p>États & Statistiques</p>
           </a>
         </li>
+        @endcan
 
         <li class="nav-header">NAVIGATION PORTAIL</li>
-
-        {{-- Retour Accueil --}}
         <li class="nav-item">
           <a href="{{ url('/') }}" class="nav-link">
             <i class="nav-icon bi bi-house-door text-info"></i>
@@ -97,7 +95,6 @@
         </li>
 
       </ul>
-      <!--end::Sidebar Menu-->
     </nav>
   </div>
   <!--end::Sidebar Wrapper-->
