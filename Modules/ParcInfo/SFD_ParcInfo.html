@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang xml:lang>
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Spécifications Fonctionnelles Détaillées — Module ParcInfo</title>
+  <style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+
+ul.task-list[class]{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+font-size: inherit;
+width: 0.8em;
+margin: 0 0.8em 0.2em -1.6em;
+vertical-align: middle;
+}
+.display.math{display: block; text-align: center; margin: 0.5rem auto;}
+</style>
+  <style type="text/css">:root{
+--marine:#0d2060; --primary:#0d6efd; --primary-hover:#0b5ed7;
+--success:#28a745; --danger:#dc3545; --info:#0dcaf0; --secondary:#6c757d;
+--bg:#f8f9fa; --surface:#ffffff; --text:#212529; --muted:#6c757d; --border:#dee2e6;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+font-family:'Source Sans 3','Segoe UI',system-ui,-apple-system,sans-serif;
+color:var(--text); background:var(--bg); line-height:1.6;
+max-width:1000px; margin:0 auto; padding:2rem 1.5rem 4rem;
+}
+h1,h2,h3,h4{font-weight:600; line-height:1.25; color:var(--marine)}
+h1{font-size:2rem; border-bottom:3px solid var(--primary); padding-bottom:.5rem; margin-top:0}
+h2{font-size:1.5rem; border-bottom:1px solid var(--border); padding-bottom:.35rem; margin-top:2.5rem}
+h3{font-size:1.2rem; margin-top:1.75rem; color:var(--primary)}
+h4{font-size:1.05rem; margin-top:1.25rem; color:var(--text)}
+a{color:var(--primary); text-decoration:none}
+a:hover{color:var(--primary-hover); text-decoration:underline}
+p,li{font-size:1rem}
+code{
+background:#eef1f5; color:#b3005b; padding:.12em .4em; border-radius:.25rem;
+font-size:.9em; font-family:'JetBrains Mono',Consolas,monospace;
+}
+pre{background:#0d2060; color:#f8f9fa; padding:1rem; border-radius:.3rem; overflow:auto}
+pre code{background:none; color:inherit; padding:0}
+table{border-collapse:collapse; width:100%; margin:1.25rem 0; font-size:.95rem; background:var(--surface)}
+th,td{border:1px solid var(--border); padding:.55rem .75rem; text-align:left; vertical-align:top}
+thead th{background:var(--marine); color:#fff; font-weight:600}
+tbody tr:nth-child(even){background:#f4f6f9}
+blockquote{border-left:4px solid var(--info); background:#eef9fc; margin:1rem 0; padding:.5rem 1rem; color:var(--muted)}
+hr{border:none; border-top:1px solid var(--border); margin:2.5rem 0}
+#TOC{
+background:var(--surface); border:1px solid var(--border); border-radius:.3rem;
+padding:1rem 1.25rem; margin:1.5rem 0 2rem;
+}
+#TOC::before{content:"Sommaire"; display:block; font-weight:600; color:var(--marine); margin-bottom:.5rem; font-size:1.1rem}
+#TOC ul{list-style:none; padding-left:1rem; margin:.25rem 0}
+#TOC>ul{padding-left:0}
+#TOC a{color:var(--text)}
+#TOC a:hover{color:var(--primary)}
+header#title-block-header h1.title{margin-bottom:1rem}
+@media print{body{max-width:none} h2{page-break-after:avoid} table{page-break-inside:avoid}}
+</style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Spécifications Fonctionnelles Détaillées — Module
+ParcInfo</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#spécifications-fonctionnelles-détaillées--module-parcinfo" id="toc-spécifications-fonctionnelles-détaillées--module-parcinfo">Spécifications
+Fonctionnelles Détaillées — Module ParcInfo</a>
+<ul>
+<li><a href="#1-présentation-générale" id="toc-1-présentation-générale">1. Présentation générale</a></li>
+<li><a href="#2-acteurs-et-rôles" id="toc-2-acteurs-et-rôles">2. Acteurs
+et rôles</a></li>
+<li><a href="#3-modèle-de-données-principales-entités" id="toc-3-modèle-de-données-principales-entités">3. Modèle de données
+(principales entités)</a></li>
+<li><a href="#4-catégories-déquipements-gérées" id="toc-4-catégories-déquipements-gérées">4. Catégories d&#39;équipements
+gérées</a></li>
+<li><a href="#5-spécifications-fonctionnelles-par-domaine" id="toc-5-spécifications-fonctionnelles-par-domaine">5. Spécifications
+fonctionnelles par domaine</a></li>
+<li><a href="#6-règles-de-gestion-transversales" id="toc-6-règles-de-gestion-transversales">6. Règles de gestion
+transversales</a></li>
+<li><a href="#7-sécurité-et-autorisations" id="toc-7-sécurité-et-autorisations">7. Sécurité et
+autorisations</a></li>
+<li><a href="#8-interfaces--ergonomie-rappel-designmd" id="toc-8-interfaces--ergonomie-rappel-designmd">8. Interfaces &amp;
+ergonomie (rappel <code>DESIGN.md</code>)</a></li>
+<li><a href="#9-points-dattention--dette-technique-identifiée" id="toc-9-points-dattention--dette-technique-identifiée">9. Points
+d&#39;attention / dette technique identifiée</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="spécifications-fonctionnelles-détaillées--module-parcinfo">Spécifications
+Fonctionnelles Détaillées — Module ParcInfo</h1>
+<p>Projet : <strong>Parc Info (CHU-YO Keystone)</strong> Application :
+Laravel 12 (PHP 8.2) — architecture modulaire
+<code>nwidart/laravel-modules</code> Module :
+<code>Modules/ParcInfo</code> Préfixe de routes web :
+<code>parc-info/</code> — Espace de noms des routes :
+<code>parc-info.*</code></p>
+<hr />
+<h2 id="1-présentation-générale">1. Présentation générale</h2>
+<h3 id="11-objet-du-module">1.1 Objet du module</h3>
+<p>Le module <strong>ParcInfo</strong> assure la gestion complète du
+parc informatique et des actifs IT d&#39;un établissement (CHU-YO). Il
+couvre :</p>
+<ul>
+<li>L&#39;inventaire de tous les équipements informatiques et réseau (poste
+de travail, serveurs, réseau, téléphonie, périphériques, infrastructure,
+sécurité).</li>
+<li>Le cycle de vie des équipements : acquisition, mise en service,
+affectation, changement d&#39;état/statut, réforme, historique.</li>
+<li>La gestion des logiciels et des licences (cycle de vie, affectation,
+renouvellement, conformité).</li>
+<li>La gestion des consommables (stock, mouvements, alertes de
+rupture).</li>
+<li>La gestion des fournisseurs, contacts et contrats de
+maintenance.</li>
+<li>Les bons de répartition (réception et distribution d&#39;équipements
+avec signature).</li>
+<li>Un moteur de <strong>configuration dynamique</strong> (catégories
+d&#39;équipements, champs personnalisés, dictionnaires de valeurs).</li>
+<li>Les <strong>analyses</strong> : états paramétrables (≈60 rapports
+exportables) et statistiques décisionnelles.</li>
+</ul>
+<h3 id="12-dépendances-inter-modules">1.2 Dépendances inter-modules</h3>
+<ul>
+<li><strong>Organisation</strong> : <code>Direction</code>,
+<code>Service</code>, <code>Unite</code>, <code>Local</code>,
+<code>Etage</code>, <code>Batiment</code>, <code>Site</code>,
+<code>PosteTravail</code>.</li>
+<li><strong>Grh</strong> : <code>DossierEmploye</code> (employés,
+matricules).</li>
+<li><strong>Core</strong> : socle applicatif (utilisateurs, layout,
+permissions).</li>
+</ul>
+<h3 id="13-briques-techniques">1.3 Briques techniques</h3>
+<ul>
+<li>Autorisations : <code>spatie/laravel-permission</code> (permissions
+et rôles <code>Admin</code> / <code>super-admin</code>).</li>
+<li>Journalisation : <code>spatie/laravel-activitylog</code>
+(traçabilité des opérations d&#39;écriture).</li>
+<li>Exports : <code>rap2hpoutre/fast-excel</code> (CSV/XLSX) et
+<code>barryvdh/laravel-dompdf</code> (PDF).</li>
+<li>Front : Blade + Bootstrap 5 + Bootstrap Table + SweetAlert2 (voir
+<code>DESIGN.md</code>).</li>
+</ul>
+<h3 id="14-principe-darchitecture-des-équipements">1.4 Principe
+d&#39;architecture des équipements</h3>
+<p>Le module repose sur un modèle <strong>hybride</strong> :</p>
+<ul>
+<li>Une <strong>table parente unique</strong>
+<code>parc_info_equipements</code> contenant les attributs communs à
+tout équipement.</li>
+<li>Un moteur <strong>dynamique</strong> : chaque équipement appartient
+à une <strong>catégorie</strong> (<code>CategorieEquipement</code>) ;
+les attributs spécifiques sont décrits par des <strong>champs
+configurables</strong> (<code>ChampConfig</code>) et stockés en JSON
+dans la colonne <code>champs_valeurs</code>.</li>
+<li>Des tables de spécialisation historiques
+(<code>parc_info_ordinateurs</code>, <code>parc_info_serveurs</code>,
+etc.) issues de la conception initiale, progressivement remplacées par
+le mécanisme dynamique (voir commande
+<code>MigrateEquipmentToDynamic</code>).</li>
+</ul>
+<p>Un <strong>seul contrôleur générique</strong>
+(<code>EquipementDynamiqueController</code>) gère toutes les catégories
+d&#39;équipements. Les routes exposent des préfixes métiers
+(<code>ordinateurs</code>, <code>serveurs</code>,
+<code>imprimantes</code>, …) qui injectent la <code>category</code>
+correspondante.</p>
+<hr />
+<h2 id="2-acteurs-et-rôles">2. Acteurs et rôles</h2>
+<table>
+<thead>
+<tr class="header">
+<th>Acteur</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Administrateur DSI (Admin / super-admin)</strong></td>
+<td>Accès complet, configuration dynamique (catégories, champs,
+dictionnaires), attribution de permissions.</td>
+</tr>
+<tr class="even">
+<td><strong>Gestionnaire de parc</strong></td>
+<td>Saisie et gestion des équipements, affectations, bons de
+répartition, consommables.</td>
+</tr>
+<tr class="odd">
+<td><strong>Gestionnaire licences/logiciels</strong></td>
+<td>Gestion du catalogue logiciel, licences, fournisseurs,
+contrats.</td>
+</tr>
+<tr class="even">
+<td><strong>Consultant / Analyste</strong></td>
+<td>Consultation, tableaux de bord, états et statistiques, exports.</td>
+</tr>
+</tbody>
+</table>
+<p>Les accès sont contrôlés par des <strong>permissions
+granulaires</strong> (Spatie). Les permissions des catégories dynamiques
+sont créées automatiquement lors de la création d&#39;une catégorie
+(<code>parcinfo.{code_pluriel}.{index|store|update|destroy}</code>) et
+affectées aux rôles <code>Admin</code> et <code>super-admin</code>.</p>
+<hr />
+<h2 id="3-modèle-de-données-principales-entités">3. Modèle de données
+(principales entités)</h2>
+<h3 id="31-équipement-parc_info_equipements">3.1 Équipement
+(<code>parc_info_equipements</code>)</h3>
+<p>Attributs communs : <code>code_inventaire</code> (unique, auto-généré
+<code>INV-{année}-{séquence}</code>), <code>numero_serie</code>
+(unique), <code>categorie_id</code>, <code>marque_id</code>,
+<code>modele</code>, <code>date_acquisition</code>,
+<code>date_mise_en_service</code>, <code>valeur_achat</code>,
+<code>duree_vie_probable</code> (années),
+<code>date_fin_garantie</code>, <code>statut</code>, <code>etat</code>,
+<code>tags</code> (array), <code>ref_bordereau</code>, rattachement
+organisationnel dénormalisé (<code>direction_id</code>,
+<code>service_id</code>, <code>unite_id</code>, <code>local_id</code>),
+<code>champs_valeurs</code> (JSON dynamique).</p>
+<p><strong>Statuts</strong> (7) : <code>en_stock_magasin</code>,
+<code>en_stock_dsi</code>, <code>en_stock</code>,
+<code>en_service</code>, <code>en_reparation</code>, <code>perdu</code>,
+<code>reforme</code>. <strong>États physiques</strong> (4) :
+<code>bon</code>, <code>passable</code>, <code>mauvais</code>,
+<code>avarie</code>.</p>
+<p>Règles automatiques (modèle) :</p>
+<ul>
+<li>Le rattachement organisationnel
+(<code>direction_id</code>/<code>service_id</code>/<code>unite_id</code>)
+est <strong>synchronisé automatiquement</strong> à partir de
+l&#39;affectation active lors de chaque sauvegarde.</li>
+<li>Toutes les modifications sont journalisées (activity log).</li>
+</ul>
+<h3 id="32-configuration-dynamique">3.2 Configuration dynamique</h3>
+<ul>
+<li><strong><code>CategorieEquipement</code></strong> :
+<code>code</code> (unique, <code>^[a-z0-9\-]+$</code>),
+<code>libelle</code>, <code>icone</code>.</li>
+<li><strong><code>ChampConfig</code></strong> : champ configurable
+rattaché à une catégorie — <code>code</code>, <code>libelle</code>,
+<code>type_champ</code>
+(<code>text|number|select|boolean|date|textarea</code>),
+<code>source_options</code> (<code>DICT:&lt;code&gt;</code> ou tableau
+JSON), <code>regles_validation</code>, <code>nom_panel</code>,
+<code>ordre_affichage</code>, visibilité
+(<code>afficher_dans_modal</code>, <code>afficher_dans_show</code>,
+<code>afficher_dans_liste</code>),
+<code>ordre_colonne_liste</code>.</li>
+<li><strong><code>Dictionnaire</code></strong> /
+<strong><code>DictionnaireValeur</code></strong> : listes de valeurs de
+référence réutilisables. Codes système non supprimables :
+<code>type_cpu</code>, <code>type_ram</code>, <code>type_disque</code>,
+<code>type_os</code>, <code>type_imprimante</code>,
+<code>type_mobile</code>.</li>
+</ul>
+<h3 id="33-affectations-et-historique">3.3 Affectations et
+historique</h3>
+<ul>
+<li><strong><code>AffectationEquipement</code></strong> :
+<code>code</code>, <code>date_debut</code>, <code>date_fin</code>,
+<code>statut</code> (bool actif), <code>type_affectation</code>
+(<code>TEMPORAIRE|PERMANENTE</code>), <code>type_cible</code>
+(<code>EMPLOYE|POSTE|LOCAL|DIRECTION|SERVICE|UNITE</code>), cibles
+(<code>dossier_employe_id</code>, <code>poste_travail_id</code>,
+<code>local_id</code>) et rattachement
+(<code>niveau_rattachement</code>, <code>direction_id</code>,
+<code>service_id</code>, <code>unite_id</code>). <strong>Une seule
+affectation active</strong> par équipement.</li>
+<li><strong><code>HistoriqueChangement</code></strong> : traçabilité par
+équipement (<code>type_changement</code> =
+<code>STATUT|ETAT|AFFECTATION|MOUVEMENT|TECHNIQUE</code>, ancien/nouveau
+statut/état, <code>motif</code>, <code>reference_document</code>,
+utilisateur, date).</li>
+</ul>
+<h3 id="34-logiciels--licences">3.4 Logiciels &amp; licences</h3>
+<ul>
+<li><strong><code>Logiciel</code></strong> : <code>code</code>,
+<code>nom</code>, <code>editeur_id</code>, <code>type_licence_id</code>,
+<code>est_actif</code>.</li>
+<li><strong><code>Editeur</code></strong>,
+<strong><code>TypeLicence</code></strong> : référentiels.</li>
+<li><strong><code>Licence</code></strong> : <code>logiciel_id</code>,
+<code>cle_licence</code>, <code>numero_contrat</code>,
+<code>contrat_maintenance_id</code>, <code>type_activation</code>
+(<code>volume|concurrent|subscription|free</code>),
+<code>modele_licencing</code>
+(<code>device|user|concurrent|named</code>),
+<code>nombre_postes_accordes</code>,
+<code>nombre_postes_utilises</code>, dates (<code>acquisition</code>,
+<code>activation</code>, <code>expiration</code>,
+<code>renouvellement</code>), coûts (<code>cout_unitaire</code>,
+<code>cout_total</code>, <code>devise</code>),
+<code>fournisseur_id</code>, <code>contact_support_id</code>,
+<code>statut</code>
+(<code>actif|expire|en_renouvellement|suspendu</code>),
+<code>actif</code> (bool).</li>
+<li><strong><code>AffectationLicence</code></strong> : rattachement
+d&#39;une licence à un équipement ou un employé (<code>actif</code>,
+<code>date_affectation</code>, <code>date_fin_affectation</code>).</li>
+<li><strong><code>DocumentLicence</code></strong> : documents rattachés
+(nom, type, chemin, date, notes).</li>
+</ul>
+<h3 id="35-consommables">3.5 Consommables</h3>
+<ul>
+<li><strong><code>Consommable</code></strong> : <code>code</code>,
+<code>nom</code>, <code>type_consommable_id</code>,
+<code>marque_id</code>, <code>modele_reference</code>,
+<code>compatible_equipements</code> (JSON),
+<code>fournisseur_principal_id</code>, <code>cout_unitaire</code>,
+<code>quantite_stock_actuel</code>, <code>quantite_stock_min</code>,
+<code>quantite_stock_max</code>, <code>stock_reserve_maintenance</code>,
+<code>date_dernier_approvisionnement</code>,
+<code>est_actif</code>.</li>
+<li><strong><code>MouvementConsommable</code></strong> : mouvements de
+stock (<code>Consommation</code>/<code>Achat</code>, quantité, date,
+utilisateur, cibles équipement/employé/service/unité, prix, référence
+commande).</li>
+<li><strong><code>AffectationConsommable</code></strong> : consommable
+fourni à un équipement (quantité, date, remplacement prévu).</li>
+<li><strong><code>TypeConsommable</code></strong> : référentiel.</li>
+</ul>
+<h3 id="36-fournisseurs">3.6 Fournisseurs</h3>
+<ul>
+<li><strong><code>Fournisseur</code></strong> : <code>code</code>,
+<code>nom</code>, <code>type</code>, coordonnées,
+<code>conditions_paiement</code>, <code>delai_livraison</code>,
+<code>fiabilite_score</code>, <code>est_actif</code>.</li>
+<li><strong><code>Contact</code></strong> : contacts rattachés à un
+fournisseur.</li>
+<li><strong><code>ContratMaintenance</code></strong> :
+<code>reference</code>, <code>nom</code>, <code>fournisseur_id</code>,
+dates, <code>cout</code>, <code>est_actif</code>.</li>
+</ul>
+<h3 id="37-bons-de-répartition">3.7 Bons de répartition</h3>
+<ul>
+<li><strong><code>BonRepartition</code></strong> :
+<code>numero_bon</code>, <code>fournisseur_id</code>,
+<code>date_bon</code>, statut dérivé
+(<code>en_cours</code>/<code>cloture</code>).</li>
+<li><strong><code>LigneBonRepartition</code></strong> : équipement,
+destination (<code>type_cible</code>, direction/service),
+<code>nom_receptionniste</code>, <code>date_livraison</code>,
+<code>est_signe</code>, <code>date_signature</code>,
+<code>affectation_id</code>, <code>observation</code>.</li>
+</ul>
+<hr />
+<h2 id="4-catégories-déquipements-gérées">4. Catégories d&#39;équipements
+gérées</h2>
+<p>Catégories socle (« hardcodées ») avec routes dédiées :
+<strong>Ordinateur, Écran, Unité Centrale, Serveur (physique), Serveur
+Virtuel, Mobile/Tablette, Switch, Routeur, WiFi, Pare-feu, Onduleur,
+Baie/Rack, Brassage, Caméra IP, Imprimante, Scanner, Téléphonie,
+Terminal IP</strong>.</p>
+<p>Chaque catégorie dispose d&#39;un jeu de <strong>champs dynamiques
+préconfigurés</strong> (voir <code>ParcInfoConfigSeeder</code>)
+regroupés en panneaux (ex. ordinateur : <code>Configuration</code>,
+<code>Performances</code>, <code>Stockage</code>,
+<code>Système &amp; Licences</code>, <code>Sécurité &amp; BIOS</code>,
+<code>Réseau</code>).</p>
+<p><strong>Catégories dynamiques</strong> : toute catégorie créée par un
+administrateur (hors liste socle) obtient automatiquement, au runtime,
+un jeu complet de routes CRUD + recherche + affectation
+(<code>informatique/{pluriel}</code>).</p>
+<hr />
+<h2 id="5-spécifications-fonctionnelles-par-domaine">5. Spécifications
+fonctionnelles par domaine</h2>
+<h3 id="51-tableau-de-bord-dashboardcontroller-parcinfocontrollerdashboard">5.1
+Tableau de bord (<code>DashboardController</code>,
+<code>ParcInfoController@dashboard</code>)</h3>
+<p><strong>Route</strong> : <code>GET /parc-info/dashboard</code> —
+Permission : <code>parcinfo.dashboard.view</code>.</p>
+<p>Le tableau de bord présente :</p>
+<ul>
+<li><strong>Compteurs globaux</strong> : total équipements, en service,
+en réparation, hors service (perdu + réformé), en stock.</li>
+<li><strong>Ventilation par catégorie</strong> : postes de travail,
+serveurs (physiques + virtuels), imprimantes, scanners, téléphones,
+caméras, mobiles, équipements réseau (switch + routeur + pare-feu + wifi
++ terminaux IP), licences actives, consommables actifs.</li>
+<li><strong>Alertes</strong> : garanties expirées, renouvellements
+prévus (garantie ≤ 90 j), licences expirées / en alerte / surexploitées,
+consommables en rupture.</li>
+<li><strong>Flux récents</strong> : 5 derniers équipements créés (icône,
+libellé de site, badge statut, lien de détail).</li>
+<li><strong>Graphiques</strong> : répartition par type (6 segments),
+répartition par statut, répartition par état physique.</li>
+</ul>
+<p><strong>Recherche globale</strong> :
+<code>GET /parc-info/search/equipements</code> (JSON) — recherche sur
+code, modèle, numéro de série, marque ; filtres <code>type</code> et
+<code>statut</code>.</p>
+<h3 id="52-gestion-des-équipements-equipementdynamiquecontroller">5.2
+Gestion des équipements
+(<code>EquipementDynamiqueController</code>)</h3>
+<h4 id="521-liste-index--getdata">5.2.1 Liste (<code>index</code> /
+<code>getData</code>)</h4>
+<ul>
+<li><strong><code>index</code></strong> affiche la page liste d&#39;une
+catégorie : filtres (site, direction, statut), colonnes dynamiques
+(<code>afficher_dans_liste</code>), et modal de saisie
+(<code>afficher_dans_modal</code>).</li>
+<li><strong><code>getData</code></strong> (JSON, pagination Bootstrap
+Table) : chargement avec marque + affectation active complète ; filtres
+<code>statut</code>, <code>site_id</code>, <code>direction_id</code> ;
+recherche plein texte sur code, numéro de série, modèle, marque et
+<strong>valeurs dynamiques</strong> (<code>champs_valeurs::text</code>)
+; tri et pagination serveur.</li>
+</ul>
+<h4 id="522-création-store">5.2.2 Création (<code>store</code>)</h4>
+<ul>
+<li>Génère <code>code_inventaire</code> automatiquement si absent.</li>
+<li>Validation statique (unicité code/série, dates, valeur, statut/état)
+<strong>+ validation dynamique</strong> issue des
+<code>ChampConfig</code> de la catégorie.</li>
+<li>Transaction : création de l&#39;équipement, normalisation des
+<code>tags</code>, écriture des <code>champs_valeurs</code>.</li>
+<li><strong>Affectation initiale optionnelle</strong> : si
+<code>type_cible</code> fourni et <code>skip_affectation</code> faux,
+création d&#39;une <code>AffectationEquipement</code> (PERMANENTE, active),
+résolution du rattachement, historisation <code>AFFECTATION</code> (et
+<code>MOUVEMENT</code> si local).</li>
+</ul>
+<h4 id="523-consultation-show--showjson">5.2.3 Consultation
+(<code>show</code> / <code>showJson</code>)</h4>
+<ul>
+<li>Fiche complète : caractéristiques, champs dynamiques groupés par
+panneau, affectation active, historique complet, affectations de
+licences, lignes de bons, licences disponibles.</li>
+<li>Pattern « In-Place Edit » : champs désactivés par défaut, activés
+via bouton « Modifier ».</li>
+</ul>
+<h4 id="524-modification-update">5.2.4 Modification
+(<code>update</code>)</h4>
+<ul>
+<li>Mise à jour des caractéristiques et <code>champs_valeurs</code>
+(hors affectation).</li>
+<li>Un changement de <code>local_id</code> génère un historique
+<code>MOUVEMENT</code> (ancien → nouvel emplacement).</li>
+</ul>
+<h4 id="525-changement-de-statut--détat-updatestatut--updateetat">5.2.5
+Changement de statut / d&#39;état (<code>updateStatut</code> /
+<code>updateEtat</code>)</h4>
+<ul>
+<li><strong>Statut</strong> : motif obligatoire ; si passage vers un
+statut <code>en_stock*</code> avec affectation active, celle-ci est
+<strong>fermée automatiquement</strong> ; historisation
+<code>STATUT</code>.</li>
+<li><strong>État</strong> : motif obligatoire ; historisation
+<code>ETAT</code>.</li>
+</ul>
+<h4 id="526-affectation--désaffectation-storeaffectation--desaffecter">5.2.6
+Affectation / Désaffectation (<code>storeAffectation</code> /
+<code>desaffecter</code>)</h4>
+<ul>
+<li><strong>Affectation</strong> : ferme l&#39;affectation active existante,
+crée la nouvelle affectation (cible
+EMPLOYE/POSTE/LOCAL/DIRECTION/SERVICE/UNITE), <strong>mise en service
+automatique</strong> si l&#39;équipement était en stock ; historisation
+<code>AFFECTATION</code> (+ <code>MOUVEMENT</code> si local).</li>
+<li><strong>Désaffectation</strong> : motif obligatoire ; ferme
+l&#39;affectation, remet l&#39;équipement <code>en_stock</code> et
+<code>local_id = null</code> ; triple historisation
+(<code>AFFECTATION</code>, <code>STATUT</code>,
+<code>MOUVEMENT</code>).</li>
+</ul>
+<h4 id="527-suppression-destroy">5.2.7 Suppression
+(<code>destroy</code>)</h4>
+<ul>
+<li>Suppression de l&#39;équipement (cascade sur
+affectations/historique).</li>
+</ul>
+<h4 id="528-ajouts-rapides--recherches">5.2.8 Ajouts rapides &amp;
+recherches</h4>
+<ul>
+<li><code>storeMarque</code> (unicité libellé),
+<code>storeDictionnaireValeur</code> (ajout valeur dictionnaire depuis
+les formulaires).</li>
+<li>Recherches AJAX : <code>searchEmployes</code>,
+<code>searchPostes</code>, <code>searchLocaux</code> (autocomplétion,
+limite 20).</li>
+</ul>
+<h4 id="529-impression-détiquettes">5.2.9 Impression d&#39;étiquettes</h4>
+<ul>
+<li>Étiquette unitaire (<code>imprimerEtiquette</code>).</li>
+<li>Étiquettes multiples (<code>imprimerEtiquettesSelectionnees</code>,
+sélection par IDs).</li>
+<li><strong>Centre d&#39;impression</strong> (<code>centreImpression</code>
++ <code>getEquipementsData</code>) : sélection multi-critères
+(catégorie, statut, site, direction, recherche) pour impression en
+lot.</li>
+</ul>
+<h3 id="53-logiciels-logicielcontroller">5.3 Logiciels
+(<code>LogicielController</code>)</h3>
+<p>CRUD catalogue logiciel : liste filtrée (éditeur, type de licence,
+recherche), création/édition, activation/désactivation
+(<code>toggleStatus</code>), suppression <strong>bloquée si des licences
+sont rattachées</strong>. Quick-add éditeur. Consultation avec panneau
+de création de licence intégré.</p>
+<h3 id="54-licences-licencecontroller">5.4 Licences
+(<code>LicenceController</code>)</h3>
+<p>Cycle de vie complet :</p>
+<ul>
+<li><strong>Liste + statistiques</strong> : total actives, expirant sous
+30 j, expirées, surexploitées, coût annuel total.</li>
+<li><strong>Création / édition / activation / suppression</strong>
+(suppression bloquée si affectations actives).</li>
+<li><strong>Affectation</strong> (<code>affecter</code>) : à un
+équipement (<code>device</code>) ou un employé (<code>user</code>) ;
+contrôle de capacité (<code>postes_utilises &lt; postes_accordes</code>,
+sauf si accordés = 0) ; incrément du compteur d&#39;utilisation.</li>
+<li><strong>Désaffectation</strong> (<code>desaffecter</code>) : clôture
+de l&#39;affectation, décrément du compteur.</li>
+<li><strong>Renouvellement</strong> (<code>renouveler</code>) : nouvelle
+date d&#39;expiration (postérieure à l&#39;actuelle), remise en statut
+<code>actif</code>, ajout du coût de renouvellement au coût total.</li>
+<li><strong>Indicateurs</strong> (accesseurs) :
+<code>taux_utilisation</code>, <code>statut_validite</code>
+(<code>VALIDE</code>/<code>ALERTE</code>/<code>EXPIREE</code>),
+<code>disponibilites</code>.</li>
+<li>Quick-add fournisseur et contrat depuis le formulaire de
+licence.</li>
+</ul>
+<p><strong>Traitement automatisé</strong>
+(<code>Jobs\VerifierExpirationLicences</code>) :</p>
+<ul>
+<li>Licences expirant sous 30 j (et non expirées) → statut
+<code>en_alerte</code> + log.</li>
+<li>Licences expirées → statut <code>expire</code> +
+<code>actif = false</code> + log.</li>
+</ul>
+<h3 id="55-consommables-consommablecontroller">5.5 Consommables
+(<code>ConsommableController</code>)</h3>
+<ul>
+<li><strong>Liste + statistiques</strong> : total, en rupture, valeur
+totale du stock, mouvements du mois.</li>
+<li>Filtres : type, statut de stock (<code>rupture</code> ≤ min,
+<code>alerte</code> ≤ min × 1,5).</li>
+<li><strong>Création / édition / activation / suppression</strong>
+(suppression bloquée si historique de mouvements).</li>
+<li><strong>Consommation</strong> (<code>consommer</code>) : sortie de
+stock ; contrôle de stock suffisant ; création d&#39;un mouvement
+<code>Consommation</code> ; affectation à un équipement optionnelle ;
+décrément du stock.</li>
+<li><strong>Approvisionnement</strong> (<code>approvisionner</code>) :
+entrée de stock ; mouvement <code>Achat</code> ; mise à jour de la date
+d&#39;approvisionnement ; incrément du stock.</li>
+<li>Quick-add type de consommable.</li>
+<li><strong>Service <code>GestionStockService</code></strong> :
+détection des ruptures, recommandations de réapprovisionnement
+(quantité, coût prévisionnel, urgence), renouvellements prévus (≤ 7
+j).</li>
+</ul>
+<h3 id="56-fournisseurs-contacts-contrats">5.6 Fournisseurs, contacts,
+contrats</h3>
+<ul>
+<li><strong>Fournisseurs</strong> (<code>FournisseurController</code>) :
+CRUD, activation/désactivation, suppression bloquée si licences
+rattachées.</li>
+<li><strong>Contacts</strong> : CRUD imbriqué au fournisseur (nom
+<strong>ou</strong> prénom requis).</li>
+<li><strong>Contrats de maintenance</strong>
+(<code>ContratMaintenanceController</code>) : CRUD, référence unique,
+dates cohérentes, suppression bloquée si licences rattachées.</li>
+</ul>
+<h3 id="57-bons-de-répartition-bonrepartitioncontroller">5.7 Bons de
+répartition (<code>BonRepartitionController</code>)</h3>
+<p>Workflow de réception/distribution :</p>
+<ol type="1">
+<li><strong>Création</strong> du bon (fournisseur, date, numéro).</li>
+<li><strong>Ajout de lignes</strong> (<code>addLigne</code>) :
+uniquement des équipements en stock, non déjà présents dans un bon en
+attente.</li>
+<li><strong>Modification/suppression de lignes</strong> possible tant
+que non signées.</li>
+<li><strong>Signature de ligne</strong> (<code>signerLigne</code>) =
+réception effective : clôture de l&#39;affectation active existante,
+création d&#39;une affectation permanente (destination direction/service),
+passage de l&#39;équipement <code>en_service</code>, double historisation
+(<code>STATUT</code> + <code>AFFECTATION</code>), ligne marquée
+signée.</li>
+<li><strong>Statut du bon</strong> : <code>cloture</code> lorsque toutes
+les lignes sont signées, sinon <code>en_cours</code>.</li>
+<li><strong>Impression PDF</strong> (<code>imprimer</code>, A4
+paysage).</li>
+<li><strong>Suppression</strong> du bon interdite s&#39;il contient au moins
+une ligne signée.</li>
+</ol>
+<h3 id="58-référentiels">5.8 Référentiels</h3>
+<p>CRUD standardisés (liste filtrée + data JSON + modal) pour : Types
+CPU, Types Disque, Types OS, Types RAM, Marques, Types Imprimante, Types
+Mobile, Types Licence, Types Consommable, Éditeurs.</p>
+<p><strong>Catégories d&#39;équipement</strong>
+(<code>CategorieController</code>) :</p>
+<ul>
+<li>CRUD catégories ; création génère automatiquement 4 permissions
+Spatie et les attribue à <code>Admin</code>/<code>super-admin</code> ;
+suppression bloquée si des équipements existent (sinon nettoyage des
+champs + permissions).</li>
+<li>Gestion imbriquée des <strong>champs dynamiques</strong>
+(<code>ChampConfig</code>) : code (<code>^[a-z0-9_]+$</code>, unique par
+catégorie), type, source d&#39;options, règles de validation, panneau,
+ordre, visibilités.</li>
+</ul>
+<p><strong>Dictionnaires</strong> (<code>DictionnaireController</code>)
+:</p>
+<ul>
+<li>CRUD dictionnaires (code <code>^[a-z0-9_]+$</code>) ; codes système
+protégés (non supprimables/non renommables sur le code).</li>
+<li>Gestion des <strong>valeurs</strong> (unicité par dictionnaire) ;
+suppression d&#39;un dictionnaire bloquée s&#39;il contient des valeurs.</li>
+</ul>
+<h3 id="59-analyses">5.9 Analyses</h3>
+<h4 id="591-états-paramétrables-analyseetatcontroller--permission-parc-infoanalyseetatsview">5.9.1
+États paramétrables (<code>Analyse\EtatController</code>) — permission
+<code>parc-info.analyse.etats.view</code></h4>
+<p>Moteur de rapports piloté par <code>report_type</code> (≈60 types)
+avec filtres (direction, service, statut, état, recherche), pagination,
+et <strong>export</strong> CSV / Excel (FastExcel) / PDF (DomPDF
+paysage). Familles de rapports :</p>
+<ul>
+<li>Parc global, par statut, par état.</li>
+<li>Garantie (jours restants / expirée), fin de vie théorique.</li>
+<li>Historique des changements.</li>
+<li>Affectation organisationnelle : non affectés, par
+direction/service/unité/site/local/employé/poste, structures vides,
+distribution organisationnelle.</li>
+<li>Fiches techniques par type d&#39;équipement (ordinateurs, serveurs
+physiques/virtuels, imprimantes, scanners, réseau, téléphones IP,
+mobiles, caméras, infrastructure).</li>
+<li>Licences : utilisation, expirées, sous/sur-utilisées, par
+employé/équipement, documents, logiciels par éditeur.</li>
+<li>Consommables : état des stocks, sous seuil, affectations,
+remplacements en retard, mouvements, mouvements par structure.</li>
+<li>Contrats &amp; fournisseurs : contrats actifs/expirant, équipements
+couverts/non couverts, fournisseurs actifs.</li>
+<li>Utilisateurs &amp; accès : rôles/permissions, employés sans compte,
+comptes sans dossier employé.</li>
+</ul>
+<h4 id="592-statistiques-décisionnelles-analysestatistiquescontroller--permission-parc-infoanalysestatistiquesview">5.9.2
+Statistiques décisionnelles
+(<code>Analyse\StatistiquesController</code>) — permission
+<code>parc-info.analyse.statistiques.view</code></h4>
+<p>Agrégats (JSON) en 8 blocs :</p>
+<ol type="1">
+<li>Volumétrie (par type, statut, état, top marques).</li>
+<li>Valeur résiduelle &amp; vétusté (amortissement linéaire), taux de
+disponibilité.</li>
+<li>Parc par organisation (direction/service, taux de couverture, pires
+directions).</li>
+<li>Affectations (actives/terminées, durées moyennes, plus
+réaffectés).</li>
+<li>Licences &amp; conformité (coûts, sièges, taux, par
+modèle/statut/éditeur).</li>
+<li>Consommables (valeur stock, ruptures, coût par service,
+achats).</li>
+<li>Maintenance &amp; incidents (réparations, durée moyenne,
+récurrences, réformes).</li>
+<li>Finances (contrats, consommables, licences, budget estimé, ratio
+équipement/employé).</li>
+</ol>
+<hr />
+<h2 id="6-règles-de-gestion-transversales">6. Règles de gestion
+transversales</h2>
+<table>
+<thead>
+<tr class="header">
+<th>#</th>
+<th>Règle</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>RG-01</td>
+<td>Un équipement possède <strong>au plus une affectation
+active</strong> à un instant donné.</td>
+</tr>
+<tr class="even">
+<td>RG-02</td>
+<td>Toute création/changement/désaffectation ferme l&#39;affectation active
+précédente.</td>
+</tr>
+<tr class="odd">
+<td>RG-03</td>
+<td>L&#39;affectation d&#39;un équipement en stock le passe automatiquement
+<code>en_service</code>.</td>
+</tr>
+<tr class="even">
+<td>RG-04</td>
+<td>La désaffectation (ou passage en <code>en_stock*</code> alors qu&#39;une
+affectation est active) clôture l&#39;affectation et remet en stock.</td>
+</tr>
+<tr class="odd">
+<td>RG-05</td>
+<td>Le rattachement organisationnel de l&#39;équipement est dérivé de
+l&#39;affectation active (synchronisation automatique).</td>
+</tr>
+<tr class="even">
+<td>RG-06</td>
+<td>Toute mutation (statut, état, affectation, mouvement) est historisée
+avec motif et utilisateur.</td>
+</tr>
+<tr class="odd">
+<td>RG-07</td>
+<td>Les champs spécifiques d&#39;un équipement sont pilotés par la
+configuration dynamique de sa catégorie (validation + affichage).</td>
+</tr>
+<tr class="even">
+<td>RG-08</td>
+<td>Le <code>code_inventaire</code> est unique et auto-généré
+(<code>INV-{année}-{séquence}</code>) ; le <code>numero_serie</code> est
+unique.</td>
+</tr>
+<tr class="odd">
+<td>RG-09</td>
+<td>Une licence ne peut être affectée au-delà de son nombre de postes
+accordés (sauf accordés = 0).</td>
+</tr>
+<tr class="even">
+<td>RG-10</td>
+<td>Les compteurs de postes de licence sont maintenus par les
+affectations/désaffectations.</td>
+</tr>
+<tr class="odd">
+<td>RG-11</td>
+<td>Une sortie de consommable est refusée si le stock est
+insuffisant.</td>
+</tr>
+<tr class="even">
+<td>RG-12</td>
+<td>Suppressions protégées : logiciel (licences liées),
+fournisseur/contrat (licences liées), catégorie (équipements liés),
+dictionnaire (valeurs liées), consommable (mouvements liés), bon (ligne
+signée), licence (affectations actives).</td>
+</tr>
+<tr class="odd">
+<td>RG-13</td>
+<td>Les dictionnaires et catégories « système » (codes réservés) sont
+protégés contre la suppression/renommage.</td>
+</tr>
+<tr class="even">
+<td>RG-14</td>
+<td>Une ligne de bon signée est immuable ; sa signature déclenche mise
+en service + affectation.</td>
+</tr>
+<tr class="odd">
+<td>RG-15</td>
+<td>Le job d&#39;expiration bascule automatiquement les licences en
+alerte/expirées.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="7-sécurité-et-autorisations">7. Sécurité et autorisations</h2>
+<ul>
+<li>Toutes les routes web sont protégées par le middleware
+<code>auth</code>.</li>
+<li>Les permissions sont définies dans
+<code>config/permissions.php</code> (dashboard, un jeu par catégorie
+socle, référentiels, analyses) et complétées dynamiquement à la création
+de catégories.</li>
+<li>Les contrôleurs d&#39;analyse et de référentiels appliquent des
+middlewares <code>permission:</code> par action.</li>
+</ul>
+<h2 id="8-interfaces--ergonomie-rappel-designmd">8. Interfaces &amp;
+ergonomie (rappel <code>DESIGN.md</code>)</h2>
+<ul>
+<li>Style <strong>plat et minimaliste</strong>, dense, orienté données ;
+Bootstrap 5, police <em>Source Sans 3</em>.</li>
+<li>Listes : carte de filtres → barre d&#39;outils (boutons icônes) →
+tableau Bootstrap Table.</li>
+<li>Formulaires en modales (<code>modal-lg</code>), fiches en « In-Place
+Edit ».</li>
+<li>Confirmations destructives via SweetAlert2.</li>
+<li>Contrainte d&#39;identité CHU-YO : pas de croix médicale.</li>
+</ul>
+<h2 id="9-points-dattention--dette-technique-identifiée">9. Points
+d&#39;attention / dette technique identifiée</h2>
+<ul>
+<li>La vérification de permission de
+<code>DashboardController@index</code> est actuellement
+<strong>désactivée</strong> (abort commenté).</li>
+<li>Coexistence des tables de spécialisation historiques et du modèle
+dynamique (<code>champs_valeurs</code>) ; migration en cours via
+<code>MigrateEquipmentToDynamic</code>.</li>
+<li>L&#39;affectation de licence est possible si
+<code>nombre_postes_accordes = 0</code> (le contrôle de capacité est
+alors contourné).</li>
+<li>Le job <code>VerifierExpirationLicences</code> utilise le statut
+<code>en_alerte</code> alors que l&#39;énumération de statut prévoit
+<code>en_renouvellement</code>/<code>suspendu</code> (à
+harmoniser).</li>
+</ul>
+<hr />
+<p><em>Document généré par analyse du code source du module
+<code>Modules/ParcInfo</code>.</em></p>
+</body>
+</html>

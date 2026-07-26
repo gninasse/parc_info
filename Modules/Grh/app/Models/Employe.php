@@ -88,6 +88,6 @@ class Employe extends Model
 
     protected static function newFactory()
     {
-        return \Modules\Grh\database\factories\EmployeFactory::new();
+        return \Modules\Grh\Database\Factories\EmployeFactory::new();
     }
 }
