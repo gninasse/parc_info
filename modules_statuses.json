@@ -3,6 +3,5 @@
     "Organisation": true,
     "ParcInfo": true,
     "Grh": true,
-    "Achat": true,
-    "Stock": true
+    "Achat": true
 }

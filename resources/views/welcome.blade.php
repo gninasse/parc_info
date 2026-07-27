@@ -104,7 +104,9 @@
                         <div class="btn-group">
                             <a href="{{ route('parc-info.dashboard') }}" class="btn btn-outline-light">Parc Informatique</a>
                             <a href="{{ route('achat.dashboard.index') }}" class="btn btn-outline-light">Achats & Appro.</a>
-                            <a href="{{ route('stock.dashboard.index') }}" class="btn btn-outline-light">Stocks</a>
+                            @if (Route::has('stock.dashboard.index'))
+                                <a href="{{ route('stock.dashboard.index') }}" class="btn btn-outline-light">Stocks</a>
+                            @endif
                             <a href="{{ route('grh.dashboard') }}" class="btn btn-outline-light">GRH</a>
                             <a href="{{ route('cores.dashboard') }}" class="btn btn-outline-light">Administration</a>
                         </div>
@@ -129,9 +131,11 @@
                         <a href="{{ route('achat.dashboard.index') }}" class="btn btn-lg btn-success">
                             <i class="fas fa-shopping-cart me-2"></i> Achats & Appro.
                         </a>
-                        <a href="{{ route('stock.dashboard.index') }}" class="btn btn-lg btn-success">
-                            <i class="fas fa-warehouse me-2"></i> Stocks
-                        </a>
+                        @if (Route::has('stock.dashboard.index'))
+                            <a href="{{ route('stock.dashboard.index') }}" class="btn btn-lg btn-success">
+                                <i class="fas fa-warehouse me-2"></i> Stocks
+                            </a>
+                        @endif
                         <a href="{{ route('grh.dashboard') }}" class="btn btn-lg btn-success">
                             <i class="fas fa-user-tie me-2"></i> Gestion RH
                         </a>
@@ -182,7 +186,9 @@
                                 <h3 class="mb-0">Stocks & Magasins</h3>
                             </div>
                             <p class="text-muted">Gestion des magasins, réception des équipements (wizard de staging), mouvements d'entrée/sortie et suivi des niveaux de stock.</p>
-                            <a href="{{ route('stock.dashboard.index') }}" class="btn btn-sm btn-outline-success mt-auto align-self-start">Ouvrir le module</a>
+                            @if (Route::has('stock.dashboard.index'))
+                                <a href="{{ route('stock.dashboard.index') }}" class="btn btn-sm btn-outline-success mt-auto align-self-start">Ouvrir le module</a>
+                            @endif
                         </div>
                     </div>
                     <div class="col-lg-3 col-md-6">
