@@ -15,8 +15,10 @@ use Modules\Stock\Services\GrhIntegrationService;
 use Modules\Stock\Services\MagasinService;
 use Modules\Stock\Services\OrganisationIntegrationService;
 use Modules\Stock\Services\ParcInfoIntegrationService;
+use Modules\Stock\Services\SortieStockService;
 use Modules\Stock\Services\StockArticleService;
 use Modules\Stock\Services\StockQueryService;
+use Modules\Stock\Services\TransfertService;
 
 class StockServiceProvider extends ServiceProvider
 {
@@ -52,6 +54,8 @@ class StockServiceProvider extends ServiceProvider
         $this->app->singleton(StockArticleService::class);
         $this->app->singleton(FifoService::class);
         $this->app->singleton(EntreeStockService::class);
+        $this->app->singleton(SortieStockService::class);
+        $this->app->singleton(TransfertService::class);
     }
 
     protected function registerConfig(): void
@@ -118,6 +122,8 @@ class StockServiceProvider extends ServiceProvider
             StockArticleService::class,
             FifoService::class,
             EntreeStockService::class,
+            SortieStockService::class,
+            TransfertService::class,
         ];
     }
 }

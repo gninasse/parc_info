@@ -21,4 +21,13 @@ interface GrhIntegrationInterface
 
     /** Libellé court d'un employé (matricule + nom), ou null. */
     public function libelleEmploye(int $employeId): ?string;
+
+    /**
+     * Identifiants des comptes utilisateurs rattachés à ces employés
+     * (destinataires des notifications in-app).
+     *
+     * @param  list<int>  $employeIds
+     * @return list<int>
+     */
+    public function utilisateursDesEmployes(array $employeIds): array;
 }

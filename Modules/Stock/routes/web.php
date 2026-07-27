@@ -4,7 +4,9 @@ use Illuminate\Support\Facades\Route;
 use Modules\Stock\Http\Controllers\DashboardController;
 use Modules\Stock\Http\Controllers\EntreeController;
 use Modules\Stock\Http\Controllers\MagasinController;
+use Modules\Stock\Http\Controllers\SortieController;
 use Modules\Stock\Http\Controllers\StockArticleController;
+use Modules\Stock\Http\Controllers\TransfertController;
 
 /*
 |--------------------------------------------------------------------------
@@ -43,4 +45,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('entrees', EntreeController::class)
         ->only(['index', 'show', 'store', 'destroy'])
         ->parameters(['entrees' => 'mouvement']);
+
+    // ── F4 — Sorties ───────────────────────────────────────────────────────
+    Route::get('sorties/data', [SortieController::class, 'getData'])->name('sorties.data');
+    Route::get('sorties/articles', [SortieController::class, 'articles'])->name('sorties.articles');
+    Route::get('sorties/cibles', [SortieController::class, 'cibles'])->name('sorties.cibles');
+    Route::post('sorties/regularisation', [SortieController::class, 'regularisation'])->name('sorties.regularisation');
+    Route::resource('sorties', SortieController::class)
+        ->only(['index', 'show', 'store'])
+        ->parameters(['sorties' => 'mouvement']);
+
+    // ── F5 — Transferts ────────────────────────────────────────────────────
+    Route::get('transferts/data', [TransfertController::class, 'getData'])->name('transferts.data');
+    Route::get('transferts/articles', [TransfertController::class, 'articles'])->name('transferts.articles');
+    Route::post('transferts/{transfert}/valider', [TransfertController::class, 'valider'])->name('transferts.valider');
+    Route::post('transferts/{transfert}/rejeter', [TransfertController::class, 'rejeter'])->name('transferts.rejeter');
+    Route::post('transferts/{transfert}/annuler', [TransfertController::class, 'annuler'])->name('transferts.annuler');
+    Route::resource('transferts', TransfertController::class)->only(['index', 'show', 'store']);
 });

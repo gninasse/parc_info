@@ -35,4 +35,19 @@ class GrhIntegrationService implements GrhIntegrationInterface
 
         return $employe ? trim("{$employe->matricule} — {$employe->nom} {$employe->prenom}") : null;
     }
+
+    public function utilisateursDesEmployes(array $employeIds): array
+    {
+        if ($employeIds === []) {
+            return [];
+        }
+
+        return Employe::whereIn('id', $employeIds)
+            ->with('users:id,dossier_employe_id')
+            ->get()
+            ->flatMap(fn (Employe $employe) => $employe->users->pluck('id'))
+            ->unique()
+            ->values()
+            ->all();
+    }
 }
