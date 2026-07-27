@@ -29,8 +29,6 @@ class StoreConsommableRequest extends FormRequest
             'modele_reference' => 'nullable|string|max:255',
             'fournisseur_principal_id' => 'required|exists:parc_info_fournisseurs,id',
             'cout_unitaire' => 'required|numeric|min:0',
-            'quantite_stock_min' => 'required|integer|min:0',
-            'quantite_stock_max' => 'required|integer|min:0|gte:quantite_stock_min',
             'est_actif' => 'boolean',
             'notes' => 'nullable|string',
         ];

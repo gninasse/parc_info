@@ -10,18 +10,12 @@ window.consommablesQueryParams = function(params) {
         search: params.search,
         sort: params.sort,
         order: params.order,
-        type_consommable_id: $('#filter-type').val(),
-        statut: $('#filter-statut').val()
+        type_consommable_id: $('#filter-type').val()
     };
 };
 
 window.codeFormatter = function(value, row) {
     return `<a href="${route('parc-info.consommables.show', row.id)}" class="fw-bold text-primary text-decoration-none">${value}</a>`;
-};
-
-window.stockFormatter = function(value, row) {
-    const isLow = row.stock_actuel <= parseInt(row.seuil.split('/')[0].trim());
-    return `<span class="fw-bold ${isLow ? 'text-danger' : 'text-dark'}">${value}</span> <small class="text-muted">${row.unite}</small>`;
 };
 
 window.statusFormatter = function(value, row) {
@@ -76,16 +70,13 @@ document.addEventListener('DOMContentLoaded', function() {
     $table.on('load-success.bs.table', function (e, data) {
         if (data.stats) {
             $('#kpi-total').text(data.stats.total);
-            $('#kpi-rupture').text(data.stats.en_rupture);
-            $('#kpi-valeur').text(new Intl.NumberFormat('fr-FR').format(data.stats.valeur_totale) + ' €');
-            $('#kpi-mouvements').text(data.stats.mouvements_mois);
         }
     });
 
     // ── FILTRES ──
     $('#btn-apply-filters').on('click', () => $table.bootstrapTable('refresh'));
     $('#btn-reset-filters').on('click', () => {
-        $('#filter-type, #filter-statut').val('').trigger('change');
+        $('#filter-type').val('').trigger('change');
         $table.bootstrapTable('refresh');
     });
 
@@ -229,7 +220,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const id = $table.bootstrapTable('getSelections')[0].id;
         Swal.fire({
             title: 'Supprimer ce consommable ?',
-            text: "Cette action est irréversible et impossible si des mouvements de stock y sont associés.",
+            text: 'Cette action est irréversible.',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#dc3545',

@@ -136,20 +136,6 @@
                 </div>
             </div>
         </div>
-        {{-- Card 7: Ruptures Stock Consommables --}}
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm stat-card h-100">
-                <div class="card-body d-flex align-items-center">
-                    <div class="card-icon bg-danger-subtle text-danger me-3">
-                        <i class="bi bi-cart-x"></i>
-                    </div>
-                    <div>
-                        <h6 class="text-muted small mb-1">Ruptures Stock</h6>
-                        <h4 class="fw-bold mb-0" id="stat-rupture-stock">0 réf.</h4>
-                    </div>
-                </div>
-            </div>
-        </div>
         {{-- Card 8: Budget Informatique Estimé --}}
         <div class="col-md-3">
             <div class="card border-0 shadow-sm stat-card h-100">
@@ -285,28 +271,14 @@
             </div>
         </div>
 
-        {{-- Consumables & Stock --}}
+        {{-- Licences & Logiciels --}}
         <div class="col-md-6">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-white border-0 pt-4 pb-2">
-                    <h6 class="fw-bold text-dark mb-0"><i class="bi bi-cart me-2"></i>Consommations & Stocks</h6>
+                    <h6 class="fw-bold text-dark mb-0"><i class="bi bi-key me-2"></i>Licences & Logiciels</h6>
                 </div>
                 <div class="card-body p-0">
                     <ul class="list-group list-group-flush mb-0">
-                        <li class="list-group-item d-flex justify-content-between align-items-center py-3 border-0">
-                            <div>
-                                <h6 class="mb-0 fw-semibold">Valeur Totale du Stock</h6>
-                                <small class="text-muted">Quantités en stock &times; prix unitaires</small>
-                            </div>
-                            <span class="badge bg-success fs-6 px-3 py-2" id="cons-stock-val">0 FCFA</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center py-3 border-0">
-                            <div>
-                                <h6 class="mb-0 fw-semibold">Montant Total des Achats</h6>
-                                <small class="text-muted">Cumul des ordres d'approvisionnement</small>
-                            </div>
-                            <span class="badge bg-primary fs-6 px-3 py-2" id="cons-purchases-val">0 FCFA</span>
-                        </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center py-3 border-0">
                             <div>
                                 <h6 class="mb-0 fw-semibold">Taux de couverture des Licences</h6>
@@ -347,7 +319,6 @@
                     $('#stat-dispo').text(res.summary.availability_rate + ' %');
                     $('#stat-moy-emp').text(res.summary.avg_equip_per_employee);
                     $('#stat-licences').text(res.compliance.licences_count);
-                    $('#stat-rupture-stock').text(res.consumables.refs_rupture + ' réf.');
                     $('#stat-budget').text(formatFCFA(res.summary.estimated_budget));
 
                     // 2. Populate maintenance & consumable KPIs
@@ -355,8 +326,6 @@
                     $('#maint-recurrence').text(res.maintenance.recurrences);
                     $('#maint-state-changes').text(res.maintenance.state_changes);
                     $('#maint-reforms').text(res.maintenance.reformed_count);
-                    $('#cons-stock-val').text(formatFCFA(res.consumables.stock_value));
-                    $('#cons-purchases-val').text(formatFCFA(res.consumables.purchases));
                     $('#lic-usage-rate').text(res.compliance.global_usage + ' %');
                     $('#lic-soft-count').text(res.compliance.logiciels_count);
 
@@ -463,14 +432,13 @@
                     new Chart(document.getElementById('financeChart'), {
                         type: 'pie',
                         data: {
-                            labels: ['Contrats Maintenance', 'Licences Logicielles Actives', 'Consommables Sortis'],
+                            labels: ['Contrats Maintenance', 'Licences Logicielles Actives'],
                             datasets: [{
                                 data: [
                                     res.finances.contracts_cost,
-                                    res.finances.licenses_cost,
-                                    res.finances.consumables_cost
+                                    res.finances.licenses_cost
                                 ],
-                                backgroundColor: ['#6f42c1', '#0d6efd', '#fd7e14']
+                                backgroundColor: ['#6f42c1', '#0d6efd']
                             }]
                         },
                         options: {

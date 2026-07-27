@@ -17,7 +17,6 @@ use Modules\Organisation\Models\Unite;
 use Modules\ParcInfo\Models\AffectationConsommable;
 use Modules\ParcInfo\Models\AffectationEquipement;
 use Modules\ParcInfo\Models\AffectationLicence;
-use Modules\ParcInfo\Models\Consommable;
 use Modules\ParcInfo\Models\ContratMaintenance;
 use Modules\ParcInfo\Models\DocumentLicence;
 use Modules\ParcInfo\Models\Equipement;
@@ -25,7 +24,6 @@ use Modules\ParcInfo\Models\Fournisseur;
 use Modules\ParcInfo\Models\HistoriqueChangement;
 use Modules\ParcInfo\Models\Licence;
 use Modules\ParcInfo\Models\Logiciel;
-use Modules\ParcInfo\Models\MouvementConsommable;
 use Rap2hpoutre\FastExcel\FastExcel;
 
 class EtatController extends Controller implements HasMiddleware
@@ -1043,71 +1041,7 @@ class EtatController extends Controller implements HasMiddleware
                     })->toArray();
                 break;
 
-                // Consommables — EF-STK-05 : quantités lues auprès du module Stock.
-            case 'cons_stock_state':
-                $title = 'État des Stocks de Consommables';
-                $columns = [
-                    'code' => 'Code',
-                    'nom' => 'Désignation',
-                    'marque' => 'Marque',
-                    'stock_actuel' => 'Stock Actuel',
-                    'stock_min' => 'Stock Min',
-                    'stock_max' => 'Stock Max',
-                    'statut_stock' => 'Statut Stock',
-                    'valeur_stock' => 'Valeur Stock (FCFA)',
-                ];
-                $consommables = Consommable::with('marque')->get();
-                $stock = app(\Modules\ParcInfo\Contracts\StockIntegrationInterface::class);
-                $quantites = $stock->quantitesParArticles($consommables->pluck('article_id')->filter()->values()->all());
-                $valeurs = $stock->valorisationParArticles($consommables->pluck('article_id')->filter()->values()->all());
-
-                $rows = $consommables->map(function ($cons) use ($quantites, $valeurs) {
-                    $quantite = $cons->article_id !== null ? (int) ($quantites[$cons->article_id] ?? 0) : null;
-
-                    return [
-                        'code' => $cons->code,
-                        'nom' => $cons->nom,
-                        'marque' => $cons->marque ? $cons->marque->libelle : '-',
-                        'stock_actuel' => $quantite ?? '—',
-                        'stock_min' => $cons->quantite_stock_min,
-                        'stock_max' => $cons->quantite_stock_max,
-                        'statut_stock' => match (true) {
-                            $quantite === null => 'NON SUIVI',
-                            $quantite === 0 => 'RUPTURE',
-                            $quantite <= (int) $cons->quantite_stock_min => 'ALERTE',
-                            default => 'NORMAL',
-                        },
-                        'valeur_stock' => $cons->article_id !== null ? (float) ($valeurs[$cons->article_id] ?? 0) : '—',
-                    ];
-                })->toArray();
-                break;
-
-            case 'cons_under_min':
-                $title = 'Consommables sous le seuil de réapprovisionnement';
-                $columns = [
-                    'code' => 'Code',
-                    'nom' => 'Désignation',
-                    'stock_actuel' => 'Stock Actuel',
-                    'stock_min' => 'Stock Min',
-                    'fournisseur' => 'Fournisseur Principal',
-                ];
-                $consommables = Consommable::with('fournisseur')->whereNotNull('article_id')->get();
-                $quantites = app(\Modules\ParcInfo\Contracts\StockIntegrationInterface::class)
-                    ->quantitesParArticles($consommables->pluck('article_id')->all());
-
-                $rows = $consommables
-                    ->filter(fn ($cons) => (int) ($quantites[$cons->article_id] ?? 0) <= (int) $cons->quantite_stock_min)
-                    ->map(function ($cons) use ($quantites) {
-                        return [
-                            'code' => $cons->code,
-                            'nom' => $cons->nom,
-                            'stock_actuel' => (int) ($quantites[$cons->article_id] ?? 0),
-                            'stock_min' => $cons->quantite_stock_min,
-                            'fournisseur' => $cons->fournisseur ? $cons->fournisseur->nom : '-',
-                        ];
-                    })->values()->toArray();
-                break;
-
+                // Consommables
             case 'cons_equip_assign':
                 $title = 'Affectations de consommables aux équipements';
                 $columns = [
@@ -1147,56 +1081,6 @@ class EtatController extends Controller implements HasMiddleware
                             'equipement' => $aff->equipement ? $aff->equipement->code_inventaire : '-',
                             'date_remplacement' => $aff->date_remplacement_prochain_prevu ? $aff->date_remplacement_prochain_prevu->format('Y-m-d') : '-',
                             'retard_jours' => $aff->date_remplacement_prochain_prevu ? now()->diffInDays($aff->date_remplacement_prochain_prevu) : '-',
-                        ];
-                    })->toArray();
-                break;
-
-            case 'cons_movements':
-                $title = 'Historique des mouvements de stock consommables';
-                $columns = [
-                    'consommable' => 'Consommable',
-                    'type_mouvement' => 'Type Mouvement',
-                    'quantite' => 'Quantité',
-                    'date_mouvement' => 'Date Mouvement',
-                    'raison' => 'Raison / Motif',
-                ];
-                $rows = MouvementConsommable::with('consommable')
-                    ->orderBy('date_mouvement', 'desc')
-                    ->get()
-                    ->map(function ($mov) {
-                        return [
-                            'consommable' => $mov->consommable ? $mov->consommable->nom : '-',
-                            'type_mouvement' => $mov->type_mouvement,
-                            'quantite' => $mov->quantite,
-                            'date_mouvement' => $mov->date_mouvement ? $mov->date_mouvement->format('Y-m-d H:i') : '-',
-                            'raison' => $mov->raison ?? '-',
-                        ];
-                    })->toArray();
-                break;
-
-            case 'cons_mov_by_structure':
-                $title = 'Consommation de consommables par service/unité';
-                $columns = [
-                    'structure' => 'Service / Unité',
-                    'consommable' => 'Consommable',
-                    'quantite_consommee' => 'Quantité Consommée',
-                    'date_mouvement' => 'Date',
-                ];
-                $rows = MouvementConsommable::where('type_mouvement', 'SORTIE')
-                    ->where(function ($q) {
-                        $q->whereNotNull('service_id')
-                            ->orWhereNotNull('unite_id');
-                    })
-                    ->with(['consommable', 'service', 'unite'])
-                    ->get()
-                    ->map(function ($mov) {
-                        $struct = $mov->service ? $mov->service->libelle : ($mov->unite ? $mov->unite->libelle : '-');
-
-                        return [
-                            'structure' => $struct,
-                            'consommable' => $mov->consommable ? $mov->consommable->nom : '-',
-                            'quantite_consommee' => $mov->quantite,
-                            'date_mouvement' => $mov->date_mouvement ? $mov->date_mouvement->format('Y-m-d') : '-',
                         ];
                     })->toArray();
                 break;

@@ -169,22 +169,6 @@
                             </span>
                         </div>
 
-                        {{-- Alerte Consommables --}}
-                        <div class="d-flex align-items-center justify-content-between p-3 glass-alert {{ $stats['consommables_rupture'] > 0 ? 'pulse-danger' : '' }}">
-                            <div class="d-flex align-items-center">
-                                <div class="icon-badge bg-warning bg-opacity-10 text-warning fs-4 me-3">
-                                    <i class="bi bi-cart-x-fill"></i>
-                                </div>
-                                <div>
-                                    <h6 class="mb-0 fw-semibold text-dark">Consommables en Rupture</h6>
-                                    <span class="text-muted small">Niveaux de stock inférieurs au minimum</span>
-                                </div>
-                            </div>
-                            <span class="badge {{ $stats['consommables_rupture'] > 0 ? 'bg-warning text-dark' : 'bg-light text-muted border' }} rounded-pill px-3 py-2 fs-6 fw-bold">
-                                {{ $stats['consommables_rupture'] }}
-                            </span>
-                        </div>
-
                         {{-- Alerte Garanties Expirées --}}
                         <div class="d-flex align-items-center justify-content-between p-3 glass-alert">
                             <div class="d-flex align-items-center">

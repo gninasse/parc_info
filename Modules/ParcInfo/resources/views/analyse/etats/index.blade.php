@@ -198,23 +198,11 @@
 
                 {{-- Category 5 --}}
                 <div class="report-group-title">Consommables</div>
-                <a href="#" class="report-item" data-type="cons_stock_state" data-desc="État actuel du stock de consommables (stock actuel vs min vs max).">
-                    <i class="bi bi-palette"></i> État des stocks
-                </a>
-                <a href="#" class="report-item" data-type="cons_under_min" data-desc="Consommables sous le seuil d'alerte ou en rupture.">
-                    <i class="bi bi-cart-x"></i> Seuil réapprovisionnement
-                </a>
                 <a href="#" class="report-item" data-type="cons_equip_assign" data-desc="Affectation des consommables aux imprimantes avec date de remplacement prévue.">
                     <i class="bi bi-arrow-left-right"></i> Affectations consommables
                 </a>
                 <a href="#" class="report-item" data-type="cons_late_replace" data-desc="Remplacements de consommables dont la date prévue est dépassée.">
                     <i class="bi bi-calendar-x"></i> Remplacements en retard
-                </a>
-                <a href="#" class="report-item" data-type="cons_movements" data-desc="Historique complet des mouvements de stock (Entrées, Sorties, Retours).">
-                    <i class="bi bi-arrow-down-up"></i> Historique des mouvements
-                </a>
-                <a href="#" class="report-item" data-type="cons_mov_by_structure" data-desc="Mouvements et consommations de consommables par service/unité.">
-                    <i class="bi bi-buildings"></i> Mouvements par structure
                 </a>
 
                 {{-- Category 6 --}}

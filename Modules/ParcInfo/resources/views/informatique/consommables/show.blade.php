@@ -29,39 +29,13 @@
                     <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1" id="header-badge-type">
                         {{ $consommable->typeConsommable->nom }}
                     </span>
-                    @php
-                        // EF-STK-05 — statut lu auprès du module Stock.
-                        $stockBadgeColors = [
-                            'RUPTURE' => 'danger',
-                            'ALERTE' => 'warning',
-                            'NORMAL' => 'success',
-                            'NON SUIVI' => 'secondary',
-                        ];
-                        $sbc = $stockBadgeColors[$stockInfo['statut']] ?? 'secondary';
-                    @endphp
-                    <span id="badge-stock-status" class="badge bg-{{ $sbc }}-subtle text-{{ $sbc }} border border-{{ $sbc }}-subtle px-2 py-1">
-                        Stock: {{ $stockInfo['statut'] }}
-                    </span>
                 </div>
                 <div class="d-flex gap-4 flex-wrap text-muted small">
                     <span><i class="bi bi-barcode me-1"></i>Code: <span id="header-code" class="fw-semibold">{{ $consommable->code }}</span></span>
-                    <span><i class="bi bi-archive me-1"></i>Stock: <span id="header-stock" class="fw-semibold">{{ $stockInfo['suivi'] ? $stockInfo['quantite'].' '.$consommable->typeConsommable->unite_stock.'s' : '—' }}</span></span>
-                    <span><i class="bi bi-cash-coin me-1"></i>Valeur: <span id="header-valeur" class="fw-semibold text-success">{{ $stockInfo['suivi'] ? number_format($stockInfo['valeur'], 0, ',', ' ').' FCFA' : '—' }}</span></span>
                     <span><i class="bi bi-building me-1"></i>Fournisseur: <span id="header-fournisseur" class="fw-semibold">{{ $consommable->fournisseur->nom }}</span></span>
                 </div>
             </div>
             <div class="col-auto d-flex gap-2">
-                {{-- EF-STK-05 : les mouvements passent par le module Stock. --}}
-                @if (Route::has('stock.entrees.index'))
-                    <a href="{{ route('stock.entrees.index') }}" class="btn btn-outline-success btn-sm">
-                        <i class="bi bi-plus-circle me-1"></i> Entrée (module Stock)
-                    </a>
-                @endif
-                @if (Route::has('stock.sorties.index'))
-                    <a href="{{ route('stock.sorties.index') }}" class="btn btn-outline-primary btn-sm">
-                        <i class="bi bi-minus-circle me-1"></i> Sortie (module Stock)
-                    </a>
-                @endif
                 <button class="btn btn-outline-warning btn-sm" id="btn-toggle-status">
                     <i class="bi bi-toggle-on me-1"></i> Activer/Désactiver
                 </button>
@@ -80,7 +54,6 @@
 <ul class="nav nav-tabs border-0 mb-3" id="showTabs" role="tablist">
     @foreach([
         ['fiche',      'bi-info-circle', 'Fiche Info'],
-        ['mouvements', 'bi-clock-history', 'Historique Mouvements'],
         ['affectations','bi-arrow-left-right', 'Affectations'],
     ] as [$id,$icon,$label])
     <li class="nav-item" role="presentation">
@@ -145,18 +118,8 @@
             {{-- Section 02 — Seuils & Tarifs --}}
             <div class="card border-0 shadow-sm mb-3" style="border-radius:12px">
                 <div class="card-body p-4">
-                    <h6 class="section-title mb-4"><span class="section-num">02</span> Gestion des Seuils & Tarifs</h6>
+                    <h6 class="section-title mb-4"><span class="section-num">02</span> Tarifs & Approvisionnement</h6>
                     <div class="row g-3">
-                        <div class="col-md-3">
-                            <label class="field-label">Stock Minimum <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control field-input" name="quantite_stock_min"
-                                   value="{{ $consommable->quantite_stock_min }}" id="f_quantite_stock_min" disabled required min="0">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="field-label">Stock Maximum <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control field-input" name="quantite_stock_max"
-                                   value="{{ $consommable->quantite_stock_max }}" id="f_quantite_stock_max" disabled required min="1">
-                        </div>
                         <div class="col-md-3">
                             <label class="field-label">Coût Unitaire (€) <span class="text-danger">*</span></label>
                             <input type="number" class="form-control field-input" name="cout_unitaire"
@@ -196,76 +159,7 @@
         </form>
     </div>
 
-    {{-- ══ TAB 2 : HISTORIQUE MOUVEMENTS ══ --}}
-    <div class="tab-pane fade" id="pane-mouvements" role="tabpanel">
-        <div class="card border-0 shadow-sm" style="border-radius:12px">
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th class="px-4 py-3 small fw-bold text-uppercase text-muted">Date</th>
-                                <th class="py-3 small fw-bold text-uppercase text-muted">Type mouvement</th>
-                                <th class="py-3 small fw-bold text-uppercase text-muted">Quantité</th>
-                                <th class="py-3 small fw-bold text-uppercase text-muted">Utilisateur</th>
-                                <th class="py-3 small fw-bold text-uppercase text-muted">Cible / Détails</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($consommable->mouvementsStock->sortByDesc('date_mouvement') as $mvt)
-                            <tr>
-                                <td class="px-4 small">
-                                    {{ $mvt->date_mouvement->format('d/m/Y H:i') }}
-                                </td>
-                                <td>
-                                    @if($mvt->type_mouvement === 'Achat')
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">Approvisionnement</span>
-                                    @else
-                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">Consommation</span>
-                                    @endif
-                                </td>
-                                <td class="fw-bold">
-                                    <span class="{{ $mvt->type_mouvement === 'Achat' ? 'text-success' : 'text-danger' }}">
-                                        {{ $mvt->type_mouvement === 'Achat' ? '+' : '-' }}{{ $mvt->quantite }}
-                                    </span>
-                                </td>
-                                <td class="small">
-                                    {{ $mvt->utilisateur->name }}
-                                </td>
-                                <td class="small">
-                                    @if($mvt->equipement)
-                                        <span class="fw-semibold text-primary" title="Équipement"><i class="bi bi-pc-display me-1"></i>{{ $mvt->equipement->code }}</span>
-                                        <span class="text-muted">({{ $mvt->equipement->modele }})</span>
-                                    @elseif($mvt->employe)
-                                        <span class="fw-semibold text-secondary" title="Employé"><i class="bi bi-person-badge me-1"></i>{{ $mvt->employe->nom }} {{ $mvt->employe->prenom }}</span>
-                                    @elseif($mvt->service)
-                                        <span class="fw-semibold text-info" title="Service"><i class="bi bi-building me-1"></i>{{ $mvt->service->libelle }}</span>
-                                    @elseif($mvt->unite)
-                                        <span class="fw-semibold text-dark" title="Unité"><i class="bi bi-door-open me-1"></i>{{ $mvt->unite->libelle }}</span>
-                                    @else
-                                        <span class="text-muted">— (Générique)</span>
-                                    @endif
-                                    @if($mvt->raison || $mvt->reference_commande)
-                                        <div class="text-muted small mt-1">{{ $mvt->raison ?: "Commande Ref: {$mvt->reference_commande}" }}</div>
-                                    @endif
-                                </td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="5" class="text-center py-5 text-muted">
-                                    <i class="bi bi-clock-history fs-1 opacity-25 d-block mb-2"></i>
-                                    Aucun mouvement de stock enregistré.
-                                </td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- ══ TAB 3 : AFFECTATIONS ══ --}}
+    {{-- ══ TAB 2 : AFFECTATIONS ══ --}}
     <div class="tab-pane fade" id="pane-affectations" role="tabpanel">
         <div class="card border-0 shadow-sm" style="border-radius:12px">
             <div class="card-body p-0">
@@ -334,11 +228,6 @@
 
 </div>
 
-{{-- EF-STK-05 : le modal de mouvements a été retiré, les entrées/sorties
-     se font dans le module Stock (référentiel unique des quantités). --}}
-@include('parcinfo::shared._modal_selection_equipement')
-@include('parcinfo::informatique._selection_modals')
-
 @endsection
 
 @push('css')
@@ -363,6 +252,5 @@
     const csrfToken = '{{ csrf_token() }}';
 </script>
 <script src="{{ asset('plugins/select2/js/select2.full.min.js') }}"></script>
-<script src="{{ asset('js/modules/parc-info/ordinateurs/selection_modals.js') }}?v={{ time() }}"></script>
 <script src="{{ asset('js/modules/parc-info/consommables/show.js') }}?v={{ time() }}"></script>
 @endpush

@@ -1,6 +1,6 @@
 @extends('parcinfo::layouts.master')
 
-@section('header', 'Stock Consommables')
+@section('header', 'Consommables')
 
 @section('breadcrumb')
     <li class="breadcrumb-item"><a href="{{ route('parc-info.dashboard') }}">Parc Info</a></li>
@@ -28,60 +28,19 @@
             </div>
         </div>
     </div>
-    <div class="col-sm-6 col-xl-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body d-flex align-items-center gap-3">
-                <div class="rounded-3 bg-danger bg-opacity-10 p-3"><i class="bi bi-exclamation-octagon fs-4 text-danger"></i></div>
-                <div>
-                    <div class="text-muted small fw-semibold text-uppercase" style="font-size:.7rem;letter-spacing:.5px">En Rupture</div>
-                    <div class="fw-bold fs-4 text-danger" id="kpi-rupture">—</div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-sm-6 col-xl-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body d-flex align-items-center gap-3">
-                <div class="rounded-3 bg-success bg-opacity-10 p-3"><i class="bi bi-currency-euro fs-4 text-success"></i></div>
-                <div>
-                    <div class="text-muted small fw-semibold text-uppercase" style="font-size:.7rem;letter-spacing:.5px">Valeur Stock</div>
-                    <div class="fw-bold fs-4 text-success" id="kpi-valeur">—</div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-sm-6 col-xl-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body d-flex align-items-center gap-3">
-                <div class="rounded-3 bg-info bg-opacity-10 p-3"><i class="bi bi-arrow-left-right fs-4 text-info"></i></div>
-                <div>
-                    <div class="text-muted small fw-semibold text-uppercase" style="font-size:.7rem;letter-spacing:.5px">Mouvements (Mois)</div>
-                    <div class="fw-bold fs-4 text-info" id="kpi-mouvements">—</div>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 
 {{-- ── Filtres ── --}}
 <div class="card border-0 shadow-sm mb-3">
     <div class="card-body py-3">
         <div class="row g-2 align-items-end">
-            <div class="col-md-4">
+            <div class="col-md-7">
                 <label class="form-label small fw-semibold mb-1">Type d'article</label>
                 <select class="form-select form-select-sm" id="filter-type">
                     <option value="">Tous les types</option>
                     @foreach($types as $t)
                         <option value="{{ $t->id }}">{{ $t->nom }}</option>
                     @endforeach
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label small fw-semibold mb-1">Statut Stock</label>
-                <select class="form-select form-select-sm" id="filter-statut">
-                    <option value="">Tous les niveaux</option>
-                    <option value="rupture">En rupture (≤ Min)</option>
-                    <option value="alerte">Alerte (Bas)</option>
                 </select>
             </div>
             <div class="col-md-3">
@@ -140,9 +99,8 @@
                     <th data-field="code" data-sortable="true" data-formatter="codeFormatter">Code</th>
                     <th data-field="nom" data-sortable="true">Désignation</th>
                     <th data-field="type">Type</th>
-                    <th data-field="stock_actuel" class="text-center" data-formatter="stockFormatter">Stock</th>
-                    <th data-field="seuil" class="text-center">Min/Max</th>
-                    <th data-field="valeur" class="text-end">Valeur</th>
+                    <th data-field="marque">Marque</th>
+                    <th data-field="unite" class="text-center">Unité</th>
                     <th data-field="status_label" data-formatter="statusFormatter">Statut</th>
                     <th data-field="id" data-formatter="actionsFormatter">Actions</th>
                 </tr>

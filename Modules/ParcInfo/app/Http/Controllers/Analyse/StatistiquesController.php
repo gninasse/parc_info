@@ -12,13 +12,11 @@ use Modules\Organisation\Models\Direction;
 use Modules\Organisation\Models\PosteTravail;
 use Modules\Organisation\Models\Service;
 use Modules\ParcInfo\Models\AffectationEquipement;
-use Modules\ParcInfo\Models\Consommable;
 use Modules\ParcInfo\Models\ContratMaintenance;
 use Modules\ParcInfo\Models\Equipement;
 use Modules\ParcInfo\Models\HistoriqueChangement;
 use Modules\ParcInfo\Models\Licence;
 use Modules\ParcInfo\Models\Logiciel;
-use Modules\ParcInfo\Models\MouvementConsommable;
 
 class StatistiquesController extends Controller implements HasMiddleware
 {
@@ -291,31 +289,6 @@ class StatistiquesController extends Controller implements HasMiddleware
                 ];
             })->sortByDesc('count')->values()->take(5)->toArray();
 
-        // ── 6. CONSOMMABLES ──
-        // EF-STK-05 — quantités et valorisation lues auprès du module Stock.
-        $stock = app(\Modules\ParcInfo\Contracts\StockIntegrationInterface::class);
-        $articleIds = Consommable::where('est_actif', true)->whereNotNull('article_id')->pluck('article_id')->all();
-        $quantitesStock = $stock->quantitesParArticles($articleIds);
-        $consStockVal = array_sum($stock->valorisationParArticles($articleIds));
-        $refsInRupture = collect($articleIds)->filter(fn ($id) => ($quantitesStock[$id] ?? 0) === 0)->count();
-
-        // Consumables cost by service (last 1 year)
-        $consumablesByService = MouvementConsommable::where('type_mouvement', 'SORTIE')
-            ->whereNotNull('service_id')
-            ->select('service_id', DB::raw('sum(quantite * prix_unitaire) as cost'))
-            ->groupBy('service_id')
-            ->with('service')
-            ->get()
-            ->map(function ($c) {
-                return [
-                    'label' => $c->service ? $c->service->libelle : 'Inconnu',
-                    'value' => (float) $c->cost,
-                ];
-            })->sortByDesc('value')->values()->take(5)->toArray();
-
-        // Total purchase and consumption
-        $totalConsumablePurchases = MouvementConsommable::where('type_mouvement', 'ENTREE')->sum(DB::raw('quantite * prix_unitaire'));
-
         // ── 7. MAINTENANCE & INCIDENTS ──
         $stateChangesCount = HistoriqueChangement::count();
         $repairsCount = HistoriqueChangement::where('nouveau_statut', 'en_reparation')->count();
@@ -356,10 +329,9 @@ class StatistiquesController extends Controller implements HasMiddleware
 
         // ── 8. FINANCES & BUDGET ──
         $contractsCost = ContratMaintenance::where('est_actif', true)->sum('cout');
-        $consumablePeriodCost = MouvementConsommable::where('type_mouvement', 'SORTIE')->sum(DB::raw('quantite * prix_unitaire'));
 
-        // Estimated IT Budget (Contracts + Active Licenses + Consumables consumed)
-        $estimatedBudget = $contractsCost + $totalLicenseCost + $consumablePeriodCost;
+        // Estimated IT Budget (Contracts + Active Licenses)
+        $estimatedBudget = $contractsCost + $totalLicenseCost;
 
         // Average equipment per employee
         $activeEmployeesCount = Employe::where('est_actif', true)->count();
@@ -398,12 +370,6 @@ class StatistiquesController extends Controller implements HasMiddleware
                 'statuses' => $licenseStatusStats,
                 'editors' => $softwareByEditor,
             ],
-            'consumables' => [
-                'stock_value' => $consStockVal,
-                'refs_rupture' => $refsInRupture,
-                'by_service' => $consumablesByService,
-                'purchases' => $totalConsumablePurchases,
-            ],
             'maintenance' => [
                 'state_changes' => $stateChangesCount,
                 'repairs' => $repairsCount,
@@ -414,7 +380,6 @@ class StatistiquesController extends Controller implements HasMiddleware
             ],
             'finances' => [
                 'contracts_cost' => $contractsCost,
-                'consumables_cost' => $consumablePeriodCost,
                 'licenses_cost' => $totalLicenseCost,
             ],
             'directions_list' => $directionStats->take(5)->values()->toArray(),

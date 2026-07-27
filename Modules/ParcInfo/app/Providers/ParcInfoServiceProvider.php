@@ -36,12 +36,6 @@ class ParcInfoServiceProvider extends ServiceProvider
     {
         $this->app->register(EventServiceProvider::class);
         $this->app->register(RouteServiceProvider::class);
-
-        // PATTERNS §11 — lecture du stock physique via contrat (EF-STK-05).
-        $this->app->bind(
-            \Modules\ParcInfo\Contracts\StockIntegrationInterface::class,
-            \Modules\ParcInfo\Services\StockIntegrationService::class
-        );
     }
 
     /**

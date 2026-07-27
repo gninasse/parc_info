@@ -81,8 +81,6 @@ Route::middleware(['auth'])->prefix('parc-info')->name('parc-info.')->group(func
         Route::put('/{id}', [ConsommableController::class, 'update'])->name('consommables.update');
         Route::patch('/{id}/toggle', [ConsommableController::class, 'toggleStatus'])->name('consommables.toggle');
         Route::delete('/{id}', [ConsommableController::class, 'destroy'])->name('consommables.destroy');
-        // EF-STK-05 — les mouvements de consommables (entrées/sorties) passent
-        // exclusivement par le module Stock (stock.entrees / stock.sorties).
         Route::post('/types/quick-add', [ConsommableController::class, 'storeType'])->name('consommables.store-type');
     });
 

@@ -12,7 +12,7 @@
                 <input type="hidden" name="id" id="consommable-id">
                 <div class="modal-body py-4">
                     <h6 class="text-primary fw-semibold mb-3 border-bottom pb-2">
-                        <i class="fas fa-info-circle me-2"></i>Identification & Stock
+                        <i class="fas fa-info-circle me-2"></i>Identification
                     </h6>
                     <div class="row g-3 mb-4">
                         <div class="col-md-4">
@@ -54,17 +54,9 @@
                     </div>
 
                     <h6 class="text-primary fw-semibold mb-3 border-bottom pb-2">
-                        <i class="fas fa-warehouse me-2"></i>Gestion des Seuils & Coût
+                        <i class="fas fa-warehouse me-2"></i>Coût
                     </h6>
                     <div class="row g-3 mb-4">
-                        <div class="col-md-4">
-                            <label class="form-label small fw-bold">Stock Minimum <span class="text-danger">*</span></label>
-                            <input type="number" name="quantite_stock_min" class="form-control" value="5" min="0" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label small fw-bold">Stock Maximum <span class="text-danger">*</span></label>
-                            <input type="number" name="quantite_stock_max" class="form-control" value="20" min="1" required>
-                        </div>
                         <div class="col-md-4">
                             <label class="form-label small fw-bold">Coût Unitaire (HT) <span class="text-danger">*</span></label>
                             <div class="input-group">

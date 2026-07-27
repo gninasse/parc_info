@@ -6,12 +6,10 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
-use Modules\ParcInfo\Contracts\StockIntegrationInterface;
 use Modules\ParcInfo\Http\Requests\StoreConsommableRequest;
 use Modules\ParcInfo\Models\Consommable;
 use Modules\ParcInfo\Models\Fournisseur;
 use Modules\ParcInfo\Models\Marque;
-use Modules\ParcInfo\Models\MouvementConsommable;
 use Modules\ParcInfo\Models\TypeConsommable;
 
 class ConsommableController extends Controller implements HasMiddleware
@@ -25,8 +23,6 @@ class ConsommableController extends Controller implements HasMiddleware
             new Middleware('permission:parcinfo.consommables.destroy', only: ['destroy']),
         ];
     }
-
-    public function __construct(protected StockIntegrationInterface $stock) {}
 
     public function index()
     {
@@ -57,33 +53,18 @@ class ConsommableController extends Controller implements HasMiddleware
         $sortOrder = $request->get('order', 'desc');
         $query->orderBy($sortField, $sortOrder);
 
-        // EF-STK-05 — quantités et valorisation lues auprès du module Stock ;
-        // le filtre de statut s'applique donc après rapprochement, en PHP.
-        $consommables = $query->get();
-        $articleIds = $consommables->pluck('article_id')->filter()->values()->all();
-        $quantites = $this->stock->quantitesParArticles($articleIds);
-        $valeursStock = $this->stock->valorisationParArticles($articleIds);
+        $total = (clone $query)->count();
 
-        $rows = $consommables->map(fn ($c) => $this->formatRow($c, $quantites, $valeursStock));
-
-        if ($request->filled('statut')) {
-            $statutRecherche = strtoupper($request->statut);
-            $rows = $rows->filter(fn ($row) => $row['statut_stock'] === $statutRecherche)->values();
-        }
-
-        $total = $rows->count();
-        $rows = $rows->slice((int) $request->get('offset', 0), (int) $request->get('limit', 25))->values();
+        $rows = $query->limit((int) $request->get('limit', 25))
+            ->offset((int) $request->get('offset', 0))
+            ->get()
+            ->map(fn ($c) => $this->formatRow($c));
 
         return response()->json([
             'total' => $total,
             'rows' => $rows,
             'stats' => [
                 'total' => Consommable::count(),
-                'en_rupture' => collect($articleIds)
-                    ->filter(fn ($id) => ($quantites[$id] ?? 0) === 0)
-                    ->count(),
-                'valeur_totale' => array_sum($valeursStock),
-                'mouvements_mois' => MouvementConsommable::whereMonth('date_mouvement', now()->month)->count(),
             ],
         ]);
     }
@@ -110,11 +91,6 @@ class ConsommableController extends Controller implements HasMiddleware
         $consommable = Consommable::with([
             'typeConsommable',
             'fournisseur',
-            'mouvementsStock.utilisateur',
-            'mouvementsStock.equipement',
-            'mouvementsStock.employe',
-            'mouvementsStock.service',
-            'mouvementsStock.unite',
             'affectations.equipement',
         ])->findOrFail($id);
 
@@ -130,32 +106,7 @@ class ConsommableController extends Controller implements HasMiddleware
         $directions = \Modules\Organisation\Models\Direction::where('actif', true)->orderBy('libelle')->get(['id', 'libelle']);
         $sites = \Modules\Organisation\Models\Site::orderBy('libelle')->get(['id', 'libelle']);
 
-        // EF-STK-05 — quantités et valorisation lues auprès du module Stock.
-        $stockInfo = $this->stockInfoPour($consommable);
-
-        return view('parcinfo::informatique.consommables.show', compact('consommable', 'types', 'fournisseurs', 'marques', 'services', 'unites', 'directions', 'sites', 'stockInfo'));
-    }
-
-    /** @return array{quantite:?int, valeur:?float, statut:string, suivi:bool} */
-    private function stockInfoPour(Consommable $consommable): array
-    {
-        if ($consommable->article_id === null) {
-            return ['quantite' => null, 'valeur' => null, 'statut' => 'NON SUIVI', 'suivi' => false];
-        }
-
-        $quantite = (int) ($this->stock->quantitesParArticles([$consommable->article_id])[$consommable->article_id] ?? 0);
-        $valeur = (float) ($this->stock->valorisationParArticles([$consommable->article_id])[$consommable->article_id] ?? 0);
-
-        return [
-            'quantite' => $quantite,
-            'valeur' => $valeur,
-            'statut' => match (true) {
-                $quantite === 0 => 'RUPTURE',
-                $quantite <= (int) $consommable->quantite_stock_min => 'ALERTE',
-                default => 'NORMAL',
-            },
-            'suivi' => true,
-        ];
+        return view('parcinfo::informatique.consommables.show', compact('consommable', 'types', 'fournisseurs', 'marques', 'services', 'unites', 'directions', 'sites'));
     }
 
     public function update(StoreConsommableRequest $request, $id)
@@ -182,9 +133,6 @@ class ConsommableController extends Controller implements HasMiddleware
     public function destroy($id)
     {
         $consommable = Consommable::findOrFail($id);
-        if ($consommable->mouvementsStock()->count() > 0) {
-            return response()->json(['success' => false, 'message' => 'Impossible de supprimer un article ayant un historique de mouvements.'], 422);
-        }
         $consommable->delete();
 
         return response()->json(['success' => true, 'message' => 'Consommable supprimé.']);
@@ -206,33 +154,15 @@ class ConsommableController extends Controller implements HasMiddleware
         return response()->json(['success' => true, 'data' => $type, 'message' => 'Type de consommable ajouté.']);
     }
 
-    /**
-     * EF-STK-05 — la quantité et la valeur affichées proviennent du module
-     * Stock ; la fiche ParcInfo reste un catalogue.
-     */
-    private function formatRow(Consommable $c, array $quantites = [], array $valeurs = []): array
+    private function formatRow(Consommable $c): array
     {
-        $quantite = $c->article_id !== null ? (int) ($quantites[$c->article_id] ?? 0) : null;
-        $valeur = $c->article_id !== null ? (float) ($valeurs[$c->article_id] ?? 0) : null;
-
-        $statut = match (true) {
-            $quantite === null => 'NON SUIVI',
-            $quantite === 0 => 'RUPTURE',
-            $quantite <= (int) $c->quantite_stock_min => 'ALERTE',
-            default => 'NORMAL',
-        };
-
         return [
             'id' => $c->id,
             'code' => $c->code,
             'nom' => $c->nom,
             'type' => $c->typeConsommable->nom,
             'marque' => $c->marque?->libelle ?: 'Générique',
-            'stock_actuel' => $quantite ?? '—',
             'unite' => $c->typeConsommable->unite_stock,
-            'seuil' => "{$c->quantite_stock_min} / {$c->quantite_stock_max}",
-            'statut_stock' => $statut,
-            'valeur' => $valeur !== null ? number_format($valeur, 0, ',', ' ').' FCFA' : '—',
             'est_actif' => $c->est_actif,
             'status_label' => $c->est_actif
                 ? '<span class="badge bg-success">Actif</span>'

@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
-use Modules\ParcInfo\Contracts\StockIntegrationInterface;
 use Modules\ParcInfo\Models\Consommable;
 use Modules\ParcInfo\Models\Equipement;
 use Modules\ParcInfo\Models\Licence;
@@ -22,10 +21,6 @@ class ParcInfoController extends Controller implements HasMiddleware
 
     public function dashboard(): \Illuminate\View\View
     {
-        // EF-STK-05 — les quantités des consommables sont lues auprès du module Stock.
-        $articleIds = Consommable::where('est_actif', true)->whereNotNull('article_id')->pluck('article_id')->all();
-        $quantites = app(StockIntegrationInterface::class)->quantitesParArticles($articleIds);
-
         $stats = [
             'total_equipements' => Equipement::count(),
             'en_service' => Equipement::where('statut', 'en_service')->count(),
@@ -57,7 +52,6 @@ class ParcInfoController extends Controller implements HasMiddleware
             'licences_expirees' => Licence::expire()->count(),
             'licences_expirant_prochainement' => Licence::expirantProchainement()->count(),
             'licences_surexploitees' => Licence::enSurexploitation()->count(),
-            'consommables_rupture' => collect($articleIds)->filter(fn ($id) => ($quantites[$id] ?? 0) === 0)->count(),
         ];
 
         // Calcul cumulé de la somme des équipements réseau
