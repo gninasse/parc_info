@@ -20,7 +20,6 @@ use Modules\Achat\Models\BonCommande;
 use Modules\Achat\Models\BordereauLivraison;
 use Modules\Achat\Services\BordereauLivraisonService;
 use Modules\Achat\Services\WizardValidationService;
-use Modules\ParcInfo\Models\Equipement;
 use Symfony\Component\HttpFoundation\Response;
 
 class BordereauLivraisonController extends Controller
@@ -115,9 +114,7 @@ class BordereauLivraisonController extends Controller
         return view('achat::bordereaux.show', [
             'bordereau' => $bordereau,
             'lignesExistantes' => $this->bordereauService->lignesALivrer($bordereau->bonCommande, $bordereau),
-            'equipements' => Equipement::where('ref_bordereau', $bordereau->numero_livraison)
-                ->with(['categorie', 'marque'])
-                ->get(),
+            'equipements' => $this->parcInfo->equipementsDesBordereaux([$bordereau->numero_livraison]),
             'journal' => $this->journalDe($bordereau),
         ]);
     }

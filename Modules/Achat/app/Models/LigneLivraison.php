@@ -2,11 +2,14 @@
 
 namespace Modules\Achat\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class LigneLivraison extends Model
 {
+    use HasFactory;
+
     protected $table = 'achat_lignes_livraison';
 
     protected $fillable = [
@@ -41,5 +44,10 @@ class LigneLivraison extends Model
         return LigneCommande::where('bon_de_commande_id', $this->bordereauLivraison->bon_de_commande_id)
             ->where('article_id', $this->article_id)
             ->first();
+    }
+
+    protected static function newFactory()
+    {
+        return \Modules\Achat\Database\Factories\LigneLivraisonFactory::new();
     }
 }

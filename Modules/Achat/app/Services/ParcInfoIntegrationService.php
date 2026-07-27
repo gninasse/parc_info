@@ -152,6 +152,30 @@ class ParcInfoIntegrationService implements ParcInfoIntegrationInterface
         ]);
     }
 
+    public function equipementsDesBordereaux(array $refsBordereaux): array
+    {
+        if ($refsBordereaux === []) {
+            return [];
+        }
+
+        return Equipement::whereIn('ref_bordereau', $refsBordereaux)
+            ->with(['categorie', 'marque'])
+            ->get()
+            ->map(fn (Equipement $equipement) => [
+                'id' => $equipement->id,
+                'code_inventaire' => $equipement->code_inventaire,
+                'categorie_libelle' => $equipement->categorie?->libelle,
+                'categorie_icone' => $equipement->categorie?->icone,
+                'marque_libelle' => $equipement->marque?->libelle,
+                'modele' => $equipement->modele,
+                'numero_serie' => $equipement->numero_serie,
+                'statut' => $equipement->statut,
+                'etat' => $equipement->etat,
+                'detail_route' => $equipement->detail_route,
+            ])
+            ->all();
+    }
+
     public function champsDeCategorie(?int $categorieId): iterable
     {
         if (! $categorieId) {

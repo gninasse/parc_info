@@ -86,7 +86,7 @@
         <button class="nav-link fw-bold small px-3 py-2 border-0" data-bs-toggle="tab"
                 data-bs-target="#onglet-equipements" type="button" role="tab">
             <i class="fas fa-laptop me-1"></i>Matériel intégré
-            <span class="badge bg-light text-dark border ms-1">{{ $equipements->count() }}</span>
+            <span class="badge bg-light text-dark border ms-1">{{ count($equipements) }}</span>
         </button>
     </li>
     <li class="nav-item" role="presentation">

@@ -2,11 +2,14 @@
 
 namespace Modules\Achat\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class LigneCommande extends Model
 {
+    use HasFactory;
+
     protected $table = 'achat_lignes_commande';
 
     protected $fillable = [
@@ -80,5 +83,10 @@ class LigneCommande extends Model
         }
 
         return $this->est_entierement_livree ? 'livre' : 'partiel';
+    }
+
+    protected static function newFactory()
+    {
+        return \Modules\Achat\Database\Factories\LigneCommandeFactory::new();
     }
 }

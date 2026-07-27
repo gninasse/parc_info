@@ -48,4 +48,15 @@ interface ParcInfoIntegrationInterface
 
     /** Champs personnalisés définis pour une catégorie d'équipement. */
     public function champsDeCategorie(?int $categorieId): iterable;
+
+    /**
+     * ENF-TRA-04 — Équipements du parc rattachés à des bordereaux de livraison.
+     *
+     * Retourne des tableaux plats prêts pour l'affichage, jamais de modèles
+     * ParcInfo, afin que le schéma de ParcInfo reste confiné à ce contrat.
+     *
+     * @param  list<string>  $refsBordereaux  Numéros de livraison (ref_bordereau)
+     * @return list<array{id:int,code_inventaire:string,categorie_libelle:?string,categorie_icone:?string,marque_libelle:?string,modele:?string,numero_serie:?string,statut:string,etat:string,detail_route:string}>
+     */
+    public function equipementsDesBordereaux(array $refsBordereaux): array;
 }

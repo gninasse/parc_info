@@ -75,4 +75,9 @@ class Parametre extends Model
 
         return $parametre;
     }
+
+    protected static function newFactory()
+    {
+        return \Modules\Achat\Database\Factories\ParametreFactory::new();
+    }
 }

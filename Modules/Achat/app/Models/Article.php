@@ -53,6 +53,9 @@ class Article extends Model
     }
 
     // ── Relations ──────────────────────────────────────────────────────────
+    // Les belongsTo vers les référentiels ParcInfo (Marque, CategorieEquipement,
+    // Fournisseur) sont une dépendance admise par PATTERNS §11 ; tout autre accès
+    // à ParcInfo passe par ParcInfoIntegrationInterface.
 
     public function marque(): BelongsTo
     {
@@ -149,5 +152,10 @@ class Article extends Model
         }
 
         return 'normal';
+    }
+
+    protected static function newFactory()
+    {
+        return \Modules\Achat\Database\Factories\ArticleFactory::new();
     }
 }

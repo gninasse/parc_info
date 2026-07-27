@@ -69,6 +69,11 @@ class BonCommande extends Model
         return $this->belongsTo(User::class, 'annule_par');
     }
 
+    public function clotureur(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cloture_par');
+    }
+
     public function lignesCommande(): HasMany
     {
         return $this->hasMany(LigneCommande::class, 'bon_de_commande_id');
@@ -167,5 +172,10 @@ class BonCommande extends Model
     public function getStatutColorAttribute(): string
     {
         return config("achat.statuts_bc.{$this->statut}.color", 'secondary');
+    }
+
+    protected static function newFactory()
+    {
+        return \Modules\Achat\Database\Factories\BonCommandeFactory::new();
     }
 }

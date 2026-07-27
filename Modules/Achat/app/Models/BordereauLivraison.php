@@ -124,4 +124,9 @@ class BordereauLivraison extends Model
     {
         return config("achat.statuts_bl.{$this->statut}.color", 'secondary');
     }
+
+    protected static function newFactory()
+    {
+        return \Modules\Achat\Database\Factories\BordereauLivraisonFactory::new();
+    }
 }

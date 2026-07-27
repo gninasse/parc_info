@@ -1,6 +1,7 @@
 {{--
     Matériel généré par l'intégration au parc (ENF-TRA-04).
-    Variable : $equipements
+    Variable : $equipements — tableaux plats fournis par
+    ParcInfoIntegrationInterface::equipementsDesBordereaux().
 --}}
 <div class="card border-1 rounded-1">
     <div class="card-header bg-light border-0 py-2">
@@ -25,30 +26,30 @@
                 <tbody>
                     @forelse($equipements as $equipement)
                         <tr>
-                            <td class="fw-bold text-dark font-monospace">{{ $equipement->code_inventaire }}</td>
+                            <td class="fw-bold text-dark font-monospace">{{ $equipement['code_inventaire'] }}</td>
                             <td class="text-muted">
-                                @if($equipement->categorie?->icone)
-                                    <i class="bi {{ $equipement->categorie->icone }} me-1"></i>
+                                @if($equipement['categorie_icone'])
+                                    <i class="bi {{ $equipement['categorie_icone'] }} me-1"></i>
                                 @endif
-                                {{ $equipement->categorie?->libelle ?? '-' }}
+                                {{ $equipement['categorie_libelle'] ?? '-' }}
                             </td>
-                            <td class="fw-semibold">{{ $equipement->marque?->libelle }} {{ $equipement->modele }}</td>
-                            <td class="text-muted font-monospace">{{ $equipement->numero_serie ?: '-' }}</td>
+                            <td class="fw-semibold">{{ $equipement['marque_libelle'] }} {{ $equipement['modele'] }}</td>
+                            <td class="text-muted font-monospace">{{ $equipement['numero_serie'] ?: '-' }}</td>
                             <td class="text-center">
                                 <span class="badge bg-light text-dark border">
-                                    {{ str_replace('_', ' ', $equipement->statut) }}
+                                    {{ str_replace('_', ' ', $equipement['statut']) }}
                                 </span>
                             </td>
                             <td class="text-center">
-                                <span class="badge bg-light text-dark border">{{ ucfirst($equipement->etat) }}</span>
+                                <span class="badge bg-light text-dark border">{{ ucfirst($equipement['etat']) }}</span>
                             </td>
                             <td class="text-end text-nowrap">
-                                <a href="{{ $equipement->detail_route }}" target="_blank" rel="noopener"
+                                <a href="{{ $equipement['detail_route'] }}" target="_blank" rel="noopener"
                                    class="btn btn-xs btn-outline-primary" title="Ouvrir la fiche dans ParcInfo">
                                     <i class="fas fa-eye"></i>
                                 </a>
                                 @if(Route::has('parc-info.equipements.imprimer-etiquette'))
-                                <a href="{{ route('parc-info.equipements.imprimer-etiquette', $equipement->id) }}"
+                                <a href="{{ route('parc-info.equipements.imprimer-etiquette', $equipement['id']) }}"
                                    target="_blank" rel="noopener"
                                    class="btn btn-xs btn-outline-secondary" title="Imprimer l'étiquette d'inventaire">
                                     <i class="fas fa-print"></i>

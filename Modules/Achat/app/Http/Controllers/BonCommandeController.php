@@ -9,6 +9,7 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Modules\Achat\Contracts\ParcInfoIntegrationInterface;
 use Modules\Achat\Http\Controllers\Concerns\ConsulteLeJournal;
 use Modules\Achat\Http\Controllers\Concerns\RepondEnJson;
 use Modules\Achat\Http\Requests\StoreBonCommandeRequest;
@@ -16,7 +17,6 @@ use Modules\Achat\Http\Requests\UpdateBonCommandeRequest;
 use Modules\Achat\Models\Article;
 use Modules\Achat\Models\BonCommande;
 use Modules\Achat\Services\BonCommandeService;
-use Modules\ParcInfo\Models\Equipement;
 use Modules\ParcInfo\Models\Fournisseur;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -24,7 +24,10 @@ class BonCommandeController extends Controller
 {
     use AuthorizesRequests, ConsulteLeJournal, RepondEnJson;
 
-    public function __construct(protected BonCommandeService $bonCommandeService) {}
+    public function __construct(
+        protected BonCommandeService $bonCommandeService,
+        protected ParcInfoIntegrationInterface $parcInfo,
+    ) {}
 
     /** Liste des bons de commande (E-03). */
     public function index(): View
@@ -147,13 +150,11 @@ class BonCommandeController extends Controller
             'documents.creator',
         ]);
 
-        $numerosBordereaux = $bonCommande->bordereauxLivraison->pluck('numero_livraison');
+        $numerosBordereaux = $bonCommande->bordereauxLivraison->pluck('numero_livraison')->all();
 
         return view('achat::bons_commande.show', [
             'bonCommande' => $bonCommande,
-            'equipements' => Equipement::whereIn('ref_bordereau', $numerosBordereaux)
-                ->with(['categorie', 'marque'])
-                ->get(),
+            'equipements' => $this->parcInfo->equipementsDesBordereaux($numerosBordereaux),
             'journal' => $this->journalDe($bonCommande),
         ]);
     }
