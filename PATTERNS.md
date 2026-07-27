@@ -151,9 +151,8 @@ public/js/modules/{module-slug}/
 **Slugs de modules dans les routes** (kebab-case) :
 - `Core` → `cores`
 - `ParcInfo` → `parc-info`
-- `Achat` → `achat`
-- `Stock` → `stock`
 - `Grh` → `grh`
+- `Organisation` → `organisation`
 
 ---
 
@@ -1359,7 +1358,7 @@ event(new BonEntreeValide($be, auth()->id()));
 Toujours passer par une **Interface + Service d'intégration** :
 
 ```php
-// Modules/Stock/app/Contracts/ParcInfoIntegrationInterface.php
+// Modules/MonModule/app/Contracts/ParcInfoIntegrationInterface.php
 interface ParcInfoIntegrationInterface
 {
     public function createEquipementFromReception(array $data, int $userId): int;
@@ -1367,7 +1366,7 @@ interface ParcInfoIntegrationInterface
     public function existsEquipementByInventoryCode(string $code): bool;
 }
 
-// Modules/Stock/app/Services/ParcInfoIntegrationService.php
+// Modules/MonModule/app/Services/ParcInfoIntegrationService.php
 class ParcInfoIntegrationService implements ParcInfoIntegrationInterface
 {
     public function createEquipementFromReception(array $data, int $userId): int
@@ -1377,17 +1376,15 @@ class ParcInfoIntegrationService implements ParcInfoIntegrationInterface
     }
 }
 
-// StockServiceProvider::register()
+// MonModuleServiceProvider::register()
 $this->app->bind(ParcInfoIntegrationInterface::class, ParcInfoIntegrationService::class);
 ```
 
 **Dépendances inter-modules connues :**
 ```
-Stock → Achat  (Articles, BordereauLivraison)
-Stock → ParcInfo (Equipements, Historique)
-Achat → ParcInfo (Marques, Categories, Fournisseurs)
-Grh   → Organisation (DossierEmploye → Employe)
+Grh → Organisation (DossierEmploye → Employe)
 ```
+(Les modules Achat et Stock, supprimés le 27/07/2026, suivaient ce même patron.)
 
 ---
 

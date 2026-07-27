@@ -2,6 +2,5 @@
     "Core": true,
     "Organisation": true,
     "ParcInfo": true,
-    "Grh": true,
-    "Achat": true
+    "Grh": true
 }
