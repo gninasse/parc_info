@@ -57,6 +57,31 @@ abstract class AchatTestCase extends TestCase
         ]);
 
         $this->neutraliserIntegrationStock();
+        $this->neutraliserLectureStock();
+    }
+
+    /** Remplace la lecture du stock (E-14) par un double neutre. */
+    protected function neutraliserLectureStock(): void
+    {
+        $double = new class implements \Modules\Achat\Contracts\StockQueryInterface
+        {
+            public function estDisponible(): bool
+            {
+                return false;
+            }
+
+            public function quantitesParArticles(array $articleIds): array
+            {
+                return [];
+            }
+
+            public function valorisationParArticles(array $articleIds): array
+            {
+                return [];
+            }
+        };
+
+        $this->app->instance(\Modules\Achat\Contracts\StockQueryInterface::class, $double);
     }
 
     /** Remplace l'intégration Stock par un double neutre. */

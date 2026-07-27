@@ -11,6 +11,7 @@ class Consommable extends Model
     protected $fillable = [
         'code',
         'nom',
+        'article_id',
         'type_consommable_id',
         'marque_id',
         'modele_reference',
