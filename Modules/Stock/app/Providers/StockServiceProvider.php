@@ -2,19 +2,26 @@
 
 namespace Modules\Stock\Providers;
 
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\ServiceProvider;
+use Modules\Stock\Console\SnapshotMensuelCommand;
 use Modules\Stock\Contracts\AchatIntegrationInterface;
 use Modules\Stock\Contracts\GrhIntegrationInterface;
 use Modules\Stock\Contracts\OrganisationIntegrationInterface;
 use Modules\Stock\Contracts\ParcInfoIntegrationInterface;
 use Modules\Stock\Contracts\StockQueryInterface;
 use Modules\Stock\Services\AchatIntegrationService;
+use Modules\Stock\Services\AlerteStockService;
 use Modules\Stock\Services\EntreeStockService;
 use Modules\Stock\Services\FifoService;
 use Modules\Stock\Services\GrhIntegrationService;
+use Modules\Stock\Services\InventaireService;
 use Modules\Stock\Services\MagasinService;
 use Modules\Stock\Services\OrganisationIntegrationService;
 use Modules\Stock\Services\ParcInfoIntegrationService;
+use Modules\Stock\Services\RapportService;
+use Modules\Stock\Services\RecalculFifoService;
+use Modules\Stock\Services\SnapshotService;
 use Modules\Stock\Services\SortieStockService;
 use Modules\Stock\Services\StockArticleService;
 use Modules\Stock\Services\StockQueryService;
@@ -32,6 +39,21 @@ class StockServiceProvider extends ServiceProvider
         $this->registerConfig();
         $this->registerViews();
         $this->loadMigrationsFrom(module_path($this->moduleName, 'database/migrations'));
+        $this->registerCommands();
+        $this->registerCommandSchedules();
+    }
+
+    protected function registerCommands(): void
+    {
+        $this->commands([SnapshotMensuelCommand::class]);
+    }
+
+    protected function registerCommandSchedules(): void
+    {
+        // RG-F7-06 — snapshot mensuel le 1er du mois à 00h05.
+        $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {
+            $schedule->command('stock:snapshot-mensuel')->monthlyOn(1, '00:05');
+        });
     }
 
     public function register(): void
@@ -56,6 +78,11 @@ class StockServiceProvider extends ServiceProvider
         $this->app->singleton(EntreeStockService::class);
         $this->app->singleton(SortieStockService::class);
         $this->app->singleton(TransfertService::class);
+        $this->app->singleton(InventaireService::class);
+        $this->app->singleton(SnapshotService::class);
+        $this->app->singleton(RecalculFifoService::class);
+        $this->app->singleton(RapportService::class);
+        $this->app->singleton(AlerteStockService::class);
     }
 
     protected function registerConfig(): void

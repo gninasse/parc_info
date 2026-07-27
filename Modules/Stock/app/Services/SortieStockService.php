@@ -30,6 +30,7 @@ class SortieStockService
         protected ParcInfoIntegrationInterface $parcInfo,
         protected GrhIntegrationInterface $grh,
         protected OrganisationIntegrationInterface $organisation,
+        protected AlerteStockService $alertes,
     ) {}
 
     /**
@@ -72,7 +73,7 @@ class SortieStockService
         }
 
         // RG-F4-02/03 — sortie + FIFO + affectation dans une transaction unique.
-        return DB::transaction(function () use ($donnees, $article, $magasin, $quantite, $userId) {
+        $mouvement = DB::transaction(function () use ($donnees, $article, $magasin, $quantite, $userId) {
             $fifo = $this->fifoService->consommerLots($article['id'], $magasin->id, $quantite);
             $coutUnitaireMoyen = $quantite > 0 ? round($fifo['cout_total'] / $quantite, 4) : 0;
 
@@ -110,6 +111,11 @@ class SortieStockService
 
             return $mouvement;
         });
+
+        // F8 — alertes hors transaction : leur échec ne doit pas annuler la sortie.
+        $this->alertes->verifierApresSortie($article['id'], $magasin->id);
+
+        return $mouvement;
     }
 
     /**
@@ -131,7 +137,7 @@ class SortieStockService
             throw new RegleMetierException('Le motif est obligatoire pour une régularisation.');
         }
 
-        return DB::transaction(function () use ($donnees, $magasin, $quantite, $userId) {
+        $mouvement = DB::transaction(function () use ($donnees, $magasin, $quantite, $userId) {
             $this->fifoService->consommerLots((int) $donnees['article_id'], $magasin->id, $quantite);
 
             $mouvement = StockMouvement::create([
@@ -153,6 +159,10 @@ class SortieStockService
 
             return $mouvement;
         });
+
+        $this->alertes->verifierApresSortie((int) $donnees['article_id'], $magasin->id);
+
+        return $mouvement;
     }
 
     // ── Internes ───────────────────────────────────────────────────────────

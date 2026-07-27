@@ -1,12 +1,16 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Stock\Http\Controllers\AlerteController;
 use Modules\Stock\Http\Controllers\DashboardController;
 use Modules\Stock\Http\Controllers\EntreeController;
+use Modules\Stock\Http\Controllers\InventaireController;
 use Modules\Stock\Http\Controllers\MagasinController;
+use Modules\Stock\Http\Controllers\RapportController;
 use Modules\Stock\Http\Controllers\SortieController;
 use Modules\Stock\Http\Controllers\StockArticleController;
 use Modules\Stock\Http\Controllers\TransfertController;
+use Modules\Stock\Http\Controllers\ValorisationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -62,4 +66,33 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('transferts/{transfert}/rejeter', [TransfertController::class, 'rejeter'])->name('transferts.rejeter');
     Route::post('transferts/{transfert}/annuler', [TransfertController::class, 'annuler'])->name('transferts.annuler');
     Route::resource('transferts', TransfertController::class)->only(['index', 'show', 'store']);
+
+    // ── F6 — Inventaires ───────────────────────────────────────────────────
+    Route::get('inventaires/data', [InventaireController::class, 'getData'])->name('inventaires.data');
+    Route::post('inventaires/{inventaire}/lignes', [InventaireController::class, 'saisirLignes'])->name('inventaires.lignes');
+    Route::post('inventaires/{inventaire}/valider', [InventaireController::class, 'valider'])->name('inventaires.valider');
+    Route::post('inventaires/{inventaire}/annuler', [InventaireController::class, 'annuler'])->name('inventaires.annuler');
+    Route::resource('inventaires', InventaireController::class)->only(['index', 'show', 'store']);
+
+    // ── F7 — Valorisation ──────────────────────────────────────────────────
+    Route::get('valorisation/data', [ValorisationController::class, 'getData'])->name('valorisation.data');
+    Route::get('valorisation/pdf', [ValorisationController::class, 'pdf'])->name('valorisation.pdf');
+    Route::get('valorisation/snapshots', [ValorisationController::class, 'snapshots'])->name('valorisation.snapshots');
+    Route::post('valorisation/snapshots', [ValorisationController::class, 'creerSnapshot'])->name('valorisation.snapshots.store');
+    Route::get('valorisation/snapshots/{snapshot}', [ValorisationController::class, 'showSnapshot'])->name('valorisation.snapshots.show');
+    Route::post('valorisation/recalculer', [ValorisationController::class, 'recalculer'])->name('valorisation.recalculer');
+    Route::get('valorisation', [ValorisationController::class, 'index'])->name('valorisation.index');
+
+    // ── F8 — Alertes et rapports ───────────────────────────────────────────
+    Route::get('alertes/data', [AlerteController::class, 'getData'])->name('alertes.data');
+    Route::get('alertes/count', [AlerteController::class, 'count'])->name('alertes.count');
+    Route::post('notifications/{id}/lire', [AlerteController::class, 'lire'])->name('notifications.lire');
+    Route::post('notifications/lire-tout', [AlerteController::class, 'lireTout'])->name('notifications.lire-tout');
+    Route::get('alertes', [AlerteController::class, 'index'])->name('alertes.index');
+
+    Route::get('rapports/{rapport}/data', [RapportController::class, 'data'])
+        ->whereIn('rapport', ['entrees', 'sorties', 'transferts', 'stock'])->name('rapports.data');
+    Route::get('rapports/{rapport}/pdf', [RapportController::class, 'pdf'])
+        ->whereIn('rapport', ['entrees', 'sorties', 'transferts', 'stock'])->name('rapports.pdf');
+    Route::get('rapports', [RapportController::class, 'index'])->name('rapports.index');
 });

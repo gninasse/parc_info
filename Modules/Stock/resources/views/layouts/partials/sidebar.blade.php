@@ -126,6 +126,18 @@
         @endcan
         @endif
 
+        @if (Route::has('stock.alertes.index'))
+        @can('stock.dashboard.view')
+        <li class="nav-item">
+          <a href="{{ route('stock.alertes.index') }}"
+             class="nav-link {{ request()->routeIs('stock.alertes.*') ? 'active' : '' }}">
+            <i class="nav-icon bi bi-bell"></i>
+            <p>Alertes</p>
+          </a>
+        </li>
+        @endcan
+        @endif
+
       </ul>
     </nav>
   </div>

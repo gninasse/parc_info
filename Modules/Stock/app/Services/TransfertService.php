@@ -31,6 +31,7 @@ class TransfertService
         protected FifoService $fifoService,
         protected AchatIntegrationInterface $achat,
         protected GrhIntegrationInterface $grh,
+        protected AlerteStockService $alertes,
     ) {}
 
     /** @throws RegleMetierException */
@@ -115,7 +116,7 @@ class TransfertService
             );
         }
 
-        return DB::transaction(function () use ($transfert, $source, $destination, $userId) {
+        $resultat = DB::transaction(function () use ($transfert, $source, $destination, $userId) {
             $fifo = $this->fifoService->consommerLots($transfert->article_id, $source->id, $transfert->quantite);
             $coutUnitaireMoyen = round($fifo['cout_total'] / $transfert->quantite, 4);
 
@@ -176,6 +177,11 @@ class TransfertService
 
             return $transfert;
         });
+
+        // F8 — le magasin source peut passer en rupture ou sous seuil.
+        $this->alertes->verifierApresSortie($transfert->article_id, $source->id);
+
+        return $resultat;
     }
 
     /** @throws RegleMetierException */
