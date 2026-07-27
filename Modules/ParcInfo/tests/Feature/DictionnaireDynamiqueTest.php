@@ -22,6 +22,9 @@ class DictionnaireDynamiqueTest extends TestCase
     {
         parent::setUp();
 
+        // Les habilitations sont couvertes par HabilitationsTest.
+        \Illuminate\Support\Facades\Gate::before(fn () => true);
+
         // Create standard roles & permissions
         $this->adminRole = Role::firstOrCreate(['name' => 'Admin', 'guard_name' => 'web']);
 

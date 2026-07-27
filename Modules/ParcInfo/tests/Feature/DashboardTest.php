@@ -16,6 +16,7 @@ class DashboardTest extends TestCase
     {
         parent::setUp();
 
+        // Ce test vérifie lui-même les habilitations (403/200) : pas de Gate::before ici.
         // Setup permissions
         Permission::findOrCreate('dashboard.view');
         Permission::findOrCreate('parcinfo.dashboard.view');

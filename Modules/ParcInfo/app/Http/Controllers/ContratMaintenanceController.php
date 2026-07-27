@@ -4,10 +4,22 @@ namespace Modules\ParcInfo\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Modules\ParcInfo\Models\ContratMaintenance;
 
-class ContratMaintenanceController extends Controller
+class ContratMaintenanceController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:parcinfo.contrats.index', only: ['show']),
+            new Middleware('permission:parcinfo.contrats.store', only: ['store']),
+            new Middleware('permission:parcinfo.contrats.update', only: ['update']),
+            new Middleware('permission:parcinfo.contrats.destroy', only: ['destroy']),
+        ];
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([

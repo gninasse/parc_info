@@ -5,14 +5,26 @@ namespace Modules\ParcInfo\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\View\View;
 use Modules\ParcInfo\Http\Requests\StoreContactRequest;
 use Modules\ParcInfo\Http\Requests\StoreFournisseurRequest;
 use Modules\ParcInfo\Http\Requests\UpdateContactRequest;
 use Modules\ParcInfo\Models\Fournisseur;
 
-class FournisseurController extends Controller
+class FournisseurController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:parcinfo.fournisseurs.index', only: ['index', 'getData', 'show']),
+            new Middleware('permission:parcinfo.fournisseurs.store', only: ['create', 'store']),
+            new Middleware('permission:parcinfo.fournisseurs.update', only: ['update', 'toggleStatus', 'storeContact', 'updateContact', 'deleteContact']),
+            new Middleware('permission:parcinfo.fournisseurs.destroy', only: ['destroy']),
+        ];
+    }
+
     public function index(): View
     {
         return view('parcinfo::informatique.fournisseurs.index');

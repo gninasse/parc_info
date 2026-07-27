@@ -20,9 +20,9 @@ class AnalyseManagementTest extends TestCase
     {
         parent::setUp();
 
+        // Ce test vérifie lui-même les habilitations (403/200) : pas de Gate::before ici.
         // Setup permissions
-        Permission::findOrCreate('parc-info.analyse.etats.view');
-        Permission::findOrCreate('parc-info.analyse.statistiques.view');
+        Permission::findOrCreate('parcinfo.analyse.view');
 
         $adminRole = Role::findOrCreate('Admin');
         $adminRole->givePermissionTo(Permission::all());

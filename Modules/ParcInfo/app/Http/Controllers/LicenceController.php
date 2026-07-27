@@ -4,6 +4,8 @@ namespace Modules\ParcInfo\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
 use Modules\ParcInfo\Http\Requests\StoreLicenceRequest;
 use Modules\ParcInfo\Http\Requests\UpdateLicenceRequest;
@@ -14,8 +16,18 @@ use Modules\ParcInfo\Models\Fournisseur;
 use Modules\ParcInfo\Models\Licence;
 use Modules\ParcInfo\Models\Logiciel;
 
-class LicenceController extends Controller
+class LicenceController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:parcinfo.licences.index', only: ['index', 'getData', 'show']),
+            new Middleware('permission:parcinfo.licences.store', only: ['store', 'storeFournisseur', 'storeContrat']),
+            new Middleware('permission:parcinfo.licences.update', only: ['update', 'toggleStatus', 'affecter', 'desaffecter', 'renouveler']),
+            new Middleware('permission:parcinfo.licences.destroy', only: ['destroy']),
+        ];
+    }
+
     public function index()
     {
         $logiciels = Logiciel::orderBy('nom')->get();

@@ -4,6 +4,8 @@ namespace Modules\ParcInfo\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Modules\ParcInfo\Contracts\StockIntegrationInterface;
 use Modules\ParcInfo\Http\Requests\StoreConsommableRequest;
 use Modules\ParcInfo\Models\Consommable;
@@ -12,8 +14,18 @@ use Modules\ParcInfo\Models\Marque;
 use Modules\ParcInfo\Models\MouvementConsommable;
 use Modules\ParcInfo\Models\TypeConsommable;
 
-class ConsommableController extends Controller
+class ConsommableController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:parcinfo.consommables.index', only: ['index', 'getData', 'show']),
+            new Middleware('permission:parcinfo.consommables.store', only: ['store', 'storeType']),
+            new Middleware('permission:parcinfo.consommables.update', only: ['update', 'toggleStatus']),
+            new Middleware('permission:parcinfo.consommables.destroy', only: ['destroy']),
+        ];
+    }
+
     public function __construct(protected StockIntegrationInterface $stock) {}
 
     public function index()

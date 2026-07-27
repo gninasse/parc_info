@@ -5,6 +5,8 @@ namespace Modules\ParcInfo\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
 use Modules\Organisation\Models\Direction;
 use Modules\Organisation\Models\Service;
@@ -18,8 +20,18 @@ use Modules\ParcInfo\Models\Fournisseur;
 use Modules\ParcInfo\Models\HistoriqueChangement;
 use Modules\ParcInfo\Models\LigneBonRepartition;
 
-class BonRepartitionController extends Controller
+class BonRepartitionController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:parcinfo.bons-repartition.index', only: ['index', 'data', 'show', 'imprimer']),
+            new Middleware('permission:parcinfo.bons-repartition.store', only: ['store']),
+            new Middleware('permission:parcinfo.bons-repartition.update', only: ['update', 'addLigne', 'updateLigne', 'removeLigne', 'signerLigne']),
+            new Middleware('permission:parcinfo.bons-repartition.destroy', only: ['destroy']),
+        ];
+    }
+
     /**
      * Display the list of bons de répartition.
      */

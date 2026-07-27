@@ -80,6 +80,48 @@ return [
     'parcinfo.telephonie.index' => 'Voir la liste des téléphones fixes',
     'parcinfo.terminaux-ip.index' => 'Voir la liste des terminaux IP',
 
+    // Marques
+    'parcinfo.marques.index' => 'Voir la liste des marques',
+    'parcinfo.marques.store' => 'Créer une marque',
+    'parcinfo.marques.update' => 'Modifier une marque',
+    'parcinfo.marques.destroy' => 'Supprimer une marque',
+
+    // Éditeurs
+    'parcinfo.editeurs.index' => 'Voir la liste des éditeurs',
+    'parcinfo.editeurs.store' => 'Créer un éditeur',
+    'parcinfo.editeurs.update' => 'Modifier un éditeur',
+    'parcinfo.editeurs.destroy' => 'Supprimer un éditeur',
+
+    // Dictionnaires
+    'parcinfo.dictionnaires.index' => 'Voir les dictionnaires',
+    'parcinfo.dictionnaires.store' => 'Créer un dictionnaire',
+    'parcinfo.dictionnaires.update' => 'Modifier un dictionnaire',
+    'parcinfo.dictionnaires.destroy' => 'Supprimer un dictionnaire',
+
+    // Catégories d'équipement
+    'parcinfo.categories.index' => 'Voir les catégories d\'équipement',
+    'parcinfo.categories.store' => 'Créer une catégorie d\'équipement',
+    'parcinfo.categories.update' => 'Modifier une catégorie d\'équipement',
+    'parcinfo.categories.destroy' => 'Supprimer une catégorie d\'équipement',
+
+    // Contrats de maintenance
+    'parcinfo.contrats.index' => 'Voir les contrats de maintenance',
+    'parcinfo.contrats.store' => 'Créer un contrat de maintenance',
+    'parcinfo.contrats.update' => 'Modifier un contrat de maintenance',
+    'parcinfo.contrats.destroy' => 'Supprimer un contrat de maintenance',
+
+    // Bons de répartition
+    'parcinfo.bons-repartition.index' => 'Voir les bons de répartition',
+    'parcinfo.bons-repartition.store' => 'Créer un bon de répartition',
+    'parcinfo.bons-repartition.update' => 'Modifier un bon de répartition',
+    'parcinfo.bons-repartition.destroy' => 'Supprimer un bon de répartition',
+
+    // Analyse (états et statistiques)
+    'parcinfo.analyse.view' => 'Voir les états et statistiques du parc',
+
+    // Équipements (vues transversales : centre d'impression, étiquettes, recherches)
+    'parcinfo.equipements.view' => 'Voir les vues transversales des équipements',
+
     // Référentiels
     'parc-info.referentiels.types-cpus.index' => 'Référentiel - Voir les types de CPU',
     'parc-info.referentiels.types-cpus.store' => 'Référentiel - Créer un type de CPU',

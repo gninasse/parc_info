@@ -35,6 +35,9 @@ class BonRepartitionTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Les habilitations sont couvertes par HabilitationsTest.
+        \Illuminate\Support\Facades\Gate::before(fn () => true);
         $this->user = User::factory()->create();
 
         // Seed dynamic categories and configurations

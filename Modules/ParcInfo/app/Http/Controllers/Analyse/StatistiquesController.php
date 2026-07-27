@@ -25,7 +25,7 @@ class StatistiquesController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:parc-info.analyse.statistiques.view', only: ['index', 'getData']),
+            new Middleware('permission:parcinfo.analyse.view', only: ['index', 'getData']),
         ];
     }
 
@@ -292,8 +292,12 @@ class StatistiquesController extends Controller implements HasMiddleware
             })->sortByDesc('count')->values()->take(5)->toArray();
 
         // ── 6. CONSOMMABLES ──
-        $consStockVal = Consommable::get()->sum('valeur_stock');
-        $refsInRupture = Consommable::enRupture()->count();
+        // EF-STK-05 — quantités et valorisation lues auprès du module Stock.
+        $stock = app(\Modules\ParcInfo\Contracts\StockIntegrationInterface::class);
+        $articleIds = Consommable::where('est_actif', true)->whereNotNull('article_id')->pluck('article_id')->all();
+        $quantitesStock = $stock->quantitesParArticles($articleIds);
+        $consStockVal = array_sum($stock->valorisationParArticles($articleIds));
+        $refsInRupture = collect($articleIds)->filter(fn ($id) => ($quantitesStock[$id] ?? 0) === 0)->count();
 
         // Consumables cost by service (last 1 year)
         $consumablesByService = MouvementConsommable::where('type_mouvement', 'SORTIE')

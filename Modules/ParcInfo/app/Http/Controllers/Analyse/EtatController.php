@@ -33,7 +33,7 @@ class EtatController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:parc-info.analyse.etats.view', only: ['index', 'getData', 'export']),
+            new Middleware('permission:parcinfo.analyse.view', only: ['index', 'getData', 'export']),
         ];
     }
 

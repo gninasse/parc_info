@@ -22,6 +22,9 @@ class CentreImpressionTest extends TestCase
     {
         parent::setUp();
 
+        // Les habilitations sont couvertes par HabilitationsTest.
+        \Illuminate\Support\Facades\Gate::before(fn () => true);
+
         // Seed permissions required for testing
         Permission::findOrCreate('parcinfo.dashboard.view');
 

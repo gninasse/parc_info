@@ -4,6 +4,8 @@ namespace Modules\ParcInfo\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Modules\ParcInfo\Http\Requests\StoreLogicielRequest;
 use Modules\ParcInfo\Models\Contact;
 use Modules\ParcInfo\Models\ContratMaintenance;
@@ -12,8 +14,18 @@ use Modules\ParcInfo\Models\Fournisseur;
 use Modules\ParcInfo\Models\Logiciel;
 use Modules\ParcInfo\Models\TypeLicence;
 
-class LogicielController extends Controller
+class LogicielController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('permission:parcinfo.logiciels.index', only: ['index', 'getData', 'show']),
+            new Middleware('permission:parcinfo.logiciels.store', only: ['store', 'storeEditeur']),
+            new Middleware('permission:parcinfo.logiciels.update', only: ['update', 'toggleStatus']),
+            new Middleware('permission:parcinfo.logiciels.destroy', only: ['destroy']),
+        ];
+    }
+
     public function index()
     {
         $editeurs = Editeur::orderBy('nom')->get();

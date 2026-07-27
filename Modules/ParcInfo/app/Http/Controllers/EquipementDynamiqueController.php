@@ -5,11 +5,13 @@ namespace Modules\ParcInfo\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Modules\Grh\Models\Employe;
 use Modules\Organisation\Models\Direction;
 use Modules\Organisation\Models\Local;
 use Modules\Organisation\Models\PosteTravail;
 use Modules\Organisation\Models\Site;
+use Modules\ParcInfo\Http\Controllers\Concerns\AuthorizesDynamicCategory;
 use Modules\ParcInfo\Models\AffectationEquipement;
 use Modules\ParcInfo\Models\CategorieEquipement;
 use Modules\ParcInfo\Models\ChampConfig;
@@ -22,11 +24,15 @@ use Modules\ParcInfo\Models\Marque;
 
 class EquipementDynamiqueController extends Controller
 {
+    use AuthorizesDynamicCategory;
+
     /**
      * Display a listing of the resource for a category.
      */
     public function index(Request $request)
     {
+        $this->autoriserCategorie('index');
+
         $categoryCode = $request->route()->defaults['category'] ?? $request->get('category');
         $category = CategorieEquipement::where('code', $categoryCode)->firstOrFail();
 
@@ -56,6 +62,8 @@ class EquipementDynamiqueController extends Controller
      */
     public function getData(Request $request)
     {
+        $this->autoriserCategorie('index');
+
         $categoryCode = $request->route()->defaults['category'] ?? $request->get('category');
         $category = CategorieEquipement::where('code', $categoryCode)->firstOrFail();
 
@@ -117,6 +125,8 @@ class EquipementDynamiqueController extends Controller
      */
     public function store(Request $request)
     {
+        $this->autoriserCategorie('store');
+
         $categoryCode = $request->route()->defaults['category'] ?? $request->get('category');
         $category = CategorieEquipement::where('code', $categoryCode)->firstOrFail();
 
@@ -287,6 +297,8 @@ class EquipementDynamiqueController extends Controller
      */
     public function show($id)
     {
+        $this->autoriserCategorie('index');
+
         $equipement = Equipement::with([
             'categorie',
             'marque',
@@ -336,6 +348,8 @@ class EquipementDynamiqueController extends Controller
      */
     public function showJson($id)
     {
+        $this->autoriserCategorie('index');
+
         $e = Equipement::with([
             'categorie',
             'marque',
@@ -354,6 +368,8 @@ class EquipementDynamiqueController extends Controller
      */
     public function update(Request $request, $id)
     {
+        $this->autoriserCategorie('update');
+
         $equipement = Equipement::findOrFail($id);
 
         // Build dynamic validation rules
@@ -429,6 +445,8 @@ class EquipementDynamiqueController extends Controller
      */
     public function updateStatut(Request $request, $id)
     {
+        $this->autoriserCategorie('update');
+
         $request->validate([
             'statut' => 'required|in:en_stock_magasin,en_stock_dsi,en_stock,en_service,en_reparation,perdu,reforme',
             'motif' => 'required|string',
@@ -466,6 +484,8 @@ class EquipementDynamiqueController extends Controller
      */
     public function updateEtat(Request $request, $id)
     {
+        $this->autoriserCategorie('update');
+
         $request->validate([
             'etat' => 'required|in:bon,passable,mauvais,avarie',
             'motif' => 'required|string',
@@ -496,6 +516,8 @@ class EquipementDynamiqueController extends Controller
      */
     public function storeAffectation(Request $request): \Illuminate\Http\JsonResponse
     {
+        $this->autoriserCategorie('update');
+
         $request->validate([
             'equipement_id' => 'required|exists:parc_info_equipements,id',
             'type_cible' => 'required|in:EMPLOYE,POSTE,LOCAL,DIRECTION,SERVICE,UNITE',
@@ -623,6 +645,8 @@ class EquipementDynamiqueController extends Controller
      */
     public function desaffecter(Request $request, $id): \Illuminate\Http\JsonResponse
     {
+        $this->autoriserCategorie('update');
+
         $request->validate([
             'motif' => 'required|string',
         ]);
@@ -676,6 +700,8 @@ class EquipementDynamiqueController extends Controller
      */
     public function destroy($id)
     {
+        $this->autoriserCategorie('destroy');
+
         Equipement::findOrFail($id)->delete();
 
         return response()->json(['success' => true, 'message' => 'Équipement supprimé avec succès.']);
@@ -686,6 +712,8 @@ class EquipementDynamiqueController extends Controller
      */
     public function storeMarque(Request $request)
     {
+        $this->autoriserCategorie('store');
+
         $request->validate(['libelle' => 'required|string|unique:parc_info_marques,libelle']);
         $marque = Marque::create(['libelle' => $request->libelle]);
 
@@ -697,6 +725,8 @@ class EquipementDynamiqueController extends Controller
      */
     public function storeDictionnaireValeur(Request $request)
     {
+        $this->autoriserCategorie('store');
+
         $dictCode = $request->route()->defaults['dictionnaire_code'] ?? $request->get('dictionnaire_code');
         $request->validate(['libelle' => 'required|string']);
 
@@ -715,6 +745,8 @@ class EquipementDynamiqueController extends Controller
 
     public function searchEmployes(Request $request)
     {
+        $this->autoriserCategorie('index');
+
         $q = $request->get('q', '');
 
         return response()->json(
@@ -730,6 +762,8 @@ class EquipementDynamiqueController extends Controller
 
     public function searchPostes(Request $request)
     {
+        $this->autoriserCategorie('index');
+
         $q = $request->get('q', '');
 
         return response()->json(
@@ -752,6 +786,8 @@ class EquipementDynamiqueController extends Controller
 
     public function searchLocaux(Request $request)
     {
+        $this->autoriserCategorie('index');
+
         $q = $request->get('q', '');
 
         return response()->json(
@@ -769,6 +805,8 @@ class EquipementDynamiqueController extends Controller
 
     public function imprimerEtiquette(int $id): \Illuminate\Contracts\View\View
     {
+        Gate::authorize('parcinfo.equipements.view');
+
         $equipement = Equipement::with(['categorie', 'marque'])->findOrFail($id);
 
         return view('parcinfo::informatique.equipements.etiquette', compact('equipement'));
@@ -776,6 +814,8 @@ class EquipementDynamiqueController extends Controller
 
     public function centreImpression(Request $request): \Illuminate\Contracts\View\View
     {
+        Gate::authorize('parcinfo.equipements.view');
+
         $categories = CategorieEquipement::orderBy('libelle')->get(['id', 'libelle']);
         $sites = Site::orderBy('libelle')->get(['id', 'libelle']);
         $directions = Direction::where('actif', true)->orderBy('libelle')->get(['id', 'libelle']);
@@ -785,6 +825,8 @@ class EquipementDynamiqueController extends Controller
 
     public function getEquipementsData(Request $request): \Illuminate\Http\JsonResponse
     {
+        Gate::authorize('parcinfo.equipements.view');
+
         $query = Equipement::query()
             ->with([
                 'categorie',
@@ -883,6 +925,8 @@ class EquipementDynamiqueController extends Controller
 
     public function imprimerEtiquettesSelectionnees(Request $request): \Illuminate\Contracts\View\View
     {
+        Gate::authorize('parcinfo.equipements.view');
+
         $idsStr = $request->get('ids', '');
         $ids = array_filter(explode(',', $idsStr));
 
