@@ -1043,7 +1043,7 @@ class EtatController extends Controller implements HasMiddleware
                     })->toArray();
                 break;
 
-                // Consommables
+                // Consommables — EF-STK-05 : quantités lues auprès du module Stock.
             case 'cons_stock_state':
                 $title = 'État des Stocks de Consommables';
                 $columns = [
@@ -1056,16 +1056,28 @@ class EtatController extends Controller implements HasMiddleware
                     'statut_stock' => 'Statut Stock',
                     'valeur_stock' => 'Valeur Stock (FCFA)',
                 ];
-                $rows = Consommable::with('marque')->get()->map(function ($cons) {
+                $consommables = Consommable::with('marque')->get();
+                $stock = app(\Modules\ParcInfo\Contracts\StockIntegrationInterface::class);
+                $quantites = $stock->quantitesParArticles($consommables->pluck('article_id')->filter()->values()->all());
+                $valeurs = $stock->valorisationParArticles($consommables->pluck('article_id')->filter()->values()->all());
+
+                $rows = $consommables->map(function ($cons) use ($quantites, $valeurs) {
+                    $quantite = $cons->article_id !== null ? (int) ($quantites[$cons->article_id] ?? 0) : null;
+
                     return [
                         'code' => $cons->code,
                         'nom' => $cons->nom,
                         'marque' => $cons->marque ? $cons->marque->libelle : '-',
-                        'stock_actuel' => $cons->quantite_stock_actuel,
+                        'stock_actuel' => $quantite ?? '—',
                         'stock_min' => $cons->quantite_stock_min,
                         'stock_max' => $cons->quantite_stock_max,
-                        'statut_stock' => $cons->statut_stock,
-                        'valeur_stock' => $cons->valeur_stock,
+                        'statut_stock' => match (true) {
+                            $quantite === null => 'NON SUIVI',
+                            $quantite === 0 => 'RUPTURE',
+                            $quantite <= (int) $cons->quantite_stock_min => 'ALERTE',
+                            default => 'NORMAL',
+                        },
+                        'valeur_stock' => $cons->article_id !== null ? (float) ($valeurs[$cons->article_id] ?? 0) : '—',
                     ];
                 })->toArray();
                 break;
@@ -1079,15 +1091,21 @@ class EtatController extends Controller implements HasMiddleware
                     'stock_min' => 'Stock Min',
                     'fournisseur' => 'Fournisseur Principal',
                 ];
-                $rows = Consommable::enRupture()->with('fournisseur')->get()->map(function ($cons) {
-                    return [
-                        'code' => $cons->code,
-                        'nom' => $cons->nom,
-                        'stock_actuel' => $cons->quantite_stock_actuel,
-                        'stock_min' => $cons->quantite_stock_min,
-                        'fournisseur' => $cons->fournisseur ? $cons->fournisseur->nom : '-',
-                    ];
-                })->toArray();
+                $consommables = Consommable::with('fournisseur')->whereNotNull('article_id')->get();
+                $quantites = app(\Modules\ParcInfo\Contracts\StockIntegrationInterface::class)
+                    ->quantitesParArticles($consommables->pluck('article_id')->all());
+
+                $rows = $consommables
+                    ->filter(fn ($cons) => (int) ($quantites[$cons->article_id] ?? 0) <= (int) $cons->quantite_stock_min)
+                    ->map(function ($cons) use ($quantites) {
+                        return [
+                            'code' => $cons->code,
+                            'nom' => $cons->nom,
+                            'stock_actuel' => (int) ($quantites[$cons->article_id] ?? 0),
+                            'stock_min' => $cons->quantite_stock_min,
+                            'fournisseur' => $cons->fournisseur ? $cons->fournisseur->nom : '-',
+                        ];
+                    })->values()->toArray();
                 break;
 
             case 'cons_equip_assign':

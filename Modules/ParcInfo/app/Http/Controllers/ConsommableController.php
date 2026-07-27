@@ -4,27 +4,17 @@ namespace Modules\ParcInfo\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Modules\ParcInfo\Http\Requests\ConsommerConsommableRequest;
+use Modules\ParcInfo\Contracts\StockIntegrationInterface;
 use Modules\ParcInfo\Http\Requests\StoreConsommableRequest;
 use Modules\ParcInfo\Models\Consommable;
 use Modules\ParcInfo\Models\Fournisseur;
 use Modules\ParcInfo\Models\Marque;
-use Modules\ParcInfo\Contracts\StockIntegrationInterface;
 use Modules\ParcInfo\Models\MouvementConsommable;
 use Modules\ParcInfo\Models\TypeConsommable;
-use Modules\ParcInfo\Services\GestionStockService;
 
 class ConsommableController extends Controller
 {
-    private $stockService;
-
-    public function __construct(
-        GestionStockService $stockService,
-        protected StockIntegrationInterface $stock,
-    ) {
-        $this->stockService = $stockService;
-    }
+    public function __construct(protected StockIntegrationInterface $stock) {}
 
     public function index()
     {
@@ -128,7 +118,32 @@ class ConsommableController extends Controller
         $directions = \Modules\Organisation\Models\Direction::where('actif', true)->orderBy('libelle')->get(['id', 'libelle']);
         $sites = \Modules\Organisation\Models\Site::orderBy('libelle')->get(['id', 'libelle']);
 
-        return view('parcinfo::informatique.consommables.show', compact('consommable', 'types', 'fournisseurs', 'marques', 'services', 'unites', 'directions', 'sites'));
+        // EF-STK-05 — quantités et valorisation lues auprès du module Stock.
+        $stockInfo = $this->stockInfoPour($consommable);
+
+        return view('parcinfo::informatique.consommables.show', compact('consommable', 'types', 'fournisseurs', 'marques', 'services', 'unites', 'directions', 'sites', 'stockInfo'));
+    }
+
+    /** @return array{quantite:?int, valeur:?float, statut:string, suivi:bool} */
+    private function stockInfoPour(Consommable $consommable): array
+    {
+        if ($consommable->article_id === null) {
+            return ['quantite' => null, 'valeur' => null, 'statut' => 'NON SUIVI', 'suivi' => false];
+        }
+
+        $quantite = (int) ($this->stock->quantitesParArticles([$consommable->article_id])[$consommable->article_id] ?? 0);
+        $valeur = (float) ($this->stock->valorisationParArticles([$consommable->article_id])[$consommable->article_id] ?? 0);
+
+        return [
+            'quantite' => $quantite,
+            'valeur' => $valeur,
+            'statut' => match (true) {
+                $quantite === 0 => 'RUPTURE',
+                $quantite <= (int) $consommable->quantite_stock_min => 'ALERTE',
+                default => 'NORMAL',
+            },
+            'suivi' => true,
+        ];
     }
 
     public function update(StoreConsommableRequest $request, $id)
@@ -161,73 +176,6 @@ class ConsommableController extends Controller
         $consommable->delete();
 
         return response()->json(['success' => true, 'message' => 'Consommable supprimé.']);
-    }
-
-    public function consommer(ConsommerConsommableRequest $request, $id)
-    {
-        $consommable = Consommable::findOrFail($id);
-
-        if ($consommable->quantite_stock_actuel < $request->quantite) {
-            return response()->json(['success' => false, 'message' => 'Stock insuffisant'], 422);
-        }
-
-        DB::transaction(function () use ($consommable, $request) {
-            MouvementConsommable::create([
-                'consommable_id' => $consommable->id,
-                'type_mouvement' => 'Consommation',
-                'quantite' => $request->quantite,
-                'date_mouvement' => now(),
-                'utilisateur_id' => auth()->id(),
-                'equipement_id' => $request->equipement_id,
-                'employe_id' => $request->employe_id,
-                'service_id' => $request->service_id,
-                'unite_id' => $request->unite_id,
-                'raison' => $request->raison,
-                'notes' => $request->notes,
-            ]);
-
-            if ($request->filled('equipement_id')) {
-                \Modules\ParcInfo\Models\AffectationConsommable::create([
-                    'consommable_id' => $consommable->id,
-                    'equipement_id' => $request->equipement_id,
-                    'quantite_fournie' => $request->quantite,
-                    'date_affectation' => now(),
-                    'notes' => $request->notes,
-                ]);
-            }
-
-            $consommable->decrement('quantite_stock_actuel', $request->quantite);
-        });
-
-        return response()->json(['success' => true, 'message' => 'Sortie de stock enregistrée']);
-    }
-
-    public function approvisionner(Request $request, $id)
-    {
-        $consommable = Consommable::findOrFail($id);
-
-        $request->validate([
-            'quantite' => 'required|integer|min:1',
-            'prix_unitaire' => 'nullable|numeric|min:0',
-            'reference_commande' => 'nullable|string|max:255',
-        ]);
-
-        DB::transaction(function () use ($consommable, $request) {
-            MouvementConsommable::create([
-                'consommable_id' => $consommable->id,
-                'type_mouvement' => 'Achat',
-                'quantite' => $request->quantite,
-                'prix_unitaire' => $request->prix_unitaire ?? $consommable->cout_unitaire,
-                'date_mouvement' => now(),
-                'utilisateur_id' => auth()->id(),
-                'reference_commande' => $request->reference_commande,
-            ]);
-
-            $consommable->increment('quantite_stock_actuel', $request->quantite);
-            $consommable->update(['date_dernier_approvisionnement' => now()]);
-        });
-
-        return response()->json(['success' => true, 'message' => 'Stock mis à jour']);
     }
 
     public function storeType(Request $request)

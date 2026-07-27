@@ -81,36 +81,13 @@ return [
     |--------------------------------------------------------------------------
     | Intégration inter-modules
     |--------------------------------------------------------------------------
-    | EF-STK-05 — Référentiel de stock faisant foi.
-    |
-    | Le module Stock est le référentiel de valorisation et de quantité
-    | (mouvements + lots FIFO). Le compteur achat_articles.stock_actuel est une
-    | projection dénormalisée entretenue pour l'écran de suivi ; il ne fait
-    | jamais foi.
-    |
-    | 'consommables_parcinfo' pilote la double écriture historique vers
-    | parc_info_consommables. Conservée active par défaut pour ne pas rompre le
-    | circuit d'affectation de ParcInfo : à arbitrer par la maîtrise d'ouvrage.
+    | EF-STK-05 — Le module Stock (mouvements + lots FIFO) est le référentiel
+    | UNIQUE des quantités et de la valorisation. Les anciens compteurs
+    | (achat_articles.stock_actuel, parc_info_consommables.quantite_stock_actuel)
+    | ont été supprimés ; les écrans lisent StockQueryInterface.
     */
     'integration' => [
         'stock' => env('ACHAT_INTEGRATION_STOCK', true),
-        'consommables_parcinfo' => env('ACHAT_INTEGRATION_CONSOMMABLES_PARCINFO', true),
-
-        /*
-         | Type de consommable ParcInfo attribué d'office lorsqu'un article
-         | acheté n'a pas d'équivalent existant.
-         |
-         | « categorie » doit appartenir à l'énumération de
-         | parc_info_types_consommables : Impression, Fournitures Bureau,
-         | Maintenance, Reseau, Securite, Accessoires.
-         */
-        'type_consommable_defaut' => [
-            'code' => env('ACHAT_TYPE_CONSOMMABLE_CODE', 'GEN-CONS'),
-            'nom' => 'Consommables divers (achat)',
-            'categorie' => env('ACHAT_TYPE_CONSOMMABLE_CATEGORIE', 'Accessoires'),
-            'unite_stock' => 'Unité',
-            'seul_reapprovisionnement' => 5,
-        ],
     ],
 
     /*

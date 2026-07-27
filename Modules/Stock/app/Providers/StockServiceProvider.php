@@ -45,7 +45,10 @@ class StockServiceProvider extends ServiceProvider
 
     protected function registerCommands(): void
     {
-        $this->commands([SnapshotMensuelCommand::class]);
+        $this->commands([
+            SnapshotMensuelCommand::class,
+            \Modules\Stock\Console\ReprendreStockInitialCommand::class,
+        ]);
     }
 
     protected function registerCommandSchedules(): void

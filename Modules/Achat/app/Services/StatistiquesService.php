@@ -108,7 +108,7 @@ class StatistiquesService
 
         return [
             'total_articles' => Article::count(),
-            'alertes_stock' => Article::consommables()->sousSeuil()->count(),
+            'alertes_stock' => $this->alertesStock(),
             'total_bc' => $parStatutBc->sum(),
             'bc_brouillon' => $parStatutBc->get('brouillon', 0),
             'bc_valide' => $parStatutBc->get('valide', 0),
@@ -117,6 +117,21 @@ class StatistiquesService
             'taux_completion' => $this->tauxCompletion(),
             'fournisseurs_actifs' => Fournisseur::where('est_actif', true)->count(),
         ];
+    }
+
+    /**
+     * EF-STK-05 — Consommables au niveau du seuil ou en dessous, d'après
+     * les quantités du module Stock (référentiel unique).
+     */
+    protected function alertesStock(): int
+    {
+        $consommables = Article::consommables()->get(['id', 'seuil_alerte']);
+        $quantites = app(\Modules\Achat\Contracts\StockQueryInterface::class)
+            ->quantitesParArticles($consommables->pluck('id')->all());
+
+        return $consommables
+            ->filter(fn (Article $article) => ($quantites[$article->id] ?? 0) <= (int) $article->seuil_alerte)
+            ->count();
     }
 
     /** EF-BC-19 — Bons dont le reliquat est ouvert depuis trop longtemps. */

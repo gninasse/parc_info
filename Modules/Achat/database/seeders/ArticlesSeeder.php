@@ -63,7 +63,6 @@ class ArticlesSeeder extends Seeder
                 'fournisseur_prefere_id' => $fournisseurModels['dell']->id,
                 'prix_indicatif' => 1200.00,
                 'seuil_alerte' => 0,
-                'stock_actuel' => 0,
                 'duree_validite_mois' => null,
             ],
             [
@@ -77,7 +76,6 @@ class ArticlesSeeder extends Seeder
                 'fournisseur_prefere_id' => $fournisseurModels['cisco']->id,
                 'prix_indicatif' => 2500.00,
                 'seuil_alerte' => 0,
-                'stock_actuel' => 0,
                 'duree_validite_mois' => null,
             ],
             [
@@ -91,7 +89,6 @@ class ArticlesSeeder extends Seeder
                 'fournisseur_prefere_id' => $fournisseurModels['hp']->id,
                 'prix_indicatif' => 350.00,
                 'seuil_alerte' => 0,
-                'stock_actuel' => 0,
                 'duree_validite_mois' => null,
             ],
             [
@@ -105,7 +102,6 @@ class ArticlesSeeder extends Seeder
                 'fournisseur_prefere_id' => $fournisseurModels['apc']->id,
                 'prix_indicatif' => 650.00,
                 'seuil_alerte' => 0,
-                'stock_actuel' => 0,
                 'duree_validite_mois' => null,
             ],
             // Consommables
@@ -120,7 +116,6 @@ class ArticlesSeeder extends Seeder
                 'fournisseur_prefere_id' => $fournisseurModels['hp']->id,
                 'prix_indicatif' => 110.00,
                 'seuil_alerte' => 5,
-                'stock_actuel' => 12,
                 'duree_validite_mois' => null,
             ],
             [
@@ -134,7 +129,6 @@ class ArticlesSeeder extends Seeder
                 'fournisseur_prefere_id' => $fournisseurModels['hp']->id,
                 'prix_indicatif' => 5.50,
                 'seuil_alerte' => 20,
-                'stock_actuel' => 45,
                 'duree_validite_mois' => null,
             ],
             // Licences
@@ -149,7 +143,6 @@ class ArticlesSeeder extends Seeder
                 'fournisseur_prefere_id' => $fournisseurModels['microsoft']->id,
                 'prix_indicatif' => 140.00,
                 'seuil_alerte' => 0,
-                'stock_actuel' => 0,
                 'duree_validite_mois' => 12,
             ],
             [
@@ -163,7 +156,6 @@ class ArticlesSeeder extends Seeder
                 'fournisseur_prefere_id' => $fournisseurModels['microsoft']->id,
                 'prix_indicatif' => 150.00,
                 'seuil_alerte' => 0,
-                'stock_actuel' => 0,
                 'duree_validite_mois' => null,
             ],
             // Prestations
@@ -178,7 +170,6 @@ class ArticlesSeeder extends Seeder
                 'fournisseur_prefere_id' => $fournisseurModels['cisco']->id,
                 'prix_indicatif' => 850.00,
                 'seuil_alerte' => 0,
-                'stock_actuel' => 0,
                 'duree_validite_mois' => null,
             ],
         ];

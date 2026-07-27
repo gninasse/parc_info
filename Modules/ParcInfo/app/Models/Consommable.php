@@ -18,7 +18,6 @@ class Consommable extends Model
         'compatible_equipements',
         'fournisseur_principal_id',
         'cout_unitaire',
-        'quantite_stock_actuel',
         'quantite_stock_min',
         'quantite_stock_max',
         'date_dernier_approvisionnement',
@@ -30,7 +29,6 @@ class Consommable extends Model
     protected $casts = [
         'compatible_equipements' => 'array',
         'cout_unitaire' => 'decimal:2',
-        'quantite_stock_actuel' => 'integer',
         'quantite_stock_min' => 'integer',
         'quantite_stock_max' => 'integer',
         'stock_reserve_maintenance' => 'integer',
@@ -64,34 +62,12 @@ class Consommable extends Model
     }
 
     // SCOPES
-    public function scopeEnRupture($query)
-    {
-        return $query->whereRaw('quantite_stock_actuel <= quantite_stock_min');
-    }
-
     public function scopeActifs($query)
     {
         return $query->where('est_actif', true);
     }
 
-    // ACCESSEURS
-    public function getStatutStockAttribute()
-    {
-        if ($this->quantite_stock_actuel <= 0) {
-            return 'RUPTURE';
-        }
-        if ($this->quantite_stock_actuel <= $this->quantite_stock_min) {
-            return 'ALERTE';
-        }
-        if ($this->quantite_stock_actuel >= $this->quantite_stock_max) {
-            return 'SURSTOCK';
-        }
-
-        return 'NORMAL';
-    }
-
-    public function getValeurStockAttribute()
-    {
-        return $this->quantite_stock_actuel * $this->cout_unitaire;
-    }
+    // EF-STK-05 — la fiche est un catalogue : les quantités, la valorisation
+    // et le statut d'alerte se lisent auprès du module Stock via
+    // Modules\ParcInfo\Contracts\StockIntegrationInterface.
 }

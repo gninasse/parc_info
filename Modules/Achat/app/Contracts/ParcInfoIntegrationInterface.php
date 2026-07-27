@@ -38,14 +38,6 @@ interface ParcInfoIntegrationInterface
      */
     public function creerLicence(array $donnees): int;
 
-    /**
-     * RG-INT-08 — Répercute une entrée de consommable dans ParcInfo.
-     *
-     * Double écriture historique, pilotée par
-     * config('achat.integration.consommables_parcinfo').
-     */
-    public function enregistrerEntreeConsommable(array $donnees): void;
-
     /** Champs personnalisés définis pour une catégorie d'équipement. */
     public function champsDeCategorie(?int $categorieId): iterable;
 

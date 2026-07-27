@@ -105,7 +105,6 @@ class ArticleService
             $copie->code_article = $this->codeDisponible($article->code_article.'-COPY');
             $copie->designation = Str::limit($article->designation.' (Copie)', 255, '');
             $copie->reference_constructeur = null; // RG-ART-03 : unique par marque
-            $copie->stock_actuel = 0;
             $copie->save();
 
             activity()->performedOn($copie)->log("Article dupliqué depuis {$article->code_article}");

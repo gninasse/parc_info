@@ -127,7 +127,6 @@ class CatalogueTest extends AchatTestCase
         $this->assertNotSame($article->code_article, $copie->code_article);
         $this->assertStringContainsString('COPY', $copie->code_article);
         $this->assertNull($copie->reference_constructeur);
-        $this->assertSame(0, $copie->stock_actuel);
     }
 
     /** RG-ART-09 — Seuls les articles actifs sont commandables. */
@@ -144,21 +143,47 @@ class CatalogueTest extends AchatTestCase
         $this->assertFalse($catalogue->contains('designation', 'Article retiré'));
     }
 
-    /** EF-STK-02 — Le niveau de stock est qualifié par rapport au seuil. */
+    /**
+     * EF-STK-02 — Le niveau de stock est qualifié par rapport au seuil,
+     * à partir des quantités du module Stock (doublé ici).
+     */
     public function test_le_niveau_de_stock_est_correctement_qualifie(): void
     {
-        $rupture = $this->creerConsommable(['seuil_alerte' => 10]);
-        $rupture->update(['stock_actuel' => 0]);
+        $rupture = $this->creerConsommable(['seuil_alerte' => 10, 'designation' => 'AAA rupture']);
+        $critique = $this->creerConsommable(['seuil_alerte' => 10, 'designation' => 'BBB critique']);
+        $correct = $this->creerConsommable(['seuil_alerte' => 10, 'designation' => 'CCC correct']);
 
-        $critique = $this->creerConsommable(['seuil_alerte' => 10]);
-        $critique->update(['stock_actuel' => 3]);
+        $quantites = [$rupture->id => 0, $critique->id => 3, $correct->id => 25];
 
-        $correct = $this->creerConsommable(['seuil_alerte' => 10]);
-        $correct->update(['stock_actuel' => 25]);
+        $this->app->instance(
+            \Modules\Achat\Contracts\StockQueryInterface::class,
+            new class($quantites) implements \Modules\Achat\Contracts\StockQueryInterface
+            {
+                public function __construct(private array $quantites) {}
 
-        $this->assertSame('rupture', $rupture->refresh()->niveau_stock);
-        $this->assertSame('critique', $critique->refresh()->niveau_stock);
-        $this->assertSame('normal', $correct->refresh()->niveau_stock);
+                public function estDisponible(): bool
+                {
+                    return true;
+                }
+
+                public function quantitesParArticles(array $articleIds): array
+                {
+                    return $this->quantites;
+                }
+
+                public function valorisationParArticles(array $articleIds): array
+                {
+                    return [];
+                }
+            }
+        );
+
+        $reponse = $this->getJson(route('achat.stocks.data'))->assertOk()->json();
+        $niveaux = collect($reponse['rows'])->pluck('niveau', 'designation');
+
+        $this->assertSame('rupture', $niveaux['AAA rupture']);
+        $this->assertSame('critique', $niveaux['BBB critique']);
+        $this->assertSame('normal', $niveaux['CCC correct']);
     }
 
     public function test_l_ecran_des_stocks_repond(): void

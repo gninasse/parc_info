@@ -30,32 +30,38 @@
                         {{ $consommable->typeConsommable->nom }}
                     </span>
                     @php
+                        // EF-STK-05 — statut lu auprès du module Stock.
                         $stockBadgeColors = [
                             'RUPTURE' => 'danger',
                             'ALERTE' => 'warning',
-                            'SURSTOCK' => 'info',
                             'NORMAL' => 'success',
+                            'NON SUIVI' => 'secondary',
                         ];
-                        $sbc = $stockBadgeColors[$consommable->statut_stock] ?? 'secondary';
+                        $sbc = $stockBadgeColors[$stockInfo['statut']] ?? 'secondary';
                     @endphp
                     <span id="badge-stock-status" class="badge bg-{{ $sbc }}-subtle text-{{ $sbc }} border border-{{ $sbc }}-subtle px-2 py-1">
-                        Stock: {{ $consommable->statut_stock }}
+                        Stock: {{ $stockInfo['statut'] }}
                     </span>
                 </div>
                 <div class="d-flex gap-4 flex-wrap text-muted small">
                     <span><i class="bi bi-barcode me-1"></i>Code: <span id="header-code" class="fw-semibold">{{ $consommable->code }}</span></span>
-                    <span><i class="bi bi-archive me-1"></i>Stock: <span id="header-stock" class="fw-semibold">{{ $consommable->quantite_stock_actuel }} {{ $consommable->typeConsommable->unite_stock }}s</span></span>
-                    <span><i class="bi bi-currency-euro me-1"></i>Valeur: <span id="header-valeur" class="fw-semibold text-success">{{ number_format($consommable->valeur_stock, 2, ',', ' ') }} €</span></span>
+                    <span><i class="bi bi-archive me-1"></i>Stock: <span id="header-stock" class="fw-semibold">{{ $stockInfo['suivi'] ? $stockInfo['quantite'].' '.$consommable->typeConsommable->unite_stock.'s' : '—' }}</span></span>
+                    <span><i class="bi bi-cash-coin me-1"></i>Valeur: <span id="header-valeur" class="fw-semibold text-success">{{ $stockInfo['suivi'] ? number_format($stockInfo['valeur'], 0, ',', ' ').' FCFA' : '—' }}</span></span>
                     <span><i class="bi bi-building me-1"></i>Fournisseur: <span id="header-fournisseur" class="fw-semibold">{{ $consommable->fournisseur->nom }}</span></span>
                 </div>
             </div>
             <div class="col-auto d-flex gap-2">
-                <button class="btn btn-outline-success btn-sm" id="btn-open-appro">
-                    <i class="bi bi-plus-circle me-1"></i> Approvisionner
-                </button>
-                <button class="btn btn-outline-primary btn-sm" id="btn-open-consommer">
-                    <i class="bi bi-minus-circle me-1"></i> Sortie Stock
-                </button>
+                {{-- EF-STK-05 : les mouvements passent par le module Stock. --}}
+                @if (Route::has('stock.entrees.index'))
+                    <a href="{{ route('stock.entrees.index') }}" class="btn btn-outline-success btn-sm">
+                        <i class="bi bi-plus-circle me-1"></i> Entrée (module Stock)
+                    </a>
+                @endif
+                @if (Route::has('stock.sorties.index'))
+                    <a href="{{ route('stock.sorties.index') }}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-minus-circle me-1"></i> Sortie (module Stock)
+                    </a>
+                @endif
                 <button class="btn btn-outline-warning btn-sm" id="btn-toggle-status">
                     <i class="bi bi-toggle-on me-1"></i> Activer/Désactiver
                 </button>
@@ -328,7 +334,8 @@
 
 </div>
 
-@include('parcinfo::informatique.consommables._modal_mouvements')
+{{-- EF-STK-05 : le modal de mouvements a été retiré, les entrées/sorties
+     se font dans le module Stock (référentiel unique des quantités). --}}
 @include('parcinfo::shared._modal_selection_equipement')
 @include('parcinfo::informatique._selection_modals')
 

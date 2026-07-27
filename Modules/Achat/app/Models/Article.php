@@ -33,7 +33,6 @@ class Article extends Model
         'taux_tva',
         'compte_comptable',
         'seuil_alerte',
-        'stock_actuel',
         'duree_validite_mois',
         'url_fiche_technique',
         'image',
@@ -46,7 +45,6 @@ class Article extends Model
             'prix_indicatif' => 'decimal:2',
             'taux_tva' => 'decimal:2',
             'seuil_alerte' => 'integer',
-            'stock_actuel' => 'integer',
             'duree_validite_mois' => 'integer',
             'actif' => 'boolean',
         ];
@@ -94,11 +92,6 @@ class Article extends Model
         return $query->where('type_article', 'consommable');
     }
 
-    public function scopeSousSeuil(Builder $query): Builder
-    {
-        return $query->whereColumn('stock_actuel', '<=', 'seuil_alerte');
-    }
-
     // ── Règles métier ──────────────────────────────────────────────────────
 
     /**
@@ -129,30 +122,6 @@ class Article extends Model
         return config("achat.types_articles.{$this->type_article}", $this->type_article);
     }
 
-    /**
-     * EF-STK-07 : niveau de stock qualifié par rapport au seuil d'alerte.
-     * Retourne l'une des clés de config('achat.seuils_stock').
-     */
-    public function getNiveauStockAttribute(): string
-    {
-        if ($this->stock_actuel <= 0) {
-            return 'rupture';
-        }
-
-        if ($this->seuil_alerte <= 0) {
-            return 'normal';
-        }
-
-        $ratio = $this->stock_actuel / $this->seuil_alerte;
-
-        foreach (config('achat.seuils_stock', []) as $cle => $seuil) {
-            if ($seuil['max_ratio'] !== null && $ratio <= $seuil['max_ratio']) {
-                return $cle;
-            }
-        }
-
-        return 'normal';
-    }
 
     protected static function newFactory()
     {

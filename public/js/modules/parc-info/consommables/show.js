@@ -10,16 +10,22 @@ $(function () {
     const $ficheActions = $('#fiche-actions');
     const $fields = $formFiche.find('.field-input');
 
-    const modalConsommer = new bootstrap.Modal('#modal-consommer-consommable');
+    // EF-STK-05 — les modals de mouvements ont été retirés (entrées/sorties
+    // portées par le module Stock) : instanciation défensive pour ne pas
+    // casser le reste de l'écran.
+    const elConsommer = document.getElementById('modal-consommer-consommable');
+    const modalConsommer = elConsommer ? new bootstrap.Modal(elConsommer) : null;
     const $formConsommer = $('#form-consommer-consommable');
-    const modalEq = new bootstrap.Modal('#equipementSelectionModal');
+    const elEq = document.getElementById('equipementSelectionModal');
+    const modalEq = elEq ? new bootstrap.Modal(elEq) : null;
     let selectedEq = null;
 
-    // Initialize Select2 in stock output modal
-    $('.select2-mouvement').select2({
-        theme: 'bootstrap-5',
-        dropdownParent: $('#modal-consommer-consommable')
-    });
+    if (elConsommer) {
+        $('.select2-mouvement').select2({
+            theme: 'bootstrap-5',
+            dropdownParent: $('#modal-consommer-consommable')
+        });
+    }
 
     // ── MODE EDITION INLINE ──
     function setEditMode(on) {
@@ -211,7 +217,7 @@ $(function () {
         $('#consommation-unite-id').val('').trigger('change');
         selectedEq = null;
 
-        modalConsommer.show();
+        modalConsommer?.show();
     });
 
     // Target Selection Cards click
@@ -257,7 +263,7 @@ $(function () {
         const typeFilter = $('#consommation-equipement-type').val();
         $('#eq-filter-type').val(typeFilter).trigger('change');
         loadEquipements();
-        modalEq.show();
+        modalEq?.show();
     });
 
     // Ouvrir sélection d'employé
@@ -323,7 +329,7 @@ $(function () {
         if (selectedEq) {
             $('#consommation-equipement-id').val(selectedEq.id);
             $('#consommation-equipement-label').val(selectedEq.label);
-            modalEq.hide();
+            modalEq?.hide();
         }
     });
 
@@ -359,7 +365,7 @@ $(function () {
             data: $(this).serialize(),
             success: function (res) {
                 if (res.success) {
-                    modalConsommer.hide();
+                    modalConsommer?.hide();
                     Swal.fire('Succès', res.message, 'success').then(() => location.reload());
                 }
             },

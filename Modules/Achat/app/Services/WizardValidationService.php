@@ -92,7 +92,8 @@ class WizardValidationService
                         $licences,
                         $this->integrerLicences($bordereau, $ligne, $ligneCommande, $userId)
                     ),
-                    'consommable' => $this->integrerConsommable($bordereau, $ligne, $ligneCommande, $userId),
+                    // consommable : entrée portée exclusivement par le module
+                    // Stock (EF-STK-05), via enregistrerEntreesDepuisBordereau.
                     default => null, // prestation : aucun objet physique à créer
                 };
 
@@ -287,40 +288,6 @@ class WizardValidationService
         }
 
         return $creees;
-    }
-
-    /**
-     * RG-INT-08 — Entrée d'un consommable.
-     *
-     * Le stock faisant foi est tenu par le module Stock. Le compteur porté par
-     * l'article n'est qu'une projection destinée à l'écran de suivi.
-     */
-    protected function integrerConsommable(
-        BordereauLivraison $bordereau,
-        LigneLivraison $ligne,
-        LigneCommande $ligneCommande,
-        int $userId
-    ): void {
-        $article = $ligne->article;
-
-        // Projection dénormalisée (EF-STK-05)
-        $article->increment('stock_actuel', $ligne->quantite_livree);
-
-        // Double écriture ParcInfo, pilotée par configuration
-        $this->parcInfo->enregistrerEntreeConsommable([
-            'code_article' => $article->code_article,
-            'designation' => $article->designation,
-            'marque_id' => $article->marque_id,
-            'reference_constructeur' => $article->reference_constructeur,
-            'fournisseur_id' => $bordereau->bonCommande->fournisseur_id,
-            'prix_unitaire' => (float) $ligneCommande->prix_unitaire,
-            'seuil_alerte' => $article->seuil_alerte,
-            'quantite' => $ligne->quantite_livree,
-            'date_mouvement' => $bordereau->date_livraison,
-            'reference_commande' => $bordereau->bonCommande->numero_commande,
-            'user_id' => $userId,
-            'raison' => "Entrée de stock via la validation du BL n° {$bordereau->numero_livraison}",
-        ]);
     }
 
     /** @throws RegleMetierException */
