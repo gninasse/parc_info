@@ -31,11 +31,6 @@ return new class extends Migration
             $table->decimal('taux_tva', 5, 2)->default(18.00);
 
             $table->string('compte_comptable', 20)->nullable();
-            $table->unsignedInteger('seuil_alerte')->default(0);
-
-            // EF-STK-05 : projection dénormalisée entretenue par le service
-            // d'intégration. Le référentiel faisant foi est le module Stock.
-            $table->unsignedInteger('stock_actuel')->default(0);
 
             $table->unsignedInteger('duree_validite_mois')->nullable();
             $table->string('url_fiche_technique', 500)->nullable();

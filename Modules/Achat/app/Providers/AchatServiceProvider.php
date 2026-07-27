@@ -5,16 +5,12 @@ namespace Modules\Achat\Providers;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
 use Modules\Achat\Contracts\ParcInfoIntegrationInterface;
-use Modules\Achat\Contracts\StockIntegrationInterface;
-use Modules\Achat\Contracts\StockQueryInterface;
 use Modules\Achat\Services\ArticleService;
 use Modules\Achat\Services\BonCommandeService;
 use Modules\Achat\Services\BordereauLivraisonService;
 use Modules\Achat\Services\CodeInventaireGeneratorService;
 use Modules\Achat\Services\ParcInfoIntegrationService;
 use Modules\Achat\Services\StatistiquesService;
-use Modules\Achat\Services\StockIntegrationService;
-use Modules\Achat\Services\StockQueryIntegrationService;
 use Modules\Achat\Services\WizardValidationService;
 
 class AchatServiceProvider extends ServiceProvider
@@ -40,8 +36,6 @@ class AchatServiceProvider extends ServiceProvider
         // PATTERNS §11 — Les accès aux autres modules passent par un contrat,
         // ce qui permet de les substituer en test.
         $this->app->bind(ParcInfoIntegrationInterface::class, ParcInfoIntegrationService::class);
-        $this->app->bind(StockIntegrationInterface::class, StockIntegrationService::class);
-        $this->app->bind(StockQueryInterface::class, StockQueryIntegrationService::class);
 
         // PATTERNS §6 — Services sans état, enregistrés en singleton.
         $this->app->singleton(ArticleService::class);
@@ -121,8 +115,6 @@ class AchatServiceProvider extends ServiceProvider
     {
         return [
             ParcInfoIntegrationInterface::class,
-            StockIntegrationInterface::class,
-            StockQueryInterface::class,
             ArticleService::class,
             BonCommandeService::class,
             BordereauLivraisonService::class,

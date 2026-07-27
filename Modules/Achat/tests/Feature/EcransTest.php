@@ -37,7 +37,6 @@ class EcransTest extends AchatTestCase
         $this->get(route('achat.articles.index'))->assertOk();
         $this->get(route('achat.bons-commande.index'))->assertOk();
         $this->get(route('achat.bordereaux.index'))->assertOk();
-        $this->get(route('achat.stocks.index'))->assertOk();
         $this->get(route('achat.statistiques.index'))->assertOk();
     }
 

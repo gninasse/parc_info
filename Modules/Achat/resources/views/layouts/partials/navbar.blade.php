@@ -34,11 +34,6 @@
           <i class="bi bi-truck me-1"></i> Livraisons
         </a>
       </li>
-      <li class="nav-item">
-        <a class="nav-link d-flex align-items-center {{ request()->routeIs('achat.stocks.*') ? 'active fw-bold text-success' : '' }}" href="{{ route('achat.stocks.index') }}">
-          <i class="bi bi-box-seam me-1"></i> Stocks
-        </a>
-      </li>
     </ul>
     <!--end::Center Navbar Links-->
 

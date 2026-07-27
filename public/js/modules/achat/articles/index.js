@@ -40,7 +40,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // ── Champs conditionnels selon la nature de l'article ──────────────────
     function ajusterChamps(type) {
         $('#group-categorie').toggleClass('d-none', type !== 'equipement');
-        $('#group-seuil-alerte').toggleClass('d-none', type !== 'consommable');
         $('#group-duree-validite').toggleClass('d-none', type !== 'licence');
     }
 
@@ -78,7 +77,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     'code_article', 'designation', 'description', 'reference_constructeur',
                     'marque_id', 'categorie_equipement_id', 'fournisseur_prefere_id',
                     'prix_indicatif', 'unite_mesure', 'taux_tva', 'compte_comptable',
-                    'seuil_alerte', 'duree_validite_mois', 'url_fiche_technique',
+                    'duree_validite_mois', 'url_fiche_technique',
                 ].forEach(function (champ) {
                     $formulaire.find(`[name="${champ}"]`).val(article[champ] ?? '');
                 });

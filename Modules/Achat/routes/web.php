@@ -8,7 +8,6 @@ use Modules\Achat\Http\Controllers\BordereauLivraisonController;
 use Modules\Achat\Http\Controllers\DocumentController;
 use Modules\Achat\Http\Controllers\ParametreController;
 use Modules\Achat\Http\Controllers\StatistiquesController;
-use Modules\Achat\Http\Controllers\StockController;
 
 /*
 |--------------------------------------------------------------------------
@@ -56,10 +55,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->parameters(['bordereaux' => 'bordereau'])
         ->except(['edit'])
         ->names('bordereaux');
-
-    // ── Stocks ─────────────────────────────────────────────────────────────
-    Route::get('stocks/data', [StockController::class, 'getData'])->name('stocks.data');
-    Route::get('stocks', [StockController::class, 'index'])->name('stocks.index');
 
     // ── États et statistiques ──────────────────────────────────────────────
     Route::get('statistiques/data', [StatistiquesController::class, 'getData'])->name('statistiques.data');

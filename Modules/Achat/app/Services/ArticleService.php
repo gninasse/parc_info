@@ -156,11 +156,7 @@ class ArticleService
             $donnees['categorie_equipement_id'] = null;
         }
 
-        // Seuls les consommables portent un seuil, seules les licences une durée
-        if ($type !== 'consommable') {
-            $donnees['seuil_alerte'] = 0;
-        }
-
+        // Seules les licences portent une durée de validité
         if ($type !== 'licence') {
             $donnees['duree_validite_mois'] = null;
         }

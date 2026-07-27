@@ -10,10 +10,8 @@ use Modules\Achat\Events\BordereauLivraisonValide;
 use Modules\Achat\Listeners\JournaliserEvenementAchat;
 
 /**
- * Correction AN-08 : la table d'écoute ne référence plus que des écouteurs
- * réellement implémentés. Les quatre stubs vides de la version précédente
- * (CreerEquipementsDansParcInfo, CreerLicences, MettreAJourStockConsommables,
- * HistoriserAcquisition) ont été supprimés : leur logique s'exécute dans
+ * Correction AN-08 : la table d'écoute ne référence que des écouteurs
+ * réellement implémentés ; la logique d'intégration s'exécute dans
  * WizardValidationService, à l'intérieur de la transaction d'intégration.
  */
 class EventServiceProvider extends ServiceProvider

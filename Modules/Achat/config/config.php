@@ -31,7 +31,6 @@ return [
     | Types d'articles
     |--------------------------------------------------------------------------
     | 'wizard' : le type impose une saisie d'inventaire unitaire (RG-WZ-03).
-    | 'stock'  : le type alimente le stock physique à la réception.
     */
     'types_articles' => [
         'equipement' => 'Équipement',
@@ -41,8 +40,6 @@ return [
     ],
 
     'types_avec_wizard' => ['equipement', 'licence'],
-
-    'types_avec_stock' => ['consommable'],
 
     /*
     |--------------------------------------------------------------------------
@@ -62,32 +59,6 @@ return [
         'brouillon' => ['label' => 'Brouillon', 'color' => 'secondary', 'icon' => 'fa-edit'],
         'wizard' => ['label' => 'En cours d\'intégration', 'color' => 'warning', 'icon' => 'fa-magic'],
         'valide' => ['label' => 'Validé & intégré', 'color' => 'success', 'icon' => 'fa-check-double'],
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Seuils de stock (EF-STK-07)
-    |--------------------------------------------------------------------------
-    | Exprimés en ratio du seuil d'alerte de l'article. Évalués dans l'ordre.
-    */
-    'seuils_stock' => [
-        'rupture' => ['max_ratio' => 0.0, 'label' => 'Rupture', 'color' => 'danger'],
-        'critique' => ['max_ratio' => 0.5, 'label' => 'Critique', 'color' => 'danger'],
-        'alerte' => ['max_ratio' => 1.0, 'label' => 'Alerte', 'color' => 'warning'],
-        'normal' => ['max_ratio' => null, 'label' => 'Stock correct', 'color' => 'success'],
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Intégration inter-modules
-    |--------------------------------------------------------------------------
-    | EF-STK-05 — Le module Stock (mouvements + lots FIFO) est le référentiel
-    | UNIQUE des quantités et de la valorisation. Les anciens compteurs
-    | (achat_articles.stock_actuel, parc_info_consommables.quantite_stock_actuel)
-    | ont été supprimés ; les écrans lisent StockQueryInterface.
-    */
-    'integration' => [
-        'stock' => env('ACHAT_INTEGRATION_STOCK', true),
     ],
 
     /*

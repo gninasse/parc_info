@@ -16,7 +16,6 @@
         <x-achat-carte-indicateur
             libelle="Catalogue Articles"
             :valeur="$indicateurs['total_articles']"
-            :detail="$indicateurs['alertes_stock'] . ' en alerte de stock'"
             icone="fa-cubes"
             couleur="primary"
             :lien="Route::has('achat.articles.index') ? route('achat.articles.index') : null" />
@@ -41,12 +40,10 @@
     </div>
     <div class="col-sm-6 col-xl-3">
         <x-achat-carte-indicateur
-            libelle="Alertes Stock"
-            :valeur="$indicateurs['alertes_stock']"
-            detail="Consommables sous le seuil"
-            icone="fa-exclamation-triangle"
-            couleur="danger"
-            :lien="route('achat.stocks.index')" />
+            libelle="Fournisseurs actifs"
+            :valeur="$indicateurs['fournisseurs_actifs']"
+            icone="fa-truck"
+            couleur="warning" />
     </div>
 </div>
 

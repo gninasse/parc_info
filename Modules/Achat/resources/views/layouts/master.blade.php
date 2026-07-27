@@ -15,7 +15,7 @@
     <meta name="title" content="CHU-YO - Achats & Approvisionnement" />
     <meta name="author" content="ibrahim" />
     <meta name="description" content="Module Achats et Approvisionnement - CHU-YO" />
-    <meta name="keywords" content="achat, approvisionnement, stock, chu-yo" />
+    <meta name="keywords" content="achat, approvisionnement, chu-yo" />
     <!--end::Primary Meta Tags-->
     <!--begin::Accessibility Features-->
     <meta name="supported-color-schemes" content="light dark" />

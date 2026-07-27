@@ -292,8 +292,7 @@
                             </h6>
                             <p class="small mb-0">
                                 Les équipements et licences saisis seront créés dans le parc informatique
-                                (statut « en stock », état « bon »), les stocks de consommables seront
-                                incrémentés et le bon de commande sera mis à jour.
+                                (statut « en stock », état « bon ») et le bon de commande sera mis à jour.
                                 <strong>Un bordereau validé ne peut plus être modifié.</strong>
                             </p>
                         </div>

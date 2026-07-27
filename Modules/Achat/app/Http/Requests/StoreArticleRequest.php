@@ -36,7 +36,6 @@ class StoreArticleRequest extends FormRequest
             'unite_mesure' => ['required', 'string', 'max:20'],
             'taux_tva' => ['required', 'numeric', 'min:0', 'max:100'],
             'compte_comptable' => ['nullable', 'string', 'max:20'],
-            'seuil_alerte' => ['required_if:type_article,consommable', 'nullable', 'integer', 'min:0'],
             'duree_validite_mois' => ['required_if:type_article,licence', 'nullable', 'integer', 'min:1'],
             'url_fiche_technique' => ['nullable', 'url', 'max:500'],
             'image' => ['nullable', 'image', 'max:2048'],
@@ -47,7 +46,6 @@ class StoreArticleRequest extends FormRequest
     {
         return [
             'categorie_equipement_id.required_if' => "La catégorie d'équipement est obligatoire pour les Équipements.",
-            'seuil_alerte.required_if' => "Le seuil d'alerte est obligatoire pour les Consommables.",
             'duree_validite_mois.required_if' => 'La durée de validité est obligatoire pour les Licences.',
             'reference_constructeur.unique' => 'Cette référence constructeur existe déjà pour cette marque.',
             'code_article.unique' => 'Ce code article est déjà utilisé.',

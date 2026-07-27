@@ -27,7 +27,7 @@
                             <button class="nav-link fw-medium py-2" id="tab-btn-specs"
                                     data-bs-toggle="tab" data-bs-target="#tab-specs" type="button"
                                     role="tab" aria-controls="tab-specs" aria-selected="false">
-                                <i class="fas fa-sliders-h me-1"></i> Caractéristiques &amp; stock
+                                <i class="fas fa-sliders-h me-1"></i> Caractéristiques
                             </button>
                         </li>
                     </ul>
@@ -123,7 +123,7 @@
                             </div>
                         </div>
 
-                        {{-- Onglet 2 : caractéristiques et stock --}}
+                        {{-- Onglet 2 : caractéristiques --}}
                         <div class="tab-pane fade" id="tab-specs" role="tabpanel">
                             <div class="row g-3">
                                 <div class="col-md-4">
@@ -154,14 +154,6 @@
                                     </label>
                                     <input type="text" class="form-control form-control-sm"
                                            name="compte_comptable" id="compte_comptable" placeholder="Ex : 601100">
-                                </div>
-
-                                <div class="col-md-6 d-none" id="group-seuil-alerte">
-                                    <label class="form-label small fw-semibold" for="seuil_alerte">
-                                        Seuil d'alerte de stock <span class="text-danger">*</span>
-                                    </label>
-                                    <input type="number" min="0" class="form-control form-control-sm"
-                                           name="seuil_alerte" id="seuil_alerte" placeholder="Ex : 5">
                                 </div>
 
                                 <div class="col-md-6 d-none" id="group-duree-validite">

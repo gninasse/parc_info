@@ -65,16 +65,6 @@
         </li>
         @endcan
 
-        @can('achat.stocks.view')
-        <li class="nav-item">
-          <a href="{{ route('achat.stocks.index') }}"
-             class="nav-link {{ request()->routeIs('achat.stocks.*') ? 'active' : '' }}">
-            <i class="nav-icon bi bi-box-seam"></i>
-            <p>Suivi des Stocks</p>
-          </a>
-        </li>
-        @endcan
-
         @can('achat.rapports.view')
         <li class="nav-header">ANALYSE & RAPPORTS</li>
         <li class="nav-item">

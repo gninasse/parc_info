@@ -195,7 +195,7 @@ class BordereauLivraisonController extends Controller
                 return redirect()
                     ->route('achat.bordereaux.show', $bordereau)
                     ->with('success', 'Ce bordereau ne contenant aucun équipement ni licence à inventorier, '
-                        ."il a été validé et intégré directement ({$resultat['lignes_stock']} ligne(s) de stock).");
+                        .'il a été validé et intégré directement.');
             } catch (RegleMetierException $e) {
                 return redirect()
                     ->route('achat.bordereaux.show', $bordereau)
@@ -255,10 +255,6 @@ class BordereauLivraisonController extends Controller
 
             if ($nb = count($resultat['licences'])) {
                 $parties[] = "{$nb} licence(s) créée(s)";
-            }
-
-            if ($nb = $resultat['lignes_stock']) {
-                $parties[] = "{$nb} entrée(s) en stock";
             }
 
             return $this->succes(

@@ -70,7 +70,6 @@ class ArticleController extends Controller
                 'categorie' => $article->categorie?->libelle ?? '-',
                 'prix_indicatif' => (float) $article->prix_indicatif,
                 'taux_tva' => (float) $article->taux_tva,
-                'seuil_alerte' => $article->seuil_alerte,
                 'actif' => $article->actif,
                 'created_at' => $article->created_at?->toDateTimeString(),
             ]);

@@ -27,7 +27,6 @@ class ArticleFactory extends Factory
         return $this->state(fn () => [
             'type_article' => 'consommable',
             'categorie_equipement_id' => null,
-            'seuil_alerte' => 5,
             'prix_indicatif' => $this->faker->numberBetween(1000, 20000),
         ]);
     }

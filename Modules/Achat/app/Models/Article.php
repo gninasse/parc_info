@@ -32,7 +32,6 @@ class Article extends Model
         'unite_mesure',
         'taux_tva',
         'compte_comptable',
-        'seuil_alerte',
         'duree_validite_mois',
         'url_fiche_technique',
         'image',
@@ -44,7 +43,6 @@ class Article extends Model
         return [
             'prix_indicatif' => 'decimal:2',
             'taux_tva' => 'decimal:2',
-            'seuil_alerte' => 'integer',
             'duree_validite_mois' => 'integer',
             'actif' => 'boolean',
         ];
@@ -107,12 +105,6 @@ class Article extends Model
     public function necessiteWizard(): bool
     {
         return in_array($this->type_article, config('achat.types_avec_wizard', []), true);
-    }
-
-    /** Le type alimente-t-il le stock physique à la réception ? */
-    public function alimenteStock(): bool
-    {
-        return in_array($this->type_article, config('achat.types_avec_stock', []), true);
     }
 
     // ── Accesseurs ─────────────────────────────────────────────────────────

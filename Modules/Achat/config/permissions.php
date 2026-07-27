@@ -40,9 +40,6 @@ return [
     'achat.bordereaux.delete' => 'Supprimer un bordereau de livraison en brouillon',
     'achat.bordereaux.valider' => 'Valider un bordereau et intégrer au parc',
 
-    // Stocks
-    'achat.stocks.view' => 'Voir le stock des consommables',
-
     // Documents joints
     'achat.documents.view' => 'Consulter et télécharger les documents joints',
     'achat.documents.create' => 'Joindre un document',

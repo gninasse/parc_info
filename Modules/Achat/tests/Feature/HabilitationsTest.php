@@ -166,7 +166,6 @@ class HabilitationsTest extends TestCase
             'prix_indicatif' => 1000,
             'unite_mesure' => 'Unité',
             'taux_tva' => 18,
-            'seuil_alerte' => 1,
             'actif' => true,
         ]);
 

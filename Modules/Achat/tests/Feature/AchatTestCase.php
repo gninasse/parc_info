@@ -4,7 +4,6 @@ namespace Modules\Achat\Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
-use Modules\Achat\Contracts\StockIntegrationInterface;
 use Modules\Achat\Models\Article;
 use Modules\Achat\Models\BonCommande;
 use Modules\Achat\Models\BordereauLivraison;
@@ -16,13 +15,7 @@ use Modules\ParcInfo\Models\Fournisseur;
 use Modules\ParcInfo\Models\Marque;
 use Tests\TestCase;
 
-/**
- * Socle des tests fonctionnels du module Achat.
- *
- * L'intégration vers le module Stock est remplacée par un double : les tests
- * portent sur les règles du module Achat, pas sur la mécanique FIFO de Stock.
- * C'est précisément ce que permet le contrat StockIntegrationInterface.
- */
+/** Socle des tests fonctionnels du module Achat. */
 abstract class AchatTestCase extends TestCase
 {
     use RefreshDatabase;
@@ -55,58 +48,6 @@ abstract class AchatTestCase extends TestCase
             'nom' => 'HP Burkina',
             'est_actif' => true,
         ]);
-
-        $this->neutraliserIntegrationStock();
-        $this->neutraliserLectureStock();
-    }
-
-    /** Remplace la lecture du stock (E-14) par un double neutre. */
-    protected function neutraliserLectureStock(): void
-    {
-        $double = new class implements \Modules\Achat\Contracts\StockQueryInterface
-        {
-            public function estDisponible(): bool
-            {
-                return false;
-            }
-
-            public function quantitesParArticles(array $articleIds): array
-            {
-                return [];
-            }
-
-            public function valorisationParArticles(array $articleIds): array
-            {
-                return [];
-            }
-        };
-
-        $this->app->instance(\Modules\Achat\Contracts\StockQueryInterface::class, $double);
-    }
-
-    /** Remplace l'intégration Stock par un double neutre. */
-    protected function neutraliserIntegrationStock(): void
-    {
-        $double = new class implements StockIntegrationInterface
-        {
-            public array $appels = [];
-
-            public function enregistrerEntreesDepuisBordereau(BordereauLivraison $bordereau, int $userId): int
-            {
-                $this->appels[] = $bordereau->numero_livraison;
-
-                return $bordereau->lignesLivraison
-                    ->filter(fn ($ligne) => $ligne->article->alimenteStock())
-                    ->count();
-            }
-
-            public function estDisponible(): bool
-            {
-                return true;
-            }
-        };
-
-        $this->app->instance(StockIntegrationInterface::class, $double);
     }
 
     // ── Fabriques de données ───────────────────────────────────────────────
@@ -134,7 +75,6 @@ abstract class AchatTestCase extends TestCase
         return $this->creerArticle(array_merge([
             'type_article' => 'consommable',
             'categorie_equipement_id' => null,
-            'seuil_alerte' => 5,
             'prix_indicatif' => 5000,
         ], $attributs));
     }

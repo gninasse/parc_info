@@ -225,9 +225,6 @@ class ReceptionEtIntegrationTest extends AchatTestCase
 
         $this->assertEmpty($resultat['equipements']);
         $this->assertSame('valide', $bordereau->refresh()->statut);
-        // EF-STK-05 — l'entrée en stock est intégralement portée par le
-        // module Stock (doublé ici) : une ligne stockable transmise.
-        $this->assertSame(1, $resultat['lignes_stock']);
     }
 
     /** RG-WZ-08 — Les saisies temporaires sont purgées. */

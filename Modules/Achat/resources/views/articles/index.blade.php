@@ -124,7 +124,6 @@
                     <th data-field="categorie" data-sortable="true">Catégorie</th>
                     <th data-field="prix_indicatif" data-sortable="true" data-formatter="prixFormatter" class="text-end">Prix indicatif</th>
                     <th data-field="taux_tva" data-sortable="true" data-formatter="tauxFormatter" class="text-center">TVA</th>
-                    <th data-field="seuil_alerte" data-sortable="true" class="text-center">Seuil</th>
                     <th data-field="actif" data-sortable="true" data-formatter="actifFormatter" class="text-center">Statut</th>
                 </tr>
             </thead>

@@ -4,7 +4,6 @@ namespace Modules\Achat\Services;
 
 use Illuminate\Support\Facades\DB;
 use Modules\Achat\Contracts\ParcInfoIntegrationInterface;
-use Modules\Achat\Contracts\StockIntegrationInterface;
 use Modules\Achat\Events\BordereauLivraisonValide;
 use Modules\Achat\Exceptions\RegleMetierException;
 use Modules\Achat\Models\Article;
@@ -15,7 +14,7 @@ use Modules\Achat\Models\WizardData;
 
 /**
  * Assistant d'intégration : saisie d'inventaire puis création définitive des
- * enregistrements dans ParcInfo et Stock.
+ * enregistrements dans ParcInfo.
  *
  * RGC-05 / RG-INT-02 — L'intégration est atomique. Toute exception, à
  * n'importe quelle étape, annule l'ensemble : aucun équipement partiellement
@@ -25,7 +24,6 @@ class WizardValidationService
 {
     public function __construct(
         protected ParcInfoIntegrationInterface $parcInfo,
-        protected StockIntegrationInterface $stock,
         protected CodeInventaireGeneratorService $generateurCodeInventaire,
         protected BonCommandeService $bonCommandeService,
     ) {}
@@ -60,7 +58,7 @@ class WizardValidationService
     /**
      * Valide le bordereau et intègre son contenu au parc.
      *
-     * @return array{equipements: array<int>, licences: array<int>, lignes_stock: int}
+     * @return array{equipements: array<int>, licences: array<int>}
      *
      * @throws RegleMetierException
      */
@@ -92,17 +90,13 @@ class WizardValidationService
                         $licences,
                         $this->integrerLicences($bordereau, $ligne, $ligneCommande, $userId)
                     ),
-                    // consommable : entrée portée exclusivement par le module
-                    // Stock (EF-STK-05), via enregistrerEntreesDepuisBordereau.
-                    default => null, // prestation : aucun objet physique à créer
+                    // consommable et prestation : aucun objet physique à créer
+                    default => null,
                 };
 
                 // RG-INT-10
                 $ligneCommande->increment('quantite_livree', $ligne->quantite_livree);
             }
-
-            // EF-STK-05 — Référentiel de stock faisant foi, consommables seuls.
-            $lignesStock = $this->stock->enregistrerEntreesDepuisBordereau($bordereau, $userId);
 
             // RG-BC-11
             $this->bonCommandeService->actualiserStatutApresLivraison($bordereau->bonCommande);
@@ -121,7 +115,6 @@ class WizardValidationService
                 ->withProperties([
                     'equipements' => count($equipements),
                     'licences' => count($licences),
-                    'lignes_stock' => $lignesStock,
                 ])
                 ->log("Bordereau {$bordereau->numero_livraison} validé et intégré au parc");
 
@@ -130,7 +123,6 @@ class WizardValidationService
             return [
                 'equipements' => $equipements,
                 'licences' => $licences,
-                'lignes_stock' => $lignesStock,
             ];
         });
     }
