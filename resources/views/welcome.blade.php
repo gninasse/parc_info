@@ -104,9 +104,6 @@
                         <div class="btn-group">
                             <a href="{{ route('parc-info.dashboard') }}" class="btn btn-outline-light">Parc Informatique</a>
                             <a href="{{ route('achat.dashboard.index') }}" class="btn btn-outline-light">Achats & Appro.</a>
-                            @if (Route::has('stock.dashboard.index'))
-                                <a href="{{ route('stock.dashboard.index') }}" class="btn btn-outline-light">Stocks</a>
-                            @endif
                             <a href="{{ route('grh.dashboard') }}" class="btn btn-outline-light">GRH</a>
                             <a href="{{ route('cores.dashboard') }}" class="btn btn-outline-light">Administration</a>
                         </div>
@@ -131,11 +128,6 @@
                         <a href="{{ route('achat.dashboard.index') }}" class="btn btn-lg btn-success">
                             <i class="fas fa-shopping-cart me-2"></i> Achats & Appro.
                         </a>
-                        @if (Route::has('stock.dashboard.index'))
-                            <a href="{{ route('stock.dashboard.index') }}" class="btn btn-lg btn-success">
-                                <i class="fas fa-warehouse me-2"></i> Stocks
-                            </a>
-                        @endif
                         <a href="{{ route('grh.dashboard') }}" class="btn btn-lg btn-success">
                             <i class="fas fa-user-tie me-2"></i> Gestion RH
                         </a>
@@ -173,22 +165,8 @@
                                 </div>
                                 <h3 class="mb-0">Achats & Appro.</h3>
                             </div>
-                            <p class="text-muted">Gestion des articles, passation et validation des bons de commande, suivi des livraisons et contrôle automatique des stocks.</p>
+                            <p class="text-muted">Gestion des articles, passation et validation des bons de commande et suivi des livraisons.</p>
                             <a href="{{ route('achat.dashboard.index') }}" class="btn btn-sm btn-outline-success mt-auto align-self-start">Ouvrir le module</a>
-                        </div>
-                    </div>
-                    <div class="col-lg-3 col-md-6">
-                        <div class="card bg-dark border-secondary h-100 p-4">
-                            <div class="d-flex align-items-center mb-3">
-                                <div class="bg-emerald p-3 rounded-circle me-3" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; background-color: var(--emerald);">
-                                    <i class="fas fa-warehouse fa-2x text-navy" style="color: var(--navy);"></i>
-                                </div>
-                                <h3 class="mb-0">Stocks & Magasins</h3>
-                            </div>
-                            <p class="text-muted">Gestion des magasins, réception des équipements (wizard de staging), mouvements d'entrée/sortie et suivi des niveaux de stock.</p>
-                            @if (Route::has('stock.dashboard.index'))
-                                <a href="{{ route('stock.dashboard.index') }}" class="btn btn-sm btn-outline-success mt-auto align-self-start">Ouvrir le module</a>
-                            @endif
                         </div>
                     </div>
                     <div class="col-lg-3 col-md-6">

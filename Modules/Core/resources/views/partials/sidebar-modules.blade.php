@@ -2,7 +2,7 @@
     Navigation inter-modules (sidebar commune).
 
     Inclusion opt-in depuis la sidebar d'un module :
-        @include('core::partials.sidebar-modules', ['moduleCourant' => 'stock'])
+        @include('core::partials.sidebar-modules', ['moduleCourant' => 'achat'])
 
     Chaque module déclare sa clé `navigation` dans config/config.php ;
     HasModulePermissions::getModuleNavigation() filtre par permission et par
