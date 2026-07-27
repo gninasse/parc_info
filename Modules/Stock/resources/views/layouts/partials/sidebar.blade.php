@@ -138,6 +138,16 @@
         @endcan
         @endif
 
+        @include('core::partials.sidebar-modules', ['moduleCourant' => 'stock'])
+
+        <li class="nav-header">NAVIGATION PORTAIL</li>
+        <li class="nav-item">
+          <a href="{{ url('/') }}" class="nav-link">
+            <i class="nav-icon bi bi-house-door text-info"></i>
+            <p>Accueil général</p>
+          </a>
+        </li>
+
       </ul>
     </nav>
   </div>

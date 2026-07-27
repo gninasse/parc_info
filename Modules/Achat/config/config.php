@@ -118,4 +118,14 @@ return [
     |--------------------------------------------------------------------------
     */
     'reliquat_alerte_jours' => env('ACHAT_RELIQUAT_ALERTE_JOURS', 60),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Navigation inter-modules (sidebar commune Core)
+    |--------------------------------------------------------------------------
+    */
+    'navigation' => [
+        ['label' => 'Achats & Appro.', 'icon' => 'bi bi-cart', 'route' => 'achat.dashboard.index', 'permission' => 'achat.dashboard.view'],
+    ],
+
 ];

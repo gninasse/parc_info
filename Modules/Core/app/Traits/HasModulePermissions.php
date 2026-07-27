@@ -88,17 +88,32 @@ trait HasModulePermissions
     }
 
     /**
-     * Obtenir un menu de navigation basé sur les modules accessibles
+     * Obtenir un menu de navigation basé sur les modules accessibles.
+     *
+     * Chaque module déclare une clé `navigation` dans son config/config.php
+     * (publiée sous config('{module_minuscule}.navigation')) : liste d'items
+     * {label, icon, route, permission}. Seuls les items dont la route existe
+     * et dont la permission est accordée sont retournés.
      */
     public function getModuleNavigation(): array
     {
-        $modules = $this->getAccessibleModules();
         $navigation = [];
 
-        foreach ($modules as $module) {
-            $config = config("modules.{$module}.navigation");
-            if ($config) {
-                $navigation[$module] = $config;
+        foreach (array_keys(\Nwidart\Modules\Facades\Module::allEnabled()) as $module) {
+            $items = config(strtolower((string) $module).'.navigation');
+
+            if (! $items) {
+                continue;
+            }
+
+            $visibles = array_values(array_filter(
+                $items,
+                fn (array $item) => \Illuminate\Support\Facades\Route::has($item['route'] ?? '')
+                    && (empty($item['permission']) || $this->can($item['permission']))
+            ));
+
+            if ($visibles !== []) {
+                $navigation[strtolower((string) $module)] = $visibles;
             }
         }
 

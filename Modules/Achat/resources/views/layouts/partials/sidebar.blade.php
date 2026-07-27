@@ -86,6 +86,19 @@
         </li>
         @endcan
 
+        @can('achat.parametres.view')
+        <li class="nav-header">ADMINISTRATION</li>
+        <li class="nav-item">
+          <a href="{{ route('achat.parametres.index') }}"
+             class="nav-link {{ request()->routeIs('achat.parametres.*') ? 'active' : '' }}">
+            <i class="nav-icon bi bi-sliders"></i>
+            <p>Paramètres</p>
+          </a>
+        </li>
+        @endcan
+
+        @include('core::partials.sidebar-modules', ['moduleCourant' => 'achat'])
+
         <li class="nav-header">NAVIGATION PORTAIL</li>
         <li class="nav-item">
           <a href="{{ url('/') }}" class="nav-link">

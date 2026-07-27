@@ -51,4 +51,8 @@ return [
     // Rapports
     'achat.rapports.view' => 'Consulter les états et statistiques',
     'achat.rapports.export' => 'Exporter les états en PDF',
+
+    // Paramètres (EF-ADM)
+    'achat.parametres.view' => 'Consulter les paramètres du module',
+    'achat.parametres.edit' => 'Modifier les paramètres du module',
 ];

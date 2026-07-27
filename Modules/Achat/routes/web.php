@@ -6,6 +6,7 @@ use Modules\Achat\Http\Controllers\ArticleController;
 use Modules\Achat\Http\Controllers\BonCommandeController;
 use Modules\Achat\Http\Controllers\BordereauLivraisonController;
 use Modules\Achat\Http\Controllers\DocumentController;
+use Modules\Achat\Http\Controllers\ParametreController;
 use Modules\Achat\Http\Controllers\StatistiquesController;
 use Modules\Achat\Http\Controllers\StockController;
 
@@ -69,4 +70,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('documents', [DocumentController::class, 'store'])->name('documents.store');
     Route::get('documents/{document}/telecharger', [DocumentController::class, 'download'])->name('documents.telecharger');
     Route::delete('documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
+
+    // ── Paramètres (EF-ADM) ────────────────────────────────────────────────
+    Route::get('parametres/data', [ParametreController::class, 'getData'])->name('parametres.data');
+    Route::put('parametres/{parametre}', [ParametreController::class, 'update'])->name('parametres.update');
+    Route::get('parametres', [ParametreController::class, 'index'])->name('parametres.index');
 });
