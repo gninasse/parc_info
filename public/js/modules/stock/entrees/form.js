@@ -9,6 +9,7 @@
  */
 import '../shared/formatters.js';
 import { SelecteurUnites } from '../shared/selecteur-unites.js';
+import { validerEntree } from './validation.js';
 
 $(function () {
     const $form = $('#entree-form');
@@ -305,11 +306,9 @@ $(function () {
         });
     });
 
-    // « ✓ Valider » directement (sans équipements) : SW-VALIDER-ENT (commit E)
+    // « ✓ Valider » directement (sans équipements) : enregistre puis SW-VALIDER-ENT
     $('#btn-valider').on('click', () => {
-        enregistrer((res) => {
-            window.location.href = route('stock.entrees.edit', entreeId ?? res.data.id) + '?valider=1';
-        });
+        enregistrer((res) => validerEntree(entreeId ?? res.data.id));
     });
 
     // ── Restauration des lignes existantes (mode édition) ─────────────────

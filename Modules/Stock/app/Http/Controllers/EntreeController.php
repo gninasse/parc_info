@@ -249,8 +249,15 @@ class EntreeController extends Controller implements HasMiddleware
      */
     public function getEquipementsDisponibles(Request $request): JsonResponse
     {
+        // Les retours ramènent aussi des unités « en service » (?nature=retour)
         $query = Equipement::query()
-            ->where('statut', 'LIKE', 'en_stock%')
+            ->where(function ($q) use ($request) {
+                $q->where('statut', 'LIKE', 'en_stock%');
+
+                if ($request->input('nature') === 'retour') {
+                    $q->orWhere('statut', 'en_service');
+                }
+            })
             ->whereNotIn('id', EquipementMagasin::query()->select('equipement_id'));
 
         if ($request->filled('q')) {
@@ -428,9 +435,35 @@ class EntreeController extends Controller implements HasMiddleware
         }
     }
 
+    /**
+     * Validation (commit E) : ?recap=1 renvoie le récapitulatif chiffré de
+     * SW-VALIDER-ENT sans écrire ; sinon exécute (idempotent par jeton — I9).
+     */
     public function valider(Request $request, $id): JsonResponse
     {
-        abort(501, 'Validation : commit E.');
+        $entree = Entree::query()->with(['magasin', 'fournisseur'])->findOrFail($id);
+        $service = app(\Modules\Stock\Services\ValiderEntreeService::class);
+
+        if ($request->boolean('recap')) {
+            return response()->json(['success' => true, 'recap' => $service->recapDocument($entree)]);
+        }
+
+        $valide = $request->validate(['jeton' => ['required', 'string', 'max:64']]);
+
+        try {
+            $recap = $service->valider($entree, $valide['jeton'], auth()->id());
+        } catch (TransitionInterditeException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->status());
+        } catch (StockException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->status());
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Bon d'entrée {$recap['numero']} validé.",
+            'recap' => $recap,
+            'data' => ['show_url' => route('stock.entrees.show', $entree->id)],
+        ]);
     }
 
     public function pdf($id)

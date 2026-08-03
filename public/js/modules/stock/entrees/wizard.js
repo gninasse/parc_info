@@ -10,6 +10,7 @@
  * compteur, renvoi automatique au retour du réseau, garde de sortie chiffrée.
  */
 import '../shared/formatters.js';
+import { validerEntree } from './validation.js';
 
 $(function () {
     const { entreeId, fileScansMax } = window.WIZARD;
@@ -225,12 +226,12 @@ $(function () {
         });
     });
 
-    // ── Validation (SW-VALIDER-ENT — service au commit E) ─────────────────
+    // ── Validation (SW-VALIDER-ENT) ───────────────────────────────────────
     $('#btn-valider').on('click', () => {
         if (fileHorsLigne.size > 0) {
             Swal.fire({ icon: 'warning', title: 'Saisies en attente', text: `${fileHorsLigne.size} saisie(s) attendent le retour du réseau.` });
             return;
         }
-        window.dispatchEvent(new CustomEvent('stock:valider-entree'));
+        validerEntree(entreeId);
     });
 });

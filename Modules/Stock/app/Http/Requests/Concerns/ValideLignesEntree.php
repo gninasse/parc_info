@@ -80,8 +80,17 @@ trait ValideLignesEntree
                         return;
                     }
 
-                    if (! str_starts_with((string) $equipement->statut, 'en_stock')) {
-                        $fail("L'unité {$equipement->code_inventaire} n'est pas « en stock ».");
+                    // Un retour ramène une unité « en service » ; une livraison
+                    // ne rattache que des unités « en stock » non rattachées.
+                    $statutsAdmis = $this->input('nature') === 'retour'
+                        ? ['en_stock', 'en_service']
+                        : ['en_stock'];
+
+                    $admis = collect($statutsAdmis)
+                        ->contains(fn (string $prefixe) => str_starts_with((string) $equipement->statut, $prefixe));
+
+                    if (! $admis) {
+                        $fail("L'unité {$equipement->code_inventaire} n'est ni « en stock » ni « en service » (statut : {$equipement->statut}).");
                     }
 
                     if (EquipementMagasin::query()->where('equipement_id', $value)->exists()) {
