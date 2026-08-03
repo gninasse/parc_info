@@ -12,8 +12,9 @@ use Modules\Grh\Models\Employe;
 use Modules\Stock\Models\Concerns\EstDocumentStock;
 use Modules\Stock\Models\Concerns\JournaliseActiviteStock;
 use Modules\Stock\Models\Concerns\PorteBeneficiaire;
+use Modules\Stock\Models\Contracts\DocumentAPointage;
 
-class Sortie extends Model
+class Sortie extends Model implements DocumentAPointage
 {
     use EstDocumentStock, HasFactory, JournaliseActiviteStock, PorteBeneficiaire;
 
@@ -114,6 +115,16 @@ class Sortie extends Model
     public function passerEnPointage(): void
     {
         $this->transitionner([self::STATUT_BROUILLON], self::STATUT_POINTAGE);
+    }
+
+    public function magasinSourceId(): int
+    {
+        return (int) $this->magasin_id;
+    }
+
+    public function colonneTamponLigne(): string
+    {
+        return 'ligne_sortie_id';
     }
 
     protected static function newFactory()

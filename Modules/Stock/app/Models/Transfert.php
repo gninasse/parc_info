@@ -11,8 +11,9 @@ use Modules\Core\Models\User;
 use Modules\Grh\Models\Employe;
 use Modules\Stock\Models\Concerns\EstDocumentStock;
 use Modules\Stock\Models\Concerns\JournaliseActiviteStock;
+use Modules\Stock\Models\Contracts\DocumentAPointage;
 
-class Transfert extends Model
+class Transfert extends Model implements DocumentAPointage
 {
     use EstDocumentStock, HasFactory, JournaliseActiviteStock;
 
@@ -110,6 +111,17 @@ class Transfert extends Model
     public function passerEnPointage(): void
     {
         $this->transitionner([self::STATUT_BROUILLON], self::STATUT_POINTAGE);
+    }
+
+    /** Les unités d'un transfert se pointent parmi celles de la SOURCE (D17). */
+    public function magasinSourceId(): int
+    {
+        return (int) $this->magasin_source_id;
+    }
+
+    public function colonneTamponLigne(): string
+    {
+        return 'ligne_transfert_id';
     }
 
     protected static function newFactory()

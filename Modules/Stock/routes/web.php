@@ -5,6 +5,7 @@ use Modules\Stock\Http\Controllers\DashboardController;
 use Modules\Stock\Http\Controllers\EntreeController;
 use Modules\Stock\Http\Controllers\MagasinController;
 use Modules\Stock\Http\Controllers\NiveauController;
+use Modules\Stock\Http\Controllers\SortieController;
 
 Route::middleware(['auth'])->prefix('stock')->name('stock.')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
@@ -45,6 +46,32 @@ Route::middleware(['auth'])->prefix('stock')->name('stock.')->group(function () 
         Route::put('/{id}', [MagasinController::class, 'update'])->name('update');
         Route::delete('/{id}', [MagasinController::class, 'destroy'])->name('destroy');
         Route::patch('/{id}/toggle-status', [MagasinController::class, 'toggleStatus'])->name('toggle-status');
+    });
+
+    // Cascade des unités pointables : équipements « en stock » DU magasin (D14)
+    Route::get('/equipements/du-magasin', [SortieController::class, 'getEquipementsDuMagasin'])->name('equipements.du-magasin');
+
+    // Sélecteurs de bénéficiaires (sorties + retours d'entrées)
+    Route::get('/beneficiaires', [SortieController::class, 'getBeneficiaires'])->name('beneficiaires.data');
+
+    // Sorties (SFD §8) : routes littérales avant /{id}
+    Route::prefix('sorties')->name('sorties.')->group(function () {
+        Route::get('/', [SortieController::class, 'index'])->name('index');
+        Route::get('/data', [SortieController::class, 'getData'])->name('data');
+        Route::get('/create', [SortieController::class, 'create'])->name('create');
+        Route::get('/disponibilite', [SortieController::class, 'getDisponibilite'])->name('disponibilite');
+        Route::post('/', [SortieController::class, 'store'])->name('store');
+        Route::get('/{id}', [SortieController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [SortieController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [SortieController::class, 'update'])->name('update');
+        Route::delete('/{id}', [SortieController::class, 'destroy'])->name('destroy');
+        Route::post('/{id}/pointage', [SortieController::class, 'pointage'])->name('pointage');
+        Route::get('/{id}/pointage', [SortieController::class, 'pointageShow'])->name('pointage.show');
+        Route::put('/{id}/pointage', [SortieController::class, 'pointageUpdate'])->name('pointage.update');
+        Route::post('/{id}/scan-express', [SortieController::class, 'scanExpress'])->name('scan-express');
+        Route::post('/{id}/retour-brouillon', [SortieController::class, 'retourBrouillon'])->name('retour-brouillon');
+        Route::post('/{id}/valider', [SortieController::class, 'valider'])->name('valider');
+        Route::get('/{id}/pdf', [SortieController::class, 'pdf'])->name('pdf');
     });
 
     // État des stocks (UX §2)
