@@ -187,17 +187,22 @@
 @include('stock::shared._selecteur_unites')
 @endsection
 
-@push('js')
-<script>
-    window.ENTREE = @json($entree?->only(['id', 'statut']) );
-    window.LIGNES_INITIALES = @json($entree?->lignes->map(fn ($l) => [
+@php
+    $lignesInitiales = $entree?->lignes->map(fn ($l) => [
         'article_id' => $l->article_id,
         'equipement_id' => $l->equipement_id,
         'quantite' => (float) $l->quantite,
         'cout_unitaire' => $l->cout_unitaire !== null ? (float) $l->cout_unitaire : null,
         'article' => $l->article?->only(['id', 'code', 'nom', 'nature', 'prix_indicatif', 'unite_stock']),
         'equipement' => $l->equipement?->only(['id', 'code_inventaire', 'numero_serie', 'modele']),
-    ])->values() ?? []);
+    ])->values() ?? collect();
+    $entreeJs = $entree?->only(['id', 'statut']);
+@endphp
+
+@push('js')
+<script>
+    window.ENTREE = @json($entreeJs);
+    window.LIGNES_INITIALES = @json($lignesInitiales);
 </script>
 <script type="module" src="{{ asset('js/modules/stock/entrees/form.js') }}?v={{ time() }}"></script>
 @endpush

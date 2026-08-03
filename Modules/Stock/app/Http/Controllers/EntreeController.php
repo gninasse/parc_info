@@ -21,6 +21,7 @@ use Modules\Stock\Models\Entree;
 use Modules\Stock\Models\EquipementMagasin;
 use Modules\Stock\Models\LigneEntree;
 use Modules\Stock\Models\Magasin;
+use Modules\Stock\Models\Mouvement;
 
 class EntreeController extends Controller implements HasMiddleware
 {
@@ -168,8 +169,37 @@ class EntreeController extends Controller implements HasMiddleware
         return match ($entree->statut) {
             Entree::STATUT_BROUILLON => redirect()->route('stock.entrees.edit', $entree->id),
             Entree::STATUT_REFERENCEMENT => redirect()->route('stock.entrees.wizard', $entree->id),
-            default => view('stock::entrees.show', ['entree' => $entree]),
+            default => view('stock::entrees.show', [
+                'entree' => $entree,
+                'unites' => $this->unitesDuBon($entree),
+            ]),
         };
+    }
+
+    /**
+     * Unités du bon validé (fiches créées D10 + rattachements), retrouvées
+     * par le journal, avec le lien vers leur fiche ParcInfo quand la route
+     * de leur catégorie existe.
+     */
+    private function unitesDuBon(Entree $entree): \Illuminate\Support\Collection
+    {
+        return $entree->mouvements()
+            ->whereNotNull('equipement_id')
+            ->with('equipement.categorie:id,code,libelle')
+            ->get()
+            ->map(function (Mouvement $mouvement) {
+                $equipement = $mouvement->equipement;
+                $routeFiche = 'parc-info.'.($equipement->categorie->code ?? '').'.show';
+
+                return [
+                    'code_inventaire' => $equipement->code_inventaire,
+                    'numero_serie' => $equipement->numero_serie,
+                    'modele' => $equipement->modele,
+                    'url_fiche' => \Illuminate\Support\Facades\Route::has($routeFiche)
+                        ? route($routeFiche, $equipement->id)
+                        : null,
+                ];
+            });
     }
 
     public function edit($id)
@@ -466,9 +496,24 @@ class EntreeController extends Controller implements HasMiddleware
         ]);
     }
 
+    /** Bon PDF — statut VALIDÉ uniquement (UX §0.5). */
     public function pdf($id)
     {
-        abort(501, 'PDF : commit F.');
+        $entree = Entree::query()
+            ->with(['magasin', 'fournisseur', 'lignes.article', 'lignes.equipement', 'createur:id,name', 'valideur:id,name'])
+            ->findOrFail($id);
+
+        if (! $entree->estValide()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Le bon PDF n\'existe qu\'après validation.',
+            ], 409);
+        }
+
+        return \Barryvdh\DomPDF\Facade\Pdf::loadView('stock::pdf.entree', [
+            'entree' => $entree,
+            'unites' => $this->unitesDuBon($entree),
+        ])->setPaper('a4')->stream("bon-entree-{$entree->numero}.pdf");
     }
 
     // ── Privé ──────────────────────────────────────────────────────────────
