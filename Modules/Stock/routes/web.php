@@ -2,11 +2,34 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Stock\Http\Controllers\DashboardController;
+use Modules\Stock\Http\Controllers\EntreeController;
 use Modules\Stock\Http\Controllers\MagasinController;
 use Modules\Stock\Http\Controllers\NiveauController;
 
 Route::middleware(['auth'])->prefix('stock')->name('stock.')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Cascade partagée : unités « en stock » non rattachées (sélecteur d'unités)
+    Route::get('/equipements/disponibles', [EntreeController::class, 'getEquipementsDisponibles'])->name('equipements.disponibles');
+
+    // Entrées (SFD §8) : routes littérales avant /{id}
+    Route::prefix('entrees')->name('entrees.')->group(function () {
+        Route::get('/', [EntreeController::class, 'index'])->name('index');
+        Route::get('/data', [EntreeController::class, 'getData'])->name('data');
+        Route::get('/create', [EntreeController::class, 'create'])->name('create');
+        Route::post('/', [EntreeController::class, 'store'])->name('store');
+        Route::get('/{id}', [EntreeController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [EntreeController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [EntreeController::class, 'update'])->name('update');
+        Route::delete('/{id}', [EntreeController::class, 'destroy'])->name('destroy');
+        Route::post('/{id}/referencement', [EntreeController::class, 'referencement'])->name('referencement');
+        Route::get('/{id}/wizard', [EntreeController::class, 'wizard'])->name('wizard');
+        Route::put('/{id}/wizard', [EntreeController::class, 'wizardUpdate'])->name('wizard.update');
+        Route::post('/{id}/wizard/import', [EntreeController::class, 'wizardImport'])->name('wizard.import');
+        Route::post('/{id}/retour-brouillon', [EntreeController::class, 'retourBrouillon'])->name('retour-brouillon');
+        Route::post('/{id}/valider', [EntreeController::class, 'valider'])->name('valider');
+        Route::get('/{id}/pdf', [EntreeController::class, 'pdf'])->name('pdf');
+    });
 
     // Magasins (référentiel — UX §9) : routes littérales avant /{id}
     Route::prefix('magasins')->name('magasins.')->group(function () {
