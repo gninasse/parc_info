@@ -1,0 +1,18 @@
+{
+    "name": "Stock",
+    "alias": "stock",
+    "description": "Gestion des stocks du CHU-YO : magasins, quantités, mouvements et documents (entrées, sorties, transferts, inventaires)",
+    "keywords": [],
+    "priority": 0,
+    "requires": [
+        "Core",
+        "Catalogue",
+        "Organisation",
+        "ParcInfo",
+        "Grh"
+    ],
+    "providers": [
+        "Modules\\Stock\\Providers\\StockServiceProvider"
+    ],
+    "files": []
+}

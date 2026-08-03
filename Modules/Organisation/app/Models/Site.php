@@ -5,7 +5,7 @@ namespace Modules\Organisation\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Modules\Organisation\Models\Referentiel\Magasin;
+use Modules\Stock\Models\Magasin;
 
 class Site extends Model
 {
