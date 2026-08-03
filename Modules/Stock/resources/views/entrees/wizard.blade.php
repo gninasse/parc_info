@@ -129,6 +129,7 @@
     </button>
 </div>
 
+@include('stock::entrees._modal_import')
 @endsection
 
 @push('js')

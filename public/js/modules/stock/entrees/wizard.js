@@ -150,11 +150,59 @@ $(function () {
         e.returnValue = `${fileHorsLigne.size} saisie(s) en attente de renvoi — quitter maintenant les perdrait.`;
     });
 
-    // ── Import (modale au commit D) ───────────────────────────────────────
+    // ── Import CSV / collage (MD-IMPORT) ──────────────────────────────────
     $('#btn-importer').on('click', () => {
-        if ($('#importModal').length) {
-            $('#importModal').modal('show');
-        }
+        $('#import-contenu').val('');
+        $('#import-fichier').val('');
+        $('#import-rapport').addClass('d-none');
+        $('#btn-import-appliquer').addClass('d-none');
+        $('#importModal').modal('show');
+    });
+
+    const requeteImport = (mode) => {
+        const donnees = new FormData();
+        donnees.append('mode', mode);
+        const fichier = $('#import-fichier')[0].files[0];
+        if (fichier) donnees.append('fichier', fichier);
+        else donnees.append('contenu', $('#import-contenu').val());
+
+        return $.ajax({
+            url: route('stock.entrees.wizard.import', entreeId),
+            method: 'POST',
+            data: donnees,
+            processData: false,
+            contentType: false,
+            dataType: 'json',
+        });
+    };
+
+    const afficherRapport = (rapport) => {
+        $('#import-rapport').removeClass('d-none');
+        $('#rapport-acceptes').text(rapport.acceptes.length);
+        $('#rapport-doublons').text(rapport.doublons_tampon.length);
+        $('#rapport-connus').text(rapport.deja_connus.length);
+        $('#rapport-en-trop').text(rapport.en_trop.length);
+
+        const details = [...rapport.doublons_tampon, ...rapport.deja_connus, ...rapport.en_trop]
+            .map((r) => `<div><code>${$('<i>').text(r.numero).html()}</code> — ${$('<i>').text(r.detail).html()}</div>`)
+            .join('');
+        $('#rapport-details').html(details);
+
+        const $appliquer = $('#btn-import-appliquer');
+        $appliquer.toggleClass('d-none', rapport.acceptes.length === 0)
+            .text(`Appliquer les ${rapport.acceptes.length} acceptés`);
+    };
+
+    $('#btn-import-analyser').on('click', () => {
+        requeteImport('analyser')
+            .done((res) => afficherRapport(res.rapport))
+            .fail((xhr) => Swal.fire({ icon: 'error', title: 'Erreur', text: xhr.responseJSON?.message ?? 'Analyse impossible.' }));
+    });
+
+    $('#btn-import-appliquer').on('click', () => {
+        requeteImport('appliquer')
+            .done(() => window.location.reload()) // les rangées remplies + progression à jour
+            .fail((xhr) => Swal.fire({ icon: 'error', title: 'Erreur', text: xhr.responseJSON?.message ?? 'Import impossible.' }));
     });
 
     // ── Retour brouillon (SW-RETOUR-BROUILLON, texte exact amendé) ────────

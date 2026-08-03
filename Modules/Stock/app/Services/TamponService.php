@@ -129,6 +129,88 @@ class TamponService
         }
     }
 
+    /**
+     * Parsing d'un collage / fichier CSV (MD-IMPORT) : un numéro par ligne,
+     * trim, dédoublonnage en conservant l'ordre.
+     */
+    public function parserContenu(string $contenu): array
+    {
+        return collect(preg_split('/\R/', $contenu) ?: [])
+            ->map(fn (string $ligne) => trim(trim($ligne), ';,'))
+            ->filter(fn (string $ligne) => $ligne !== '')
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Rapport d'import (analyse sans écriture) — même code de contrôle que
+     * la saisie unitaire (verifierUnicite) :
+     * {acceptes, doublons_tampon, deja_connus, en_trop}.
+     */
+    public function analyserImport(Entree $entree, array $numeros): array
+    {
+        $rapport = [
+            'acceptes' => [],
+            'doublons_tampon' => [],
+            'deja_connus' => [],
+            'en_trop' => [],
+        ];
+
+        $capacite = TamponEquipement::query()
+            ->whereIn('ligne_entree_id', $entree->lignes()->select('id'))
+            ->whereNull('numero_serie')
+            ->count();
+
+        foreach ($numeros as $numero) {
+            try {
+                $this->verifierUnicite($entree, $numero);
+            } catch (ReferencementException $e) {
+                $cle = $e->categorie === ReferencementException::CATEGORIE_DEJA_CONNU ? 'deja_connus' : 'doublons_tampon';
+                $rapport[$cle][] = ['numero' => $numero, 'detail' => $e->getMessage()];
+
+                continue;
+            }
+
+            if (count($rapport['acceptes']) < $capacite) {
+                $rapport['acceptes'][] = $numero;
+            } else {
+                $rapport['en_trop'][] = ['numero' => $numero, 'detail' => 'Plus de rangée vide disponible'];
+            }
+        }
+
+        return $rapport;
+    }
+
+    /**
+     * « Appliquer les N acceptés » : ré-analyse (l'état a pu changer depuis
+     * le rapport) puis remplit les rangées vides, dans l'ordre du wizard.
+     */
+    public function appliquerImport(Entree $entree, array $numeros): array
+    {
+        return DB::transaction(function () use ($entree, $numeros) {
+            $rapport = $this->analyserImport($entree, $numeros);
+
+            $rangeesVides = TamponEquipement::query()
+                ->whereIn('ligne_entree_id', $entree->lignes()->select('id'))
+                ->whereNull('numero_serie')
+                ->orderBy('ligne_entree_id')
+                ->orderBy('id')
+                ->get();
+
+            foreach ($rapport['acceptes'] as $index => $numero) {
+                $rangeesVides[$index]->update(['numero_serie' => $numero]);
+            }
+
+            activity('stock')
+                ->performedOn($entree)
+                ->withProperties(['appliques' => count($rapport['acceptes'])])
+                ->log('import_references');
+
+            return $rapport;
+        });
+    }
+
     /** Progression du wizard : [saisis, total]. */
     public function progression(Entree $entree): array
     {

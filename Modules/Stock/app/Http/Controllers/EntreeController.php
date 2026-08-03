@@ -369,9 +369,43 @@ class EntreeController extends Controller implements HasMiddleware
         ]);
     }
 
+    /** Import CSV / collage (MD-IMPORT) : mode analyser (rapport) ou appliquer. */
     public function wizardImport(Request $request, $id): JsonResponse
     {
-        abort(501, 'Import : commit D.');
+        $entree = Entree::query()->findOrFail($id);
+
+        if ($entree->statut !== Entree::STATUT_REFERENCEMENT) {
+            return $this->refusVerrouillage($entree);
+        }
+
+        $valide = $request->validate([
+            'mode' => ['required', 'in:analyser,appliquer'],
+            'contenu' => ['nullable', 'string', 'required_without:fichier'],
+            'fichier' => ['nullable', 'file', 'mimes:csv,txt', 'max:1024', 'required_without:contenu'],
+        ], [
+            'contenu.required_without' => 'Collez des numéros ou joignez un fichier CSV.',
+        ]);
+
+        $tamponService = app(\Modules\Stock\Services\TamponService::class);
+
+        $contenu = $request->hasFile('fichier')
+            ? (string) file_get_contents($request->file('fichier')->getRealPath())
+            : (string) ($valide['contenu'] ?? '');
+
+        $numeros = $tamponService->parserContenu($contenu);
+
+        $rapport = $valide['mode'] === 'appliquer'
+            ? $tamponService->appliquerImport($entree, $numeros)
+            : $tamponService->analyserImport($entree, $numeros);
+
+        [$saisis, $total] = $tamponService->progression($entree);
+
+        return response()->json([
+            'success' => true,
+            'mode' => $valide['mode'],
+            'rapport' => $rapport,
+            'progression' => ['saisis' => $saisis, 'total' => $total],
+        ]);
     }
 
     /** RÉFÉRENCEMENT → BROUILLON : purge du tampon, action journalisée (I16). */

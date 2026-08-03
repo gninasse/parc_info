@@ -7,6 +7,13 @@ namespace Modules\Stock\Exceptions;
  */
 class ReferencementException extends StockException
 {
+    public const CATEGORIE_DOUBLON_TAMPON = 'doublon_tampon';
+
+    public const CATEGORIE_DEJA_CONNU = 'deja_connu';
+
+    /** Catégorie du rapport d'import MD-IMPORT (null hors doublons). */
+    public ?string $categorie = null;
+
     public static function aucuneLigneModele(): self
     {
         return new self('Aucune ligne « modèle × N » : ce bon se valide directement, sans référencement.');
@@ -14,16 +21,25 @@ class ReferencementException extends StockException
 
     public static function dejaSaisiLigne(int $rang): self
     {
-        return new self("Déjà saisi ligne {$rang}");
+        $exception = new self("Déjà saisi ligne {$rang}");
+        $exception->categorie = self::CATEGORIE_DOUBLON_TAMPON;
+
+        return $exception;
     }
 
     public static function dejaSaisiAutreBon(): self
     {
-        return new self('Déjà saisi dans un autre bon non validé');
+        $exception = new self('Déjà saisi dans un autre bon non validé');
+        $exception->categorie = self::CATEGORIE_DOUBLON_TAMPON;
+
+        return $exception;
     }
 
     public static function existeDeja(string $codeInventaire): self
     {
-        return new self("Existe déjà ({$codeInventaire}) — utilisez le rattachement");
+        $exception = new self("Existe déjà ({$codeInventaire}) — utilisez le rattachement");
+        $exception->categorie = self::CATEGORIE_DEJA_CONNU;
+
+        return $exception;
     }
 }
