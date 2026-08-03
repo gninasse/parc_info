@@ -301,14 +301,72 @@ class EntreeController extends Controller implements HasMiddleware
         }
     }
 
+    /** Écran de référencement plein écran (UX §3.3). */
     public function wizard($id)
     {
-        abort(501, 'Wizard : commit C.');
+        $entree = Entree::query()->with(['magasin:id,code,libelle'])->findOrFail($id);
+
+        if ($entree->statut !== Entree::STATUT_REFERENCEMENT) {
+            return match ($entree->statut) {
+                Entree::STATUT_BROUILLON => redirect()->route('stock.entrees.edit', $entree->id),
+                default => redirect()->route('stock.entrees.show', $entree->id),
+            };
+        }
+
+        $tamponService = app(\Modules\Stock\Services\TamponService::class);
+        [$saisis, $total] = $tamponService->progression($entree);
+
+        return view('stock::entrees.wizard', [
+            'entree' => $entree,
+            'lignesModeles' => $tamponService->lignesModeles($entree),
+            'saisis' => $saisis,
+            'total' => $total,
+        ]);
     }
 
+    /**
+     * Autosave du wizard (dérogation S5) : un PUT unitaire par blur/scan,
+     * unicité contrôlée serveur à CHAQUE écriture.
+     */
     public function wizardUpdate(Request $request, $id): JsonResponse
     {
-        abort(501, 'Autosave wizard : commit C.');
+        $entree = Entree::query()->findOrFail($id);
+
+        if ($entree->statut !== Entree::STATUT_REFERENCEMENT) {
+            return $this->refusVerrouillage($entree);
+        }
+
+        $valide = $request->validate([
+            'tampon_id' => ['required', 'integer'],
+            'numero_serie' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $tampon = \Modules\Stock\Models\TamponEquipement::query()
+            ->whereIn('ligne_entree_id', $entree->lignes()->select('id'))
+            ->findOrFail((int) $valide['tampon_id']);
+
+        $tamponService = app(\Modules\Stock\Services\TamponService::class);
+
+        try {
+            $tamponService->saisirNumero($entree, $tampon, $valide['numero_serie'] ?? null);
+        } catch (StockException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->status());
+        }
+
+        [$saisis, $total] = $tamponService->progression($entree);
+        $ligne = $tampon->ligneEntree;
+
+        return response()->json([
+            'success' => true,
+            'statut_ligne' => [
+                'tampon_id' => $tampon->id,
+                'numero_serie' => $tampon->fresh()->numero_serie,
+                'saisis' => $saisis,
+                'total' => $total,
+                'ligne_saisis' => $ligne->tampons()->whereNotNull('numero_serie')->count(),
+                'ligne_total' => (int) $ligne->quantite,
+            ],
+        ]);
     }
 
     public function wizardImport(Request $request, $id): JsonResponse
