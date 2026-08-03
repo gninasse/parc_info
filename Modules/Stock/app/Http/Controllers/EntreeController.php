@@ -281,9 +281,24 @@ class EntreeController extends Controller implements HasMiddleware
 
     // ── Actions implémentées aux commits B–E ───────────────────────────────
 
+    /** BROUILLON → RÉFÉRENCEMENT : le tampon naît, les quantités se verrouillent (I16). */
     public function referencement($id): JsonResponse
     {
-        abort(501, 'Référencement : commit B.');
+        $entree = Entree::query()->findOrFail($id);
+
+        try {
+            $rangees = app(\Modules\Stock\Services\TamponService::class)->passerEnReferencement($entree);
+
+            return response()->json([
+                'success' => true,
+                'message' => "{$rangees} numéro(s) de série à saisir.",
+                'data' => ['wizard_url' => route('stock.entrees.wizard', $entree->id)],
+            ]);
+        } catch (TransitionInterditeException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->status());
+        } catch (StockException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->status());
+        }
     }
 
     public function wizard($id)
@@ -301,9 +316,24 @@ class EntreeController extends Controller implements HasMiddleware
         abort(501, 'Import : commit D.');
     }
 
+    /** RÉFÉRENCEMENT → BROUILLON : purge du tampon, action journalisée (I16). */
     public function retourBrouillon($id): JsonResponse
     {
-        abort(501, 'Retour brouillon : commit B.');
+        $entree = Entree::query()->findOrFail($id);
+
+        try {
+            $perdues = app(\Modules\Stock\Services\TamponService::class)->retourBrouillon($entree);
+
+            return response()->json([
+                'success' => true,
+                'message' => $perdues > 0
+                    ? "Retour au brouillon : {$perdues} référence(s) saisie(s) perdue(s). Les articles et quantités du bon sont conservés."
+                    : 'Retour au brouillon. Les articles et quantités du bon sont conservés.',
+                'data' => ['edit_url' => route('stock.entrees.edit', $entree->id)],
+            ]);
+        } catch (TransitionInterditeException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->status());
+        }
     }
 
     public function valider(Request $request, $id): JsonResponse
