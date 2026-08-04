@@ -4,7 +4,9 @@
 
 @section('breadcrumb')
     <li class="breadcrumb-item"><a href="{{ route('parc-info.dashboard') }}">Parc Info</a></li>
-    <li class="breadcrumb-item"><a href="{{ route('parc-info.' . $equipement->categorie->code . 's.index') }}">{{ $equipement->categorie->libelle }}</a></li>
+    {{-- Même pluralisation que l'enregistrement des routes dynamiques (Str::plural) :
+         un « s » naïf casse les codes en majuscules (ORDI → ORDIs ≠ ORDIS) --}}
+    <li class="breadcrumb-item"><a href="{{ route('parc-info.' . \Illuminate\Support\Str::plural($equipement->categorie->code) . '.index') }}">{{ $equipement->categorie->libelle }}</a></li>
     <li class="breadcrumb-item active">{{ $equipement->code_inventaire }}</li>
 @endsection
 

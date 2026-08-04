@@ -189,7 +189,8 @@ class EntreeController extends Controller implements HasMiddleware
             ->get()
             ->map(function (Mouvement $mouvement) {
                 $equipement = $mouvement->equipement;
-                $routeFiche = 'parc-info.'.($equipement->categorie->code ?? '').'.show';
+                // Même pluralisation que l'enregistrement des routes ParcInfo (ORDI → ORDIS)
+                $routeFiche = 'parc-info.'.\Illuminate\Support\Str::plural($equipement->categorie->code ?? '').'.show';
 
                 return [
                     'code_inventaire' => $equipement->code_inventaire,

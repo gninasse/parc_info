@@ -228,7 +228,8 @@
     </div>
 
     <script>
-        const qrContent = "{{ route('parc-info.' . $equipement->categorie->code . 's.show', $equipement->id) }}";
+        {{-- Str::plural : même pluralisation que l'enregistrement des routes (ORDI → ORDIS, pas ORDIs) --}}
+        const qrContent = "{{ route('parc-info.' . \Illuminate\Support\Str::plural($equipement->categorie->code) . '.show', $equipement->id) }}";
         new QRCode(document.getElementById("qrcode"), {
             text: qrContent,
             width: 80,
