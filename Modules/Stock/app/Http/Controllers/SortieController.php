@@ -351,20 +351,28 @@ class SortieController extends Controller implements HasMiddleware
         ]);
     }
 
-    public function pdf($id)
+    /**
+     * Bon PDF — statut VALIDÉ uniquement, en deux modèles :
+     *  - « articles » (défaut) : libellés, quantités, emplacements ;
+     *  - « equipements » : code d'inventaire, modèle, n° de série, affectation.
+     * Un modèle inconnu retombe sur le défaut.
+     */
+    public function pdf(Request $request, $id)
     {
         $sortie = Sortie::query()
-            ->with(['magasin', 'lignes.article', 'remisAEmploye', 'createur:id,name', 'valideur:id,name'])
+            ->with(['magasin', 'lignes.article', 'lignes.emplacementLocal', 'remisAEmploye', 'createur:id,name', 'valideur:id,name'])
             ->findOrFail($id);
 
         if (! $sortie->estValide()) {
             return response()->json(['success' => false, 'message' => 'Le bon PDF n\'existe qu\'après validation.'], 409);
         }
 
-        return \Barryvdh\DomPDF\Facade\Pdf::loadView('stock::pdf.sortie', [
+        $modele = $request->input('modele') === 'equipements' ? 'equipements' : 'articles';
+
+        return \Barryvdh\DomPDF\Facade\Pdf::loadView("stock::pdf.sortie_{$modele}", [
             'sortie' => $sortie,
             'unites' => $this->unitesDuBon($sortie),
-        ])->setPaper('a4')->stream("bon-sortie-{$sortie->numero}.pdf");
+        ])->setPaper('a4')->stream("bon-sortie-{$sortie->numero}-{$modele}.pdf");
     }
 
     // ── Cascades ───────────────────────────────────────────────────────────

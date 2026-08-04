@@ -215,6 +215,78 @@ class SortieValidationTest extends TestCase
         $this->valider($sortie, 'jeton-different')->assertStatus(409);
     }
 
+    public function test_les_deux_modeles_d_impression_du_bon_de_sortie(): void
+    {
+        // Bon mixte validé : 1 article quantitatif + 1 unité pointée
+        $this->approvisionner(10);
+
+        $modele = Article::factory()->equipement()->create(['modele' => 'Latitude 7440']);
+        $categorie = CategorieEquipement::query()->find($modele->categorie_equipement_id);
+        $unite = ParcInfoDeTest::equipement([
+            'categorie_id' => $categorie->id, 'modele' => 'Latitude 7440', 'numero_serie' => 'SN-PDF-SOR',
+        ]);
+        EquipementMagasin::create(['equipement_id' => $unite->id, 'magasin_id' => $this->magasin->id, 'date_rattachement' => now()]);
+
+        $service = $this->creerService('SRV-PDF', 'Service PDF');
+        $sortie = Sortie::factory()->create([
+            'magasin_id' => $this->magasin->id,
+            'beneficiaire_type' => 'service',
+            'beneficiaire_service_id' => $service->id,
+            'remis_a_nom' => 'D. Porteur',
+        ]);
+        LigneSortie::factory()->create(['sortie_id' => $sortie->id, 'article_id' => $this->article->id, 'quantite' => 3]);
+        $ligneModele = LigneSortie::factory()->create(['sortie_id' => $sortie->id, 'article_id' => $modele->id, 'quantite' => 1]);
+        $sortie->passerEnPointage();
+
+        $this->actingAs($this->user)->putJson(route('stock.sorties.pointage.update', $sortie->id), [
+            'action' => 'pointer', 'ligne_id' => $ligneModele->id, 'equipement_id' => $unite->id,
+        ])->assertOk();
+
+        $this->valider($sortie)->assertOk();
+
+        // Les deux modèles répondent en PDF, plus le repli sur défaut
+        foreach (['articles', 'equipements', 'inexistant'] as $variante) {
+            $this->actingAs($this->user)
+                ->get(route('stock.sorties.pdf', ['id' => $sortie->id, 'modele' => $variante]))
+                ->assertOk()
+                ->assertHeader('content-type', 'application/pdf');
+        }
+
+        $donnees = [
+            'sortie' => $sortie->fresh(['magasin', 'lignes.article', 'lignes.emplacementLocal', 'remisAEmploye', 'createur', 'valideur']),
+            'unites' => collect([[
+                'code_inventaire' => 'EQP-2026-0009', 'modele' => 'Latitude 7440',
+                'numero_serie' => 'SN-PDF-SOR', 'affectation_code' => 'AFF-XYZ', 'url_fiche' => null,
+            ]]),
+        ];
+
+        // Modèle 1 : libellés, quantités, signature du porteur
+        $articles = view('stock::pdf.sortie_articles', $donnees)->render();
+        $this->assertStringContainsString('CHU-YO', $articles);
+        $this->assertStringContainsString($sortie->fresh()->numero, $articles);
+        $this->assertStringContainsString($this->article->nom, $articles);
+        $this->assertStringContainsString('Quantité', $articles);
+        $this->assertStringContainsString('Service PDF', $articles);
+        $this->assertStringContainsString('Signature du porteur — D. Porteur', $articles);
+        $this->assertStringContainsString('Modèle × 1', $articles);
+        $this->assertStringContainsString('Document non modifiable — corrections par contre-mouvement', $articles);
+
+        // Modèle 2 : code inventaire, modèle, n° de série, affectation
+        $equipements = view('stock::pdf.sortie_equipements', $donnees)->render();
+        $this->assertStringContainsString('Fiche des équipements', $equipements);
+        $this->assertStringContainsString('Code inventaire', $equipements);
+        $this->assertStringContainsString('EQP-2026-0009', $equipements);
+        $this->assertStringContainsString('Latitude 7440', $equipements);
+        $this->assertStringContainsString('SN-PDF-SOR', $equipements);
+        $this->assertStringContainsString('AFF-XYZ', $equipements);
+        $this->assertStringContainsString('Reçu par — D. Porteur', $equipements);
+        $this->assertStringContainsString('Document non modifiable — corrections par contre-mouvement', $equipements);
+
+        // Bon sans unité : le modèle équipements reste imprimable
+        $vide = view('stock::pdf.sortie_equipements', ['sortie' => $donnees['sortie'], 'unites' => collect()])->render();
+        $this->assertStringContainsString('Aucun équipement sur ce bon', $vide);
+    }
+
     public function test_le_recap_signale_les_seuils_franchis(): void
     {
         $this->article->update(['seuil_defaut' => 5]);
