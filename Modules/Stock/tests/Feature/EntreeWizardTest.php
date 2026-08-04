@@ -66,6 +66,71 @@ class EntreeWizardTest extends TestCase
             ->assertSee('Revenir au brouillon');
     }
 
+    /**
+     * Diligence 4 : plusieurs lignes « modèle × N » sur un même bon —
+     * chacune propose de recevoir la saisie, et le bandeau annonce la ligne
+     * active (le choix lui-même est piloté côté client).
+     */
+    public function test_chaque_ligne_modele_propose_de_recevoir_la_saisie(): void
+    {
+        $entree = Entree::factory()->create(['magasin_id' => $this->entree->magasin_id]);
+
+        $portable = Article::factory()->equipement()->create(['nom' => 'Ordinateur portable Dell Latitude 3540']);
+        $bureau = Article::factory()->equipement()->create(['nom' => 'Ordinateur de bureau HP ProDesk 400']);
+
+        $ligneBureau = LigneEntree::factory()->create(['entree_id' => $entree->id, 'article_id' => $bureau->id, 'quantite' => 2]);
+        $lignePortable = LigneEntree::factory()->create(['entree_id' => $entree->id, 'article_id' => $portable->id, 'quantite' => 3]);
+
+        app(TamponService::class)->passerEnReferencement($entree);
+
+        $this->actingAs($this->user)
+            ->get(route('stock.entrees.wizard', $entree->id))
+            ->assertOk()
+            // Bandeau de la ligne active
+            ->assertSee('Saisie en cours sur')
+            // Un bouton de sélection par ligne, avec son libellé
+            ->assertSee('Saisir sur cette ligne')
+            ->assertSee('data-ligne-id="'.$ligneBureau->id.'"', false)
+            ->assertSee('data-ligne-id="'.$lignePortable->id.'"', false)
+            ->assertSee('data-libelle="Ordinateur portable Dell Latitude 3540"', false)
+            ->assertSee('data-libelle="Ordinateur de bureau HP ProDesk 400"', false);
+    }
+
+    /** Les rangées restent rattachées à leur ligne : la saisie ne déborde pas. */
+    public function test_les_rangees_sont_cloisonnees_par_ligne(): void
+    {
+        $entree = Entree::factory()->create(['magasin_id' => $this->entree->magasin_id]);
+        $ligneA = LigneEntree::factory()->create([
+            'entree_id' => $entree->id,
+            'article_id' => Article::factory()->equipement()->create()->id,
+            'quantite' => 2,
+        ]);
+        $ligneB = LigneEntree::factory()->create([
+            'entree_id' => $entree->id,
+            'article_id' => Article::factory()->equipement()->create()->id,
+            'quantite' => 1,
+        ]);
+        app(TamponService::class)->passerEnReferencement($entree);
+
+        $this->assertSame(2, TamponEquipement::query()->where('ligne_entree_id', $ligneA->id)->count());
+        $this->assertSame(1, TamponEquipement::query()->where('ligne_entree_id', $ligneB->id)->count());
+
+        // Saisir sur la ligne B ne consomme pas les rangées de A
+        $tamponB = TamponEquipement::query()->where('ligne_entree_id', $ligneB->id)->first();
+        $this->actingAs($this->user)
+            ->putJson(route('stock.entrees.wizard.update', $entree->id), [
+                'tampon_id' => $tamponB->id,
+                'numero_serie' => 'SN-LIGNE-B',
+            ])
+            ->assertOk()
+            ->assertJsonPath('statut_ligne.ligne_saisis', 1)
+            ->assertJsonPath('statut_ligne.ligne_total', 1)
+            ->assertJsonPath('statut_ligne.saisis', 1)
+            ->assertJsonPath('statut_ligne.total', 3);
+
+        $this->assertSame(0, TamponEquipement::query()->where('ligne_entree_id', $ligneA->id)->whereNotNull('numero_serie')->count());
+    }
+
     public function test_autosave_le_put_unitaire_persiste(): void
     {
         $tampon = $this->tampons()->first();

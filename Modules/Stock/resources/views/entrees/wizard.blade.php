@@ -56,9 +56,14 @@
     <strong><span id="hors-ligne-compteur">0</span> en attente</strong>.
 </div>
 
-{{-- Champ scan global (S6) : remplit la première rangée vide --}}
+{{-- Champ scan global (S6) : remplit la prochaine rangée vide de la ligne active --}}
 <div class="card border-0 shadow-sm mb-3">
     <div class="card-body py-2">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-2 small">
+            <span class="text-muted">Saisie en cours sur :</span>
+            <span class="badge bg-primary" id="ligne-active-libelle">—</span>
+            <span class="text-muted" id="ligne-active-reste"></span>
+        </div>
         @include('stock::shared._scan_field', [
             'id' => 'scan-wizard',
             'placeholder' => 'Scannez un n° de série — il remplit la prochaine rangée vide…',
@@ -79,8 +84,17 @@
                     <span class="badge bg-dark me-2">E</span>
                     <strong>{{ $ligne->article->nom }}</strong>
                     <span class="ms-2 text-muted compteur-ligne" data-total="{{ (int) $ligne->quantite }}">{{ $saisisLigne }}/{{ (int) $ligne->quantite }}</span>
+                    <span class="badge bg-primary ms-2 marqueur-actif d-none">Saisie ici</span>
                 </button>
             </h2>
+            {{-- Choisir quelle ligne reçoit les prochains scans (plusieurs modèles au bon) --}}
+            <div class="px-3 pt-2">
+                <button type="button" class="btn btn-sm btn-outline-primary btn-saisir-ici"
+                        data-ligne-id="{{ $ligne->id }}"
+                        data-libelle="{{ $ligne->article->nom }}">
+                    <i class="bi bi-cursor-text me-1"></i>Saisir sur cette ligne
+                </button>
+            </div>
             <div id="ligne-{{ $ligne->id }}" class="accordion-collapse collapse @if($loop->first) show @endif"
                  data-bs-parent="#accordeon-lignes">
                 <div class="accordion-body p-0">

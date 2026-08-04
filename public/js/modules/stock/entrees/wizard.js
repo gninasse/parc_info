@@ -103,22 +103,96 @@ $(function () {
             .done(() => $champ.trigger('focus'));
     });
 
-    // ⌨ Entrée = rangée suivante (le blur déclenche l'autosave)
+    // ⌨ Entrée = rangée suivante DE LA MÊME LIGNE (puis on sort du champ)
     $('.champ-serie').on('keydown', function (e) {
         if (e.key !== 'Enter') return;
         e.preventDefault();
-        const champs = $('.champ-serie').toArray();
+        const $item = $(this).closest('.accordion-item');
+        const champs = $item.find('.champ-serie').toArray();
         const suivant = champs[champs.indexOf(this) + 1];
         if (suivant) $(suivant).trigger('focus');
         else this.blur();
     });
 
-    // ── Champ scan global : remplit la première rangée vide (S6) ─────────
+    // ── Ligne active : celle qui reçoit les prochains scans ───────────────
+    // Un bon peut porter plusieurs lignes « modèle × N » (par exemple un
+    // portable Dell et un fixe HP) : le magasinier choisit laquelle il
+    // référence, au lieu de subir l'ordre des accordéons.
+    let ligneActiveId = null;
+
+    const rangeesVides = (ligneId) => $(`.accordion-item[data-ligne-id="${ligneId}"] .rangee-serie`)
+        .filter(function () {
+            return $(this).find('.champ-serie').val().trim() === '';
+        });
+
+    const lignesDuBon = () => $('.accordion-item[data-ligne-id]').toArray()
+        .map((item) => Number($(item).data('ligne-id')));
+
+    const majLigneActive = (ligneId, { ouvrir = false } = {}) => {
+        ligneActiveId = ligneId;
+
+        $('.marqueur-actif').addClass('d-none');
+        $('.btn-saisir-ici').removeClass('active');
+
+        if (ligneId === null) {
+            $('#ligne-active-libelle').text('Toutes les lignes sont complètes');
+            $('#ligne-active-reste').text('');
+            return;
+        }
+
+        const $item = $(`.accordion-item[data-ligne-id="${ligneId}"]`);
+        $item.find('.marqueur-actif').removeClass('d-none');
+        $item.find('.btn-saisir-ici').addClass('active');
+
+        $('#ligne-active-libelle').text($item.find('.btn-saisir-ici').data('libelle') ?? '—');
+        const reste = rangeesVides(ligneId).length;
+        $('#ligne-active-reste').text(reste > 0 ? `${reste} n° de série à saisir` : 'ligne complète');
+
+        if (ouvrir) {
+            const collapse = $item.find('.accordion-collapse')[0];
+            if (collapse) bootstrap.Collapse.getOrCreateInstance(collapse).show();
+        }
+    };
+
+    /** Première ligne encore incomplète, en repartant de la ligne courante. */
+    const prochaineLigneIncomplete = (depuis = null) => {
+        const lignes = lignesDuBon();
+        if (!lignes.length) return null;
+
+        const debut = depuis === null ? 0 : Math.max(0, lignes.indexOf(depuis));
+        for (let i = 0; i < lignes.length; i++) {
+            const candidate = lignes[(debut + i) % lignes.length];
+            if (rangeesVides(candidate).length > 0) return candidate;
+        }
+        return null;
+    };
+
+    $('.btn-saisir-ici').on('click', function () {
+        majLigneActive(Number($(this).data('ligne-id')), { ouvrir: true });
+        window.scanWizard?.refocus();
+    });
+
+    // Saisir manuellement dans une rangée bascule la ligne active dessus
+    $('.champ-serie').on('focus', function () {
+        const ligneId = Number($(this).closest('.accordion-item').data('ligne-id'));
+        if (ligneId !== ligneActiveId) majLigneActive(ligneId);
+    });
+
+    majLigneActive(prochaineLigneIncomplete());
+
+    // ── Champ scan global : remplit la ligne ACTIVE (S6) ──────────────────
     window.scanWizard = new StockScanField('#scan-wizard', {
         onScan: async (code) => {
-            const $vide = $('.rangee-serie').filter(function () {
-                return $(this).find('.champ-serie').val().trim() === '';
-            }).first();
+            // Ligne complète (ou aucune choisie) : on bascule sur la suivante
+            if (ligneActiveId === null || rangeesVides(ligneActiveId).length === 0) {
+                const suivante = prochaineLigneIncomplete(ligneActiveId);
+                if (suivante === null) {
+                    return { ok: false, libelle: 'Toutes les rangées sont remplies' };
+                }
+                majLigneActive(suivante, { ouvrir: true });
+            }
+
+            const $vide = rangeesVides(ligneActiveId).first();
 
             if (!$vide.length) {
                 return { ok: false, libelle: 'Toutes les rangées sont remplies' };
@@ -132,6 +206,15 @@ $(function () {
                 if ($vide.find('.champ-serie').hasClass('is-invalid')) {
                     return { ok: false, libelle: $vide.find('.message-erreur').text() };
                 }
+
+                // Ligne terminée : on enchaîne sur la suivante encore incomplète
+                if (rangeesVides(ligneActiveId).length === 0) {
+                    const suivante = prochaineLigneIncomplete(ligneActiveId);
+                    majLigneActive(suivante, { ouvrir: suivante !== null });
+                } else {
+                    majLigneActive(ligneActiveId);
+                }
+
                 return { ok: true, libelle: `${code} enregistré` };
             } catch {
                 return fileHorsLigne.size > 0
