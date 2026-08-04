@@ -36,37 +36,13 @@
         </div>
         <div class="d-flex gap-2">
             @can('stock.entrees.store')
-            {{-- Deux modèles d'impression : valorisation / fiche des équipements --}}
-            <div class="btn-group">
-                <a href="{{ route('stock.entrees.pdf', $entree->id) }}" target="_blank" rel="noopener" class="btn btn-outline-primary btn-sm">
-                    <i class="bi bi-printer me-1"></i>Imprimer le bon
-                </a>
-                <button type="button" class="btn btn-outline-primary btn-sm dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
-                    <span class="visually-hidden">Choisir le modèle d'impression</span>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li>
-                        <a class="dropdown-item" target="_blank" rel="noopener"
-                           href="{{ route('stock.entrees.pdf', ['id' => $entree->id, 'modele' => 'articles']) }}">
-                            <i class="bi bi-list-columns me-2"></i>Bon de réception
-                            <div class="small text-muted">Articles, quantités, coûts et total</div>
-                        </a>
-                    </li>
-                    <li>
-                        <a class="dropdown-item @if($unites->isEmpty()) disabled @endif" target="_blank" rel="noopener"
-                           href="{{ route('stock.entrees.pdf', ['id' => $entree->id, 'modele' => 'equipements']) }}">
-                            <i class="bi bi-upc-scan me-2"></i>Fiche des équipements
-                            <div class="small text-muted">
-                                @if($unites->isEmpty())
-                                    Aucun équipement sur ce bon
-                                @else
-                                    Codes d'inventaire, modèles et n° de série
-                                @endif
-                            </div>
-                        </a>
-                    </li>
-                </ul>
-            </div>
+            @include('stock::shared._bouton_impression', [
+                'urlPdf' => route('stock.entrees.pdf', $entree->id),
+                'titre' => 'Bon d\'entrée '.$entree->numero,
+                'libelleArticles' => 'Bon de réception',
+                'libelleEquipements' => 'Fiche des équipements',
+                'avecEquipements' => $unites->isNotEmpty(),
+            ])
             @endcan
             <a href="{{ route('stock.entrees.index') }}" class="btn btn-outline-secondary btn-sm">
                 <i class="fas fa-arrow-left me-1"></i>Retour
@@ -180,4 +156,12 @@
     </div>
 </div>
 
+@include('stock::shared._modal_pdf')
 @endsection
+
+@push('js')
+<script type="module">
+    import { cablerLiensPdf } from '{{ asset('js/modules/stock/shared/modal-pdf.js') }}';
+    cablerLiensPdf();
+</script>
+@endpush

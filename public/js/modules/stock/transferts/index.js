@@ -3,6 +3,7 @@
  * (toggle visible si l'utilisateur est responsable d'un magasin).
  */
 import '../shared/formatters.js';
+import { ModalPdf } from '../shared/modal-pdf.js';
 
 $(function () {
     const $table = $('#transferts-table');
@@ -63,12 +64,36 @@ $(function () {
         });
     });
 
+
+    // Impression depuis la liste : aperçu en modale (bons validés uniquement)
+    $('#btn-imprimer').on('click', () => {
+        const row = selection();
+        if (!row) return;
+
+        if (row.statut !== 'VALIDE') {
+            Swal.fire({
+                icon: 'info',
+                title: 'Bon non validé',
+                text: "Le bon PDF n'existe qu'après validation.",
+            });
+            return;
+        }
+
+        ModalPdf.ouvrir({
+            urlBase: route('stock.transferts.pdf', row.id),
+            titre: `Transfert ${row.numero_affiche}`,
+            modeles: { articles: 'Bon de transfert', equipements: 'Bordereau de transport' },
+            avecEquipements: true,
+        });
+    });
+
     $table.on('check.bs.table uncheck.bs.table', function () {
         const sel = $table.bootstrapTable('getSelections');
         const one = sel.length === 1;
-        $('#btn-show, #btn-edit, #btn-delete').prop('disabled', !one);
+        $('#btn-show, #btn-edit, #btn-delete, #btn-imprimer').prop('disabled', !one);
         if (one) {
             const verrouille = ['VALIDE', 'ANNULE'].includes(sel[0].statut);
+            $('#btn-imprimer').prop('disabled', sel[0].statut !== 'VALIDE');
             $('#btn-edit, #btn-delete')
                 .prop('disabled', verrouille)
                 .attr('title', verrouille ? 'Bon validé — utilisez un contre-mouvement pour corriger' : '');

@@ -35,37 +35,13 @@
         </div>
         <div class="d-flex gap-2">
             @can('stock.transferts.store')
-            {{-- Deux modèles d'impression : détail des lignes / bordereau de transport --}}
-            <div class="btn-group">
-                <a href="{{ route('stock.transferts.pdf', $transfert->id) }}" target="_blank" rel="noopener" class="btn btn-outline-primary btn-sm">
-                    <i class="bi bi-printer me-1"></i>Imprimer le bon
-                </a>
-                <button type="button" class="btn btn-outline-primary btn-sm dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
-                    <span class="visually-hidden">Choisir le modèle d'impression</span>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li>
-                        <a class="dropdown-item" target="_blank" rel="noopener"
-                           href="{{ route('stock.transferts.pdf', ['id' => $transfert->id, 'modele' => 'articles']) }}">
-                            <i class="bi bi-list-columns me-2"></i>Bon de transfert
-                            <div class="small text-muted">Articles et quantités</div>
-                        </a>
-                    </li>
-                    <li>
-                        <a class="dropdown-item @if($unites->isEmpty()) disabled @endif" target="_blank" rel="noopener"
-                           href="{{ route('stock.transferts.pdf', ['id' => $transfert->id, 'modele' => 'equipements']) }}">
-                            <i class="bi bi-upc-scan me-2"></i>Bordereau de transport
-                            <div class="small text-muted">
-                                @if($unites->isEmpty())
-                                    Aucun équipement sur ce transfert
-                                @else
-                                    Codes d'inventaire, modèles et n° de série
-                                @endif
-                            </div>
-                        </a>
-                    </li>
-                </ul>
-            </div>
+            @include('stock::shared._bouton_impression', [
+                'urlPdf' => route('stock.transferts.pdf', $transfert->id),
+                'titre' => 'Transfert '.$transfert->numero,
+                'libelleArticles' => 'Bon de transfert',
+                'libelleEquipements' => 'Bordereau de transport',
+                'avecEquipements' => $unites->isNotEmpty(),
+            ])
             @endcan
             <a href="{{ route('stock.transferts.index') }}" class="btn btn-outline-secondary btn-sm">
                 <i class="fas fa-arrow-left me-1"></i>Retour
@@ -139,4 +115,12 @@
     </div>
 </div>
 
+@include('stock::shared._modal_pdf')
 @endsection
+
+@push('js')
+<script type="module">
+    import { cablerLiensPdf } from '{{ asset('js/modules/stock/shared/modal-pdf.js') }}';
+    cablerLiensPdf();
+</script>
+@endpush

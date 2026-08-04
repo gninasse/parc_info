@@ -3,6 +3,7 @@
  * statut, suppression avec SW-DEL-BROUILLON chiffrée.
  */
 import '../shared/formatters.js';
+import { ModalPdf } from '../shared/modal-pdf.js';
 
 $(function () {
     const $table = $('#entrees-table');
@@ -81,13 +82,37 @@ $(function () {
         });
     });
 
+
+    // Impression depuis la liste : aperçu en modale (bons validés uniquement)
+    $('#btn-imprimer').on('click', () => {
+        const row = selection();
+        if (!row) return;
+
+        if (row.statut !== 'VALIDE') {
+            Swal.fire({
+                icon: 'info',
+                title: 'Bon non validé',
+                text: "Le bon PDF n'existe qu'après validation.",
+            });
+            return;
+        }
+
+        ModalPdf.ouvrir({
+            urlBase: route('stock.entrees.pdf', row.id),
+            titre: `Bon d'entrée ${row.numero_affiche}`,
+            modeles: { articles: 'Bon de réception', equipements: 'Fiche des équipements' },
+            avecEquipements: true,
+        });
+    });
+
     $table.on('check.bs.table uncheck.bs.table', function () {
         const sel = $table.bootstrapTable('getSelections');
         const one = sel.length === 1;
-        $('#btn-show, #btn-edit, #btn-delete').prop('disabled', !one);
+        $('#btn-show, #btn-edit, #btn-delete, #btn-imprimer').prop('disabled', !one);
         if (one) {
             // Modifier/Supprimer grisés si VALIDÉ/ANNULÉ (UX §0.3)
             const verrouille = ['VALIDE', 'ANNULE'].includes(sel[0].statut);
+            $('#btn-imprimer').prop('disabled', sel[0].statut !== 'VALIDE');
             $('#btn-edit, #btn-delete')
                 .prop('disabled', verrouille)
                 .attr('title', verrouille ? 'Bon validé — utilisez un contre-mouvement pour corriger' : '');

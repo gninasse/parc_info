@@ -85,6 +85,11 @@
                 <i class="fas fa-trash"></i>
             </button>
             @endcan
+            @can('stock.transferts.store')
+            <button id="btn-imprimer" class="btn btn-outline-primary btn-sm" disabled data-bs-toggle="tooltip" title="Imprimer (bons validés)">
+                <i class="bi bi-printer"></i>
+            </button>
+            @endcan
         </div>
 
         <table id="transferts-table"
@@ -111,6 +116,7 @@
         </table>
     </div>
 </div>
+@include('stock::shared._modal_pdf')
 @endsection
 
 @push('js')
