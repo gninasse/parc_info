@@ -302,7 +302,7 @@ class TransfertTest extends TestCase
         $this->assertSame(2, Mouvement::query()->where('transfert_id', $transfert->id)->count());
     }
 
-    public function test_le_gabarit_pdf_porte_la_double_signature(): void
+    public function test_les_deux_modeles_d_impression_portent_la_double_signature(): void
     {
         $this->approvisionnerSource(5);
         $transfert = Transfert::factory()->create([
@@ -313,20 +313,51 @@ class TransfertTest extends TestCase
         LigneTransfert::factory()->create(['transfert_id' => $transfert->id, 'article_id' => $this->article->id, 'quantite' => 2]);
         $this->valider($transfert)->assertOk();
 
-        $html = view('stock::pdf.transfert', [
+        $donnees = [
             'transfert' => $transfert->fresh(['magasinSource', 'magasinCible', 'lignes.article', 'transporteParEmploye', 'createur', 'valideur']),
-            'unites' => collect(),
-        ])->render();
+            'unites' => collect([[
+                'code_inventaire' => 'EQP-2026-0042', 'modele' => 'Switch 24p',
+                'numero_serie' => 'SN-TRF-PDF', 'etat' => 'bon', 'url_fiche' => null,
+            ]]),
+        ];
 
-        $this->assertStringContainsString('Départ — magasinier source / transporteur', $html);
-        $this->assertStringContainsString('Arrivée — magasinier cible', $html);
-        $this->assertStringContainsString('C. Transporteur', $html);
-        $this->assertStringContainsString($transfert->fresh()->numero, $html);
-        $this->assertStringContainsString('Document non modifiable — corrections par contre-mouvement', $html);
+        // Double signature + cartouche sur les DEUX modèles (même mouvement physique)
+        foreach (['transfert_articles', 'transfert_equipements'] as $gabarit) {
+            $html = view("stock::pdf.{$gabarit}", $donnees)->render();
 
-        $this->actingAs($this->user)
-            ->get(route('stock.transferts.pdf', $transfert->id))
-            ->assertOk()
-            ->assertHeader('content-type', 'application/pdf');
+            $this->assertStringContainsString('Départ — magasinier source / transporteur', $html, $gabarit);
+            $this->assertStringContainsString('Arrivée — magasinier cible', $html, $gabarit);
+            $this->assertStringContainsString('C. Transporteur', $html, $gabarit);
+            $this->assertStringContainsString($transfert->fresh()->numero, $html, $gabarit);
+            $this->assertStringContainsString($this->source->libelle, $html, $gabarit);
+            $this->assertStringContainsString($this->cible->libelle, $html, $gabarit);
+            $this->assertStringContainsString('Document non modifiable — corrections par contre-mouvement', $html, $gabarit);
+        }
+
+        // Modèle 1 : libellés et quantités
+        $articles = view('stock::pdf.transfert_articles', $donnees)->render();
+        $this->assertStringContainsString($this->article->nom, $articles);
+        $this->assertStringContainsString('Quantité', $articles);
+
+        // Modèle 2 : références des unités transportées
+        $equipements = view('stock::pdf.transfert_equipements', $donnees)->render();
+        $this->assertStringContainsString('Bordereau de transport', $equipements);
+        $this->assertStringContainsString('Code inventaire', $equipements);
+        $this->assertStringContainsString('EQP-2026-0042', $equipements);
+        $this->assertStringContainsString('Switch 24p', $equipements);
+        $this->assertStringContainsString('SN-TRF-PDF', $equipements);
+        $this->assertStringContainsString('Trajet', $equipements);
+
+        // Transfert sans unité : le bordereau reste imprimable
+        $vide = view('stock::pdf.transfert_equipements', ['transfert' => $donnees['transfert'], 'unites' => collect()])->render();
+        $this->assertStringContainsString('Aucun équipement sur ce transfert', $vide);
+
+        // Les deux modèles répondent en PDF, plus le repli sur défaut
+        foreach (['articles', 'equipements', 'inexistant'] as $variante) {
+            $this->actingAs($this->user)
+                ->get(route('stock.transferts.pdf', ['id' => $transfert->id, 'modele' => $variante]))
+                ->assertOk()
+                ->assertHeader('content-type', 'application/pdf');
+        }
     }
 }

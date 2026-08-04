@@ -332,7 +332,15 @@ class TransfertController extends Controller implements HasMiddleware
         ]);
     }
 
-    public function pdf($id)
+    /**
+     * Bon PDF — statut VALIDÉ uniquement, en deux modèles :
+     *  - « articles » (défaut) : libellés, quantités, unité ;
+     *  - « equipements » : bordereau de transport (code d'inventaire,
+     *    modèle, n° de série, état, case de réception).
+     * Les deux portent la double signature départ/arrivée (même mouvement
+     * physique). Un modèle inconnu retombe sur le défaut.
+     */
+    public function pdf(Request $request, $id)
     {
         $transfert = Transfert::query()
             ->with(['magasinSource', 'magasinCible', 'lignes.article', 'transporteParEmploye', 'createur:id,name', 'valideur:id,name'])
@@ -342,10 +350,12 @@ class TransfertController extends Controller implements HasMiddleware
             return response()->json(['success' => false, 'message' => 'Le bon PDF n\'existe qu\'après validation.'], 409);
         }
 
-        return \Barryvdh\DomPDF\Facade\Pdf::loadView('stock::pdf.transfert', [
+        $modele = $request->input('modele') === 'equipements' ? 'equipements' : 'articles';
+
+        return \Barryvdh\DomPDF\Facade\Pdf::loadView("stock::pdf.transfert_{$modele}", [
             'transfert' => $transfert,
             'unites' => $this->unitesDuBon($transfert),
-        ])->setPaper('a4')->stream("bon-transfert-{$transfert->numero}.pdf");
+        ])->setPaper('a4')->stream("bon-transfert-{$transfert->numero}-{$modele}.pdf");
     }
 
     // ── Privé ──────────────────────────────────────────────────────────────
@@ -398,6 +408,7 @@ class TransfertController extends Controller implements HasMiddleware
                     'code_inventaire' => $equipement->code_inventaire,
                     'numero_serie' => $equipement->numero_serie,
                     'modele' => $equipement->modele,
+                    'etat' => $equipement->etat,
                     'url_fiche' => \Illuminate\Support\Facades\Route::has($routeFiche)
                         ? route($routeFiche, $equipement->id)
                         : null,

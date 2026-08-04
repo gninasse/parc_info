@@ -1,103 +1,99 @@
 /**
- * form.js — brouillon de transfert (UX §5.2) : Source ⇄ Cible avec contrôle
- * immédiat, disponible SOURCE, scan express borné aux unités de la source
- * (via le PointageService partagé). Structurellement la sortie SANS
- * bénéficiaire ni affectation.
+ * form.js — brouillon de transfert (UX §5.2).
+ *
+ * Lignes REGROUPÉES en une seule table (même parti pris que les entrées et
+ * les sorties) ; l'article se choisit dans une MODALE (SelecteurArticle).
+ * Spécificités du transfert : Source ⇄ Cible avec contrôle immédiat, le
+ * disponible est celui de la SOURCE, le scan express est borné aux unités
+ * de la source. Structurellement la sortie SANS bénéficiaire ni affectation.
  */
 import '../shared/formatters.js';
+import { SelecteurArticle } from '../shared/selecteur-article.js';
 import { validerDocument } from '../shared/valider-document.js';
 
 $(function () {
     const transfertId = $('#transfert-form').data('transfert-id') || null;
-    const lignes = { articles: [], modeles: [] };
 
-    const initSelectArticle = ($select, nature) => {
-        $select.select2({
-            theme: 'bootstrap-5',
-            placeholder: 'Rechercher un article…',
-            minimumInputLength: 1,
-            ajax: {
-                url: '/catalogue/api/articles',
-                dataType: 'json',
-                delay: 250,
-                data: (params) => ({ q: params.term, ...(nature ? { nature } : {}) }),
-                processResults: (res) => ({
-                    results: res.data
-                        .filter((a) => (nature ? a.nature === nature : !['equipement', 'licence'].includes(a.nature)))
-                        .map((a) => ({ id: a.id, text: `${a.code} — ${a.nom}`, article: a })),
-                }),
-            },
-        });
-    };
+    // La vérité du formulaire : {article, quantite, pre_pointes}
+    const lignes = [];
 
-    // Disponible du magasin SOURCE (réservations incluses)
+    const echapper = (t) => $('<span>').text(t ?? '—').html();
+
+    // ── Disponible du magasin SOURCE (réservations incluses) ─────────────
     const majDisponible = ($tr, ligne) => {
         const magasinId = $('#t-source').val();
-        if (!magasinId || !ligne.article) return;
+        if (!magasinId || !ligne.article || ligne.article.nature === 'equipement') return;
+
         $.getJSON(route('stock.sorties.disponibilite'), { magasin_id: magasinId, article_id: ligne.article.id }, (res) => {
-            const reservee = res.reservee > 0 ? ` <span class="text-muted">(dont ${res.reservee} dans d'autres brouillons)</span>` : '';
+            const reservee = res.reservee > 0
+                ? ` <span class="text-muted">(dont ${res.reservee} dans d'autres brouillons)</span>`
+                : '';
             $tr.find('.cellule-disponible').html(`${res.disponible}${reservee}`);
             $tr.find('.input-quantite').toggleClass('is-invalid', Number($tr.find('.input-quantite').val()) > res.disponible);
         });
     };
 
-    const rangeeArticle = (collection, nature) => {
-        const $tbody = nature === 'equipement' ? $('#table-lignes-modeles tbody') : $('#table-lignes-articles tbody');
-        const ligne = { article: null, quantite: 1 };
-        collection.push(ligne);
+    // ── Rangées de la table unique ─────────────────────────────────────────
+    const ajouterLigne = (article, quantite = 1, prePointes = 0) => {
+        const ligne = { article, quantite, pre_pointes: prePointes };
+        lignes.push(ligne);
 
+        const estModele = article.nature === 'equipement';
         const $tr = $(`
             <tr>
-                <td><select class="form-select select-article"></select></td>
-                <td><input type="number" class="form-control input-quantite" min="1" step="1" value="1"></td>
-                ${nature === 'equipement' ? '' : '<td class="cellule-disponible small">—</td>'}
+                <td class="text-center">${window.natureBadgeFormatter(article.nature)}</td>
+                <td>
+                    <span class="font-monospace small text-muted">${echapper(article.code)}</span>
+                    ${echapper(article.nom)}
+                    ${estModele ? '<div class="small text-muted"><i class="bi bi-upc-scan me-1"></i>Modèle × N — unités de la source pointées à l\'étape suivante</div>' : ''}
+                </td>
+                <td><input type="number" class="form-control input-quantite" min="1" step="1" value="${quantite}"></td>
+                <td class="cellule-disponible small">${estModele ? '<span class="text-muted">au pointage</span>' : '—'}</td>
                 <td><button type="button" class="btn btn-sm btn-outline-danger btn-supprimer-ligne"><i class="fas fa-trash"></i></button></td>
             </tr>`);
-        $tbody.append($tr);
-
-        initSelectArticle($tr.find('.select-article'), nature === 'equipement' ? 'equipement' : null);
-
-        $tr.find('.select-article').on('select2:select', (e) => {
-            ligne.article = e.params.data.article;
-            if (nature !== 'equipement') majDisponible($tr, ligne);
-            recalculer();
-        });
+        $('#table-lignes tbody').append($tr);
+        $tr.data('ligne', ligne);
 
         $tr.find('.input-quantite').on('input', function () {
             ligne.quantite = parseFloat(this.value) || 0;
-            if (nature !== 'equipement') majDisponible($tr, ligne);
+            majDisponible($tr, ligne);
             recalculer();
         });
 
+        // ⌨ Entrée sur la quantité de la dernière ligne = nouvelle ligne
+        $tr.find('.input-quantite').on('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if ($tr.is($('#table-lignes tbody tr').last())) selecteurArticle.ouvrir();
+            }
+        });
+
         $tr.find('.btn-supprimer-ligne').on('click', () => {
-            collection.splice(collection.indexOf(ligne), 1);
+            lignes.splice(lignes.indexOf(ligne), 1);
             $tr.remove();
             recalculer();
         });
 
-        $tr.data('ligne', ligne);
+        majDisponible($tr, ligne);
+        recalculer();
         return $tr;
     };
 
+    // ── Récapitulatif + visibilité des boutons ─────────────────────────────
     const recalculer = () => {
         let articles = 0; let unitesArticles = 0; let unitesModeles = 0; let prePointees = 0;
 
-        $('#table-lignes-articles tbody tr').each(function () {
-            const ligne = $(this).data('ligne');
-            if (!ligne?.article) return;
-            articles++;
-            unitesArticles += ligne.quantite || 0;
+        lignes.forEach((ligne) => {
+            if (ligne.article.nature === 'equipement') {
+                unitesModeles += ligne.quantite || 0;
+                prePointees += ligne.pre_pointes || 0;
+            } else {
+                articles++;
+                unitesArticles += ligne.quantite || 0;
+            }
         });
 
-        $('#table-lignes-modeles tbody tr').each(function () {
-            const ligne = $(this).data('ligne');
-            if (!ligne?.article) return;
-            unitesModeles += ligne.quantite || 0;
-            prePointees += ligne.pre_pointes || 0;
-        });
-
-        $('#compteur-articles').text(articles);
-        $('#compteur-equipements').text(unitesModeles);
+        $('#compteur-lignes').text(lignes.length);
         $('#recap-barre').html(
             `<strong>${articles}</strong> article(s) (${unitesArticles} u) · <strong>${unitesModeles}</strong> équipement(s)`
         );
@@ -107,30 +103,29 @@ $(function () {
         $('#btn-valider').toggleClass('d-none', resteAPointer || !transfertId);
     };
 
-    const chargeUtile = () => {
-        const toutes = [];
-        $('#table-lignes-articles tbody tr, #table-lignes-modeles tbody tr').each(function () {
-            const ligne = $(this).data('ligne');
-            if (!ligne?.article) return;
-            toutes.push({ article_id: ligne.article.id, quantite: ligne.quantite });
-        });
-
-        return {
-            magasin_source_id: $('#t-source').val(),
-            magasin_cible_id: $('#t-cible').val(),
-            date_document: $('#t-date').val(),
-            transporte_par_nom: $('#t-transporte-nom').val() || null,
-            transporte_par_employe_id: $('#t-transporte-employe').val() || null,
-            lignes: toutes,
-        };
-    };
+    // ── Sérialisation / soumission ────────────────────────────────────────
+    const chargeUtile = () => ({
+        magasin_source_id: $('#t-source').val(),
+        magasin_cible_id: $('#t-cible').val(),
+        date_document: $('#t-date').val(),
+        transporte_par_nom: $('#t-transporte-nom').val() || null,
+        transporte_par_employe_id: $('#t-transporte-employe').val() || null,
+        lignes: lignes.map((ligne) => ({ article_id: ligne.article.id, quantite: ligne.quantite })),
+    });
 
     const afficherErreurs = (xhr) => {
         if (xhr.status === 422 && xhr.responseJSON?.errors) {
+            const erreurs = xhr.responseJSON.errors;
+            const premiere = Object.keys(erreurs).find((c) => c.startsWith('lignes.'));
+            if (premiere) {
+                const index = Number(premiere.split('.')[1]);
+                $('#table-lignes tbody tr').eq(index).addClass('table-danger');
+                setTimeout(() => $('#table-lignes tbody tr').removeClass('table-danger'), 4000);
+            }
             Swal.fire({
                 icon: 'error',
                 title: 'Formulaire incomplet',
-                html: Object.values(xhr.responseJSON.errors).flat().map((m) => $('<i>').text(m).html()).join('<br>'),
+                html: Object.values(erreurs).flat().map((m) => echapper(m)).join('<br>'),
             });
             return;
         }
@@ -138,6 +133,9 @@ $(function () {
     };
 
     const enregistrer = (surSucces) => {
+        const $btn = $('#btn-enregistrer');
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Enregistrement…');
+
         $.ajax({
             url: transfertId ? route('stock.transferts.update', transfertId) : route('stock.transferts.store'),
             method: transfertId ? 'PUT' : 'POST',
@@ -151,6 +149,7 @@ $(function () {
                 Swal.fire({ icon: 'success', title: 'Enregistré', timer: 2000, showConfirmButton: false });
             },
             error: afficherErreurs,
+            complete: () => $btn.prop('disabled', false).html('<i class="fas fa-save me-1"></i>Enregistrer le brouillon'),
         });
     };
 
@@ -164,12 +163,13 @@ $(function () {
         $('#t-cible').next('.select2').find('.select2-selection').toggleClass('border-danger', identiques);
         return !identiques;
     };
+
     $('#t-source, #t-cible').on('change', () => {
         verifierCible();
         // Le disponible dépend de la source
-        $('#table-lignes-articles tbody tr').each(function () {
+        $('#table-lignes tbody tr').each(function () {
             const ligne = $(this).data('ligne');
-            if (ligne?.article) majDisponible($(this), ligne);
+            if (ligne) majDisponible($(this), ligne);
         });
     });
 
@@ -192,8 +192,11 @@ $(function () {
             .trigger('change');
     }
 
-    $('#btn-ajouter-article').on('click', () => rangeeArticle(lignes.articles, null));
-    $('#btn-ajouter-modele').on('click', () => rangeeArticle(lignes.modeles, 'equipement'));
+    // Sélecteur d'article en modale (remplace le Select2 de ligne)
+    const selecteurArticle = new SelecteurArticle({
+        onChoisi: (article) => ajouterLigne(article),
+    });
+    $('#btn-ajouter-article').on('click', () => selecteurArticle.ouvrir());
 
     $('#transfert-form').on('submit', (e) => {
         e.preventDefault();
@@ -203,7 +206,7 @@ $(function () {
     $('#btn-supprimer').on('click', () => {
         Swal.fire({
             title: 'Supprimer ce bon ?',
-            text: `Le Brouillon #${transfertId} et ses lignes seront supprimés.`,
+            text: `Le Brouillon #${transfertId} et ses ${lignes.length} lignes seront supprimés.`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#dc3545',
@@ -243,15 +246,7 @@ $(function () {
             onScan: async (code) => {
                 try {
                     const res = await $.post(route('stock.transferts.scan-express', transfertId), { numero_serie: code });
-                    const $tr = rangeeArticle(lignes.modeles, 'equipement');
-                    const ligne = $tr.data('ligne');
-                    ligne.article = res.data.ligne.article;
-                    ligne.quantite = 1;
-                    ligne.pre_pointes = 1;
-                    $tr.find('.select-article')
-                        .append(new Option(`${ligne.article.code} — ${ligne.article.nom}`, ligne.article.id, true, true))
-                        .trigger('change');
-                    recalculer();
+                    ajouterLigne(res.data.ligne.article, 1, 1);
                     return { ok: true, libelle: res.message };
                 } catch (xhr) {
                     return { ok: false, libelle: xhr.responseJSON?.message ?? 'Scan refusé' };
@@ -262,18 +257,7 @@ $(function () {
 
     // ── Restauration (mode édition) ───────────────────────────────────────
     (window.LIGNES_INITIALES ?? []).forEach((initiale) => {
-        const nature = initiale.article?.nature === 'equipement' ? 'equipement' : null;
-        const $tr = rangeeArticle(nature ? lignes.modeles : lignes.articles, nature);
-        const ligne = $tr.data('ligne');
-        ligne.article = initiale.article;
-        ligne.quantite = initiale.quantite;
-        ligne.pre_pointes = initiale.pre_pointes ?? 0;
-
-        $tr.find('.select-article')
-            .append(new Option(`${initiale.article.code} — ${initiale.article.nom}`, initiale.article.id, true, true))
-            .trigger('change');
-        $tr.find('.input-quantite').val(initiale.quantite);
-        if (!nature) majDisponible($tr, ligne);
+        ajouterLigne(initiale.article, initiale.quantite, initiale.pre_pointes ?? 0);
     });
 
     document.querySelectorAll('[data-bs-toggle="popover"]').forEach((el) => new bootstrap.Popover(el));
