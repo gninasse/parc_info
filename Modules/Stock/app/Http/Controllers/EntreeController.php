@@ -138,7 +138,10 @@ class EntreeController extends Controller implements HasMiddleware
             'entree' => null,
             'magasins' => Magasin::query()->actifs()->orderBy('libelle')->get(['id', 'libelle']),
             'fournisseurs' => Fournisseur::query()->where('est_actif', true)->orderBy('raison_sociale')->get(['id', 'raison_sociale']),
-            'magasinPrerempli' => $request->filled('magasin_id') ? (int) $request->input('magasin_id') : null,
+            // ?magasin_id= (alerte du tableau de bord) sinon magasin par défaut de l'utilisateur
+            'magasinPrerempli' => $request->filled('magasin_id')
+                ? (int) $request->input('magasin_id')
+                : app(\Modules\Stock\Services\MagasinContexteService::class)->magasinParDefautId(),
             'articlePrerempli' => $articlePrerempli?->only(['id', 'code', 'nom', 'nature', 'prix_indicatif', 'unite_stock']),
         ]);
     }

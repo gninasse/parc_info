@@ -375,6 +375,10 @@ class TransfertController extends Controller implements HasMiddleware
         return view('stock::transferts.form', [
             'transfert' => $transfert,
             'magasins' => Magasin::query()->actifs()->orderBy('libelle')->get(['id', 'libelle']),
+            // Le magasin de travail est la SOURCE naturelle d'un transfert
+            'sourcePreremplie' => $transfert === null
+                ? app(\Modules\Stock\Services\MagasinContexteService::class)->magasinParDefautId()
+                : null,
         ]);
     }
 

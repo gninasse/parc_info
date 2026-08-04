@@ -191,6 +191,24 @@
             </div>
         </div>
 
+        {{-- Magasin de travail : pré-sélectionné dans les entrées, sorties et transferts --}}
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-white border-0 py-3">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-shop me-2 text-primary"></i>Mon magasin par défaut</h6>
+            </div>
+            <div class="card-body">
+                <select class="form-select form-select-sm" id="magasin-defaut" aria-label="Magasin par défaut">
+                    <option value="">Aucun — choisir à chaque bon</option>
+                    @foreach($magasinsActifs as $magasin)
+                        <option value="{{ $magasin->id }}" @selected($magasinParDefaut?->id === $magasin->id)>{{ $magasin->libelle }}</option>
+                    @endforeach
+                </select>
+                <div class="form-text">
+                    Pré-sélectionné à la création d'une entrée, d'une sortie et comme magasin source d'un transfert.
+                </div>
+            </div>
+        </div>
+
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white border-0 py-3">
                 <h6 class="mb-0 fw-bold"><i class="bi bi-bar-chart me-2 text-primary"></i>Répartition par magasin</h6>
@@ -294,5 +312,17 @@
 @push('js')
 <script>
     document.querySelectorAll('[data-bs-toggle="popover"]').forEach((el) => new bootstrap.Popover(el));
+
+    // Magasin par défaut : enregistré au changement
+    $('#magasin-defaut').on('change', function () {
+        $.ajax({
+            url: @json(route('stock.preferences.magasin-defaut')),
+            method: 'PATCH',
+            data: { magasin_id: this.value || null },
+            dataType: 'json',
+            success: (res) => Swal.fire({ icon: 'success', title: res.message, timer: 1800, showConfirmButton: false }),
+            error: () => Swal.fire({ icon: 'error', title: 'Erreur', text: 'Enregistrement impossible.' }),
+        });
+    });
 </script>
 @endpush

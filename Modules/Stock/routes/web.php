@@ -11,6 +11,9 @@ use Modules\Stock\Http\Controllers\TransfertController;
 Route::middleware(['auth'])->prefix('stock')->name('stock.')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
+    // Préférences du module (magasin par défaut)
+    Route::patch('/preferences/magasin-defaut', [DashboardController::class, 'definirMagasinParDefaut'])->name('preferences.magasin-defaut');
+
     // Cascade partagée : unités « en stock » non rattachées (sélecteur d'unités)
     Route::get('/equipements/disponibles', [EntreeController::class, 'getEquipementsDisponibles'])->name('equipements.disponibles');
 

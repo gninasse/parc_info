@@ -482,6 +482,10 @@ class SortieController extends Controller implements HasMiddleware
             'sortie' => $sortie,
             'magasins' => Magasin::query()->actifs()->orderBy('libelle')->get(['id', 'libelle']),
             'motifs' => config('stock.motifs_sortie'),
+            // Pré-sélection du magasin de travail sur un nouveau bon
+            'magasinPrerempli' => $sortie === null
+                ? app(\Modules\Stock\Services\MagasinContexteService::class)->magasinParDefautId()
+                : null,
         ]);
     }
 

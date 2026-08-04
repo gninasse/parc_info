@@ -15,6 +15,7 @@ use Modules\Stock\Models\Mouvement;
 use Modules\Stock\Models\Niveau;
 use Modules\Stock\Models\Sortie;
 use Modules\Stock\Models\Transfert;
+use Modules\Stock\Services\MagasinContexteService;
 
 /**
  * Tableau de bord du module (UX §1) : 6 KPI, pastilles « en attente de
@@ -31,7 +32,7 @@ class DashboardController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:stock.dashboard.view', only: ['index']),
+            new Middleware('permission:stock.dashboard.view', only: ['index', 'definirMagasinParDefaut']),
         ];
     }
 
@@ -45,6 +46,28 @@ class DashboardController extends Controller implements HasMiddleware
             'alertes' => $this->alertes(),
             'repartition' => $this->repartitionParMagasin(),
             'derniersMouvements' => $this->derniersMouvements(),
+            'magasinsActifs' => Magasin::query()->actifs()->orderBy('libelle')->get(['id', 'code', 'libelle']),
+            'magasinParDefaut' => app(MagasinContexteService::class)->magasinParDefaut(),
+        ]);
+    }
+
+    /** Enregistre le magasin de travail de l'utilisateur (diligence 3). */
+    public function definirMagasinParDefaut(\Illuminate\Http\Request $request): \Illuminate\Http\JsonResponse
+    {
+        $valide = $request->validate([
+            'magasin_id' => ['nullable', 'integer', 'exists:stock_magasins,id'],
+        ]);
+
+        app(MagasinContexteService::class)->definirMagasinParDefaut(
+            auth()->id(),
+            $valide['magasin_id'] ?? null
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => ($valide['magasin_id'] ?? null) === null
+                ? 'Magasin par défaut retiré.'
+                : 'Magasin par défaut enregistré.',
         ]);
     }
 

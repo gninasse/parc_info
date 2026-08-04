@@ -34,7 +34,7 @@
                 <select class="form-select" id="t-source" name="magasin_source_id">
                     <option value=""></option>
                     @foreach($magasins as $magasin)
-                        <option value="{{ $magasin->id }}" @selected($transfert?->magasin_source_id === $magasin->id)>{{ $magasin->libelle }}</option>
+                        <option value="{{ $magasin->id }}" @selected(($transfert?->magasin_source_id ?? $sourcePreremplie) === $magasin->id)>{{ $magasin->libelle }}</option>
                     @endforeach
                 </select>
             </div>

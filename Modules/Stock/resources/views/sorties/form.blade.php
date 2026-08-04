@@ -37,7 +37,7 @@
                 <select class="form-select" id="s-magasin" name="magasin_id">
                     <option value=""></option>
                     @foreach($magasins as $magasin)
-                        <option value="{{ $magasin->id }}" @selected($sortie?->magasin_id === $magasin->id)>{{ $magasin->libelle }}</option>
+                        <option value="{{ $magasin->id }}" @selected(($sortie?->magasin_id ?? $magasinPrerempli) === $magasin->id)>{{ $magasin->libelle }}</option>
                     @endforeach
                 </select>
             </div>
