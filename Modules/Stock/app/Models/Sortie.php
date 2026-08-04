@@ -11,12 +11,13 @@ use Modules\Core\Models\User;
 use Modules\Grh\Models\Employe;
 use Modules\Stock\Models\Concerns\EstDocumentStock;
 use Modules\Stock\Models\Concerns\JournaliseActiviteStock;
+use Modules\Stock\Models\Concerns\PorteDesDocuments;
 use Modules\Stock\Models\Concerns\PorteBeneficiaire;
 use Modules\Stock\Models\Contracts\DocumentAPointage;
 
 class Sortie extends Model implements DocumentAPointage
 {
-    use EstDocumentStock, HasFactory, JournaliseActiviteStock, PorteBeneficiaire;
+    use EstDocumentStock, HasFactory, JournaliseActiviteStock, PorteBeneficiaire, PorteDesDocuments;
 
     public const STATUT_BROUILLON = 'BROUILLON';
 

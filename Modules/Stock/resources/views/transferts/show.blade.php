@@ -103,6 +103,13 @@
 </div>
 @endif
 
+{{-- Pièces jointes (lecture seule sur un bon validé) --}}
+@include('stock::shared._pieces_jointes', [
+    'typeDocument' => 'transferts',
+    'documentId' => $transfert->id,
+    'modifiable' => false,
+])
+
 {{-- Cartouche d'audit (S9) --}}
 <div class="card border-0 shadow-sm">
     <div class="card-body py-2 small text-muted d-flex flex-wrap justify-content-between">

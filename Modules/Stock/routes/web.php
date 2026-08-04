@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Stock\Http\Controllers\DashboardController;
+use Modules\Stock\Http\Controllers\DocumentController;
 use Modules\Stock\Http\Controllers\EntreeController;
 use Modules\Stock\Http\Controllers\MagasinController;
 use Modules\Stock\Http\Controllers\NiveauController;
@@ -13,6 +14,14 @@ Route::middleware(['auth'])->prefix('stock')->name('stock.')->group(function () 
 
     // Préférences du module (magasin par défaut)
     Route::patch('/preferences/magasin-defaut', [DashboardController::class, 'definirMagasinParDefaut'])->name('preferences.magasin-defaut');
+
+    // Pièces jointes des bons : {type} ∈ entrees|sorties|transferts
+    Route::prefix('documents/{type}/{id}')->name('documents.')->group(function () {
+        Route::get('/', [DocumentController::class, 'index'])->name('index');
+        Route::post('/', [DocumentController::class, 'store'])->name('store');
+        Route::get('/{document}', [DocumentController::class, 'download'])->name('download');
+        Route::delete('/{document}', [DocumentController::class, 'destroy'])->name('destroy');
+    });
 
     // Cascade partagée : unités « en stock » non rattachées (sélecteur d'unités)
     Route::get('/equipements/disponibles', [EntreeController::class, 'getEquipementsDisponibles'])->name('equipements.disponibles');

@@ -11,11 +11,12 @@ use Modules\Catalogue\Models\Fournisseur;
 use Modules\Core\Models\User;
 use Modules\Stock\Models\Concerns\EstDocumentStock;
 use Modules\Stock\Models\Concerns\JournaliseActiviteStock;
+use Modules\Stock\Models\Concerns\PorteDesDocuments;
 use Modules\Stock\Models\Concerns\PorteBeneficiaire;
 
 class Entree extends Model
 {
-    use EstDocumentStock, HasFactory, JournaliseActiviteStock, PorteBeneficiaire;
+    use EstDocumentStock, HasFactory, JournaliseActiviteStock, PorteBeneficiaire, PorteDesDocuments;
 
     public const STATUT_BROUILLON = 'BROUILLON';
 

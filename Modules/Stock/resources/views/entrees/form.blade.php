@@ -138,6 +138,15 @@
     </div>
 </div>
 
+{{-- Pièces jointes (BL scanné, photo du colis…) — brouillon uniquement --}}
+@if($entree)
+    @include('stock::shared._pieces_jointes', [
+        'typeDocument' => 'entrees',
+        'documentId' => $entree->id,
+        'modifiable' => $entree->canEdit() || $entree->verrouille(),
+    ])
+@endif
+
 {{-- Barre collante (matrice UX §10) --}}
 <div class="barre-collante py-2 px-3 d-flex flex-wrap align-items-center gap-2">
     <div class="flex-grow-1 small" id="recap-barre">—</div>

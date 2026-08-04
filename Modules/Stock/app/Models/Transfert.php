@@ -11,11 +11,12 @@ use Modules\Core\Models\User;
 use Modules\Grh\Models\Employe;
 use Modules\Stock\Models\Concerns\EstDocumentStock;
 use Modules\Stock\Models\Concerns\JournaliseActiviteStock;
+use Modules\Stock\Models\Concerns\PorteDesDocuments;
 use Modules\Stock\Models\Contracts\DocumentAPointage;
 
 class Transfert extends Model implements DocumentAPointage
 {
-    use EstDocumentStock, HasFactory, JournaliseActiviteStock;
+    use EstDocumentStock, HasFactory, JournaliseActiviteStock, PorteDesDocuments;
 
     public const STATUT_BROUILLON = 'BROUILLON';
 

@@ -44,4 +44,10 @@ return [
 
     // Taille maximale de la file d'attente des scans (écrans douchette — S6)
     'file_scans_max' => 50,
+
+    // Pièces jointes des bons (BL scanné, photo du colis, courrier…)
+    'documents' => [
+        'taille_max_ko' => 5120, // 5 Mo par fichier
+        'extensions' => ['pdf', 'png', 'jpg', 'jpeg', 'webp', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt'],
+    ],
 ];
