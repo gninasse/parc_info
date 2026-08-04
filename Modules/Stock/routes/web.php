@@ -6,6 +6,7 @@ use Modules\Stock\Http\Controllers\EntreeController;
 use Modules\Stock\Http\Controllers\MagasinController;
 use Modules\Stock\Http\Controllers\NiveauController;
 use Modules\Stock\Http\Controllers\SortieController;
+use Modules\Stock\Http\Controllers\TransfertController;
 
 Route::middleware(['auth'])->prefix('stock')->name('stock.')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
@@ -72,6 +73,25 @@ Route::middleware(['auth'])->prefix('stock')->name('stock.')->group(function () 
         Route::post('/{id}/retour-brouillon', [SortieController::class, 'retourBrouillon'])->name('retour-brouillon');
         Route::post('/{id}/valider', [SortieController::class, 'valider'])->name('valider');
         Route::get('/{id}/pdf', [SortieController::class, 'pdf'])->name('pdf');
+    });
+
+    // Transferts (SFD §8, D17) : routes-gabarit des sorties
+    Route::prefix('transferts')->name('transferts.')->group(function () {
+        Route::get('/', [TransfertController::class, 'index'])->name('index');
+        Route::get('/data', [TransfertController::class, 'getData'])->name('data');
+        Route::get('/create', [TransfertController::class, 'create'])->name('create');
+        Route::post('/', [TransfertController::class, 'store'])->name('store');
+        Route::get('/{id}', [TransfertController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [TransfertController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [TransfertController::class, 'update'])->name('update');
+        Route::delete('/{id}', [TransfertController::class, 'destroy'])->name('destroy');
+        Route::post('/{id}/pointage', [TransfertController::class, 'pointage'])->name('pointage');
+        Route::get('/{id}/pointage', [TransfertController::class, 'pointageShow'])->name('pointage.show');
+        Route::put('/{id}/pointage', [TransfertController::class, 'pointageUpdate'])->name('pointage.update');
+        Route::post('/{id}/scan-express', [TransfertController::class, 'scanExpress'])->name('scan-express');
+        Route::post('/{id}/retour-brouillon', [TransfertController::class, 'retourBrouillon'])->name('retour-brouillon');
+        Route::post('/{id}/valider', [TransfertController::class, 'valider'])->name('valider');
+        Route::get('/{id}/pdf', [TransfertController::class, 'pdf'])->name('pdf');
     });
 
     // État des stocks (UX §2)
