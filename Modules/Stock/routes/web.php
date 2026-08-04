@@ -66,6 +66,7 @@ Route::middleware(['auth'])->prefix('stock')->name('stock.')->group(function () 
 
     // Sélecteurs de bénéficiaires (sorties + retours d'entrées)
     Route::get('/beneficiaires', [SortieController::class, 'getBeneficiaires'])->name('beneficiaires.data');
+    Route::get('/beneficiaires/cascade', [SortieController::class, 'getCascade'])->name('beneficiaires.cascade');
 
     // Sorties (SFD §8) : routes littérales avant /{id}
     Route::prefix('sorties')->name('sorties.')->group(function () {

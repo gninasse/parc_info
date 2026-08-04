@@ -54,7 +54,7 @@ class SortieController extends Controller implements HasMiddleware
             ]),
             new Middleware(
                 'permission:stock.sorties.store|stock.sorties.update|stock.entrees.store|stock.entrees.update',
-                only: ['getBeneficiaires']
+                only: ['getBeneficiaires', 'getCascade']
             ),
         ];
     }
@@ -442,36 +442,126 @@ class SortieController extends Controller implements HasMiddleware
         return response()->json(['disponible' => $disponible, 'reservee' => $reservee]);
     }
 
-    /** Sélecteurs modaux de bénéficiaires (S11) : ?type=&q=. */
+    /**
+     * Sélecteurs modaux de bénéficiaires (S11) — diligence 6 : la liste se
+     * filtre réellement par les selects en cascade de la modale ET par la
+     * recherche texte. Paramètres : ?type= (obligatoire), q, statut,
+     * direction_id, service_id, site_id, batiment_id, etage_id.
+     */
     public function getBeneficiaires(Request $request): JsonResponse
     {
-        $request->validate(['type' => ['required', 'in:direction,service,unite,poste,local,employe']]);
-        $q = mb_strtolower((string) $request->input('q', ''));
+        $valide = $request->validate([
+            'type' => ['required', 'in:direction,service,unite,poste,local,employe'],
+            'q' => ['nullable', 'string', 'max:255'],
+            'statut' => ['nullable', 'in:actif,inactif'],
+            'direction_id' => ['nullable', 'integer'],
+            'service_id' => ['nullable', 'integer'],
+            'site_id' => ['nullable', 'integer'],
+            'batiment_id' => ['nullable', 'integer'],
+            'etage_id' => ['nullable', 'integer'],
+        ]);
 
-        $filtre = fn ($query, array $colonnes) => $query->when($q !== '', function ($sous) use ($q, $colonnes) {
+        $q = mb_strtolower((string) ($valide['q'] ?? ''));
+
+        $recherche = fn ($query, array $colonnes) => $query->when($q !== '', function ($sous) use ($q, $colonnes) {
             $sous->where(function ($w) use ($q, $colonnes) {
                 foreach ($colonnes as $colonne) {
                     $w->orWhereRaw("LOWER({$colonne}) LIKE ?", ["%{$q}%"]);
                 }
             });
-        })->limit(30)->get();
+        });
 
-        $rows = match ($request->input('type')) {
-            'direction' => $filtre(Direction::query(), ['code', 'libelle'])
-                ->map(fn ($d) => ['id' => $d->id, 'code' => $d->code, 'libelle' => $d->libelle]),
-            'service' => $filtre(Service::query()->with('direction:id,libelle'), ['code', 'libelle'])
+        // Filtre « statut » : colonne actif (est_actif côté Grh)
+        $actif = match ($valide['statut'] ?? null) {
+            'actif' => true,
+            'inactif' => false,
+            default => null,
+        };
+
+        $rows = match ($valide['type']) {
+            'direction' => $recherche(
+                Direction::query()->when($actif !== null, fn ($r) => $r->where('actif', $actif)),
+                ['code', 'libelle']
+            )->orderBy('libelle')->limit(50)->get()
+                ->map(fn ($d) => ['id' => $d->id, 'code' => $d->code, 'libelle' => $d->libelle, 'contexte' => null]),
+
+            'service' => $recherche(
+                Service::query()->with('direction:id,libelle')
+                    ->when($actif !== null, fn ($r) => $r->where('actif', $actif))
+                    ->when($valide['direction_id'] ?? null, fn ($r, $id) => $r->where('direction_id', $id)),
+                ['code', 'libelle']
+            )->orderBy('libelle')->limit(50)->get()
                 ->map(fn ($s) => ['id' => $s->id, 'code' => $s->code, 'libelle' => $s->libelle, 'contexte' => $s->direction?->libelle]),
-            'unite' => $filtre(Unite::query()->with('service:id,libelle'), ['code', 'libelle'])
+
+            'unite' => $recherche(
+                Unite::query()->with('service:id,libelle,direction_id')
+                    ->when($actif !== null, fn ($r) => $r->where('actif', $actif))
+                    ->when($valide['service_id'] ?? null, fn ($r, $id) => $r->where('service_id', $id))
+                    ->when($valide['direction_id'] ?? null, fn ($r, $id) => $r->whereHas('service', fn ($w) => $w->where('direction_id', $id))),
+                ['code', 'libelle']
+            )->orderBy('libelle')->limit(50)->get()
                 ->map(fn ($u) => ['id' => $u->id, 'code' => $u->code, 'libelle' => $u->libelle, 'contexte' => $u->service?->libelle]),
-            'poste' => $filtre(PosteTravail::query(), ['code', 'libelle'])
-                ->map(fn ($p) => ['id' => $p->id, 'code' => $p->code, 'libelle' => $p->libelle]),
-            'local' => $filtre(Local::query(), ['code', 'libelle'])
-                ->map(fn ($l) => ['id' => $l->id, 'code' => $l->code, 'libelle' => $l->libelle]),
-            'employe' => $filtre(Employe::query()->where('est_actif', true), ['matricule', 'nom', 'prenom'])
-                ->map(fn ($e) => ['id' => $e->id, 'code' => $e->matricule, 'libelle' => trim($e->prenom.' '.$e->nom), 'contexte' => $e->poste]),
+
+            'poste' => $recherche(
+                PosteTravail::query()->with(['direction:id,libelle', 'service:id,libelle'])
+                    ->when($actif !== null, fn ($r) => $r->where('actif', $actif))
+                    ->when($valide['direction_id'] ?? null, fn ($r, $id) => $r->where('direction_id', $id))
+                    ->when($valide['service_id'] ?? null, fn ($r, $id) => $r->where('service_id', $id)),
+                ['code', 'libelle']
+            )->orderBy('libelle')->limit(50)->get()
+                ->map(fn ($p) => ['id' => $p->id, 'code' => $p->code, 'libelle' => $p->libelle, 'contexte' => $p->service?->libelle ?? $p->direction?->libelle]),
+
+            'local' => $recherche(
+                Local::query()->with('etage.batiment:id,libelle,site_id')
+                    ->when($actif !== null, fn ($r) => $r->where('actif', $actif))
+                    ->when($valide['etage_id'] ?? null, fn ($r, $id) => $r->where('etage_id', $id))
+                    ->when($valide['batiment_id'] ?? null, fn ($r, $id) => $r->whereHas('etage', fn ($w) => $w->where('batiment_id', $id)))
+                    ->when($valide['site_id'] ?? null, fn ($r, $id) => $r->whereHas('etage.batiment', fn ($w) => $w->where('site_id', $id))),
+                ['code', 'libelle']
+            )->orderBy('libelle')->limit(50)->get()
+                ->map(fn ($l) => ['id' => $l->id, 'code' => $l->code, 'libelle' => $l->libelle, 'contexte' => $l->etage?->batiment?->libelle]),
+
+            'employe' => $recherche(
+                Employe::query()->with(['service:id,libelle', 'direction:id,libelle'])
+                    ->where('est_actif', $actif ?? true)
+                    ->when($valide['direction_id'] ?? null, fn ($r, $id) => $r->where('direction_id', $id))
+                    ->when($valide['service_id'] ?? null, fn ($r, $id) => $r->where('service_id', $id)),
+                ['matricule', 'nom', 'prenom']
+            )->orderBy('nom')->limit(50)->get()
+                ->map(fn ($e) => ['id' => $e->id, 'code' => $e->matricule, 'libelle' => trim($e->prenom.' '.$e->nom), 'contexte' => $e->service?->libelle ?? $e->direction?->libelle]),
         };
 
         return response()->json(['data' => $rows->values()]);
+    }
+
+    /**
+     * Options des selects en cascade des modales (diligence 6) :
+     * ?niveau=directions|services|sites|batiments|etages (+ parent_id).
+     */
+    public function getCascade(Request $request): JsonResponse
+    {
+        $valide = $request->validate([
+            'niveau' => ['required', 'in:directions,services,sites,batiments,etages'],
+            'parent_id' => ['nullable', 'integer'],
+        ]);
+
+        $parent = $valide['parent_id'] ?? null;
+
+        $rows = match ($valide['niveau']) {
+            'directions' => Direction::query()->where('actif', true)->orderBy('libelle')->get(['id', 'libelle']),
+            'services' => Service::query()->where('actif', true)
+                ->when($parent, fn ($r) => $r->where('direction_id', $parent))
+                ->orderBy('libelle')->get(['id', 'libelle']),
+            'sites' => \Modules\Organisation\Models\Site::query()->where('actif', true)->orderBy('libelle')->get(['id', 'libelle']),
+            'batiments' => \Modules\Organisation\Models\Batiment::query()
+                ->when($parent, fn ($r) => $r->where('site_id', $parent))
+                ->orderBy('libelle')->get(['id', 'libelle']),
+            'etages' => \Modules\Organisation\Models\Etage::query()
+                ->when($parent, fn ($r) => $r->where('batiment_id', $parent))
+                ->orderBy('libelle')->get(['id', 'libelle']),
+        };
+
+        return response()->json(['data' => $rows]);
     }
 
     // ── Privé ──────────────────────────────────────────────────────────────
