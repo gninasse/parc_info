@@ -120,12 +120,26 @@ class EntreeController extends Controller implements HasMiddleware
         return response()->json(['total' => $total, 'rows' => $rows]);
     }
 
-    public function create()
+    /**
+     * Nouveau brouillon. ?magasin_id=&article_id= pré-remplit le bon —
+     * utilisé par le bouton « ➜ Réceptionner » des alertes du tableau de
+     * bord (UX §1) : le magasinier arrive avec la ligne déjà posée.
+     */
+    public function create(Request $request)
     {
+        $articlePrerempli = $request->filled('article_id')
+            ? Article::query()
+                ->where('est_actif', true)
+                ->where('est_stockable', true)
+                ->find((int) $request->input('article_id'))
+            : null;
+
         return view('stock::entrees.form', [
             'entree' => null,
             'magasins' => Magasin::query()->actifs()->orderBy('libelle')->get(['id', 'libelle']),
             'fournisseurs' => Fournisseur::query()->where('est_actif', true)->orderBy('raison_sociale')->get(['id', 'raison_sociale']),
+            'magasinPrerempli' => $request->filled('magasin_id') ? (int) $request->input('magasin_id') : null,
+            'articlePrerempli' => $articlePrerempli?->only(['id', 'code', 'nom', 'nature', 'prix_indicatif', 'unite_stock']),
         ]);
     }
 
@@ -220,6 +234,8 @@ class EntreeController extends Controller implements HasMiddleware
             'entree' => $entree,
             'magasins' => Magasin::query()->actifs()->orderBy('libelle')->get(['id', 'libelle']),
             'fournisseurs' => Fournisseur::query()->where('est_actif', true)->orderBy('raison_sociale')->get(['id', 'raison_sociale']),
+            'magasinPrerempli' => null,
+            'articlePrerempli' => null,
         ]);
     }
 

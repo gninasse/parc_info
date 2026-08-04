@@ -35,10 +35,15 @@
         <div class="row g-3">
             <div class="col-md-3">
                 <label class="form-label" for="e-magasin">Magasin <span class="text-danger">*</span></label>
-                <select class="form-select" id="e-magasin" name="magasin_id" @if($magasins->count() === 1) data-preselection="{{ $magasins->first()->id }}" @endif>
+                @php
+                    // Pré-sélection : bon existant, « ➜ Réceptionner » du tableau de bord, ou périmètre unique
+                    $magasinSelectionne = $entree?->magasin_id
+                        ?? ($magasinPrerempli ?? ($magasins->count() === 1 ? $magasins->first()->id : null));
+                @endphp
+                <select class="form-select" id="e-magasin" name="magasin_id">
                     <option value=""></option>
                     @foreach($magasins as $magasin)
-                        <option value="{{ $magasin->id }}" @selected(($entree?->magasin_id ?? ($magasins->count() === 1 ? $magasins->first()->id : null)) === $magasin->id)>{{ $magasin->libelle }}</option>
+                        <option value="{{ $magasin->id }}" @selected($magasinSelectionne === $magasin->id)>{{ $magasin->libelle }}</option>
                     @endforeach
                 </select>
             </div>
@@ -171,6 +176,18 @@
         'equipement' => $l->equipement?->only(['id', 'code_inventaire', 'numero_serie', 'modele']),
     ])->values() ?? collect();
     $entreeJs = $entree?->only(['id', 'statut']);
+
+    // « ➜ Réceptionner » : la ligne de l'article en alerte est posée d'emblée
+    if (! $entree && ($articlePrerempli ?? null)) {
+        $lignesInitiales = collect([[
+            'article_id' => $articlePrerempli['id'],
+            'equipement_id' => null,
+            'quantite' => 1,
+            'cout_unitaire' => $articlePrerempli['prix_indicatif'] !== null ? (float) $articlePrerempli['prix_indicatif'] : null,
+            'article' => $articlePrerempli,
+            'equipement' => null,
+        ]]);
+    }
 @endphp
 
 @push('js')

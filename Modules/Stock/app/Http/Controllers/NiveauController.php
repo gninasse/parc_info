@@ -186,7 +186,7 @@ class NiveauController extends Controller implements HasMiddleware
         }
 
         if ($request->filled('statut')) {
-            $query->whereRaw($this->sqlStatutAlerte().' = ?', [$request->input('statut')]);
+            $query->whereRaw(Niveau::sqlStatutAlerte().' = ?', [$request->input('statut')]);
         }
 
         if ($request->filled('search')) {
@@ -198,17 +198,6 @@ class NiveauController extends Controller implements HasMiddleware
         }
 
         return $query;
-    }
-
-    /** Statut d'alerte en SQL (cascade de seuil incluse) pour filtrer côté base. */
-    private function sqlStatutAlerte(): string
-    {
-        return "(CASE
-            WHEN stock_niveaux.quantite <= 0 THEN 'RUPTURE'
-            WHEN COALESCE(stock_niveaux.seuil, catalogue_articles.seuil_defaut) IS NOT NULL
-                 AND stock_niveaux.quantite <= COALESCE(stock_niveaux.seuil, catalogue_articles.seuil_defaut) THEN 'SOUS_SEUIL'
-            ELSE 'OK'
-        END)";
     }
 
     /**

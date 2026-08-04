@@ -53,6 +53,27 @@ class Niveau extends Model
     }
 
     /**
+     * Statut d'alerte calculé en SQL (cascade de seuil incluse), pour filtrer
+     * ou compter côté base — portable SQLite/PostgreSQL (SFD §9.4).
+     * Exige une jointure sur catalogue_articles.
+     */
+    public static function sqlStatutAlerte(): string
+    {
+        return "(CASE
+            WHEN stock_niveaux.quantite <= 0 THEN 'RUPTURE'
+            WHEN COALESCE(stock_niveaux.seuil, catalogue_articles.seuil_defaut) IS NOT NULL
+                 AND stock_niveaux.quantite <= COALESCE(stock_niveaux.seuil, catalogue_articles.seuil_defaut) THEN 'SOUS_SEUIL'
+            ELSE 'OK'
+        END)";
+    }
+
+    /** Valorisation d'une ligne au prix indicatif du catalogue. */
+    public static function sqlValeur(): string
+    {
+        return 'stock_niveaux.quantite * COALESCE(catalogue_articles.prix_indicatif, 0)';
+    }
+
+    /**
      * Seuil effectif (§7.6) — cascade à deux niveaux :
      * seuil local → catalogue_articles.seuil_defaut → aucun.
      */
