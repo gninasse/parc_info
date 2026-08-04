@@ -196,6 +196,7 @@ class EntreeController extends Controller implements HasMiddleware
                     'code_inventaire' => $equipement->code_inventaire,
                     'numero_serie' => $equipement->numero_serie,
                     'modele' => $equipement->modele,
+                    'etat' => $equipement->etat,
                     'url_fiche' => \Illuminate\Support\Facades\Route::has($routeFiche)
                         ? route($routeFiche, $equipement->id)
                         : null,
@@ -498,8 +499,13 @@ class EntreeController extends Controller implements HasMiddleware
         ]);
     }
 
-    /** Bon PDF — statut VALIDÉ uniquement (UX §0.5). */
-    public function pdf($id)
+    /**
+     * Bon PDF — statut VALIDÉ uniquement (UX §0.5), en deux modèles :
+     *  - « articles » (défaut) : libellés, quantités, coûts, total général ;
+     *  - « equipements » : code d'inventaire, modèle, n° de série, état.
+     * Un modèle inconnu retombe sur le défaut (URL d'impression indulgente).
+     */
+    public function pdf(Request $request, $id)
     {
         $entree = Entree::query()
             ->with(['magasin', 'fournisseur', 'lignes.article', 'lignes.equipement', 'createur:id,name', 'valideur:id,name'])
@@ -512,10 +518,12 @@ class EntreeController extends Controller implements HasMiddleware
             ], 409);
         }
 
-        return \Barryvdh\DomPDF\Facade\Pdf::loadView('stock::pdf.entree', [
+        $modele = $request->input('modele') === 'equipements' ? 'equipements' : 'articles';
+
+        return \Barryvdh\DomPDF\Facade\Pdf::loadView("stock::pdf.entree_{$modele}", [
             'entree' => $entree,
             'unites' => $this->unitesDuBon($entree),
-        ])->setPaper('a4')->stream("bon-entree-{$entree->numero}.pdf");
+        ])->setPaper('a4')->stream("bon-entree-{$entree->numero}-{$modele}.pdf");
     }
 
     // ── Privé ──────────────────────────────────────────────────────────────

@@ -94,6 +94,22 @@ class EntreeFicheTest extends TestCase
             ->assertHeader('content-type', 'application/pdf');
     }
 
+    public function test_les_deux_modeles_d_impression_repondent(): void
+    {
+        foreach (['articles', 'equipements'] as $modele) {
+            $this->actingAs($this->user)
+                ->get(route('stock.entrees.pdf', ['id' => $this->entree->id, 'modele' => $modele]))
+                ->assertOk()
+                ->assertHeader('content-type', 'application/pdf');
+        }
+
+        // Modèle inconnu → repli sur le modèle par défaut (pas d'erreur 500)
+        $this->actingAs($this->user)
+            ->get(route('stock.entrees.pdf', ['id' => $this->entree->id, 'modele' => 'inexistant']))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+    }
+
     public function test_le_pdf_est_refuse_avant_validation(): void
     {
         $brouillon = Entree::factory()->create(['magasin_id' => $this->entree->magasin_id]);
@@ -103,26 +119,79 @@ class EntreeFicheTest extends TestCase
             ->assertStatus(409);
     }
 
-    public function test_le_gabarit_pdf_porte_les_bons_champs(): void
+    /** @return array{0: \Modules\Stock\Models\Entree, 1: \Illuminate\Support\Collection} */
+    private function donneesGabarit(): array
     {
-        // Assertion sur le HTML du gabarit (sans dompdf) — champs UX §3.4/S9
-        $html = view('stock::pdf.entree', [
-            'entree' => $this->entree->fresh(['magasin', 'fournisseur', 'lignes.article', 'createur', 'valideur']),
-            'unites' => collect([
-                ['code_inventaire' => 'EQP-2026-0001', 'modele' => 'LaserJet Pro', 'numero_serie' => 'SN-FICHE-1', 'url_fiche' => null],
+        return [
+            $this->entree->fresh(['magasin', 'fournisseur', 'lignes.article', 'lignes.equipement', 'createur', 'valideur']),
+            collect([
+                ['code_inventaire' => 'EQP-2026-0001', 'modele' => 'LaserJet Pro', 'numero_serie' => 'SN-FICHE-1', 'etat' => 'passable', 'url_fiche' => null],
+                ['code_inventaire' => 'EQP-2026-0002', 'modele' => 'LaserJet Pro', 'numero_serie' => 'SN-FICHE-2', 'etat' => 'bon', 'url_fiche' => null],
             ]),
-        ])->render();
+        ];
+    }
 
+    /** Modèle 1 : libellés, quantités, coûts, total général. */
+    public function test_le_gabarit_pdf_articles_porte_les_bons_champs(): void
+    {
+        [$entree, $unites] = $this->donneesGabarit();
+
+        $html = view('stock::pdf.entree_articles', compact('entree', 'unites'))->render();
+
+        // En-tête et cartouche communs (UX §3.4/S9)
         $this->assertStringContainsString('CHU-YO', $html);
         $this->assertStringContainsString($this->entree->numero, $html);
         $this->assertStringContainsString('Date de livraison', $html);
         $this->assertStringContainsString('01/08/2026', $html);
         $this->assertStringContainsString('Date de validation', $html);
-        $this->assertStringContainsString('SN-FICHE-1', $html);
-        $this->assertStringContainsString('Ramette PDF', $html);
-        $this->assertStringContainsString('Deux cartons humides à la réception', $html);
         $this->assertStringContainsString('Signature du livreur', $html);
         $this->assertStringContainsString('Document non modifiable — corrections par contre-mouvement', $html);
+
+        // Contenu propre au modèle : libellé, quantité, coût, total général
+        $this->assertStringContainsString('Ramette PDF', $html);
+        $this->assertStringContainsString('Coût unitaire', $html);
+        $this->assertStringContainsString('3 500', $html);          // coût unitaire de la ramette
+        $this->assertStringContainsString('Total général', $html);
+        $this->assertStringContainsString('517 500', $html);        // 5 × 3 500 + 2 × 250 000
+        $this->assertStringContainsString('Deux cartons humides à la réception', $html);
+
+        // Les lignes « modèle × N » figurent aussi (valorisation complète)
+        $this->assertStringContainsString('Modèle × 2', $html);
+    }
+
+    /** Modèle 2 : code inventaire, modèle, n° de série, état. */
+    public function test_le_gabarit_pdf_equipements_porte_les_references(): void
+    {
+        [$entree, $unites] = $this->donneesGabarit();
+
+        $html = view('stock::pdf.entree_equipements', compact('entree', 'unites'))->render();
+
+        $this->assertStringContainsString('CHU-YO', $html);
+        $this->assertStringContainsString($this->entree->numero, $html);
+        $this->assertStringContainsString('Fiche des équipements', $html);
+
+        // Les trois colonnes demandées + l'état saisi au référencement
+        $this->assertStringContainsString('Code inventaire', $html);
+        $this->assertStringContainsString('EQP-2026-0001', $html);
+        $this->assertStringContainsString('LaserJet Pro', $html);
+        $this->assertStringContainsString('SN-FICHE-1', $html);
+        $this->assertStringContainsString('Passable', $html);
+
+        // Aucune donnée financière sur ce modèle
+        $this->assertStringNotContainsString('Coût unitaire', $html);
+        $this->assertStringNotContainsString('Total général', $html);
+
+        $this->assertStringContainsString('Vérifié par', $html);
+        $this->assertStringContainsString('Document non modifiable — corrections par contre-mouvement', $html);
+    }
+
+    public function test_le_gabarit_equipements_gere_un_bon_sans_unite(): void
+    {
+        [$entree] = $this->donneesGabarit();
+
+        $html = view('stock::pdf.entree_equipements', ['entree' => $entree, 'unites' => collect()])->render();
+
+        $this->assertStringContainsString('Aucun équipement sérialisé sur ce bon', $html);
     }
 
     public function test_show_d_un_brouillon_redirige_vers_l_edition(): void
