@@ -103,6 +103,10 @@
                     @auth
                         <div class="btn-group">
                             <a href="{{ route('parc-info.dashboard') }}" class="btn btn-outline-light">Parc Informatique</a>
+                            {{-- Le module Stock peut être désactivé (module:disable) : sa route n'existe alors pas --}}
+                            @if(Route::has('stock.dashboard'))
+                                <a href="{{ route('stock.dashboard') }}" class="btn btn-outline-light">Stock</a>
+                            @endif
                             <a href="{{ route('grh.dashboard') }}" class="btn btn-outline-light">GRH</a>
                             <a href="{{ route('cores.dashboard') }}" class="btn btn-outline-light">Administration</a>
                         </div>
@@ -118,12 +122,17 @@
         <div class="hero-section">
             <div class="container">
                 <h1>Écosystème Digital CHU-YO</h1>
-                <p class="lead">Centralisez la gestion de votre parc informatique et de vos ressources humaines sur une plateforme unique, sécurisée et performante.</p>
+                <p class="lead">Centralisez la gestion de votre parc informatique, de vos stocks et de vos ressources humaines sur une plateforme unique, sécurisée et performante.</p>
                 @auth
                     <div class="d-flex flex-wrap justify-content-center gap-3">
                         <a href="{{ route('parc-info.dashboard') }}" class="btn btn-lg btn-success">
                             <i class="fas fa-laptop me-2"></i> Parc Informatique
                         </a>
+                        @if(Route::has('stock.dashboard'))
+                            <a href="{{ route('stock.dashboard') }}" class="btn btn-lg btn-success">
+                                <i class="fas fa-warehouse me-2"></i> Gestion des stocks
+                            </a>
+                        @endif
                         <a href="{{ route('grh.dashboard') }}" class="btn btn-lg btn-success">
                             <i class="fas fa-user-tie me-2"></i> Gestion RH
                         </a>
@@ -153,6 +162,20 @@
                             <a href="{{ route('parc-info.dashboard') }}" class="btn btn-sm btn-outline-success mt-auto align-self-start">Ouvrir le module</a>
                         </div>
                     </div>
+                    @if(Route::has('stock.dashboard'))
+                    <div class="col-lg-3 col-md-6">
+                        <div class="card bg-dark border-secondary h-100 p-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="bg-emerald p-3 rounded-circle me-3" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; background-color: var(--emerald);">
+                                    <i class="fas fa-warehouse fa-2x text-navy" style="color: var(--navy);"></i>
+                                </div>
+                                <h3 class="mb-0">Gestion des stocks</h3>
+                            </div>
+                            <p class="text-muted">Magasins et niveaux en temps réel, bons d'entrée, de sortie et de transfert, inventaires et journal des mouvements inaltérable.</p>
+                            <a href="{{ route('stock.dashboard') }}" class="btn btn-sm btn-outline-success mt-auto align-self-start">Ouvrir le module</a>
+                        </div>
+                    </div>
+                    @endif
                     <div class="col-lg-3 col-md-6">
                         <div class="card bg-dark border-secondary h-100 p-4">
                             <div class="d-flex align-items-center mb-3">
