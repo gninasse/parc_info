@@ -180,13 +180,13 @@ class EntreeValidationTest extends TestCase
             {
                 private int $appels = 0;
 
-                public function creerFiche(Article $article, string $numeroSerie, ?float $valeurAchat = null): Equipement
+                public function creerFiche(Article $article, string $numeroSerie, ?float $valeurAchat = null, ?string $etat = null): Equipement
                 {
                     if (++$this->appels === 3) {
                         throw new \RuntimeException('Panne simulée à la 3e fiche');
                     }
 
-                    return parent::creerFiche($article, $numeroSerie, $valeurAchat);
+                    return parent::creerFiche($article, $numeroSerie, $valeurAchat, $etat);
                 }
             };
         });
@@ -206,6 +206,19 @@ class EntreeValidationTest extends TestCase
         $this->assertSame(0, EquipementMagasin::query()->count());
         $this->assertSame(0, Niveau::query()->count());
         $this->assertSame(15, TamponEquipement::query()->whereNotNull('numero_serie')->count());
+    }
+
+    public function test_les_fiches_heritent_de_l_etat_saisi_au_wizard(): void
+    {
+        $entree = $this->bonPretAValider(2);
+
+        // Rangée 1 : état saisi « passable » ; rangée 2 : état non renseigné → « bon »
+        TamponEquipement::query()->where('numero_serie', 'SN-VAL-1')->update(['etat' => 'passable']);
+
+        $this->valider($entree)->assertOk();
+
+        $this->assertSame('passable', Equipement::query()->where('numero_serie', 'SN-VAL-1')->value('etat'));
+        $this->assertSame('bon', Equipement::query()->where('numero_serie', 'SN-VAL-2')->value('etat'));
     }
 
     public function test_validation_directe_sans_equipements(): void

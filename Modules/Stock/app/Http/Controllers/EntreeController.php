@@ -377,6 +377,7 @@ class EntreeController extends Controller implements HasMiddleware
         $valide = $request->validate([
             'tampon_id' => ['required', 'integer'],
             'numero_serie' => ['nullable', 'string', 'max:255'],
+            'etat' => ['nullable', \Illuminate\Validation\Rule::in(\Modules\Stock\Models\TamponEquipement::ETATS)],
         ]);
 
         $tampon = \Modules\Stock\Models\TamponEquipement::query()
@@ -386,7 +387,7 @@ class EntreeController extends Controller implements HasMiddleware
         $tamponService = app(\Modules\Stock\Services\TamponService::class);
 
         try {
-            $tamponService->saisirNumero($entree, $tampon, $valide['numero_serie'] ?? null);
+            $tamponService->saisirNumero($entree, $tampon, $valide['numero_serie'] ?? null, $valide['etat'] ?? null);
         } catch (StockException $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], $e->status());
         }

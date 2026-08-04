@@ -89,11 +89,12 @@ class EntreeWizardTest extends TestCase
         ]);
     }
 
-    public function test_autosave_effacement_d_une_rangee(): void
+    public function test_autosave_effacement_reset_d_une_rangee(): void
     {
         $tampon = $this->tampons()->first();
-        $tampon->update(['numero_serie' => 'SN-A-EFFACER']);
+        $tampon->update(['numero_serie' => 'SN-A-EFFACER', 'etat' => 'passable']);
 
+        // Reset (bouton ✕) : PUT vide — le numéro repart, l'état choisi reste
         $this->actingAs($this->user)
             ->putJson(route('stock.entrees.wizard.update', $this->entree->id), [
                 'tampon_id' => $tampon->id,
@@ -102,7 +103,55 @@ class EntreeWizardTest extends TestCase
             ->assertOk()
             ->assertJsonPath('statut_ligne.saisis', 0);
 
-        $this->assertNull($tampon->fresh()->numero_serie);
+        $tampon->refresh();
+        $this->assertNull($tampon->numero_serie);
+        $this->assertSame('passable', $tampon->etat);
+
+        // La rangée resaisit librement après le reset
+        $this->actingAs($this->user)
+            ->putJson(route('stock.entrees.wizard.update', $this->entree->id), [
+                'tampon_id' => $tampon->id,
+                'numero_serie' => 'SN-RESAISI',
+            ])
+            ->assertOk()
+            ->assertJsonPath('statut_ligne.saisis', 1);
+    }
+
+    public function test_autosave_de_l_etat_de_l_unite(): void
+    {
+        $tampon = $this->tampons()->first();
+
+        // L'état accompagne le numéro dans le même PUT
+        $this->actingAs($this->user)
+            ->putJson(route('stock.entrees.wizard.update', $this->entree->id), [
+                'tampon_id' => $tampon->id,
+                'numero_serie' => 'SN-ETAT-1',
+                'etat' => 'avarie',
+            ])
+            ->assertOk();
+
+        $this->assertSame('avarie', $tampon->fresh()->etat);
+
+        // Re-soumettre le MÊME numéro pour changer l'état seul ne déclenche
+        // pas le contrôle d'unicité
+        $this->actingAs($this->user)
+            ->putJson(route('stock.entrees.wizard.update', $this->entree->id), [
+                'tampon_id' => $tampon->id,
+                'numero_serie' => 'SN-ETAT-1',
+                'etat' => 'bon',
+            ])
+            ->assertOk();
+
+        $this->assertSame('bon', $tampon->fresh()->etat);
+
+        // État hors référentiel ParcInfo → 422
+        $this->actingAs($this->user)
+            ->putJson(route('stock.entrees.wizard.update', $this->entree->id), [
+                'tampon_id' => $tampon->id,
+                'numero_serie' => 'SN-ETAT-1',
+                'etat' => 'neuf',
+            ])
+            ->assertStatus(422);
     }
 
     public function test_doublon_dans_le_meme_bon_message_ligne(): void

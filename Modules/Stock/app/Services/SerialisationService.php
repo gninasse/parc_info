@@ -16,11 +16,10 @@ class SerialisationService
 {
     /**
      * Fiche héritée de l'article Catalogue : catégorie, marque, modèle.
-     * Statut « en stock ». État « bon » : le référentiel ParcInfo
-     * (bon/passable/mauvais/avarie) n'a pas d'état « Neuf » — décision
-     * documentée, arbitrable en ajoutant la valeur côté ParcInfo.
+     * Statut « en stock ». État : celui saisi au wizard rangée par rangée
+     * (référentiel ParcInfo bon/passable/mauvais/avarie), « bon » par défaut.
      */
-    public function creerFiche(Article $article, string $numeroSerie, ?float $valeurAchat = null): Equipement
+    public function creerFiche(Article $article, string $numeroSerie, ?float $valeurAchat = null, ?string $etat = null): Equipement
     {
         return Equipement::create([
             'categorie_id' => $article->categorie_equipement_id,
@@ -31,7 +30,7 @@ class SerialisationService
             'date_acquisition' => now()->toDateString(),
             'valeur_achat' => $valeurAchat,
             'statut' => 'en_stock',
-            'etat' => 'bon',
+            'etat' => $etat ?: 'bon',
         ]);
     }
 

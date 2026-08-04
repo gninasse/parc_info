@@ -19,12 +19,16 @@ class TamponEquipement extends Model
 
     protected $table = 'stock_tampon_equipements';
 
+    /** Référentiel ParcInfo des états (EquipementDynamiqueController). */
+    public const ETATS = ['bon', 'passable', 'mauvais', 'avarie'];
+
     protected $fillable = [
         'ligne_entree_id',
         'ligne_sortie_id',
         'ligne_transfert_id',
         'numero_serie',
         'equipement_id',
+        'etat',
     ];
 
     public function ligneEntree(): BelongsTo

@@ -201,7 +201,8 @@ class ValiderEntreeService
             $fiche = $this->serialisation->creerFiche(
                 $ligne->article,
                 $tampon->numero_serie,
-                $ligne->cout_unitaire !== null ? (float) $ligne->cout_unitaire : null
+                $ligne->cout_unitaire !== null ? (float) $ligne->cout_unitaire : null,
+                $tampon->etat
             );
 
             // SFD §6.2 : equipement_id renseigné à la validation (purge en fin de transaction)

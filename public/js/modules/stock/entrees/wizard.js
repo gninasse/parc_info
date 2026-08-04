@@ -41,13 +41,19 @@ $(function () {
         $champ.toggleClass('is-invalid', etat === 'erreur');
         $rangee.find('.message-erreur').text(message);
         $rangee.find('.indicateur-enregistre').toggleClass('visible', etat === 'ok');
+        // Le bouton reset n'apparaît que sur une rangée enregistrée
+        $rangee.find('.btn-reset-serie').toggleClass('d-none', etat !== 'ok');
     };
 
     const enregistrer = (tamponId, valeur, $rangee) =>
         $.ajax({
             url: route('stock.entrees.wizard.update', entreeId),
             method: 'PUT',
-            data: { tampon_id: tamponId, numero_serie: valeur },
+            data: {
+                tampon_id: tamponId,
+                numero_serie: valeur,
+                etat: $rangee.find('.champ-etat').val(),
+            },
             dataType: 'json',
         })
             .done((res) => {
@@ -78,6 +84,23 @@ $(function () {
         const dejaOk = $rangee.find('.indicateur-enregistre').hasClass('visible');
         if (valeur.trim() === '' && !dejaOk) return; // rangée jamais remplie : rien à faire
         enregistrer(Number($rangee.data('tampon-id')), valeur, $rangee);
+    });
+
+    // L'état s'autosave dès qu'il change (rangée saisie ou non : il est
+    // conservé et repris par la fiche à la validation)
+    $('.champ-etat').on('change', function () {
+        const $rangee = $(this).closest('.rangee-serie');
+        enregistrer(Number($rangee.data('tampon-id')), $rangee.find('.champ-serie').val(), $rangee);
+    });
+
+    // ✕ Reset : efface le numéro enregistré (PUT vide), la rangée redevient à saisir
+    $('.btn-reset-serie').on('click', function () {
+        const $rangee = $(this).closest('.rangee-serie');
+        const $champ = $rangee.find('.champ-serie');
+        $champ.val('').removeClass('is-invalid');
+        $rangee.find('.message-erreur').text('');
+        enregistrer(Number($rangee.data('tampon-id')), '', $rangee)
+            .done(() => $champ.trigger('focus'));
     });
 
     // ⌨ Entrée = rangée suivante (le blur déclenche l'autosave)

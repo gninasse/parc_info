@@ -98,10 +98,24 @@
                                                aria-label="Numéro de série rangée {{ $loop->iteration }}">
                                         <div class="invalid-feedback d-block small message-erreur"></div>
                                     </td>
-                                    <td style="width:130px;" class="text-center">
+                                    <td style="width:150px;">
+                                        <select class="form-select form-select-sm champ-etat"
+                                                aria-label="État de l'unité rangée {{ $loop->iteration }}">
+                                            @foreach(\Modules\Stock\Models\TamponEquipement::ETATS as $etat)
+                                                <option value="{{ $etat }}" @selected(($tampon->etat ?? 'bon') === $etat)>{{ ucfirst($etat) }}</option>
+                                            @endforeach
+                                        </select>
+                                    </td>
+                                    <td style="width:170px;" class="text-center text-nowrap">
                                         <span class="indicateur-enregistre text-success small @if($tampon->numero_serie) visible @endif">
                                             <i class="bi bi-check-lg"></i> enregistré
                                         </span>
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-secondary btn-reset-serie ms-1 @unless($tampon->numero_serie) d-none @endunless"
+                                                data-bs-toggle="tooltip" title="Effacer ce numéro"
+                                                aria-label="Effacer le numéro de la rangée {{ $loop->iteration }}">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
                                     </td>
                                 </tr>
                             @endforeach

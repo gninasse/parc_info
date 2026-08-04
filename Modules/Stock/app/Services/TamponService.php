@@ -88,19 +88,26 @@ class TamponService
      * saisi ligne N », autre bon → refus) puis parc_info_equipements
      * (→ « utilisez le rattachement »).
      */
-    public function saisirNumero(Entree $entree, TamponEquipement $tampon, ?string $numeroSerie): TamponEquipement
+    public function saisirNumero(Entree $entree, TamponEquipement $tampon, ?string $numeroSerie, ?string $etat = null): TamponEquipement
     {
         $numeroSerie = trim((string) $numeroSerie);
 
         if ($numeroSerie === '') {
-            $tampon->update(['numero_serie' => null]); // effacement d'une rangée
+            // Effacement (reset) d'une rangée : le numéro repart, l'état choisi reste
+            $tampon->update(['numero_serie' => null] + ($etat !== null ? ['etat' => $etat] : []));
 
             return $tampon;
         }
 
-        $this->verifierUnicite($entree, $numeroSerie);
+        // Même numéro re-soumis (changement d'état seul) : pas de contrôle d'unicité
+        if ($numeroSerie !== $tampon->numero_serie) {
+            $this->verifierUnicite($entree, $numeroSerie);
+        }
 
-        $tampon->update(['numero_serie' => $numeroSerie]);
+        $tampon->update(array_filter([
+            'numero_serie' => $numeroSerie,
+            'etat' => $etat,
+        ], fn ($valeur) => $valeur !== null));
 
         return $tampon;
     }
