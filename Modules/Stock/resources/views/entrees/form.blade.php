@@ -96,67 +96,40 @@
     </div>
 </div>
 
-{{-- Carte à 2 onglets : Articles / Équipements --}}
+{{-- Lignes du bon — regroupées en une seule table (dérogation UX §3.2
+     arbitrée : plus d'onglets ; l'article se choisit dans une modale) --}}
 <div class="card border-0 shadow-sm mb-3">
-    <div class="card-header bg-white border-0 pt-3 pb-0">
-        <ul class="nav nav-tabs card-header-tabs" role="tablist">
-            <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#onglet-articles" type="button">Articles (<span id="compteur-articles">0</span>)</button></li>
-            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#onglet-equipements" type="button">Équipements (<span id="compteur-equipements">0</span>)</button></li>
-        </ul>
+    <div class="card-header bg-white border-0 pt-3 pb-0 d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0">Lignes du bon (<span id="compteur-lignes">0</span>)</h6>
     </div>
-    <div class="card-body tab-content">
-        <div class="tab-pane fade show active" id="onglet-articles">
-            <div class="table-responsive">
-                <table class="table align-middle" id="table-lignes-articles">
-                    <thead class="table-light">
-                        <tr>
-                            <th style="min-width:280px;">Article</th>
-                            <th style="width:120px;">Quantité <span class="text-danger">*</span></th>
-                            <th style="width:200px;">Coût unitaire FCFA</th>
-                            <th style="width:140px;" class="text-end">Sous-total</th>
-                            <th style="width:50px;"></th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-            <button type="button" class="btn btn-ajouter-ligne py-2" id="btn-ajouter-article">
-                <i class="fas fa-plus me-1"></i> Ajouter une ligne
-            </button>
-            <div class="alert alert-light border mt-3 mb-0 small">
-                <i class="bi bi-info-circle me-1"></i>
-                L'article n'existe pas ? <a href="{{ route('catalogue.articles.index') }}" target="_blank" rel="noopener">Créez-le dans le module Catalogue →</a>
-                (le brouillon attend sans rien perdre — D7)
-            </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table align-middle" id="table-lignes">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:70px;" class="text-center">Nature</th>
+                        <th style="min-width:280px;">Article / Unité</th>
+                        <th style="width:120px;">Quantité <span class="text-danger">*</span></th>
+                        <th style="width:200px;">Coût unitaire FCFA</th>
+                        <th style="width:140px;" class="text-end">Sous-total</th>
+                        <th style="width:50px;"></th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
         </div>
-        <div class="tab-pane fade" id="onglet-equipements">
-            <h6 class="fw-bold">Équipements commandés (modèle × N)</h6>
-            <div class="table-responsive">
-                <table class="table align-middle" id="table-lignes-modeles">
-                    <thead class="table-light">
-                        <tr>
-                            <th style="min-width:280px;">Article (nature E)</th>
-                            <th style="width:120px;">Quantité N <span class="text-danger">*</span></th>
-                            <th style="width:200px;">Coût unitaire FCFA</th>
-                            <th style="width:50px;"></th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-            <button type="button" class="btn btn-ajouter-ligne py-2 mb-1" id="btn-ajouter-modele">
-                <i class="fas fa-plus me-1"></i> Ajouter une ligne modèle × N
+        <div class="d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-ajouter-ligne py-2 flex-grow-1" id="btn-ajouter-article">
+                <i class="fas fa-plus me-1"></i> Ajouter un article
             </button>
-            <p class="text-muted small">Les numéros de série seront saisis à l'étape suivante.</p>
-
-            <hr>
-
-            <h6 class="fw-bold">Rattachement d'unités existantes</h6>
-            <button type="button" class="btn btn-outline-primary btn-sm" id="btn-choisir-unites">
-                <i class="bi bi-upc-scan me-1"></i>Choisir des équipements…
+            <button type="button" class="btn btn-ajouter-ligne py-2 flex-grow-1" id="btn-choisir-unites">
+                <i class="bi bi-upc-scan me-1"></i> Rattacher des unités existantes…
             </button>
-            <div class="d-flex flex-wrap gap-2 mt-2" id="chips-rattachements"></div>
         </div>
+        <p class="text-muted small mt-2 mb-0">
+            Les lignes « modèle × N » (nature E) auront leurs numéros de série saisis à l'étape suivante ;
+            le rattachement raccroche une unité déjà connue de ParcInfo.
+        </p>
     </div>
 </div>
 
@@ -185,6 +158,7 @@
 </form>
 
 @include('stock::shared._selecteur_unites')
+@include('stock::shared._selecteur_article')
 @endsection
 
 @php

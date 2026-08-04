@@ -1,13 +1,15 @@
 /**
- * form.js — page brouillon du bon d'entrée (UX §3.2).
+ * form.js — page brouillon du bon d'entrée.
  *
- * Lignes dynamiques : onglet Articles (natures C/P, Select2 sur l'API
- * Catalogue — S11, coût pré-rempli du prix indicatif avec popover d'alerte
- * ±20 % calculée ici), onglet Équipements (lignes modèle × N nature E +
- * chips de rattachement via le sélecteur d'unités). Barre collante :
- * matrice de visibilité UX §10.
+ * Lignes REGROUPÉES en une seule table (dérogation UX §3.2 arbitrée) :
+ * articles C/P (quantitatifs), articles E (« modèle × N » — n° de série à
+ * l'étape suivante) et rattachements d'unités existantes s'y côtoient,
+ * distingués par leur badge de nature. L'article se choisit dans une MODALE
+ * (SelecteurArticle) au lieu d'un Select2 de ligne ; l'alerte de coût ±20 %
+ * reste calculée depuis le prix indicatif renvoyé par l'API (S11).
  */
 import '../shared/formatters.js';
+import { SelecteurArticle } from '../shared/selecteur-article.js';
 import { SelecteurUnites } from '../shared/selecteur-unites.js';
 import { validerEntree } from './validation.js';
 
@@ -16,38 +18,10 @@ $(function () {
     const seuilAlerte = parseFloat($form.data('seuil-alerte-cout')) || 0.2;
     const entreeId = $form.data('entree-id') || null;
 
-    // Lignes en mémoire — la vérité du formulaire (enregistrement au clic)
-    const lignes = { articles: [], modeles: [], rattachements: [] };
+    // La vérité du formulaire : {article, quantite, cout_unitaire} XOR {unite}
+    const lignes = [];
 
-    // ── Select2 d'article (S11 — API Catalogue) ────────────────────────────
-    const initSelectArticle = ($select, nature) => {
-        $select.select2({
-            theme: 'bootstrap-5',
-            placeholder: 'Rechercher un article…',
-            minimumInputLength: 1,
-            ajax: {
-                url: '/catalogue/api/articles',
-                dataType: 'json',
-                delay: 250,
-                data: (params) => ({ q: params.term, ...(nature ? { nature } : {}) }),
-                processResults: (res) => ({
-                    results: res.data
-                        // En contexte quantitatif, les natures E vivent dans l'onglet Équipements
-                        .filter((a) => (nature ? a.nature === nature : !['equipement', 'licence'].includes(a.nature)))
-                        .map((a) => ({ id: a.id, text: `${a.code} — ${a.nom}`, article: a })),
-                }),
-            },
-            templateResult: (item) => {
-                if (!item.article) return item.text;
-                const a = item.article;
-                return $(`
-                    <div>
-                        ${window.natureBadgeFormatter(a.nature)} <strong>${a.code}</strong> ${$('<i>').text(a.nom).html()}
-                        <div class="small text-muted">Unité : ${a.unite_stock ?? '—'} — Prix indicatif : ${a.prix_indicatif ? Number(a.prix_indicatif).toLocaleString('fr-FR') + ' FCFA' : '—'}</div>
-                    </div>`);
-            },
-        });
-    };
+    const echapper = (t) => $('<span>').text(t ?? '—').html();
 
     // ── Alerte de coût ±20 % (config stock.seuil_alerte_cout) ─────────────
     const coutSuspect = (cout, prixIndicatif) => {
@@ -55,48 +29,47 @@ $(function () {
         return Math.abs(cout - prixIndicatif) / prixIndicatif > seuilAlerte;
     };
 
-    const majAlerteCout = ($input, prixIndicatif) => {
-        const suspect = coutSuspect(parseFloat($input.val()), prixIndicatif);
-        const $icone = $input.closest('td').find('.alerte-cout');
+    const majAlerteCout = ($tr, ligne) => {
+        const prix = ligne.article?.prix_indicatif ? parseFloat(ligne.article.prix_indicatif) : null;
+        const suspect = coutSuspect(ligne.cout_unitaire, prix);
+        const $icone = $tr.find('.alerte-cout');
         $icone.toggleClass('d-none', !suspect);
         if (suspect) {
             $icone.attr('data-bs-content',
-                `Coût saisi éloigné du prix indicatif (${Number(prixIndicatif).toLocaleString('fr-FR')}) — vérifiez`);
+                `Coût saisi éloigné du prix indicatif (${Number(prix).toLocaleString('fr-FR')}) — vérifiez`);
         }
     };
 
-    // ── Rangées dynamiques ─────────────────────────────────────────────────
-    const rangeeArticle = (collection, nature) => {
-        const $tbody = nature === 'equipement' ? $('#table-lignes-modeles tbody') : $('#table-lignes-articles tbody');
-        const ligne = { article: null, quantite: 1, cout_unitaire: null };
-        collection.push(ligne);
+    // ── Rangées de la table unique ─────────────────────────────────────────
+    const ajouterLigneArticle = (article, quantite = 1, coutUnitaire = null) => {
+        const ligne = {
+            article,
+            quantite,
+            cout_unitaire: coutUnitaire ?? (article.prix_indicatif ? parseFloat(article.prix_indicatif) : null),
+        };
+        lignes.push(ligne);
 
+        const estModele = article.nature === 'equipement';
         const $tr = $(`
             <tr>
-                <td><select class="form-select select-article"></select></td>
-                <td><input type="number" class="form-control input-quantite" min="1" step="1" value="1"></td>
+                <td class="text-center">${window.natureBadgeFormatter(article.nature)}</td>
+                <td>
+                    <span class="font-monospace small text-muted">${echapper(article.code)}</span>
+                    ${echapper(article.nom)}
+                    ${estModele ? '<div class="small text-muted"><i class="bi bi-upc-scan me-1"></i>Modèle × N — n° de série à l\'étape suivante</div>' : ''}
+                </td>
+                <td><input type="number" class="form-control input-quantite" min="1" step="1" value="${quantite}"></td>
                 <td>
                     <div class="input-group">
-                        <input type="number" class="form-control input-cout" min="0" step="any">
+                        <input type="number" class="form-control input-cout" min="0" step="any" value="${ligne.cout_unitaire ?? ''}">
                         <span class="input-group-text alerte-cout d-none text-warning" data-bs-toggle="popover" data-bs-trigger="hover focus">⚠</span>
                     </div>
                 </td>
-                ${nature === 'equipement' ? '' : '<td class="text-end sous-total">—</td>'}
+                <td class="text-end sous-total">—</td>
                 <td><button type="button" class="btn btn-sm btn-outline-danger btn-supprimer-ligne"><i class="fas fa-trash"></i></button></td>
             </tr>`);
-        $tbody.append($tr);
-
-        initSelectArticle($tr.find('.select-article'), nature === 'equipement' ? 'equipement' : null);
-
-        $tr.find('.select-article').on('select2:select', (e) => {
-            ligne.article = e.params.data.article;
-            const prix = ligne.article.prix_indicatif ? parseFloat(ligne.article.prix_indicatif) : null;
-            if (prix !== null && !$tr.find('.input-cout').val()) {
-                $tr.find('.input-cout').val(prix);
-                ligne.cout_unitaire = prix;
-            }
-            recalculer();
-        });
+        $('#table-lignes tbody').append($tr);
+        $tr.data('ligne', ligne);
 
         $tr.find('.input-quantite').on('input', function () {
             ligne.quantite = parseFloat(this.value) || 0;
@@ -105,73 +78,96 @@ $(function () {
 
         $tr.find('.input-cout').on('input', function () {
             ligne.cout_unitaire = this.value === '' ? null : parseFloat(this.value);
-            majAlerteCout($(this), ligne.article?.prix_indicatif ? parseFloat(ligne.article.prix_indicatif) : null);
+            majAlerteCout($tr, ligne);
             recalculer();
         });
 
-        // ⌨ Entrée sur la dernière cellule = nouvelle ligne (UX §3.2)
+        // ⌨ Entrée sur la dernière cellule = nouvelle ligne (la modale s'ouvre)
         $tr.find('.input-cout').on('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                if ($tr.is($tbody.find('tr').last())) rangeeArticle(collection, nature);
+                if ($tr.is($('#table-lignes tbody tr').last())) selecteurArticle.ouvrir();
             }
         });
 
         $tr.find('.btn-supprimer-ligne').on('click', () => {
-            collection.splice(collection.indexOf(ligne), 1);
+            lignes.splice(lignes.indexOf(ligne), 1);
             $tr.remove();
             recalculer();
         });
 
-        $tr.data('ligne', ligne);
+        majAlerteCout($tr, ligne);
+        recalculer();
         return $tr;
     };
 
-    const ajouterChipRattachement = (unite) => {
-        lignes.rattachements.push(unite);
-        const $chip = $(`
-            <span class="badge bg-light text-dark border chip-rattachement" data-id="${unite.id}">
-                ${$('<i>').text(unite.code_inventaire).html()} (${$('<i>').text(unite.numero_serie ?? '—').html()})
-                <button type="button" class="btn-close" style="font-size:.6em" aria-label="Retirer"></button>
-            </span>`);
-        $chip.find('.btn-close').on('click', () => {
-            lignes.rattachements = lignes.rattachements.filter((u) => u.id !== unite.id);
-            $chip.remove();
+    const ajouterLigneUnite = (unite) => {
+        if (lignes.some((l) => l.unite?.id === unite.id)) return;
+        const ligne = { unite, quantite: 1, cout_unitaire: null };
+        lignes.push(ligne);
+
+        const $tr = $(`
+            <tr>
+                <td class="text-center"><span class="badge bg-dark" title="Unité existante rattachée">E</span></td>
+                <td>
+                    <span class="font-monospace small text-muted">${echapper(unite.code_inventaire)}</span>
+                    ${echapper(unite.modele)}
+                    <div class="small text-muted"><i class="bi bi-link-45deg me-1"></i>Rattachement — n° de série ${echapper(unite.numero_serie)}</div>
+                </td>
+                <td><input type="number" class="form-control" value="1" disabled aria-label="Quantité (unité)"></td>
+                <td>
+                    <div class="input-group">
+                        <input type="number" class="form-control input-cout" min="0" step="any" placeholder="—">
+                    </div>
+                </td>
+                <td class="text-end sous-total">—</td>
+                <td><button type="button" class="btn btn-sm btn-outline-danger btn-supprimer-ligne"><i class="fas fa-trash"></i></button></td>
+            </tr>`);
+        $('#table-lignes tbody').append($tr);
+        $tr.data('ligne', ligne);
+
+        $tr.find('.input-cout').on('input', function () {
+            ligne.cout_unitaire = this.value === '' ? null : parseFloat(this.value);
             recalculer();
         });
-        $('#chips-rattachements').append($chip);
+
+        $tr.find('.btn-supprimer-ligne').on('click', () => {
+            lignes.splice(lignes.indexOf(ligne), 1);
+            $tr.remove();
+            recalculer();
+        });
+
         recalculer();
     };
 
     // ── Récapitulatif + matrice de visibilité des boutons (UX §10) ────────
     const recalculer = () => {
-        let totalArticles = 0; let unitesArticles = 0; let totalFcfa = 0;
+        let articles = 0; let unitesArticles = 0; let unitesModeles = 0;
+        let rattachements = 0; let totalFcfa = 0;
 
-        $('#table-lignes-articles tbody tr').each(function () {
+        $('#table-lignes tbody tr').each(function () {
             const ligne = $(this).data('ligne');
-            if (!ligne?.article) return;
-            totalArticles++;
-            unitesArticles += ligne.quantite || 0;
+            if (!ligne) return;
+
             const sousTotal = (ligne.quantite || 0) * (ligne.cout_unitaire || 0);
             totalFcfa += sousTotal;
             $(this).find('.sous-total').text(sousTotal ? Number(sousTotal).toLocaleString('fr-FR') + ' FCFA' : '—');
+
+            if (ligne.unite) {
+                rattachements++;
+            } else if (ligne.article.nature === 'equipement') {
+                unitesModeles += ligne.quantite || 0;
+            } else {
+                articles++;
+                unitesArticles += ligne.quantite || 0;
+            }
         });
 
-        let unitesModeles = 0;
-        $('#table-lignes-modeles tbody tr').each(function () {
-            const ligne = $(this).data('ligne');
-            if (!ligne?.article) return;
-            unitesModeles += ligne.quantite || 0;
-            totalFcfa += (ligne.quantite || 0) * (ligne.cout_unitaire || 0);
-        });
-
-        $('#compteur-articles').text(totalArticles);
-        $('#compteur-equipements').text(unitesModeles + lignes.rattachements.length);
-
+        $('#compteur-lignes').text(lignes.length);
         $('#recap-barre').html(
-            `<strong>${totalArticles}</strong> article(s) (${unitesArticles} u) · `
+            `<strong>${articles}</strong> article(s) (${unitesArticles} u) · `
             + `<strong>${unitesModeles}</strong> équipement(s) · `
-            + `<strong>${lignes.rattachements.length}</strong> rattachement(s) · `
+            + `<strong>${rattachements}</strong> rattachement(s) · `
             + `<strong>${Number(totalFcfa).toLocaleString('fr-FR')} FCFA</strong>`
         );
 
@@ -182,33 +178,32 @@ $(function () {
     };
 
     // ── Sérialisation et soumission (enregistrer au clic) ─────────────────
-    const chargeUtile = () => {
-        const toutes = [];
+    const chargeUtile = () => ({
+        magasin_id: $('#e-magasin').val(),
+        date_document: $('#e-date').val(),
+        nature: $('#e-nature').val(),
+        fournisseur_id: $('#e-fournisseur').val() || null,
+        reference_externe: $('#e-reference').val() || null,
+        observation_type: $('#e-observation-type').val() || null,
+        observation: $('#e-observation').val() || null,
+        lignes: lignes.map((ligne) => (ligne.unite
+            ? { equipement_id: ligne.unite.id, quantite: 1, cout_unitaire: ligne.cout_unitaire }
+            : { article_id: ligne.article.id, quantite: ligne.quantite, cout_unitaire: ligne.cout_unitaire })),
+    });
 
-        $('#table-lignes-articles tbody tr, #table-lignes-modeles tbody tr').each(function () {
-            const ligne = $(this).data('ligne');
-            if (!ligne?.article) return;
-            toutes.push({
-                article_id: ligne.article.id,
-                quantite: ligne.quantite,
-                cout_unitaire: ligne.cout_unitaire,
-            });
-        });
-
-        lignes.rattachements.forEach((unite) => {
-            toutes.push({ equipement_id: unite.id, quantite: 1 });
-        });
-
-        return {
-            magasin_id: $('#e-magasin').val(),
-            date_document: $('#e-date').val(),
-            nature: $('#e-nature').val(),
-            fournisseur_id: $('#e-fournisseur').val() || null,
-            reference_externe: $('#e-reference').val() || null,
-            observation_type: $('#e-observation-type').val() || null,
-            observation: $('#e-observation').val() || null,
-            lignes: toutes,
-        };
+    const afficherErreurs = (xhr) => {
+        if (xhr.status === 422 && xhr.responseJSON?.errors) {
+            const erreurs = xhr.responseJSON.errors;
+            const premiere = Object.keys(erreurs).find((c) => c.startsWith('lignes.'));
+            if (premiere) {
+                const index = Number(premiere.split('.')[1]);
+                $('#table-lignes tbody tr').eq(index).addClass('table-danger');
+                setTimeout(() => $('#table-lignes tbody tr').removeClass('table-danger'), 4000);
+            }
+            Swal.fire({ icon: 'error', title: 'Formulaire incomplet', html: Object.values(erreurs).flat().map((m) => echapper(m)).join('<br>') });
+            return;
+        }
+        Swal.fire({ icon: 'error', title: 'Erreur', text: xhr.responseJSON?.message ?? 'Une erreur est survenue.' });
     };
 
     const enregistrer = (surSucces) => {
@@ -232,23 +227,6 @@ $(function () {
         });
     };
 
-    const afficherErreurs = (xhr) => {
-        // SW-422 : erreurs mappées champ par champ, bascule vers l'onglet fautif
-        if (xhr.status === 422 && xhr.responseJSON?.errors) {
-            const erreurs = xhr.responseJSON.errors;
-            const premiere = Object.keys(erreurs)[0];
-            if (premiere.startsWith('lignes.')) {
-                const index = Number(premiere.split('.')[1]);
-                const nbArticles = $('#table-lignes-articles tbody tr').length;
-                const onglet = index >= nbArticles ? '#onglet-equipements' : '#onglet-articles';
-                $(`button[data-bs-target="${onglet}"]`).tab('show');
-            }
-            Swal.fire({ icon: 'error', title: 'Formulaire incomplet', html: Object.values(erreurs).flat().map((m) => $('<i>').text(m).html()).join('<br>') });
-            return;
-        }
-        Swal.fire({ icon: 'error', title: 'Erreur', text: xhr.responseJSON?.message ?? 'Une erreur est survenue.' });
-    };
-
     // ── Événements de page ────────────────────────────────────────────────
     $('#e-magasin, #e-fournisseur').select2({ theme: 'bootstrap-5', allowClear: true, placeholder: '' });
 
@@ -257,29 +235,32 @@ $(function () {
         $(this).addClass('active');
         const motif = $(this).data('motif');
         $('#e-observation-type').val(motif);
-        // « Autre » déplie le texte requis
         $('#e-observation').toggleClass('d-none', motif !== 'autre' && !$('#e-observation').val());
         if (motif === 'autre') $('#e-observation').removeClass('d-none').trigger('focus');
     });
 
-    $('#btn-ajouter-article').on('click', () => rangeeArticle(lignes.articles, null));
-    $('#btn-ajouter-modele').on('click', () => rangeeArticle(lignes.modeles, 'equipement'));
-
-    const selecteur = new SelecteurUnites({
-        url: route('stock.equipements.disponibles'),
-        onChoisis: (unites) => unites.forEach(ajouterChipRattachement),
+    // Sélecteur d'article en modale (remplace le Select2 de ligne)
+    const selecteurArticle = new SelecteurArticle({
+        onChoisi: (article) => ajouterLigneArticle(article),
     });
-    $('#btn-choisir-unites').on('click', () => selecteur.ouvrir({
-        dejaChoisies: lignes.rattachements.map((u) => u.id),
+    $('#btn-ajouter-article').on('click', () => selecteurArticle.ouvrir());
+
+    // Rattachement d'unités existantes (mêmes lignes, badge dédié)
+    const selecteurUnites = new SelecteurUnites({
+        url: route('stock.equipements.disponibles'),
+        onChoisis: (unites) => unites.forEach(ajouterLigneUnite),
+    });
+    $('#btn-choisir-unites').on('click', () => selecteurUnites.ouvrir({
+        dejaChoisies: lignes.filter((l) => l.unite).map((l) => l.unite.id),
+        params: $('#e-nature').val() === 'retour' ? { nature: 'retour' } : {},
     }));
 
     $form.on('submit', (e) => { e.preventDefault(); enregistrer(); });
 
     $('#btn-supprimer').on('click', () => {
-        const nbLignes = $('#table-lignes-articles tbody tr, #table-lignes-modeles tbody tr').length + lignes.rattachements.length;
         Swal.fire({
             title: 'Supprimer ce bon ?',
-            text: `Le Brouillon #${entreeId} et ses ${nbLignes} lignes seront supprimés.`,
+            text: `Le Brouillon #${entreeId} et ses ${lignes.length} lignes seront supprimés.`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#dc3545',
@@ -297,7 +278,7 @@ $(function () {
         });
     });
 
-    // « Saisir les numéros de série » : enregistre PUIS passe en référencement (commit B)
+    // « Saisir les numéros de série » : enregistre PUIS passe en référencement
     $('#btn-referencement').on('click', () => {
         enregistrer(() => {
             $.post(route('stock.entrees.referencement', entreeId))
@@ -306,7 +287,7 @@ $(function () {
         });
     });
 
-    // « ✓ Valider » directement (sans équipements) : enregistre puis SW-VALIDER-ENT
+    // « ✓ Valider » directement (sans équipements) : SW-VALIDER-ENT
     $('#btn-valider').on('click', () => {
         enregistrer((res) => validerEntree(entreeId ?? res.data.id));
     });
@@ -314,27 +295,15 @@ $(function () {
     // ── Restauration des lignes existantes (mode édition) ─────────────────
     (window.LIGNES_INITIALES ?? []).forEach((initiale) => {
         if (initiale.equipement_id) {
-            ajouterChipRattachement({
+            ajouterLigneUnite({
                 id: initiale.equipement_id,
                 code_inventaire: initiale.equipement?.code_inventaire,
                 numero_serie: initiale.equipement?.numero_serie,
+                modele: initiale.equipement?.modele,
             });
             return;
         }
-
-        const nature = initiale.article?.nature === 'equipement' ? 'equipement' : null;
-        const $tr = rangeeArticle(nature ? lignes.modeles : lignes.articles, nature);
-        const ligne = $tr.data('ligne');
-        ligne.article = initiale.article;
-        ligne.quantite = initiale.quantite;
-        ligne.cout_unitaire = initiale.cout_unitaire;
-
-        $tr.find('.select-article')
-            .append(new Option(`${initiale.article.code} — ${initiale.article.nom}`, initiale.article.id, true, true))
-            .trigger('change');
-        $tr.find('.input-quantite').val(initiale.quantite);
-        $tr.find('.input-cout').val(initiale.cout_unitaire ?? '');
-        majAlerteCout($tr.find('.input-cout'), initiale.article?.prix_indicatif ? parseFloat(initiale.article.prix_indicatif) : null);
+        ajouterLigneArticle(initiale.article, initiale.quantite, initiale.cout_unitaire);
     });
 
     // Popovers (en-tête + alertes de coût, délégation car lignes dynamiques)
