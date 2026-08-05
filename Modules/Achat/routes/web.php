@@ -41,6 +41,10 @@ Route::middleware(['auth'])->prefix('achat')->name('achat.')->group(function () 
         Route::post('/{id}/soumettre', [BonCommandeController::class, 'soumettre'])->name('soumettre');
         Route::post('/{id}/renvoyer', [BonCommandeController::class, 'renvoyer'])->name('renvoyer');
         Route::post('/{id}/reprendre', [BonCommandeController::class, 'reprendre'])->name('reprendre');
+
+        // Visa (SFD §7.2) : les signaux de SW-02 puis la validation elle-même.
+        Route::get('/{id}/signaux', [BonCommandeController::class, 'signaux'])->name('signaux');
+        Route::post('/{id}/valider', [BonCommandeController::class, 'valider'])->name('valider');
     });
 
     /*

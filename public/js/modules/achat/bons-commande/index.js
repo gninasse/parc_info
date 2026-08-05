@@ -166,6 +166,61 @@ $(function () {
      * puisqu'elle ne fait que rouvrir son propre brouillon.
      */
     const confirmations = {
+        /**
+         * SW-02 — le Swal ENRICHI du visa (UX2-08, UX4-03, UX4-07) : chiffres
+         * du bon, contexte de dépense du fournisseur, signaux de vigilance.
+         * Les signaux viennent du serveur et ne bloquent jamais : ils
+         * éclairent le validateur, ils ne jugent pas à sa place.
+         */
+        valider: (bouton) => $.getJSON(bouton.data('url').replace(/\/valider$/, '/signaux'))
+            .then((signaux) => {
+                const bon = signaux.bon ?? {};
+                const fcfa = (v) => Number(v ?? 0).toLocaleString('fr-FR', { maximumFractionDigits: 0 });
+                const morceaux = [];
+
+                morceaux.push(`<p class="mb-2">${$('<span>').text(bon.numero_affiche ?? '').html()} · ${bon.nb_lignes ?? 0} ligne(s) · <strong>${fcfa(bon.montant_ttc)} FCFA TTC</strong> · ${$('<span>').text(bon.fournisseur ?? '').html()}</p>`);
+
+                if (signaux.cumul) {
+                    morceaux.push(`<p class="mb-2">📊 ${signaux.cumul.rang_du_mois}ᵉ bon de ce fournisseur ce mois-ci — cumul : ${fcfa(signaux.cumul.cumul_ttc_mois)} FCFA TTC</p>`);
+                }
+
+                (signaux.ecarts_prix ?? []).forEach((ecart) => {
+                    morceaux.push(`<p class="mb-1 text-warning">⚠ Ligne ${ecart.numero} : ${ecart.ecart_pct > 0 ? '+' : ''}${ecart.ecart_pct} % vs dernier payé (${fcfa(ecart.reference)} FCFA HT)</p>`);
+                });
+
+                if (signaux.fournisseur_recent) {
+                    const fr = signaux.fournisseur_recent;
+                    morceaux.push(`<p class="mb-1 text-warning">⚠ Fournisseur créé au Catalogue il y a ${fr.anciennete_jours} jour(s)${fr.premier_bc ? ' — premier bon de commande' : ''}</p>`);
+                }
+
+                if (signaux.auto_validation) {
+                    morceaux.push('<p class="mb-1 text-warning">⚠ Vous avez saisi ce bon vous-même : la validation sera marquée « auto-validation »</p>');
+                }
+
+                morceaux.push('<p class="mb-0 mt-2">Le bon recevra son numéro définitif et <strong>ne pourra plus être modifié</strong>.</p>');
+
+                return Swal.fire({
+                    title: 'Valider le bon de commande ?',
+                    html: `<div class="text-start">${morceaux.join('')}</div>`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Valider le bon',
+                    cancelButtonText: 'Annuler',
+                    confirmButtonColor: '#198754',
+                }).then((r) => (r.isConfirmed ? {} : null));
+            })
+            // Signaux inaccessibles : la confirmation reste possible, avec les
+            // chiffres de la ligne — un incident de réseau ne bloque pas le visa.
+            .catch(() => Swal.fire({
+                title: 'Valider le bon de commande ?',
+                text: `${bouton.data('numero')} recevra son numéro définitif et ne pourra plus être modifié.`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Valider le bon',
+                cancelButtonText: 'Annuler',
+                confirmButtonColor: '#198754',
+            }).then((r) => (r.isConfirmed ? {} : null))),
+
         renvoyer: (bouton) => Swal.fire({
             title: 'Renvoyer le bon en brouillon ?',
             input: 'textarea',

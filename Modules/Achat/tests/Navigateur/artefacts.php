@@ -126,4 +126,22 @@ file_put_contents(
     $appel(route('achat.bons-commande.data', ['statut' => ['SOUMIS'], 'limit' => 50]), true)
 );
 
+
+/*
+ * D-06 — le visa. Les signaux de SW-02 tels que servis au validateur : le
+ * Swal enrichi se construit dessus, il faut donc les capturer sur un bon
+ * réellement soumis.
+ */
+$soumis = \Modules\Achat\Models\BonCommande::query()
+    ->where('statut', \Modules\Achat\Models\BonCommande::STATUT_SOUMIS)
+    ->latest('id')
+    ->first();
+
+if ($soumis !== null) {
+    file_put_contents(
+        "{$dossier}/signaux.json",
+        $appel(route('achat.bons-commande.signaux', $soumis->id), true)
+    );
+}
+
 echo "artefacts écrits dans {$dossier}\n";

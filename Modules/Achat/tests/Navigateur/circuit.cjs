@@ -163,6 +163,26 @@ const monter = (fichier) => {
     verifier('aucune ancre morte dans les actions', !html.includes('href="#"'));
     verifier('chaque action porte un libellé accessible', html.includes('aria-label'));
 
+    console.log('\n── Signaux de SW-02 (D-06) ──');
+    if (existe('signaux.json')) {
+        const signaux = JSON.parse(lire('signaux.json'));
+
+        verifier('les chiffres du bon accompagnent les signaux',
+            signaux.bon && typeof signaux.bon.montant_ttc === 'number' && signaux.bon.nb_lignes > 0,
+            `${signaux.bon?.nb_lignes} ligne(s), ${signaux.bon?.montant_ttc} TTC`);
+        verifier('le cumul fournisseur du mois est fourni',
+            signaux.cumul && typeof signaux.cumul.rang_du_mois === 'number',
+            `rang ${signaux.cumul?.rang_du_mois}, cumul ${signaux.cumul?.cumul_ttc_mois}`);
+        verifier('le rang compte le bon en cours de visa',
+            signaux.cumul.rang_du_mois === signaux.cumul.nb_bc_mois + 1);
+        verifier('les écarts de prix sont une liste (dépliable ligne à ligne)',
+            Array.isArray(signaux.ecarts_prix));
+        verifier('le marqueur d\'auto-validation est présent',
+            typeof signaux.auto_validation === 'boolean');
+    } else {
+        verifier('artefact des signaux disponible', false, 'signaux.json manquant');
+    }
+
     console.log(`\n${echecs === 0 ? '✅ Tous les contrôles passent' : `❌ ${echecs} contrôle(s) en échec`}`);
     process.exit(echecs === 0 ? 0 : 1);
 })();

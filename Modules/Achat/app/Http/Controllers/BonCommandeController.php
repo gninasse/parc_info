@@ -26,6 +26,7 @@ use Modules\Achat\Services\ControlesSoumissionService;
 use Modules\Achat\Services\LignesBonCommandeService;
 use Modules\Achat\Services\RechercheBonCommande;
 use Modules\Achat\Services\ReferencePrixService;
+use Modules\Achat\Services\VisaService;
 use Modules\Catalogue\Models\Fournisseur;
 use Modules\Organisation\Models\Service;
 
@@ -52,6 +53,7 @@ class BonCommandeController extends Controller implements HasMiddleware
         private readonly ReferencePrixService $referencePrix,
         private readonly ControlesSoumissionService $controles,
         private readonly CircuitSoumissionService $circuit,
+        private readonly VisaService $visa,
     ) {}
 
     public static function middleware(): array
@@ -66,7 +68,7 @@ class BonCommandeController extends Controller implements HasMiddleware
             new Middleware('permission:achat.bons_commande.soumettre', only: ['recapitulatif', 'soumettre', 'reprendre']),
             // Valider et renvoyer sont les deux faces du visa : une seule
             // permission les porte (SFD §5).
-            new Middleware('permission:achat.bons_commande.valider', only: ['renvoyer']),
+            new Middleware('permission:achat.bons_commande.valider', only: ['renvoyer', 'signaux', 'valider']),
             // La reference de prix sert les DEUX ecrans de saisie : la
             // creation comme l'edition y ont droit.
             new Middleware('permission:achat.bons_commande.store|achat.bons_commande.update', only: ['referencePrix']),
@@ -572,5 +574,55 @@ class BonCommandeController extends Controller implements HasMiddleware
         return Route::has('achat.bons-commande.show')
             ? route('achat.bons-commande.show', $bon->id)
             : route('achat.bons-commande.index');
+    }
+
+    // ═══ D-06 — Le visa (SFD §7.2) ═══════════════════════════════════════════
+
+    /**
+     * Signaux de SW-02, servis AVANT la confirmation : cumul fournisseur du
+     * mois, écarts de prix, fournisseur récent, auto-validation. Informatifs
+     * par doctrine — leur présence ne bloque jamais, c'est au validateur d'en
+     * juger.
+     */
+    public function signaux(Request $request, int $id): JsonResponse
+    {
+        $bon = BonCommande::query()->findOrFail($id);
+
+        return response()->json(array_merge(
+            $this->visa->signaux($bon, $request->user()),
+            [
+                'bon' => [
+                    'id' => $bon->id,
+                    'numero_affiche' => $bon->numero_affiche,
+                    'nb_lignes' => $bon->lignes()->count(),
+                    'montant_ttc' => (float) $bon->montant_ttc,
+                    'fournisseur' => $bon->fournisseur?->raison_sociale,
+                    'est_regularisation' => (bool) $bon->est_regularisation,
+                ],
+            ]
+        ));
+    }
+
+    /** SW-02 — validation : numéro sous verrou, dénormalisations, journal. */
+    public function valider(Request $request, int $id): JsonResponse
+    {
+        $bon = BonCommande::query()->findOrFail($id);
+
+        try {
+            $bon = $this->visa->valider($bon, $request->user());
+        } catch (AchatException $e) {
+            return $this->refus($e);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Bon {$bon->numero} validé.",
+            'data' => [
+                'id' => $bon->id,
+                'numero' => $bon->numero,
+                'statut' => $bon->statut,
+                'redirection' => $this->urlFiche($bon),
+            ],
+        ]);
     }
 }
