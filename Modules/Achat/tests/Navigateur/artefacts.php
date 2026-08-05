@@ -126,7 +126,6 @@ file_put_contents(
     $appel(route('achat.bons-commande.data', ['statut' => ['SOUMIS'], 'limit' => 50]), true)
 );
 
-
 /*
  * D-06 — le visa. Les signaux de SW-02 tels que servis au validateur : le
  * Swal enrichi se construit dessus, il faut donc les capturer sur un bon

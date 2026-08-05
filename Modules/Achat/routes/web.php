@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Achat\Http\Controllers\ApiController;
 use Modules\Achat\Http\Controllers\BonCommandeController;
+use Modules\Achat\Http\Controllers\BonCommandePdfController;
 use Modules\Achat\Http\Controllers\DashboardController;
 
 /*
@@ -41,6 +42,10 @@ Route::middleware(['auth'])->prefix('achat')->name('achat.')->group(function () 
         Route::post('/{id}/soumettre', [BonCommandeController::class, 'soumettre'])->name('soumettre');
         Route::post('/{id}/renvoyer', [BonCommandeController::class, 'renvoyer'])->name('renvoyer');
         Route::post('/{id}/reprendre', [BonCommandeController::class, 'reprendre'])->name('reprendre');
+
+        // PDF — l'objet juridique imprimable (SPEC_UX §17). Lecture :
+        // permission index, comme les fiches (SFD §5).
+        Route::get('/{id}/pdf', [BonCommandePdfController::class, 'pdf'])->name('pdf');
 
         // Visa (SFD §7.2) : les signaux de SW-02 puis la validation elle-même.
         Route::get('/{id}/signaux', [BonCommandeController::class, 'signaux'])->name('signaux');
