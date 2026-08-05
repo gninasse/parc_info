@@ -18,8 +18,9 @@ métier restent à développer.
 | Modèle de données | Les 8 tables du SFD §6.2, avec leurs contraintes `CHECK` actives sur SQLite **et** PostgreSQL |
 | Permissions | Les 20 permissions du SFD §5 + les 3 rôles seedés, intégrés aux écrans de Core |
 | Services fondateurs | `NumerotationService` (IA-3), `CalculMontantsService` (IA-1) |
-| Écran | A-01 — tableau de bord |
-| Tests | 80 tests, joués sur les deux SGBD |
+| Écran | A-01 — tableau de bord (état vide EV-01) |
+| Chrome | Sidebar « CHU-YO \| ACHAT », topbar à accès rapides, fil d'Ariane (SPEC_UX §0.1) |
+| Tests | 92 tests, joués sur les deux SGBD |
 
 À développer : A-02 à A-08, les 9 modales, le wizard de licences, les 6 endpoints
 d'API, les exports et le PDF.
@@ -93,3 +94,4 @@ supprime ensuite ; vos données ne sont jamais touchées.
 | 2 | **Contradiction interne** : §1.4 annonce « `ANNULE` — numéro jamais attribué », mais §7.5 n'autorise l'annulation que depuis `VALIDE`, qui porte déjà un numéro | Le numéro est **conservé** à l'annulation : le retirer creuserait un trou dans la séquence (contraire à IA-3) et effacerait la trace d'un document ayant pu circuler. Documenté par un test ; à trancher par la MOA. |
 | 3 | §6.2 prévoit un `CHECK` « `est_regularisation = false OR date_document BETWEEN bornes d'intérim` » | **Impossible en `CHECK` statique** : les bornes sont des paramètres modifiables (`achat_parametres`). La garde est applicative, à poser à la création du BC de régularisation. |
 | 4 | La nature `prestation` (PRQ-02) et le compte comptable (PRQ-03) sont des amendements **Catalogue** non livrés | Le modèle les accepte (`nature` figée en chaîne, `service_fait_*` présents) sans les exiger. |
+| 5 | Le jalon d'installation annonce « **17 permissions** » | Le SFD §5 en compte **20 distinctes** : son tableau tient sur 14 lignes, dont 4 regroupent plusieurs permissions (`store` / `update` / `destroy`, `annuler` / `cloturer`, `documents.view` / `store` / `delete`, `rapports.view` / `export`). Le SFD faisant foi, les 20 sont posées — ni manquante, ni surnuméraire (vérifié par test). |

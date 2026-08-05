@@ -19,5 +19,37 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        /*
+         * 403 nominatives (SPEC_UX §0.5 · DESIGN.md).
+         *
+         * Par défaut, un refus de permission affiche « Forbidden » : l'utilisateur
+         * ignore ce qui lui manque et l'administrateur n'a aucun diagnostic. On
+         * enrichit donc la vue d'erreur avec la permission attendue, sous ses deux
+         * formes : le libellé métier (ce que la personne voulait faire) et le nom
+         * technique (ce qu'il faut accorder dans la matrice des rôles).
+         */
+        $exceptions->render(function (\Spatie\Permission\Exceptions\UnauthorizedException $e, $request) {
+            $requises = collect($e->getRequiredPermissions())
+                ->map(fn (string $name) => [
+                    'name' => $name,
+                    'label' => \Spatie\Permission\Models\Permission::where('name', $name)->value('label') ?? $name,
+                ])
+                ->values()
+                ->all();
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $requises === []
+                        ? "Vous n'avez pas l'autorisation d'effectuer cette action."
+                        : 'Autorisation requise : '.collect($requises)->pluck('label')->implode(', ').'.',
+                    'permissions_requises' => collect($requises)->pluck('name')->all(),
+                ], 403);
+            }
+
+            return response()->view('errors.403', [
+                'permissionsRequises' => $requises,
+                'exceptionMessage' => $e->getMessage(),
+            ], 403);
+        });
     })->create();
