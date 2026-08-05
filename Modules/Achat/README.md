@@ -119,9 +119,26 @@ permet de rejouer une notification sans double incrément.
 ## Tests
 
 ```bash
-php artisan test Modules/Achat          # SQLite (suite par défaut)
-Modules/Achat/tests/postgres.sh         # PostgreSQL réel, schéma isolé
-Modules/Achat/tests/migrations.sh       # migrate / rollback / réinstallation
+php artisan test Modules/Achat            # SQLite (suite par défaut)
+Modules/Achat/tests/postgres.sh           # PostgreSQL réel, schéma isolé
+Modules/Achat/tests/migrations.sh         # migrate / rollback / réinstallation
+Modules/Achat/tests/Navigateur/executer.sh # écrans réels dans un DOM (jsdom)
+```
+
+La vérification **navigateur** complète les tests PHPUnit, qui s'arrêtent à la
+charge JSON. Elle rend la page réelle, y injecte la charge réellement servie,
+exécute le vrai JavaScript de la vue dans un DOM, et contrôle ce que
+l'utilisateur voit : colonnes, pilules de statut, montants qualifiés TTC,
+pictogramme de régularisation, barres de livraison accessibles, boutons
+d'action, pied de tableau, état vide. C'est là qu'on attrape ce qu'un test
+serveur ne voit pas — une ancre morte, un montant non qualifié, un bouton grisé
+sans diagnostic.
+
+Elle a besoin d'un jeu couvrant **tous** les statuts, sinon la grille
+actions × statut n'est vérifiée que sur un cas sur sept :
+
+```bash
+php artisan tinker --execute="require 'Modules/Achat/tests/Navigateur/donnees_demo.php';"
 ```
 
 Le cycle de migrations est vérifié séparément parce qu'un `migrate` qui passe ne
@@ -146,3 +163,5 @@ supprime ensuite ; vos données ne sont jamais touchées.
 | 3 | §6.2 prévoit un `CHECK` « `est_regularisation = false OR date_document BETWEEN bornes d'intérim` » | **Impossible en `CHECK` statique** : les bornes sont des paramètres modifiables (`achat_parametres`). La garde est applicative, à poser à la création du BC de régularisation. |
 | 4 | La nature `prestation` (PRQ-02) et le compte comptable (PRQ-03) sont des amendements **Catalogue** non livrés | Le modèle les accepte (`nature` figée en chaîne, `service_fait_*` présents) sans les exiger. |
 | 5 | Le jalon d'installation annonce « **17 permissions** » | Le SFD §5 en compte **20 distinctes** : son tableau tient sur 14 lignes, dont 4 regroupent plusieurs permissions (`store` / `update` / `destroy`, `annuler` / `cloturer`, `documents.view` / `store` / `delete`, `rapports.view` / `export`). Le SFD faisant foi, les 20 sont posées — ni manquante, ni surnuméraire (vérifié par test). |
+| 6 | La maquette **P-08**, désignée comme référence de l'écran A-02, **n'existe pas dans le dépôt** | Aucun fichier ni mention (recherche exhaustive : le seul « P-08 » du dépôt est `EF-RAP-08`, un identifiant d'exigence sans rapport). L'écran suit donc `SPEC_UX_Achat.md` A-02, qui est déclaré normatif, et les gabarits réels du module Stock. À confirmer si une maquette graphique existe hors dépôt. |
+| 7 | L'action **« Reprendre »** (SFD §7.1 : l'auteur défait sa propre soumission) n'a **pas de permission dédiée** au SFD §5 | Rattachée à `achat.bons_commande.soumettre`, dont elle est l'exacte réciproque, et **restreinte à l'auteur du bon** (vérifié par test). Une permission dédiée serait à créer si la MOA veut dissocier les deux gestes. |

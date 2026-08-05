@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Achat\Http\Controllers\ApiController;
+use Modules\Achat\Http\Controllers\BonCommandeController;
 use Modules\Achat\Http\Controllers\DashboardController;
 
 /*
@@ -16,6 +17,16 @@ use Modules\Achat\Http\Controllers\DashboardController;
 Route::middleware(['auth'])->prefix('achat')->name('achat.')->group(function () {
     // A-01 — Tableau de bord
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+
+    /*
+    | A-02 — Liste des bons de commande. `.data` porte sa propre permission
+    | (SFD §8 : permission serveur sur TOUTES les routes) et la route littérale
+    | est déclarée avant tout segment /{id}.
+    */
+    Route::prefix('bons-commande')->name('bons-commande.')->group(function () {
+        Route::get('/', [BonCommandeController::class, 'index'])->name('index');
+        Route::get('/data', [BonCommandeController::class, 'getData'])->name('data');
+    });
 
     /*
     | API inter-modules (API_Inter_Modules.md §4) — permission achat.api.view
