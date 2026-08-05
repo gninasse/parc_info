@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Suite PostgreSQL du module Achat (convention 6 / SFD §1.7).
+
+    Les migrations et les CHECK ne se comportent pas de la même façon sur
+    SQLite et PostgreSQL : réussir sur l'un ne prouve rien pour l'autre. Cette
+    configuration rejoue la suite du module contre PostgreSQL, dans le schéma
+    isolé désigné par DB_SCHEMA — le schéma « public » et vos données ne sont
+    jamais touchés.
+
+    Lancement : Modules/Achat/tests/postgres.sh
+-->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="../../../vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="../../../vendor/autoload.php"
+         colors="true"
+>
+    <testsuites>
+        <testsuite name="Achat">
+            <directory>./Feature</directory>
+        </testsuite>
+    </testsuites>
+    <php>
+        <env name="APP_ENV" value="testing"/>
+        <env name="APP_MAINTENANCE_DRIVER" value="file"/>
+        <env name="BCRYPT_ROUNDS" value="4"/>
+        <env name="CACHE_STORE" value="array"/>
+        <!-- PostgreSQL réel, schéma isolé (posé par postgres.sh) -->
+        <env name="DB_CONNECTION" value="pgsql"/>
+        <env name="ACTIVITY_LOGGER_DB_CONNECTION" value="pgsql"/>
+        <env name="MAIL_MAILER" value="array"/>
+        <env name="QUEUE_CONNECTION" value="sync"/>
+        <env name="SESSION_DRIVER" value="array"/>
+        <env name="PULSE_ENABLED" value="false"/>
+        <env name="TELESCOPE_ENABLED" value="false"/>
+        <env name="NIGHTWATCH_ENABLED" value="false"/>
+    </php>
+</phpunit>

@@ -94,7 +94,9 @@ return [
             'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',
             'prefix_indexes' => true,
-            'search_path' => 'public',
+            // Configurable pour permettre aux suites de portabilité de migrer
+            // dans un schéma isolé ; « public » reste le comportement normal.
+            'search_path' => env('DB_SCHEMA', 'public'),
             'sslmode' => 'prefer',
         ],
         'pgsql_activitylog' => [
