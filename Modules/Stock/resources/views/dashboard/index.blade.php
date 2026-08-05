@@ -188,6 +188,14 @@
                 @can('stock.transferts.store')
                     <a href="{{ route('stock.transferts.create') }}" class="btn btn-outline-primary">⇄ Nouveau transfert</a>
                 @endcan
+                @can('stock.rapports.view')
+                    <a href="{{ route('stock.statistiques.index') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-bar-chart-line me-1"></i>Statistiques du stock
+                    </a>
+                    <a href="{{ route('stock.rapports.index') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-journals me-1"></i>États & rapports
+                    </a>
+                @endcan
             </div>
         </div>
 

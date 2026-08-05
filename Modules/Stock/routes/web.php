@@ -6,7 +6,9 @@ use Modules\Stock\Http\Controllers\DocumentController;
 use Modules\Stock\Http\Controllers\EntreeController;
 use Modules\Stock\Http\Controllers\MagasinController;
 use Modules\Stock\Http\Controllers\NiveauController;
+use Modules\Stock\Http\Controllers\RapportController;
 use Modules\Stock\Http\Controllers\SortieController;
+use Modules\Stock\Http\Controllers\StatistiqueController;
 use Modules\Stock\Http\Controllers\TransfertController;
 
 Route::middleware(['auth'])->prefix('stock')->name('stock.')->group(function () {
@@ -114,5 +116,19 @@ Route::middleware(['auth'])->prefix('stock')->name('stock.')->group(function () 
         Route::get('/export', [NiveauController::class, 'export'])->name('export');
         Route::post('/seuil-article', [NiveauController::class, 'seuilArticle'])->name('seuil-article');
         Route::patch('/{id}/seuil', [NiveauController::class, 'seuil'])->name('seuil');
+    });
+
+    // Statistiques (UX §7) — tableau de bord analytique
+    Route::prefix('statistiques')->name('statistiques.')->group(function () {
+        Route::get('/', [StatistiqueController::class, 'index'])->name('index');
+        Route::get('/data', [StatistiqueController::class, 'getData'])->name('data');
+    });
+
+    // États / rapports (UX §7) : routes littérales avant /{code}
+    Route::prefix('rapports')->name('rapports.')->group(function () {
+        Route::get('/', [RapportController::class, 'index'])->name('index');
+        Route::get('/{code}', [RapportController::class, 'show'])->name('show');
+        Route::get('/{code}/data', [RapportController::class, 'getData'])->name('data');
+        Route::get('/{code}/export', [RapportController::class, 'export'])->name('export');
     });
 });

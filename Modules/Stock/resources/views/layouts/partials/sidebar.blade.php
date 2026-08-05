@@ -38,7 +38,8 @@
                     ['label' => 'Transferts', 'icon' => 'bi bi-arrow-left-right', 'route' => 'stock.transferts.index', 'actif' => 'stock.transferts.*', 'permission' => 'stock.transferts.index'],
                     ['label' => 'Inventaires', 'icon' => 'bi bi-clipboard-check', 'route' => 'stock.inventaires.index', 'actif' => 'stock.inventaires.*', 'permission' => 'stock.inventaires.index'],
                     ['label' => 'Mouvements', 'icon' => 'bi bi-clock-history', 'route' => 'stock.mouvements.index', 'actif' => 'stock.mouvements.*', 'permission' => 'stock.mouvements.index'],
-                    ['label' => 'Rapports', 'icon' => 'bi bi-graph-up', 'route' => 'stock.rapports.index', 'actif' => 'stock.rapports.*', 'permission' => 'stock.rapports.view'],
+                    ['label' => 'Statistiques', 'icon' => 'bi bi-bar-chart-line', 'route' => 'stock.statistiques.index', 'actif' => 'stock.statistiques.*', 'permission' => 'stock.rapports.view'],
+                    ['label' => 'États & rapports', 'icon' => 'bi bi-graph-up', 'route' => 'stock.rapports.index', 'actif' => 'stock.rapports.*', 'permission' => 'stock.rapports.view'],
                 ];
                 $itemsReferentiels = [
                     ['label' => 'Magasins', 'icon' => 'bi bi-shop', 'route' => 'stock.magasins.index', 'actif' => 'stock.magasins.*', 'permission' => 'stock.magasins.index'],
