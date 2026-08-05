@@ -333,6 +333,7 @@ window.RAPPORT = {
     };
 
     const charger = () => {
+        majLiensExport();
         document.getElementById('rapport-chargement').classList.remove('d-none');
         $table.classList.add('d-none');
 
@@ -375,12 +376,20 @@ window.RAPPORT = {
         charger();
     });
 
-    document.querySelectorAll('.export-lien').forEach((lien) => lien.addEventListener('click', (e) => {
-        e.preventDefault();
-        const p = parametres();
-        p.set('format', lien.dataset.format);
-        window.location = `${config.urlExport}?${p.toString()}`;
-    }));
+    // Les liens d'export restent de vrais liens : leur href suit les filtres
+    // courants, ce qui préserve le clic milieu et « ouvrir dans un onglet ».
+    const majLiensExport = () => {
+        document.querySelectorAll('.export-lien').forEach((lien) => {
+            const p = parametres();
+            p.set('format', lien.dataset.format);
+            lien.href = `${config.urlExport}?${p.toString()}`;
+        });
+    };
+
+    // Un filtre modifié met immédiatement les liens d'export à jour, même si
+    // l'utilisateur n'a pas encore cliqué sur « Appliquer ».
+    document.querySelectorAll('#zone-filtres select, #zone-filtres input')
+        .forEach((champ) => champ.addEventListener('change', majLiensExport));
 
     charger();
 })();
