@@ -117,6 +117,7 @@
       data-url-update="{{ $bon ? route('achat.bons-commande.update', $bon->id) : '' }}"
       data-url-reference-prix="{{ route('achat.bons-commande.reference-prix', ['article' => '__ID__']) }}"
       data-url-articles="{{ route('catalogue.api.articles') }}"
+      data-url-fournisseurs="{{ route('catalogue.api.fournisseurs') }}"
       data-url-liste="{{ route('achat.bons-commande.index') }}"
       data-url-recapitulatif="{{ $bon ? route('achat.bons-commande.recapitulatif', $bon->id) : '' }}"
       data-modele-url-recapitulatif="{{ route('achat.bons-commande.recapitulatif', ['id' => '__ID__']) }}">
@@ -131,16 +132,23 @@
         <div class="card-body">
             <div class="row g-3">
                 <div class="col-md-4">
-                    <label class="form-label" for="a-fournisseur">Fournisseur <span class="text-danger">*</span></label>
-                    <select class="form-select" id="a-fournisseur" name="fournisseur_id" required>
-                        <option value="">— Choisir —</option>
-                        @foreach($fournisseurs as $fournisseur)
-                            <option value="{{ $fournisseur->id }}" @selected($bon?->fournisseur_id === $fournisseur->id)>
-                                {{ $fournisseur->raison_sociale }}
-                            </option>
-                        @endforeach
-                    </select>
-                    <div class="form-text">Référentiel du module Catalogue</div>
+                    <label class="form-label" for="btn-choisir-fournisseur">Fournisseur <span class="text-danger">*</span></label>
+                    {{-- Sélection par MODALE (pattern du projet), pas un
+                         select : le référentiel peut compter des centaines de
+                         fiches, et la modale offre recherche et fiche complète. --}}
+                    <input type="hidden" name="fournisseur_id" id="a-fournisseur"
+                           value="{{ $bon?->fournisseur_id }}">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="a-fournisseur-libelle" readonly
+                               placeholder="— Choisir un fournisseur —"
+                               value="{{ $bon?->fournisseur?->raison_sociale }}"
+                               aria-describedby="aide-fournisseur">
+                        <button type="button" class="btn btn-outline-primary" id="btn-choisir-fournisseur"
+                                data-bs-toggle="modal" data-bs-target="#modal-fournisseur">
+                            <i class="bi bi-search me-1"></i>Choisir
+                        </button>
+                    </div>
+                    <div class="form-text" id="aide-fournisseur">Référentiel du module Catalogue</div>
                     {{-- Verrouillé dès qu'une ligne existe : changer de
                          fournisseur laisserait des lignes orphelines d'un
                          autre catalogue de prix (SPEC_UX A-03). --}}
@@ -264,6 +272,7 @@
 </form>
 
 @include('achat::bons-commande._modal_articles')
+@include('achat::bons-commande._modal_fournisseur')
 @endsection
 
 @push('js')

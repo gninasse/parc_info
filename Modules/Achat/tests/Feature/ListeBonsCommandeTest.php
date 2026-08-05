@@ -409,16 +409,18 @@ class ListeBonsCommandeTest extends TestCase
         $this->assertSame(2, $reponse['total']);
     }
 
-    // ── Grille actions × statut (SFD §1.4, SPEC_UX §0.3) ───────────────────
+    // ── Drapeaux de la toolbar (grille actions × statut, SPEC_UX §0.3) ─────
+    //
+    // La liste suit le pattern du projet : sélection d'une ligne puis toolbar.
+    // Chaque ligne émet des drapeaux peut_* calculés par la grille serveur
+    // (ActionsBonCommande) : le navigateur ne déduit rien des statuts.
 
-    private function actions(User $user, int $bonId): array
+    private function drapeaux(User $user, int $bonId): array
     {
-        $ligne = collect($this->data($user)['rows'])->firstWhere('id', $bonId);
-
-        return collect($ligne['actions'])->keyBy('cle')->all();
+        return collect($this->data($user)['rows'])->firstWhere('id', $bonId);
     }
 
-    public function test_un_brouillon_offre_voir_modifier_supprimer_soumettre(): void
+    public function test_un_brouillon_ouvre_modifier_supprimer_soumettre(): void
     {
         $utilisateur = $this->utilisateur([
             ...self::PERMISSIONS_LECTURE,
@@ -428,28 +430,34 @@ class ListeBonsCommandeTest extends TestCase
         ]);
         $bon = $this->bon([], 1);
 
-        $this->assertEqualsCanonicalizing(
-            ['voir', 'modifier', 'supprimer', 'soumettre'],
-            array_keys($this->actions($utilisateur, $bon->id))
-        );
+        $ligne = $this->drapeaux($utilisateur, $bon->id);
+
+        $this->assertTrue($ligne['peut_voir']);
+        $this->assertTrue($ligne['peut_modifier']);
+        $this->assertTrue($ligne['peut_supprimer']);
+        $this->assertTrue($ligne['peut_soumettre']);
+        $this->assertFalse($ligne['peut_valider']);
+        $this->assertFalse($ligne['peut_imprimer'], 'Un brouillon n\'a pas de PDF listé.');
     }
 
-    /** Doctrine §0.3 : sans le droit, l'action est ABSENTE, pas grisée. */
-    public function test_une_action_sans_permission_est_absente_et_non_grisee(): void
+    /** Doctrine §0.3 : sans le droit, le drapeau est FAUX — le bouton, absent du HTML. */
+    public function test_une_ligne_n_emet_aucun_drapeau_sans_la_permission(): void
     {
         $lecteur = $this->utilisateur();
         $bon = $this->bon([], 1);
 
-        $actions = $this->actions($lecteur, $bon->id);
+        $ligne = $this->drapeaux($lecteur, $bon->id);
 
-        $this->assertArrayHasKey('voir', $actions);
-        $this->assertArrayNotHasKey('modifier', $actions);
-        $this->assertArrayNotHasKey('supprimer', $actions);
-        $this->assertArrayNotHasKey('soumettre', $actions);
+        $this->assertTrue($ligne['peut_voir']);
+        $this->assertFalse($ligne['peut_modifier']);
+        $this->assertFalse($ligne['peut_supprimer']);
+        $this->assertFalse($ligne['peut_soumettre']);
+        $this->assertFalse($ligne['peut_valider']);
+        $this->assertFalse($ligne['peut_renvoyer']);
     }
 
-    /** Doctrine §0.3 : bloquée par l'ÉTAT, l'action reste visible et motivée. */
-    public function test_sur_un_bon_valide_modifier_est_grise_avec_son_diagnostic(): void
+    /** Doctrine §0.3 : bloqué par l'ÉTAT, le drapeau tombe et le diagnostic est fourni. */
+    public function test_un_bon_valide_grise_modifier_avec_son_diagnostic(): void
     {
         $utilisateur = $this->utilisateur([
             ...self::PERMISSIONS_LECTURE,
@@ -458,11 +466,11 @@ class ListeBonsCommandeTest extends TestCase
         ]);
         $bon = $this->bon(['valide'], 1);
 
-        $actions = $this->actions($utilisateur, $bon->id);
+        $ligne = $this->drapeaux($utilisateur, $bon->id);
 
-        $this->assertFalse($actions['modifier']['actif']);
-        $this->assertStringContainsString('annulation ou la clôture', $actions['modifier']['titre']);
-        $this->assertFalse($actions['supprimer']['actif']);
+        $this->assertFalse($ligne['peut_modifier']);
+        $this->assertFalse($ligne['peut_supprimer']);
+        $this->assertStringContainsString('annulation ou la clôture', $ligne['diagnostic_modification']);
     }
 
     public function test_un_brouillon_sans_ligne_ne_peut_pas_etre_soumis_et_le_dit(): void
@@ -470,21 +478,21 @@ class ListeBonsCommandeTest extends TestCase
         $utilisateur = $this->utilisateur([...self::PERMISSIONS_LECTURE, 'achat.bons_commande.soumettre']);
         $bon = BonCommande::factory()->create();
 
-        $actions = $this->actions($utilisateur, $bon->id);
+        $ligne = $this->drapeaux($utilisateur, $bon->id);
 
-        $this->assertFalse($actions['soumettre']['actif']);
-        $this->assertStringContainsString('aucune ligne', $actions['soumettre']['titre']);
+        $this->assertFalse($ligne['peut_soumettre']);
+        $this->assertStringContainsString('aucune ligne', $ligne['diagnostic_soumission']);
     }
 
-    public function test_un_bon_soumis_offre_valider_et_renvoyer_au_validateur(): void
+    public function test_un_bon_soumis_offre_le_visa_au_validateur(): void
     {
         $validateur = $this->utilisateur([...self::PERMISSIONS_LECTURE, 'achat.bons_commande.valider']);
         $bon = $this->bon(['soumis'], 1);
 
-        $actions = $this->actions($validateur, $bon->id);
+        $ligne = $this->drapeaux($validateur, $bon->id);
 
-        $this->assertArrayHasKey('valider', $actions);
-        $this->assertArrayHasKey('renvoyer', $actions);
+        $this->assertTrue($ligne['peut_valider']);
+        $this->assertTrue($ligne['peut_renvoyer']);
     }
 
     /** « Reprendre » est le retour à soi-même : réservé à l'auteur du bon. */
@@ -498,8 +506,8 @@ class ListeBonsCommandeTest extends TestCase
 
         $bon = $this->bon(['soumis'], 1, ['created_by' => $auteur->id]);
 
-        $this->assertArrayHasKey('reprendre', $this->actions($auteur, $bon->id));
-        $this->assertArrayNotHasKey('reprendre', $this->actions($autre, $bon->id));
+        $this->assertTrue($this->drapeaux($auteur, $bon->id)['peut_reprendre']);
+        $this->assertFalse($this->drapeaux($autre, $bon->id)['peut_reprendre']);
     }
 
     /** Un bon annulé est sans effet : il n'a pas de PDF (SPEC_UX A-02). */
@@ -507,37 +515,22 @@ class ListeBonsCommandeTest extends TestCase
     {
         $bon = $this->bon(['annule'], 1);
 
-        $actions = $this->actions($this->utilisateur(), $bon->id);
+        $ligne = $this->drapeaux($this->utilisateur(), $bon->id);
 
-        $this->assertSame(['voir'], array_keys($actions));
+        $this->assertTrue($ligne['peut_voir']);
+        $this->assertFalse($ligne['peut_imprimer']);
+        $this->assertNull($ligne['url_pdf']);
     }
 
-    public function test_un_bon_livre_offre_voir_et_pdf(): void
+    /** L'impression passe par la modale iframe : l'URL du PDF est fournie. */
+    public function test_un_bon_livre_offre_le_pdf_avec_son_url(): void
     {
         $bon = $this->bon(['livre'], 1);
 
-        $this->assertEqualsCanonicalizing(
-            ['voir', 'pdf'],
-            array_keys($this->actions($this->utilisateur(), $bon->id))
-        );
-    }
+        $ligne = $this->drapeaux($this->utilisateur(), $bon->id);
 
-    /**
-     * Tant que la fiche A-04 n'existe pas, l'action reste visible mais sans
-     * URL : la liste documente la grille sans produire d'ancre morte.
-     */
-    public function test_une_action_dont_l_ecran_n_existe_pas_encore_n_a_pas_d_url(): void
-    {
-        $bon = $this->bon(['valide'], 1);
-
-        $voir = $this->actions($this->utilisateur(), $bon->id)['voir'];
-
-        $this->assertSame(
-            \Illuminate\Support\Facades\Route::has('achat.bons-commande.show')
-                ? route('achat.bons-commande.show', $bon->id)
-                : null,
-            $voir['url']
-        );
+        $this->assertTrue($ligne['peut_imprimer']);
+        $this->assertSame(route('achat.bons-commande.pdf', $bon->id), $ligne['url_pdf']);
     }
 
     // ── Menu de régularisation (A15) ───────────────────────────────────────

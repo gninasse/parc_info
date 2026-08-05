@@ -101,67 +101,20 @@ const monter = (fichier) => {
         verifier('artefact du brouillon renvoyé disponible', false, 'form-renvoye.html manquant');
     }
 
-    console.log('\n── Actions de transition dans la liste (A-02) ──');
+    console.log('\n── Drapeaux de transition dans la liste (A-02) ──');
     const visa = JSON.parse(lire('liste-visa.json'));
     verifier('des bons soumis sont listés', visa.rows.length > 0, `${visa.total} bon(s)`);
 
-    const actions = visa.rows.flatMap((ligne) => ligne.actions);
-    const parCle = (cle) => actions.filter((a) => a.cle === cle);
-
-    verifier('l\'action « valider » est proposée au porteur du visa', parCle('valider').length > 0);
-    verifier('l\'action « renvoyer » est proposée au porteur du visa', parCle('renvoyer').length > 0);
-
-    // LE point : une transition doit être un POST, pas un lien.
-    ['valider', 'renvoyer', 'reprendre'].forEach((cle) => {
-        const trouvees = parCle(cle);
-        if (trouvees.length === 0) return;
-        verifier(`« ${cle} » est déclarée en POST (jamais un lien GET)`,
-            trouvees.every((a) => a.methode === 'POST'),
-            trouvees[0].methode);
-    });
-
-    const supprimer = parCle('supprimer');
-    if (supprimer.length > 0) {
-        verifier('« supprimer » est déclarée en DELETE',
-            supprimer.every((a) => a.methode === 'DELETE'));
-    }
-
-    const voir = parCle('voir');
-    if (voir.length > 0) {
-        verifier('« voir » reste une simple navigation (GET)',
-            voir.every((a) => (a.methode ?? 'GET') === 'GET'));
-    }
-
-    console.log('\n── Rendu des actions par le formatter de la liste ──');
-    // On exécute le VRAI formatter de la vue sur la charge réelle : c'est le
-    // seul moyen de vérifier le HTML que l'utilisateur recevra.
-    const source = fs.readFileSync(`${RACINE}/public/js/modules/achat/bons-commande/index.js`, 'utf8');
-    const bac = new JSDOM('<!doctype html><html><body></body></html>', {
-        runScripts: 'outside-only',
-    }).window;
-
-    const echapperHtml = (t) => String(t ?? '').replace(
-        /[&<>"]/g,
-        (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])
-    );
-
-    bac.echapper = echapperHtml;
-
-    const extrait = source.slice(
-        source.indexOf('window.bcActionsFormatter'),
-        source.indexOf('$(function ()')
-    );
-    bac.eval(extrait);
-
-    const ligneSoumise = visa.rows[0];
-    const html = bac.bcActionsFormatter(ligneSoumise.actions, ligneSoumise);
-
-    verifier('les transitions sont rendues en <button>, pas en <a>',
-        !/<a[^>]*bc-commande/.test(html) && /<button[^>]*bc-commande/.test(html));
-    verifier('chaque commande transporte sa méthode HTTP',
-        (html.match(/data-methode="POST"/g) ?? []).length > 0);
-    verifier('aucune ancre morte dans les actions', !html.includes('href="#"'));
-    verifier('chaque action porte un libellé accessible', html.includes('aria-label'));
+    // Le porteur du visa voit ses drapeaux levés sur les bons soumis : la
+    // toolbar activera Valider / Renvoyer à la sélection de la ligne.
+    verifier('le drapeau « peut_valider » est levé pour le porteur du visa',
+        visa.rows.every((l) => l.peut_valider === true));
+    verifier('le drapeau « peut_renvoyer » est levé pour le porteur du visa',
+        visa.rows.every((l) => l.peut_renvoyer === true));
+    verifier('un bon soumis n\'est ni modifiable ni supprimable',
+        visa.rows.every((l) => !l.peut_modifier && !l.peut_supprimer));
+    verifier('un bon soumis n\'a pas de PDF listé',
+        visa.rows.every((l) => !l.peut_imprimer && l.url_pdf === null));
 
     console.log('\n── Signaux de SW-02 (D-06) ──');
     if (existe('signaux.json')) {

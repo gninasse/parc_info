@@ -159,14 +159,28 @@ async function monter(charge) {
     // Les concaténer à plat les ferait entrer en collision — un artefact du
     // harnais, pas un défaut de l'application.
     const envelopper = (source) => '(function(){\n'
-        + source.replace(/^import .*$/gm, '').replace(/^export .*$/gm, '')
+        + source
+            .replace(/^import .*$/gm, '')
+            .replace(/^export (class|const|function)/gm, '$1')
+            .replace(/^export .*$/gm, '')
         + '\n})();';
 
     const catalogue = fs.readFileSync(`${RACINE}/public/js/modules/catalogue/formatters.js`, 'utf8');
+    const modalPdf = fs.readFileSync(`${RACINE}/public/js/modules/achat/shared/modal-pdf.js`, 'utf8');
     const vue = fs.readFileSync(`${RACINE}/public/js/modules/achat/bons-commande/index.js`, 'utf8');
 
     const script = dom.window.document.createElement('script');
-    script.textContent = [envelopper(catalogue), envelopper(vue)].join('\n');
+    script.textContent = [
+        envelopper(catalogue),
+        // ModalPdf est importé par la vue : on l'expose comme le ferait le
+        // graphe de modules du navigateur.
+        '(function(){\n'
+            + modalPdf.replace(/^export const/m, 'const').replace(/^import .*$/gm, '')
+            + '\nwindow.__ModalPdf = ModalPdf;})();',
+        '(function(){const ModalPdf = window.__ModalPdf;\n'
+            + vue.replace(/^import .*$/gm, '').replace(/^export .*$/gm, '')
+            + '\n})();',
+    ].join('\n');
     dom.window.document.body.appendChild(script);
 
     // Rejoue le chargement des données, comme le ferait Bootstrap Table.
@@ -183,7 +197,6 @@ const rendreLigne = (window, ligne) => ({
     montant: window.bcMontantTtcFormatter(ligne.montant_ttc, ligne),
     progression: window.bcProgressionFormatter(ligne.progression, ligne),
     statut: window.bcStatutFormatter(ligne.statut, ligne),
-    actions: window.bcActionsFormatter(ligne.actions, ligne),
 });
 
 (async () => {
@@ -197,8 +210,13 @@ const rendreLigne = (window, ligne) => ({
     console.log('\n── Colonnes du tableau (SPEC_UX A-02) ──');
     const entetes = Array.from(doc.querySelectorAll('#bons-commande-table thead th'))
         .map((th) => th.textContent.trim());
-    ['Numéro', 'Fournisseur', 'Date', 'Service demandeur', 'Lignes', 'Montant TTC', 'Livraison', 'Statut', 'Créé par', 'Actions']
+    ['Numéro', 'Fournisseur', 'Date', 'Service demandeur', 'Lignes', 'Montant TTC', 'Livraison', 'Statut', 'Créé par']
         .forEach((colonne) => verifier(`colonne « ${colonne} »`, entetes.includes(colonne)));
+    verifier('la sélection se fait par radio (pattern du projet)',
+        doc.querySelector('#bons-commande-table th[data-radio="true"]') !== null);
+    verifier('le tableau est en click-to-select simple',
+        doc.querySelector('#bons-commande-table').getAttribute('data-click-to-select') === 'true'
+        && doc.querySelector('#bons-commande-table').getAttribute('data-single-select') === 'true');
 
     verifier(
         'pagination serveur',
@@ -290,48 +308,60 @@ const rendreLigne = (window, ligne) => ({
         );
     }
 
-    console.log('\n── Doctrine des actions (SPEC_UX §0.3) ──');
-    verifier(
-        'chaque bouton d\'action porte un libellé accessible',
-        rendues.every(({ html }) => html.actions === '—' || html.actions.includes('aria-label'))
-    );
+    console.log('\n── Toolbar et drapeaux (pattern du projet, SPEC_UX §0.3) ──');
+    verifier('la toolbar existe et est câblée au tableau',
+        doc.getElementById('toolbar') !== null
+        && doc.querySelector('#bons-commande-table').getAttribute('data-toolbar') === '#toolbar');
 
-    const inactives = rendues.flatMap(({ ligne }) => ligne.actions.filter((a) => !a.actif));
-    if (inactives.length > 0) {
-        verifier(
-            'une action grisée porte toujours son diagnostic',
-            inactives.every((a) => typeof a.titre === 'string' && a.titre.length > 0),
-            `${inactives.length} action(s) grisée(s)`
-        );
+    ['btn-add', 'btn-show', 'btn-edit', 'btn-delete', 'btn-imprimer']
+        .forEach((id) => verifier(`bouton #${id} présent (utilisateur habilité)`,
+            doc.getElementById(id) !== null));
+
+    verifier('les boutons d\'action naissent désactivés (rien n\'est sélectionné)',
+        ['btn-show', 'btn-edit', 'btn-delete', 'btn-imprimer']
+            .every((id) => doc.getElementById(id)?.hasAttribute('disabled')));
+
+    verifier('chaque ligne émet ses drapeaux peut_*',
+        charge.rows.every((l) => typeof l.peut_voir === 'boolean'
+            && typeof l.peut_modifier === 'boolean'
+            && typeof l.peut_imprimer === 'boolean'));
+
+    const valides = charge.rows.filter((l) => ['VALIDE', 'PARTIEL', 'LIVRE', 'CLOTURE'].includes(l.statut));
+    if (valides.length > 0) {
+        verifier('un bon engagé porte l\'URL de son PDF (modale iframe)',
+            valides.every((l) => !l.peut_imprimer || typeof l.url_pdf === 'string'));
     }
 
-    verifier(
-        'aucune ancre morte : un bouton sans URL est désactivé',
-        rendues.every(({ ligne, html }) => {
-            const sansUrl = ligne.actions.filter((a) => !a.url);
-            return sansUrl.length === 0 || html.actions.includes('disabled');
-        })
-    );
-    verifier(
-        'aucun href="#" dans les actions',
-        rendues.every(({ html }) => !html.actions.includes('href="#"'))
-    );
+    // Le diagnostic n'accompagne que les statuts où la grille émet encore le
+    // bouton grisé (VALIDE, PARTIEL) ; sur LIVRE/CLOTURE l'action a disparu.
+    const grisables = charge.rows.filter((l) => ['VALIDE', 'PARTIEL'].includes(l.statut));
+    if (grisables.length > 0) {
+        verifier('un bon engagé grise Modifier avec son diagnostic',
+            grisables.every((l) => !l.peut_modifier && String(l.diagnostic_modification ?? '').length > 0));
+    }
 
-    const annules = rendues.filter(({ ligne }) => ligne.statut === 'ANNULE');
+    const annules = charge.rows.filter((l) => l.statut === 'ANNULE');
     if (annules.length > 0) {
-        verifier(
-            'un bon annulé n\'offre pas de PDF',
-            annules.every(({ ligne }) => !ligne.actions.some((a) => a.cle === 'pdf'))
-        );
+        verifier('un bon annulé n\'offre pas de PDF',
+            annules.every((l) => !l.peut_imprimer && l.url_pdf === null));
     }
+
+    console.log('\n── Modale PDF (impression en iframe, jamais un onglet) ──');
+    verifier('la modale PDF est présente sur la liste', doc.getElementById('pdfModal') !== null);
+    verifier('elle porte une iframe d\'aperçu', doc.getElementById('pdf-iframe') !== null);
+    ['pdf-imprimer', 'pdf-telecharger', 'pdf-onglet']
+        .forEach((id) => verifier(`commande #${id}`, doc.getElementById(id) !== null));
 
     console.log('\n── Échappement (aucune injection depuis les données) ──');
     verifier(
-        'le fournisseur est échappé',
-        window.bcActionsFormatter([{
-            cle: 'x', libelle: '<script>', icone: 'bi-x', classe: 'btn',
-            url: 'https://exemple/"><script>alert(1)</script>', actif: true, titre: '<img src=x onerror=alert(1)>',
-        }]).includes('&lt;') === true
+        'le numéro est échappé par le formatter',
+        window.bcNumeroFormatter('<script>alert(1)</script>', { est_regularisation: false }).includes('&lt;script&gt;')
+    );
+    verifier(
+        'le statut est échappé par le formatter',
+        window.bcStatutFormatter('X', {
+            statut: 'X', statut_couleur: 'secondary', statut_label: '<img src=x onerror=alert(1)>',
+        }).includes('&lt;img')
     );
 
     console.log('\n── Pied de tableau sur un filtre (SPEC_UX A-02) ──');

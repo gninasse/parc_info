@@ -12,6 +12,7 @@
  */
 import { NATURES } from '../../catalogue/formatters.js';
 import { ModaleArticles } from './modale-articles.js';
+import { ModaleFournisseur } from './modale-fournisseur.js';
 
 const echapper = (texte) => $('<span>').text(texte ?? '').html();
 
@@ -30,6 +31,7 @@ $(function () {
         urlUpdate: $form.data('url-update'),
         urlReferencePrix: $form.data('url-reference-prix'),
         urlArticles: $form.data('url-articles'),
+        urlFournisseurs: $form.data('url-fournisseurs'),
         urlListe: $form.data('url-liste'),
         urlRecapitulatif: $form.data('url-recapitulatif') || null,
         modeleUrlRecapitulatif: $form.data('modele-url-recapitulatif'),
@@ -111,7 +113,7 @@ $(function () {
         // Fournisseur verrouillé dès qu'une ligne existe : changer de
         // fournisseur laisserait des lignes d'un autre catalogue de prix.
         const verrouille = lignes.length > 0;
-        $('#a-fournisseur').prop('disabled', verrouille);
+        $('#btn-choisir-fournisseur').prop('disabled', verrouille);
         $('#aide-fournisseur-verrouille').toggleClass('d-none', !verrouille);
 
         rafraichirPied();
@@ -238,6 +240,18 @@ $(function () {
 
     // ── En-tête ────────────────────────────────────────────────────────────
 
+    // Sélection du fournisseur par MODALE (pattern du projet).
+    const modaleFournisseur = new ModaleFournisseur({
+        urlFournisseurs: config.urlFournisseurs,
+        onChoisir: (fournisseur) => {
+            $('#a-fournisseur').val(fournisseur.id);
+            $('#a-fournisseur-libelle').val(fournisseur.raison_sociale);
+            modifie = true;
+            rafraichirPied();
+        },
+    });
+    modaleFournisseur.initialiser();
+
     $('#pilules-observation').on('click', '.pilule-motif', function () {
         const motif = $(this).data('motif');
         const dejaActif = $(this).hasClass('active');
@@ -260,7 +274,6 @@ $(function () {
     });
 
     $form.on('input change', 'input, select, textarea', () => { modifie = true; });
-    $('#a-fournisseur').on('change', rafraichirPied);
 
     // ── M-01 : ajout d'articles ────────────────────────────────────────────
 

@@ -177,8 +177,8 @@ class CircuitSoumissionTest extends TestCase
     }
 
     /**
-     * La grille d'actions de la liste ne doit pas non plus proposer le visa à
-     * un acheteur : une action interdite est ABSENTE (SPEC_UX §0.3).
+     * Les drapeaux de la liste ne proposent pas le visa à un acheteur : un
+     * drapeau à FAUX, un bouton de toolbar qui reste grisé (SPEC_UX §0.3).
      */
     public function test_la_liste_n_offre_pas_le_visa_a_un_acheteur(): void
     {
@@ -192,12 +192,10 @@ class CircuitSoumissionTest extends TestCase
                 ->json('rows')
         )->firstWhere('id', $bon->id);
 
-        $cles = collect($ligne['actions'])->pluck('cle')->all();
-
-        $this->assertNotContains('valider', $cles);
-        $this->assertNotContains('renvoyer', $cles);
+        $this->assertFalse($ligne['peut_valider']);
+        $this->assertFalse($ligne['peut_renvoyer']);
         // En revanche il peut reprendre SA soumission.
-        $this->assertContains('reprendre', $cles);
+        $this->assertTrue($ligne['peut_reprendre']);
     }
 
     public function test_la_liste_offre_le_visa_au_validateur(): void
@@ -211,10 +209,8 @@ class CircuitSoumissionTest extends TestCase
                 ->json('rows')
         )->firstWhere('id', $bon->id);
 
-        $cles = collect($ligne['actions'])->pluck('cle')->all();
-
-        $this->assertContains('valider', $cles);
-        $this->assertContains('renvoyer', $cles);
+        $this->assertTrue($ligne['peut_valider']);
+        $this->assertTrue($ligne['peut_renvoyer']);
     }
 
     // ═══ Matrice des transitions ═══════════════════════════════════════════

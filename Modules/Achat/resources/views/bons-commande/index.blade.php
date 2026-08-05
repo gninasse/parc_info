@@ -11,8 +11,7 @@
 @push('css')
 <link rel="stylesheet" href="{{ asset('plugins/bootstrap-table/bootstrap-table.min.css') }}">
 <style>
-    /* Pilules de statut multi-sélection (SPEC_UX A-02) : icône + texte, jamais
-       la couleur seule — un statut reste lisible en niveaux de gris (S7). */
+    /* Pilules de statut multi-sélection (SPEC_UX A-02) */
     .pilule-statut .btn { border-radius: 999px; }
 
     /* Régularisation : orange hachuré, la signature visuelle de l'intérim
@@ -101,31 +100,78 @@
 </div>
 
 <div class="card border-0 shadow-sm">
-    <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+    <div class="card-header bg-white border-0 py-3">
         <h6 class="mb-0 fw-bold">
             <i class="bi bi-card-checklist me-2 text-primary"></i>Bons de commande
         </h6>
+    </div>
 
-        <div class="d-flex gap-2">
+    <div class="card-body p-0">
+        {{-- Toolbar du tableau (pattern du projet : Core rôles, Stock entrées).
+             Les boutons s'activent sur la SÉLECTION d'une ligne ; sans le
+             droit, le bouton est ABSENT ; bloqué par l'état, il reste GRISÉ
+             avec son diagnostic en infobulle (SPEC_UX §0.3). --}}
+        <div id="toolbar">
             @can('achat.bons_commande.store')
-                @if(Route::has('achat.bons-commande.create'))
-                    <a href="{{ route('achat.bons-commande.create') }}" class="btn btn-primary btn-sm">
-                        <i class="bi bi-plus-lg me-1"></i>Nouveau bon de commande
-                    </a>
-                @endif
+                <a href="{{ route('achat.bons-commande.create') }}" id="btn-add" class="btn btn-primary btn-sm"
+                   data-bs-toggle="tooltip" title="Nouveau bon de commande">
+                    <i class="fas fa-plus"></i>
+                </a>
             @endcan
-
+            @can('achat.bons_commande.index')
+                <button id="btn-show" class="btn btn-secondary btn-sm" disabled
+                        data-bs-toggle="tooltip" title="Voir">
+                    <i class="fas fa-eye"></i>
+                </button>
+            @endcan
+            @can('achat.bons_commande.update')
+                <button id="btn-edit" class="btn btn-info btn-sm" disabled
+                        data-bs-toggle="tooltip" title="Modifier">
+                    <i class="fas fa-edit"></i>
+                </button>
+            @endcan
+            @can('achat.bons_commande.destroy')
+                <button id="btn-delete" class="btn btn-danger btn-sm" disabled
+                        data-bs-toggle="tooltip" title="Supprimer">
+                    <i class="fas fa-trash"></i>
+                </button>
+            @endcan
+            @can('achat.bons_commande.soumettre')
+                <button id="btn-soumettre" class="btn btn-warning btn-sm" disabled
+                        data-bs-toggle="tooltip" title="Soumettre au visa">
+                    <i class="bi bi-send"></i>
+                </button>
+                <button id="btn-reprendre" class="btn btn-outline-secondary btn-sm" disabled
+                        data-bs-toggle="tooltip" title="Reprendre ma soumission">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                </button>
+            @endcan
+            @can('achat.bons_commande.valider')
+                <button id="btn-valider" class="btn btn-success btn-sm" disabled
+                        data-bs-toggle="tooltip" title="Valider">
+                    <i class="fas fa-check"></i>
+                </button>
+                <button id="btn-renvoyer" class="btn btn-outline-warning btn-sm" disabled
+                        data-bs-toggle="tooltip" title="Renvoyer en brouillon">
+                    <i class="bi bi-arrow-return-left"></i>
+                </button>
+            @endcan
+            @can('achat.bons_commande.index')
+                <button id="btn-imprimer" class="btn btn-outline-primary btn-sm" disabled
+                        data-bs-toggle="tooltip" title="Imprimer">
+                    <i class="bi bi-printer"></i>
+                </button>
+            @endcan
             {{-- Menu de régularisation : présent seulement si la porte
-                 d'intérim est ouverte (A15) et si l'utilisateur en a le droit.
-                 À dette zéro le paramètre se referme et l'entrée disparaît. --}}
+                 d'intérim est ouverte (A15) et si l'utilisateur en a le droit. --}}
             @can('achat.bons_commande.regulariser')
-                @if($regularisationActive && Route::has('achat.bons-commande.create'))
+                @if($regularisationActive)
                     <div class="btn-group">
                         <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle"
                                 data-bs-toggle="dropdown" aria-expanded="false" aria-label="Autres créations">
                             <i class="bi bi-three-dots-vertical"></i>
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end">
+                        <ul class="dropdown-menu">
                             <li>
                                 <a class="dropdown-item"
                                    href="{{ route('achat.bons-commande.create', ['regularisation' => 1]) }}">
@@ -138,9 +184,7 @@
                 @endif
             @endcan
         </div>
-    </div>
 
-    <div class="card-body p-0">
         <table id="bons-commande-table"
                data-toggle="table"
                data-url="{{ route('achat.bons-commande.data') }}"
@@ -148,6 +192,9 @@
                data-side-pagination="server"
                data-show-refresh="true"
                data-show-columns="true"
+               data-toolbar="#toolbar"
+               data-click-to-select="true"
+               data-single-select="true"
                data-id-field="id"
                data-page-list="[10, 25, 50, 100]"
                data-page-size="10"
@@ -157,6 +204,7 @@
                class="table table-hover align-middle mb-0">
             <thead class="table-light">
                 <tr>
+                    <th data-field="state" data-radio="true"></th>
                     <th data-field="numero_affiche" data-formatter="bcNumeroFormatter" data-sortable="true" data-sort-name="numero">Numéro</th>
                     <th data-field="fournisseur" data-sortable="false">Fournisseur</th>
                     <th data-field="date_document" data-sortable="true" data-sort-name="date_document">Date</th>
@@ -166,7 +214,6 @@
                     <th data-field="progression" data-formatter="bcProgressionFormatter" data-align="center">Livraison</th>
                     <th data-field="statut" data-formatter="bcStatutFormatter" data-align="center">Statut</th>
                     <th data-field="cree_par" data-visible="false">Créé par</th>
-                    <th data-field="actions" data-formatter="bcActionsFormatter" data-align="center">Actions</th>
                 </tr>
             </thead>
         </table>
@@ -188,13 +235,13 @@
         <i class="bi bi-arrow-counterclockwise me-1"></i>Réinitialiser les filtres
     </button>
     @can('achat.bons_commande.store')
-        @if(Route::has('achat.bons-commande.create'))
-            <a href="{{ route('achat.bons-commande.create') }}" class="btn btn-primary btn-sm ms-2">
-                <i class="bi bi-plus-lg me-1"></i>Nouveau bon de commande
-            </a>
-        @endif
+        <a href="{{ route('achat.bons-commande.create') }}" class="btn btn-primary btn-sm ms-2">
+            <i class="bi bi-plus-lg me-1"></i>Nouveau bon de commande
+        </a>
     @endcan
 </div>
+
+@include('achat::shared._modal_pdf')
 @endsection
 
 @push('js')

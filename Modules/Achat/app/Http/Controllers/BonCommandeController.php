@@ -135,11 +135,21 @@ class BonCommandeController extends Controller implements HasMiddleware
         ]);
     }
 
-    /** Une ligne du tableau, telle que la vue l'attend. */
+    /**
+     * Une ligne du tableau, telle que la vue l'attend.
+     *
+     * La toolbar de la liste (pattern du projet : sélection d'une ligne puis
+     * boutons) décide de l'état de ses boutons à partir des DRAPEAUX émis ici,
+     * calculés par la même grille serveur que partout (ActionsBonCommande) :
+     * le navigateur ne déduit rien des statuts, il lit des booléens. Le
+     * serveur revérifie de toute façon permission et état à chaque POST.
+     */
     private function ligne(BonCommande $bon, $utilisateur): array
     {
         $commande = (float) ($bon->total_commande ?? 0);
         $livre = (float) ($bon->total_livre ?? 0);
+
+        $actions = collect($this->actions->pour($bon, $utilisateur))->keyBy('cle');
 
         return [
             'id' => $bon->id,
@@ -170,7 +180,20 @@ class BonCommandeController extends Controller implements HasMiddleware
             'statut_label' => $bon->statut_label,
             'statut_couleur' => $bon->statut_couleur,
             'cree_par' => $bon->createur?->name ?? '—',
-            'actions' => $this->actions->pour($bon, $utilisateur),
+
+            // ── Drapeaux de la toolbar (grille ActionsBonCommande) ────────
+            'peut_voir' => $actions->has('voir'),
+            'peut_modifier' => (bool) ($actions['modifier']['actif'] ?? false),
+            'peut_supprimer' => (bool) ($actions['supprimer']['actif'] ?? false),
+            'peut_soumettre' => (bool) ($actions['soumettre']['actif'] ?? false),
+            'peut_reprendre' => $actions->has('reprendre'),
+            'peut_valider' => $actions->has('valider'),
+            'peut_renvoyer' => $actions->has('renvoyer'),
+            'peut_imprimer' => $actions->has('pdf'),
+            // Diagnostics des boutons grisés par l'état (SPEC_UX §0.3)
+            'diagnostic_modification' => $actions['modifier']['titre'] ?? null,
+            'diagnostic_soumission' => $actions['soumettre']['titre'] ?? null,
+            'url_pdf' => $actions['pdf']['url'] ?? null,
         ];
     }
 
@@ -259,7 +282,7 @@ class BonCommandeController extends Controller implements HasMiddleware
      */
     public function edit(Request $request, int $id)
     {
-        $bon = BonCommande::query()->with(['lignes.article', 'renvoyeur'])->findOrFail($id);
+        $bon = BonCommande::query()->with(['lignes.article', 'renvoyeur', 'fournisseur'])->findOrFail($id);
 
         if (! $bon->estModifiable()) {
             return $this->redirigerVersLaFiche($bon, $bon->diagnosticModification());
@@ -433,10 +456,6 @@ class BonCommandeController extends Controller implements HasMiddleware
         return [
             'bon' => $bon,
             'estRegularisation' => $regularisation,
-            'fournisseurs' => Fournisseur::query()
-                ->where('est_actif', true)
-                ->orderBy('raison_sociale')
-                ->get(['id', 'raison_sociale']),
             'services' => Service::query()
                 ->where('actif', true)
                 ->orderBy('libelle')

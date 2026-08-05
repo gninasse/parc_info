@@ -192,7 +192,8 @@ async function monter(fichierHtml = 'form-create.html') {
     script.textContent = [
         '(function(){' + nettoyer(source('catalogue/formatters.js')) + '\nwindow.__NATURES = NATURES;})();',
         '(function(){const NATURES = window.__NATURES;' + nettoyer(source('achat/bons-commande/modale-articles.js')) + '\nwindow.__ModaleArticles = ModaleArticles;})();',
-        '(function(){const NATURES = window.__NATURES; const ModaleArticles = window.__ModaleArticles;'
+        '(function(){' + nettoyer(source('achat/bons-commande/modale-fournisseur.js')) + '\nwindow.__ModaleFournisseur = ModaleFournisseur;})();',
+        '(function(){const NATURES = window.__NATURES; const ModaleArticles = window.__ModaleArticles; const ModaleFournisseur = window.__ModaleFournisseur;'
             + nettoyer(source('achat/bons-commande/form.js')) + '})();',
     ].join('\n');
     dom.window.document.body.appendChild(script);
@@ -216,8 +217,13 @@ async function monter(fichierHtml = 'form-create.html') {
         doc.querySelector('.achat-stepper [aria-current="step"]') !== null);
 
     console.log('\n── Carte En-tête ──');
-    ['a-fournisseur', 'a-date', 'a-service', 'a-reference-demande', 'a-observation-type', 'a-observation-texte']
+    ['a-fournisseur', 'a-fournisseur-libelle', 'btn-choisir-fournisseur', 'a-date', 'a-service', 'a-reference-demande', 'a-observation-type', 'a-observation-texte']
         .forEach((id) => verifier(`champ #${id}`, doc.getElementById(id) !== null));
+    verifier('le fournisseur se choisit par MODALE (pattern du projet)',
+        doc.getElementById('modal-fournisseur') !== null
+        && doc.getElementById('btn-choisir-fournisseur').getAttribute('data-bs-target') === '#modal-fournisseur');
+    verifier('la modale fournisseur est en sélection radio',
+        doc.querySelector('#mf-table thead') !== null && doc.getElementById('mf-choisir') !== null);
     verifier('la mention « Référentiel du module Catalogue » est présente',
         doc.body.textContent.includes('Référentiel du module Catalogue'));
 
@@ -256,8 +262,8 @@ async function monter(fichierHtml = 'form-create.html') {
         doc.getElementById('btn-continuer').getAttribute('title'));
     verifier('l\'état vide des lignes est visible',
         !doc.getElementById('lignes-vides').classList.contains('d-none'));
-    verifier('le fournisseur est déverrouillé tant qu\'il n\'y a pas de ligne',
-        doc.getElementById('a-fournisseur').disabled === false);
+    verifier('le choix du fournisseur est ouvert tant qu\'il n\'y a pas de ligne',
+        doc.getElementById('btn-choisir-fournisseur').disabled === false);
     verifier('le filtre interne des lignes est masqué sous 10 lignes',
         doc.getElementById('filtre-lignes').classList.contains('d-none'));
 
@@ -305,8 +311,8 @@ async function monter(fichierHtml = 'form-create.html') {
 
     const lignesRendues = edition.doc.querySelectorAll('#lignes-corps tr');
     verifier('les lignes enregistrées sont rendues', lignesRendues.length > 0, `${lignesRendues.length} ligne(s)`);
-    verifier('le fournisseur est VERROUILLÉ dès qu\'une ligne existe',
-        edition.doc.getElementById('a-fournisseur').disabled === true);
+    verifier('le choix du fournisseur est VERROUILLÉ dès qu\'une ligne existe',
+        edition.doc.getElementById('btn-choisir-fournisseur').disabled === true);
     verifier('l\'infobulle de verrouillage est visible',
         !edition.doc.getElementById('aide-fournisseur-verrouille').classList.contains('d-none'));
     verifier('le compteur de lignes est à jour',
