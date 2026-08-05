@@ -12,6 +12,11 @@ use Modules\Core\Models\User;
  * Paramètre métier du module (SFD §6.2), administré par l'écran A-08.
  * `config/` reste réservé aux constantes techniques (leçon AN-13/14) : tout
  * ce qu'un gestionnaire doit pouvoir changer sans développeur vit ici.
+ *
+ * Ce modèle porte le STOCKAGE (texte brut). L'interprétation — typage, cache,
+ * bornes d'intérim — appartient à `Services\AchatParametres` : c'est lui que
+ * le code applicatif doit appeler, afin qu'il n'existe qu'une seule façon de
+ * lire un paramètre.
  */
 class Parametre extends Model
 {
@@ -31,6 +36,8 @@ class Parametre extends Model
 
     public const INTERMEDE_FIN = 'intermede_fin';
 
+    public const MOTIFS_OBSERVATION = 'motifs_observation';
+
     protected $table = 'achat_parametres';
 
     protected $fillable = [
@@ -44,28 +51,11 @@ class Parametre extends Model
         return $this->belongsTo(User::class, 'updated_by');
     }
 
-    /** Lecture avec repli sur la valeur par défaut de config (jamais d'exception). */
-    public static function valeur(string $cle, ?string $defaut = null): ?string
-    {
-        $enBase = static::query()->where('cle', $cle)->value('valeur');
-
-        return $enBase ?? $defaut ?? config('achat.parametres_defaut.'.$cle);
-    }
-
-    public static function entier(string $cle, int $defaut = 0): int
-    {
-        $valeur = static::valeur($cle);
-
-        return is_numeric($valeur) ? (int) $valeur : $defaut;
-    }
-
-    public static function booleen(string $cle, bool $defaut = false): bool
-    {
-        $valeur = static::valeur($cle);
-
-        return $valeur === null || $valeur === '' ? $defaut : (bool) (int) $valeur;
-    }
-
+    /**
+     * Écriture brute. Les appelants applicatifs passent par
+     * `AchatParametres::set()`, qui normalise selon le type déclaré et
+     * invalide le cache — cette méthode est le point d'écriture bas niveau.
+     */
     public static function definir(string $cle, ?string $valeur, ?int $parUtilisateur = null): self
     {
         $parametre = static::query()->firstOrNew(['cle' => $cle]);

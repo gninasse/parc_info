@@ -110,7 +110,9 @@ return [
             'charset' => env('ACTIVITY_LOGGER_DB_CHARSET', 'utf8'),
             'prefix' => '',
             'prefix_indexes' => true,
-            'search_path' => 'public',
+            // Configurable comme la connexion principale, afin que les suites
+            // de portabilité puissent migrer dans un schéma isolé.
+            'search_path' => env('ACTIVITY_LOGGER_DB_SCHEMA', env('DB_SCHEMA', 'public')),
             'sslmode' => 'prefer',
         ],
 

@@ -8,8 +8,8 @@ use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Achat\Models\BonCommande;
-use Modules\Achat\Models\Parametre;
 use Modules\Achat\Models\RegularisationRattachement;
+use Modules\Achat\Services\AchatParametres;
 
 /**
  * A-01 — Tableau de bord du module (SPEC_UX A-01).
@@ -23,6 +23,8 @@ class DashboardController extends Controller implements HasMiddleware
     /** Nombre de lignes du tableau « reliquats les plus anciens » (Z3). */
     private const MAX_RELIQUATS = 5;
 
+    public function __construct(private readonly AchatParametres $parametres) {}
+
     public static function middleware(): array
     {
         return [
@@ -34,9 +36,9 @@ class DashboardController extends Controller implements HasMiddleware
     {
         return view('achat::dashboard.index', [
             'kpis' => $this->kpis(),
-            'delaiAlerteReliquat' => Parametre::entier(Parametre::DELAI_ALERTE_RELIQUAT_JOURS, 30),
+            'delaiAlerteReliquat' => $this->parametres->delaiAlerteReliquatJours(),
             'reliquatsAnciens' => $this->reliquatsLesPlusAnciens(),
-            'regularisationActive' => Parametre::booleen(Parametre::REGULARISATION_ACTIVE),
+            'regularisationActive' => $this->parametres->regularisationActive(),
         ]);
     }
 
@@ -77,7 +79,7 @@ class DashboardController extends Controller implements HasMiddleware
     /** Lignes dont le reste dort depuis plus de N jours (N = paramètre A-08). */
     private function compterReliquatsAnciens(): int
     {
-        $limite = now()->subDays(Parametre::entier(Parametre::DELAI_ALERTE_RELIQUAT_JOURS, 30));
+        $limite = now()->subDays($this->parametres->delaiAlerteReliquatJours());
 
         return $this->requeteReliquats()
             ->where('achat_bons_commande.valide_le', '<', $limite)

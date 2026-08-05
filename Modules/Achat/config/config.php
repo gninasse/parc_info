@@ -37,14 +37,32 @@ return [
     | Valeurs par défaut des paramètres métier (semées dans achat_parametres)
     |--------------------------------------------------------------------------
     | Servent au seeder et de repli si une clé venait à manquer en base.
+    | Le TYPE de chaque clé est déclaré dans Services\AchatParametres : c'est
+    | lui qui garantit qu'un booléen se relit en booléen et un entier en entier.
     */
     'parametres_defaut' => [
         'prefixe_numerotation' => 'BC',
         'delai_alerte_reliquat_jours' => '30',
         'seuil_ecart_prix_pct' => '20',
-        'taille_max_piece_mo' => '5',
-        'regularisation_active' => '0',
-        'intermede_debut' => '',
+        'taille_max_piece_mo' => '10',
+
+        /*
+         * Régularisation ACTIVE à l'installation : le plan de mise en service
+         * (SFD §9.2) prévoit la saisie des BC d'intérim en « semaine 0 », avant
+         * l'ouverture générale — le module doit donc ouvrir la porte, pas la
+         * fermer. Elle se refermera SEULE quand la dette atteindra zéro
+         * (extinction automatique A15), et sa réouverture sera un acte
+         * d'administration journalisé (SW-06).
+         */
+        'regularisation_active' => '1',
+
+        // Bornes de l'intérim : du retrait des modules v1 (SFD §1.1) à la mise
+        // en service. Ajustables depuis l'écran A-08.
+        'intermede_debut' => '2026-07-27',
         'intermede_fin' => '',
+
+        // Motifs d'observation proposés à la saisie d'un BC (pilules A-03),
+        // stockés en JSON : la liste est métier, donc administrable.
+        'motifs_observation' => '{"urgent":"Urgent","renouvellement":"Renouvellement périodique","sur_demande":"Sur demande de service","autre":"Autre"}',
     ],
 ];

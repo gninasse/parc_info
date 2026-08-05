@@ -6,6 +6,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Modules\Achat\Database\Seeders\AchatParametresSeeder;
 use Modules\Achat\Database\Seeders\AchatPermissionsSeeder;
 use Modules\Achat\Models\Parametre;
+use Modules\Achat\Services\AchatParametres;
 use Modules\Catalogue\Database\Seeders\CataloguePermissionsSeeder;
 use Modules\Core\Models\User;
 use Modules\Stock\Database\Seeders\StockPermissionsSeeder;
@@ -207,23 +208,29 @@ class AchatSkeletonTest extends TestCase
             $this->assertSame(1, Parametre::where('cle', $cle)->count(), "Paramètre en double ou absent : {$cle}");
         }
 
-        $this->assertSame('BC', Parametre::valeur(Parametre::PREFIXE_NUMEROTATION));
-        $this->assertSame(30, Parametre::entier(Parametre::DELAI_ALERTE_RELIQUAT_JOURS));
+        $parametres = app(AchatParametres::class);
+        $this->assertSame('BC', $parametres->prefixeNumerotation());
+        $this->assertSame(30, $parametres->delaiAlerteReliquatJours());
     }
 
-    /** La porte de régularisation est fermée par défaut (A15/IA-11). */
-    public function test_la_regularisation_est_inactive_par_defaut(): void
+    /**
+     * La porte de régularisation est OUVERTE à l'installation : le plan de
+     * mise en service (SFD §9.2) prévoit la saisie des BC d'intérim en
+     * « semaine 0 ». Elle se refermera seule à dette zéro (A15).
+     */
+    public function test_la_regularisation_est_active_a_l_installation(): void
     {
         $this->seed(AchatParametresSeeder::class);
 
-        $this->assertFalse(Parametre::booleen(Parametre::REGULARISATION_ACTIVE));
+        $this->assertTrue(app(AchatParametres::class)->regularisationActive());
     }
 
     public function test_un_parametre_absent_retombe_sur_le_defaut_de_config(): void
     {
         // Aucun seeder de paramètres : la lecture ne doit pas échouer.
-        $this->assertSame('BC', Parametre::valeur(Parametre::PREFIXE_NUMEROTATION));
-        $this->assertSame(20, Parametre::entier(Parametre::SEUIL_ECART_PRIX_PCT));
+        $parametres = app(AchatParametres::class);
+        $this->assertSame('BC', $parametres->prefixeNumerotation());
+        $this->assertSame(20, $parametres->seuilEcartPrixPct());
     }
 
     // ── Accès (contrôle serveur sur toutes les routes) ─────────────────────

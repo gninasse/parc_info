@@ -167,6 +167,40 @@ class BonCommande extends Model
 
     // ── Scopes ─────────────────────────────────────────────────────────────
 
+    /**
+     * Filtre par statut : accepte un statut ou une liste (pilules multi de la
+     * liste A-02). Une valeur vide ne filtre rien, ce qui permet de brancher
+     * directement un paramètre de requête sans condition à l'appel.
+     *
+     * @param  string|list<string>|null  $statuts
+     */
+    public function scopeParStatut(Builder $query, string|array|null $statuts): Builder
+    {
+        if ($statuts === null || $statuts === '' || $statuts === []) {
+            return $query;
+        }
+
+        return $query->whereIn('statut', (array) $statuts);
+    }
+
+    /** Les bons d'intérim (A15), habituellement écartés des statistiques. */
+    public function scopeRegularisations(Builder $query): Builder
+    {
+        return $query->where('est_regularisation', true);
+    }
+
+    /**
+     * Les bons qui attendent encore une livraison : engagés, ouverts, et
+     * dont au moins une ligne n'est pas soldée. C'est la source de la modale
+     * de sélection de commande côté Stock (M-02) et de l'écran Reliquats.
+     */
+    public function scopeALivrer(Builder $query): Builder
+    {
+        return $query
+            ->whereIn('statut', self::STATUTS_RECEPTIONNABLES)
+            ->whereHas('lignes', fn (Builder $ligne) => $ligne->whereColumn('quantite_livree', '<', 'quantite'));
+    }
+
     public function scopeEngages(Builder $query): Builder
     {
         return $query->whereIn('statut', self::STATUTS_ENGAGES);

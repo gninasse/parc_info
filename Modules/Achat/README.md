@@ -65,12 +65,34 @@ permission d'audit, attribuée nominativement.
 ## Paramètres (écran A-08)
 
 Le métier paramétrable vit dans la table `achat_parametres`, jamais dans
-`config/` (leçon AN-13/14) : préfixe de numérotation, délai d'alerte des
-reliquats, seuil d'écart de prix, taille maximale des pièces, activation de la
-régularisation et bornes d'intérim.
+`config/` (leçon AN-13/14). Les 8 clés v1 du SFD §6.2 :
 
-`regularisation_active` est semé à **faux** : la porte ne s'ouvre que par un acte
-d'administration explicite (A15/IA-11).
+| Clé | Type | Défaut | Rôle |
+|---|---|---|---|
+| `prefixe_numerotation` | texte | `BC` | Préfixe des numéros de bon |
+| `delai_alerte_reliquat_jours` | entier | `30` | Seuil d'ancienneté d'un reliquat |
+| `seuil_ecart_prix_pct` | entier | `20` | Déclenche la pilule d'écart de prix |
+| `taille_max_piece_mo` | entier | `10` | Taille maximale d'une pièce jointe |
+| `regularisation_active` | booléen | `true` | Ouvre la saisie des BC d'intérim |
+| `intermede_debut` / `intermede_fin` | date | `2026-07-27` / ouverte | Bornes de la régularisation |
+| `motifs_observation` | json | 4 motifs | Pilules de l'écran A-03 |
+
+**La lecture passe toujours par `Services\AchatParametres`**, jamais par le
+modèle : c'est lui qui déclare le type de chaque clé (un booléen revient
+booléen, une date revient `Carbon` ou `null`) et qui gère le cache, invalidé à
+chaque écriture. Sans ce point de passage unique, chaque appelant
+réinterpréterait « 1 » ou « 30 » à sa façon.
+
+`regularisation_active` est semé à **vrai** : le plan de mise en service
+(SFD §9.2) prévoit la saisie des BC d'intérim en « semaine 0 », avant
+l'ouverture générale. La porte se refermera seule à dette zéro (extinction
+automatique A15) et sa réouverture sera un acte d'administration journalisé.
+
+> ⚠️ Le seeder est **idempotent** : il ne réécrit jamais une valeur existante.
+> Une base installée avant le 05/08/2026 conserve donc ses anciennes valeurs
+> (`taille_max_piece_mo = 5`, `regularisation_active = 0`, `motifs_observation`
+> absent). Les ajuster depuis l'écran A-08, ou supprimer les lignes concernées
+> avant de rejouer le seeder.
 
 ---
 
@@ -99,7 +121,13 @@ permet de rejouer une notification sans double incrément.
 ```bash
 php artisan test Modules/Achat          # SQLite (suite par défaut)
 Modules/Achat/tests/postgres.sh         # PostgreSQL réel, schéma isolé
+Modules/Achat/tests/migrations.sh       # migrate / rollback / réinstallation
 ```
+
+Le cycle de migrations est vérifié séparément parce qu'un `migrate` qui passe ne
+prouve rien sur le `rollback` : c'est au retrait que se révèlent les
+dépendances. Le raccordement PRQ-05 en a fourni un exemple — la FK posée par
+Stock empêchait le `DROP` de `achat_bons_commande`, et le rollback échouait.
 
 La convention 6 exige que les suites passent sur **les deux** SGBD. Les `CHECK`
 ne se posent pas de la même façon (SQLite ne sait pas les ajouter après coup,

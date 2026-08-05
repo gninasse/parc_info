@@ -4,7 +4,6 @@ namespace Modules\Achat\Services;
 
 use Illuminate\Support\Facades\DB;
 use Modules\Achat\Models\BonCommande;
-use Modules\Achat\Models\Parametre;
 
 /**
  * Numérotation (SFD §6.1) : `{PREFIXE}-{année}-{séquence sur 4 chiffres}`,
@@ -22,6 +21,8 @@ use Modules\Achat\Models\Parametre;
  */
 class NumerotationService
 {
+    public function __construct(private readonly AchatParametres $parametres) {}
+
     /**
      * Numérote et engage le bon (BROUILLON|SOUMIS → VALIDE).
      *
@@ -37,8 +38,7 @@ class NumerotationService
             return $bon->numero;
         }
 
-        $prefixe = Parametre::valeur(Parametre::PREFIXE_NUMEROTATION, 'BC');
-        $numero = $this->prochainNumero($prefixe, now()->year);
+        $numero = $this->prochainNumero($this->parametres->prefixeNumerotation(), now()->year);
 
         $bon->forceFill([
             'numero' => $numero,

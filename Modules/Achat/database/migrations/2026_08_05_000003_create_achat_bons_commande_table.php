@@ -81,6 +81,24 @@ return new class extends Migration
 
     public function down(): void
     {
+        /*
+         * Le raccordement PRQ-05 pose, depuis le module Stock, une clé
+         * étrangère `stock_entrees.bon_commande_id` vers cette table. Tant
+         * qu'elle existe, PostgreSQL refuse le DROP (« dependent objects still
+         * exist ») et le rollback d'Achat échoue.
+         *
+         * On dénoue donc le lien avant de retirer la table. C'est bien à
+         * Achat de le faire : c'est SA table qui disparaît, et un module doit
+         * pouvoir se désinstaller sans exiger qu'on démonte d'abord un autre
+         * module. La colonne, elle, reste — elle appartient à Stock, qui la
+         * retirera par sa propre migration.
+         */
+        if (Schema::hasColumn('stock_entrees', 'bon_commande_id')) {
+            Schema::table('stock_entrees', function (Blueprint $table) {
+                $table->dropForeign(['bon_commande_id']);
+            });
+        }
+
         Schema::dropIfExists('achat_bons_commande');
     }
 };
