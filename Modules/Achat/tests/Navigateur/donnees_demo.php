@@ -53,4 +53,19 @@ $creer(['cloture']);
 $creer(['annule']);
 $creer(['valide', 'regularisation']);         // pictogramme orange hachuré
 
+/*
+ * Un brouillon RENVOYÉ par le visa : c'est le seul état qui fait apparaître
+ * l'encart jaune de réouverture (UX2-07). On passe par le circuit réel plutôt
+ * que d'écrire les colonnes à la main, pour que la démonstration reflète ce
+ * que produit vraiment l'application.
+ */
+$aRenvoyer = $creer([]);
+$circuit = app(\Modules\Achat\Services\CircuitSoumissionService::class);
+$circuit->soumettre($aRenvoyer, $auteur);
+$circuit->renvoyer(
+    $aRenvoyer->refresh(),
+    $auteur,
+    'Le prix du toner dépasse le marché en cours : renégociez avant de resoumettre.'
+);
+
 echo 'Jeu de démonstration : '.BonCommande::count()." bons de commande.\n";

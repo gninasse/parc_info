@@ -105,4 +105,54 @@ class MigrationsCycleTest extends TestCase
             ->where('id', $ligne->id)
             ->update(['quantite_livree' => 99]);
     }
+
+    /**
+     * Les CHECK doivent survivre à TOUTES les migrations, pas seulement à
+     * celle qui les pose.
+     *
+     * C'est un défaut réellement rencontré : la migration qui ajoutait les
+     * colonnes de renvoi posait une clé étrangère, chose que SQLite ne sait
+     * pas faire sur une table existante. Laravel recréait donc la table, et
+     * les CHECK disparaissaient SANS ERREUR — la base restait fonctionnelle,
+     * mais son filet de sécurité s'était évaporé en silence.
+     *
+     * Ce test lit la DDL réelle après l'ensemble des migrations : c'est le
+     * seul moyen de constater une contrainte manquante plutôt que de la
+     * découvrir le jour où elle aurait dû protéger une donnée.
+     */
+    public function test_les_check_survivent_a_toutes_les_migrations(): void
+    {
+        $ddl = \Illuminate\Support\Facades\DB::selectOne(
+            "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?",
+            ['achat_bons_commande']
+        )->sql;
+
+        foreach (array_keys(\Modules\Achat\Support\SchemaChecks::bonsCommande()) as $contrainte) {
+            $this->assertStringContainsString(
+                $contrainte,
+                $ddl,
+                "Le CHECK « {$contrainte} » a disparu : une migration ultérieure a fait recréer la table."
+            );
+        }
+
+        // Et la contrainte doit être ACTIVE, pas seulement présente dans la DDL.
+        $bon = \Modules\Achat\Models\BonCommande::factory()->create();
+
+        $this->expectException(\Illuminate\Database\QueryException::class);
+
+        \Illuminate\Support\Facades\DB::table('achat_bons_commande')
+            ->where('id', $bon->id)
+            ->update(['numero' => 'BC-2026-0001']); // un brouillon n'a pas de numéro
+    }
+
+    /** Les colonnes ajoutées après coup sont bien là, CHECK ou pas. */
+    public function test_les_colonnes_de_renvoi_sont_posees(): void
+    {
+        foreach (['renvoi_motif', 'renvoi_par', 'renvoi_le'] as $colonne) {
+            $this->assertTrue(
+                Schema::hasColumn('achat_bons_commande', $colonne),
+                "Colonne absente : {$colonne}"
+            );
+        }
+    }
 }

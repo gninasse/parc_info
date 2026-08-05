@@ -15,11 +15,44 @@ use Illuminate\Support\Facades\Schema;
  * migration) est recréée avec les CHECK intégrés au CREATE TABLE, puis ses
  * index sont rejoués à l'identique.
  *
+ * ⚠ PIÈGE SQLITE À CONNAÎTRE POUR TOUTE MIGRATION ULTÉRIEURE
+ * SQLite ne sait pas non plus ajouter une clé étrangère à une table
+ * existante : Laravel la RECRÉE alors intégralement, et les CHECK posés ici
+ * disparaissent SANS ERREUR. La base reste fonctionnelle, mais son filet de
+ * sécurité s'est évaporé en silence.
+ *
+ * La parade retenue (migration 000010) : sur SQLite, ajouter les colonnes
+ * SANS contrainte de clé étrangère, ce qui autorise un vrai
+ * `ALTER TABLE ADD COLUMN` laissant la table intacte. La contrainte reste
+ * posée sur PostgreSQL, où les suites tournent également.
+ *
+ * `SchemaInvariantsTest` monte la garde : si un CHECK disparaît, il échoue.
+ *
  * Les expressions doivent rester portables : aucune fonction propre à un SGBD
  * (SFD §1.7) — utiliser CASE WHEN.
  */
 final class SchemaChecks
 {
+    /**
+     * CHECK de `achat_bons_commande`, définis UNE SEULE FOIS pour que la
+     * migration de création et les tests d'invariants ne puissent pas
+     * décrire deux règles différentes.
+     *
+     * @return array<string, string>
+     */
+    public static function bonsCommande(): array
+    {
+        return [
+            // Un numéro ne s'attribue qu'à la validation : un brouillon ou un
+            // bon soumis n'en porte JAMAIS, un bon engagé en porte TOUJOURS.
+            // ANNULE est volontairement laissé libre (écart n°2 du README).
+            'chk_bc_numero_si_engage' => "(numero IS NULL AND statut IN ('BROUILLON', 'SOUMIS'))"
+                ." OR (numero IS NOT NULL AND statut IN ('VALIDE', 'PARTIEL', 'LIVRE', 'CLOTURE'))"
+                ." OR statut = 'ANNULE'",
+            'chk_bc_montants_positifs' => 'montant_ht >= 0 AND montant_tva >= 0 AND montant_ttc >= 0',
+        ];
+    }
+
     /**
      * @param  array<string, string>  $checks  nom de contrainte => expression SQL portable
      */

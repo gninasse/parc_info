@@ -91,9 +91,39 @@ async function monter(charge) {
                         elements.forEach((e, i) => fn(i, e));
                         return objet;
                     },
-                    on(evenement, gestionnaire) {
-                        (etat.evenements[evenement] ??= []).push(gestionnaire);
-                        elements.forEach((e) => e.addEventListener(evenement.split('.')[0], gestionnaire));
+                    /**
+                     * Deux formes, comme jQuery : `.on(evt, gestionnaire)` et
+                     * la forme DÉLÉGUÉE `.on(evt, selecteur, gestionnaire)`,
+                     * que la liste utilise pour ses boutons de commande —
+                     * ceux-ci sont recréés à chaque rendu du tableau, donc
+                     * seul un écouteur délégué peut les atteindre.
+                     */
+                    on(evenements, arg2, arg3) {
+                        const delegue = typeof arg2 === 'string';
+                        const gestionnaire = delegue ? arg3 : arg2;
+
+                        (etat.evenements[evenements] ??= []).push(gestionnaire);
+
+                        evenements.split(' ').forEach((nomComplet) => {
+                            const nom = nomComplet.split('.')[0];
+
+                            elements.forEach((element) => {
+                                element.addEventListener(nom, (evenement) => {
+                                    if (!delegue) {
+                                        gestionnaire.call(element, evenement);
+
+                                        return;
+                                    }
+
+                                    const cible = evenement.target.closest(arg2);
+
+                                    if (cible && element.contains(cible)) {
+                                        gestionnaire.call(cible, evenement);
+                                    }
+                                });
+                            });
+                        });
+
                         return objet;
                     },
                     bootstrapTable(action, options) {

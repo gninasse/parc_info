@@ -78,6 +78,31 @@
     </div>
 @endif
 
+@php
+    // Renvoi : extrait en variables simples pour l'encart ci-dessous.
+    $estRenvoye = $bon !== null && $bon->estRenvoye();
+@endphp
+
+@if($estRenvoye)
+    {{-- Encart jaune de réouverture (UX2-07). Il est refermable, mais reste
+         consultable dans la chronologie : l'auteur ne doit pas pouvoir perdre
+         définitivement la raison pour laquelle son bon lui est revenu. --}}
+    <div class="alert alert-warning alert-dismissible fade show d-flex align-items-start gap-2"
+         role="alert" id="encart-renvoi">
+        <i class="bi bi-arrow-return-left mt-1"></i>
+        <div>
+            <strong>
+                Renvoyé par {{ $bon->renvoyeur?->name ?? 'le validateur' }}
+                le {{ $bon->renvoi_le?->format('d/m/Y à H\hi') }}
+            </strong>
+            @if($bon->renvoi_motif)
+                <div class="mt-1">Motif : « {{ $bon->renvoi_motif }} »</div>
+            @endif
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
+    </div>
+@endif
+
 {{-- Récapitulatif des erreurs de saisie (422 mappées champ par champ) --}}
 <div id="erreurs-formulaire" class="alert alert-danger d-none" role="alert">
     <strong>Corrigez les points suivants :</strong>
@@ -92,7 +117,9 @@
       data-url-update="{{ $bon ? route('achat.bons-commande.update', $bon->id) : '' }}"
       data-url-reference-prix="{{ route('achat.bons-commande.reference-prix', ['article' => '__ID__']) }}"
       data-url-articles="{{ route('catalogue.api.articles') }}"
-      data-url-liste="{{ route('achat.bons-commande.index') }}">
+      data-url-liste="{{ route('achat.bons-commande.index') }}"
+      data-url-recapitulatif="{{ $bon ? route('achat.bons-commande.recapitulatif', $bon->id) : '' }}"
+      data-modele-url-recapitulatif="{{ route('achat.bons-commande.recapitulatif', ['id' => '__ID__']) }}">
 
     <input type="hidden" name="est_regularisation" id="a-regularisation" value="{{ $estRegularisation ? 1 : 0 }}">
 

@@ -31,6 +31,8 @@ $(function () {
         urlReferencePrix: $form.data('url-reference-prix'),
         urlArticles: $form.data('url-articles'),
         urlListe: $form.data('url-liste'),
+        urlRecapitulatif: $form.data('url-recapitulatif') || null,
+        modeleUrlRecapitulatif: $form.data('modele-url-recapitulatif'),
     };
 
     /**
@@ -390,6 +392,12 @@ $(function () {
         config.bonId = donnees.id;
         config.updatedAt = donnees.updated_at;
         config.urlUpdate = config.urlUpdate || `${config.urlStore}/${donnees.id}`;
+        config.urlRecapitulatif = config.urlRecapitulatif
+            || config.modeleUrlRecapitulatif.replace('__ID__', donnees.id);
+
+        // La sortie est désormais sans perte : l'encart de renvoi éventuel
+        // n'a plus lieu d'être puisque le brouillon vient d'être repris.
+        $('#encart-renvoi').addClass('d-none');
 
         lignes = donnees.lignes.map((ligne) => ({ ...ligne }));
 
@@ -428,10 +436,15 @@ $(function () {
     $('#btn-enregistrer').on('click', enregistrer);
 
     $('#btn-continuer').on('click', () => {
-        // L'étape ② travaille sur des données enregistrées : on sauvegarde
+        // L'étape ② travaille sur des données ENREGISTRÉES : on sauvegarde
         // d'abord, sinon le récapitulatif décrirait autre chose que le bon.
+        // C'est aussi ce qui donne son identifiant à un tout nouveau brouillon.
         enregistrer().then((ok) => {
-            if (ok) window.location.href = config.urlListe;
+            if (!ok) return;
+
+            const url = config.urlRecapitulatif
+                || config.modeleUrlRecapitulatif.replace('__ID__', config.bonId);
+            window.location.href = url;
         });
     });
 

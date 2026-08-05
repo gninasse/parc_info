@@ -82,4 +82,48 @@ file_put_contents("{$dossier}/brouillon.json", json_encode([
     ],
 ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
+/*
+ * Étape ② — récapitulatif. Deux états à capturer : un bon PRÊT à partir
+ * (bouton ouvert) et un bon BLOQUÉ (bouton grisé avec son diagnostic). Sans
+ * les deux, on ne vérifie que la moitié de la doctrine des actions.
+ */
+file_put_contents(
+    "{$dossier}/recapitulatif-pret.html",
+    $appel(route('achat.bons-commande.recapitulatif', $brouillon->id))
+);
+
+$bloque = \Modules\Achat\Models\BonCommande::query()
+    ->where('statut', \Modules\Achat\Models\BonCommande::STATUT_BROUILLON)
+    ->whereDoesntHave('lignes')
+    ->latest('id')
+    ->first();
+
+if ($bloque !== null) {
+    file_put_contents(
+        "{$dossier}/recapitulatif-bloque.html",
+        $appel(route('achat.bons-commande.recapitulatif', $bloque->id))
+    );
+}
+
+// Un brouillon RENVOYÉ, pour l'encart jaune de réouverture (UX2-07).
+$renvoye = \Modules\Achat\Models\BonCommande::query()
+    ->where('statut', \Modules\Achat\Models\BonCommande::STATUT_BROUILLON)
+    ->whereNotNull('renvoi_le')
+    ->latest('id')
+    ->first();
+
+if ($renvoye !== null) {
+    file_put_contents(
+        "{$dossier}/form-renvoye.html",
+        $appel(route('achat.bons-commande.edit', $renvoye->id))
+    );
+}
+
+// La liste vue par un porteur du visa : les actions valider/renvoyer doivent
+// y apparaître sur les bons soumis.
+file_put_contents(
+    "{$dossier}/liste-visa.json",
+    $appel(route('achat.bons-commande.data', ['statut' => ['SOUMIS'], 'limit' => 50]), true)
+);
+
 echo "artefacts écrits dans {$dossier}\n";

@@ -62,21 +62,10 @@ return new class extends Migration
             $table->index('numero');
         });
 
-        SchemaChecks::ajouter('achat_bons_commande', [
-            // Un numéro ne s'attribue qu'à la validation : un brouillon ou un
-            // bon soumis n'en porte JAMAIS, un bon engagé en porte TOUJOURS.
-            //
-            // ANNULE est volontairement laissé libre : le SFD §1.4 le décrit
-            // « jamais attribué », mais §7.5 n'autorise l'annulation que depuis
-            // VALIDE, qui porte déjà un numéro — et le lui retirer creuserait un
-            // trou dans la séquence (contraire à IA-3) tout en effaçant la trace
-            // d'un document qui a pu circuler. La contrainte accepte donc les
-            // deux cas et l'arbitrage est signalé à la MOA.
-            'chk_bc_numero_si_engage' => "(numero IS NULL AND statut IN ('BROUILLON', 'SOUMIS'))"
-                ." OR (numero IS NOT NULL AND statut IN ('VALIDE', 'PARTIEL', 'LIVRE', 'CLOTURE'))"
-                ." OR statut = 'ANNULE'",
-            'chk_bc_montants_positifs' => 'montant_ht >= 0 AND montant_tva >= 0 AND montant_ttc >= 0',
-        ]);
+        // Définition centralisée : ces CHECK sont reposés par toute
+        // migration ultérieure qui modifie la structure de la table (sur
+        // SQLite, un ADD COLUMN les perdrait silencieusement).
+        SchemaChecks::ajouter('achat_bons_commande', SchemaChecks::bonsCommande());
     }
 
     public function down(): void

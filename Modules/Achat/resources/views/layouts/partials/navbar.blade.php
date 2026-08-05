@@ -20,17 +20,15 @@
                      le visa, et seulement s'il y a effectivement à viser (SPEC_UX §0.1) --}}
                 <a href="{{ route('achat.bons-commande.index') }}" class="btn btn-sm btn-outline-primary fw-bold position-relative {{ request()->routeIs('achat.bons-commande.*') ? 'active' : '' }}">
                     <i class="bi bi-card-checklist me-1"></i> BONS DE COMMANDE
-                    @can('achat.bons_commande.valider')
-                        @php
-                            $aValider = \Modules\Achat\Models\BonCommande::query()->aValider()->count();
-                        @endphp
-                        @if($aValider > 0)
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                                {{ $aValider }}
-                                <span class="visually-hidden">bon(s) à valider</span>
-                            </span>
-                        @endif
-                    @endcan
+                    {{-- Comptage fourni par le view composer du module : une
+                         seule requête par page, et zéro si l'utilisateur n'a
+                         pas le visa. --}}
+                    @if(($bonsAValider ?? 0) > 0)
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            {{ $bonsAValider }}
+                            <span class="visually-hidden">bon(s) à valider</span>
+                        </span>
+                    @endif
                 </a>
             </li>
             @endif

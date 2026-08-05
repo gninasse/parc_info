@@ -12,12 +12,17 @@ use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
+use Modules\Achat\Exceptions\AchatException;
+use Modules\Achat\Exceptions\SoumissionRefuseeException;
+use Modules\Achat\Http\Requests\RenvoyerBonCommandeRequest;
 use Modules\Achat\Http\Requests\StoreBonCommandeRequest;
 use Modules\Achat\Http\Requests\UpdateBonCommandeRequest;
 use Modules\Achat\Models\BonCommande;
 use Modules\Achat\Services\AchatParametres;
 use Modules\Achat\Services\ActionsBonCommande;
 use Modules\Achat\Services\CalculMontantsService;
+use Modules\Achat\Services\CircuitSoumissionService;
+use Modules\Achat\Services\ControlesSoumissionService;
 use Modules\Achat\Services\LignesBonCommandeService;
 use Modules\Achat\Services\RechercheBonCommande;
 use Modules\Achat\Services\ReferencePrixService;
@@ -45,6 +50,8 @@ class BonCommandeController extends Controller implements HasMiddleware
         private readonly LignesBonCommandeService $lignes,
         private readonly CalculMontantsService $montants,
         private readonly ReferencePrixService $referencePrix,
+        private readonly ControlesSoumissionService $controles,
+        private readonly CircuitSoumissionService $circuit,
     ) {}
 
     public static function middleware(): array
@@ -54,6 +61,12 @@ class BonCommandeController extends Controller implements HasMiddleware
             new Middleware('permission:achat.bons_commande.store', only: ['create', 'store']),
             new Middleware('permission:achat.bons_commande.update', only: ['edit', 'update']),
             new Middleware('permission:achat.bons_commande.destroy', only: ['destroy']),
+            // Le récapitulatif de l'étape ② précède immédiatement la
+            // soumission : même permission que le geste qu'il prépare.
+            new Middleware('permission:achat.bons_commande.soumettre', only: ['recapitulatif', 'soumettre', 'reprendre']),
+            // Valider et renvoyer sont les deux faces du visa : une seule
+            // permission les porte (SFD §5).
+            new Middleware('permission:achat.bons_commande.valider', only: ['renvoyer']),
             // La reference de prix sert les DEUX ecrans de saisie : la
             // creation comme l'edition y ont droit.
             new Middleware('permission:achat.bons_commande.store|achat.bons_commande.update', only: ['referencePrix']),
@@ -244,7 +257,7 @@ class BonCommandeController extends Controller implements HasMiddleware
      */
     public function edit(Request $request, int $id)
     {
-        $bon = BonCommande::query()->with('lignes.article')->findOrFail($id);
+        $bon = BonCommande::query()->with(['lignes.article', 'renvoyeur'])->findOrFail($id);
 
         if (! $bon->estModifiable()) {
             return $this->redirigerVersLaFiche($bon, $bon->diagnosticModification());
@@ -448,5 +461,116 @@ class BonCommandeController extends Controller implements HasMiddleware
             : redirect()->route('achat.bons-commande.index');
 
         return $cible->with('info', $message);
+    }
+
+    // ═══ Circuit BROUILLON ⇄ SOUMIS (SFD §7.1) ═══════════════════════════════
+
+    /**
+     * Étape ② — récapitulatif avant soumission. Écran en lecture seule bâti
+     * sur le partiel « Récapitulatif de BC », qui resservira tel quel au visa
+     * (UX2-03) : le validateur doit voir EXACTEMENT ce que l'auteur a vu.
+     */
+    public function recapitulatif(int $id)
+    {
+        $bon = BonCommande::query()
+            ->with(['lignes', 'fournisseur', 'serviceDemandeur', 'createur'])
+            ->findOrFail($id);
+
+        // Le récapitulatif décrit un brouillon en partance ; une fois soumis,
+        // c'est la fiche qui prend le relais.
+        if (! $bon->estSoumettable()) {
+            return $this->redirigerVersLaFiche($bon, 'Ce bon n\'est plus en brouillon.');
+        }
+
+        return view('achat::bons-commande.recapitulatif', [
+            'bon' => $bon,
+            'diagnostic' => $this->controles->diagnostiquer($bon),
+            'decomposition' => $this->montants->decompositionParTaux($bon->lignes),
+        ]);
+    }
+
+    /** SW-01 — soumission au visa. */
+    public function soumettre(Request $request, int $id): JsonResponse
+    {
+        $bon = BonCommande::query()->findOrFail($id);
+
+        try {
+            $bon = $this->circuit->soumettre($bon, $request->user());
+        } catch (AchatException $e) {
+            return $this->refus($e);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Bon soumis au visa.',
+            'data' => [
+                'id' => $bon->id,
+                'statut' => $bon->statut,
+                'redirection' => $this->urlFiche($bon),
+            ],
+        ]);
+    }
+
+    /** M-06 — renvoi motivé par le validateur. */
+    public function renvoyer(RenvoyerBonCommandeRequest $request, int $id): JsonResponse
+    {
+        $bon = BonCommande::query()->findOrFail($id);
+
+        try {
+            $bon = $this->circuit->renvoyer($bon, $request->user(), $request->validated()['motif']);
+        } catch (AchatException $e) {
+            return $this->refus($e);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Bon renvoyé à '.($bon->createur?->name ?? 'son auteur').'.',
+            'data' => ['id' => $bon->id, 'statut' => $bon->statut],
+        ]);
+    }
+
+    /** Reprise par l'auteur : il défait sa propre soumission (SFD §7.1). */
+    public function reprendre(Request $request, int $id): JsonResponse
+    {
+        $bon = BonCommande::query()->findOrFail($id);
+
+        try {
+            $bon = $this->circuit->reprendre($bon, $request->user());
+        } catch (AchatException $e) {
+            return $this->refus($e);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Bon repris — il est de nouveau modifiable.',
+            'data' => [
+                'id' => $bon->id,
+                'statut' => $bon->statut,
+                'redirection' => route('achat.bons-commande.edit', $bon->id),
+            ],
+        ]);
+    }
+
+    /**
+     * Refus métier en réponse HTTP. Le code vient de l'exception elle-même
+     * (409 pour une transition impossible, 422 pour un contenu incomplet), et
+     * les blocages détaillés sont transmis pour que l'écran les pose sur les
+     * lignes fautives plutôt qu'en message global.
+     */
+    private function refus(AchatException $e): JsonResponse
+    {
+        return response()->json(array_filter([
+            'success' => false,
+            'message' => $e->getMessage(),
+            'blocages' => $e instanceof SoumissionRefuseeException ? $e->blocages : null,
+        ], fn ($valeur) => $valeur !== null), $e->status());
+    }
+
+    /** URL de la fiche si elle existe, la liste sinon (A-04 non livrée). */
+    private function urlFiche(BonCommande $bon): string
+    {
+        return Route::has('achat.bons-commande.show')
+            ? route('achat.bons-commande.show', $bon->id)
+            : route('achat.bons-commande.index');
     }
 }

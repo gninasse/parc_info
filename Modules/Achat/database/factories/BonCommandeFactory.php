@@ -20,6 +20,12 @@ class BonCommandeFactory extends Factory
         ];
     }
 
+    /** État par défaut, nommé pour les jeux de données de test. */
+    public function brouillon(): static
+    {
+        return $this->state(fn () => ['statut' => BonCommande::STATUT_BROUILLON]);
+    }
+
     public function soumis(): static
     {
         return $this->state(fn () => [

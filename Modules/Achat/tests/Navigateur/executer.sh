@@ -45,3 +45,7 @@ node "$ICI/rendu.cjs"
 echo
 echo "→ Vérification des écrans de saisie A-03 et M-01"
 node "$ICI/saisie.cjs"
+
+echo
+echo "→ Vérification du circuit BROUILLON ⇄ SOUMIS"
+node "$ICI/circuit.cjs"

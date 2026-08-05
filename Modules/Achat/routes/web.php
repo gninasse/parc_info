@@ -32,8 +32,15 @@ Route::middleware(['auth'])->prefix('achat')->name('achat.')->group(function () 
 
         Route::post('/', [BonCommandeController::class, 'store'])->name('store');
         Route::get('/{id}/edit', [BonCommandeController::class, 'edit'])->name('edit');
+        Route::get('/{id}/recapitulatif', [BonCommandeController::class, 'recapitulatif'])->name('recapitulatif');
         Route::put('/{id}', [BonCommandeController::class, 'update'])->name('update');
         Route::delete('/{id}', [BonCommandeController::class, 'destroy'])->name('destroy');
+
+        // Circuit BROUILLON ⇄ SOUMIS (SFD §7.1) — chaque transition est un
+        // POST distinct, avec sa propre permission serveur.
+        Route::post('/{id}/soumettre', [BonCommandeController::class, 'soumettre'])->name('soumettre');
+        Route::post('/{id}/renvoyer', [BonCommandeController::class, 'renvoyer'])->name('renvoyer');
+        Route::post('/{id}/reprendre', [BonCommandeController::class, 'reprendre'])->name('reprendre');
     });
 
     /*

@@ -51,15 +51,12 @@
                         <p>
                           {{ $item['label'] }}
                           {{-- Badge « à valider » sur l'entrée Bons de commande (SPEC_UX §0.1) --}}
-                          @if($item['route'] === 'achat.bons-commande.index')
-                            @can('achat.bons_commande.valider')
-                              @php
-                                  $aValider = \Modules\Achat\Models\BonCommande::query()->aValider()->count();
-                              @endphp
-                              @if($aValider > 0)
-                                <span class="nav-badge badge text-bg-danger me-3">{{ $aValider }}</span>
-                              @endif
-                            @endcan
+                          {{-- Comptage fourni par le view composer du module. --}}
+                          @if($item['route'] === 'achat.bons-commande.index' && ($bonsAValider ?? 0) > 0)
+                            <span class="nav-badge badge text-bg-danger me-3">
+                              {{ $bonsAValider }}
+                              <span class="visually-hidden">bon(s) à valider</span>
+                            </span>
                           @endif
                         </p>
                       </a>

@@ -63,7 +63,7 @@ window.bcStatutFormatter = function (value, row) {
  * action absente de la charge utile est absente de l'écran, et une action
  * inactive porte toujours son diagnostic en infobulle (SPEC_UX §0.3).
  */
-window.bcActionsFormatter = function (actions) {
+window.bcActionsFormatter = function (actions, row) {
     if (!Array.isArray(actions) || actions.length === 0) return '—';
 
     const boutons = actions.map((action) => {
@@ -74,6 +74,17 @@ window.bcActionsFormatter = function (actions) {
         // bouton désactivé plutôt qu'une ancre morte.
         if (!action.actif || !action.url) {
             return `<button type="button" class="btn btn-sm ${echapper(action.classe)}" disabled
+                        aria-label="${titre}" title="${titre}" data-bs-toggle="tooltip">${icone}</button>`;
+        }
+
+        // Une transition de statut est un POST ou un DELETE : la rendre en
+        // lien produirait un GET, donc un 405. Ces actions passent par un
+        // bouton de commande, confirmé puis envoyé en AJAX.
+        if ((action.methode || 'GET') !== 'GET') {
+            return `<button type="button" class="btn btn-sm ${echapper(action.classe)} bc-commande"
+                        data-url="${echapper(action.url)}" data-methode="${echapper(action.methode)}"
+                        data-cle="${echapper(action.cle)}" data-id="${row.id}"
+                        data-numero="${echapper(row.numero_affiche)}"
                         aria-label="${titre}" title="${titre}" data-bs-toggle="tooltip">${icone}</button>`;
         }
 
@@ -145,5 +156,91 @@ $(function () {
         $('#filter-fournisseur, #filter-du, #filter-au, #filter-recherche').val('');
         $('#filter-regularisations, #filter-mes-brouillons').prop('checked', false);
         rafraichir();
+    });
+
+    /*
+     * Commandes de transition depuis la liste (renvoi, reprise, suppression).
+     * Chacune demande une confirmation adaptée : le renvoi exige un MOTIF
+     * (M-06) sans lequel l'auteur devrait deviner quoi corriger, la
+     * suppression rappelle ce qu'elle emporte (SW-04), la reprise est bénigne
+     * puisqu'elle ne fait que rouvrir son propre brouillon.
+     */
+    const confirmations = {
+        renvoyer: (bouton) => Swal.fire({
+            title: 'Renvoyer le bon en brouillon ?',
+            input: 'textarea',
+            inputLabel: 'Motif du renvoi',
+            inputPlaceholder: 'Ce que l\'auteur doit corriger…',
+            inputAttributes: { 'aria-label': 'Motif du renvoi' },
+            text: 'Le bon repassera en brouillon chez son auteur, qui pourra le corriger et le soumettre à nouveau.',
+            showCancelButton: true,
+            confirmButtonText: 'Renvoyer en brouillon',
+            cancelButtonText: 'Annuler',
+            inputValidator: (valeur) =>
+                (!valeur || valeur.trim().length < 5)
+                    ? 'Indiquez le motif du renvoi : l\'auteur doit savoir quoi corriger.'
+                    : undefined,
+        }).then((r) => (r.isConfirmed ? { motif: r.value } : null)),
+
+        reprendre: (bouton) => Swal.fire({
+            title: 'Reprendre ce bon ?',
+            text: `${bouton.data('numero')} repassera en brouillon et redeviendra modifiable.`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Reprendre',
+            cancelButtonText: 'Annuler',
+        }).then((r) => (r.isConfirmed ? {} : null)),
+
+        supprimer: (bouton) => Swal.fire({
+            title: `Supprimer le ${bouton.data('numero')} ?`,
+            text: 'Ses lignes seront supprimées. Cette action ne laisse pas de trace : un brouillon n\'engage rien.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            confirmButtonText: 'Supprimer',
+            cancelButtonText: 'Annuler',
+        }).then((r) => (r.isConfirmed ? {} : null)),
+    };
+
+    $table.on('click', '.bc-commande', function () {
+        const $bouton = $(this);
+        const cle = $bouton.data('cle');
+        const demander = confirmations[cle];
+
+        if (!demander) return;
+
+        demander($bouton).then((donnees) => {
+            if (donnees === null) return;
+
+            // Anti-double-soumission : une transition ne part qu'une fois.
+            $bouton.prop('disabled', true);
+
+            $.ajax({
+                url: $bouton.data('url'),
+                method: $bouton.data('methode'),
+                data: JSON.stringify(donnees),
+                contentType: 'application/json',
+                dataType: 'json',
+            })
+                .done((reponse) => {
+                    $table.bootstrapTable('refresh');
+                    Swal.fire({
+                        icon: 'success',
+                        title: reponse.message,
+                        timer: 2000,
+                        showConfirmButton: false,
+                        toast: true,
+                        position: 'top-end',
+                    });
+                })
+                .fail((xhr) => {
+                    $bouton.prop('disabled', false);
+                    Swal.fire({
+                        icon: 'error',
+                        title: xhr.status === 409 ? 'Le bon a changé d\'état' : 'Action impossible',
+                        text: xhr.responseJSON?.message ?? 'Action impossible.',
+                    });
+                });
+        });
     });
 });

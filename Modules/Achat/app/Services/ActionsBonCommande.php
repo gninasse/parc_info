@@ -18,13 +18,18 @@ use Modules\Core\Models\User;
  * Le calcul est fait côté serveur pour que le navigateur n'ait aucune décision
  * de droit à prendre : il ne peut afficher que ce que le serveur a émis, et le
  * serveur revérifie de toute façon la permission à l'appel de chaque route.
+ *
+ * Chaque action porte sa MÉTHODE HTTP. C'est indispensable : une transition de
+ * statut est un POST, et la rendre en simple lien produirait un GET — donc un
+ * 405, ou pire une transition déclenchée par un survol de navigateur. Les
+ * actions `GET` deviennent des liens, les `POST` des boutons de commande.
  */
 class ActionsBonCommande
 {
     /**
      * Actions d'une ligne de la liste, dans l'ordre d'affichage.
      *
-     * @return list<array{cle: string, libelle: string, icone: string, classe: string, url: ?string, actif: bool, titre: string}>
+     * @return list<array{cle: string, libelle: string, icone: string, classe: string, url: ?string, methode: string, actif: bool, titre: string}>
      */
     public function pour(BonCommande $bon, User $utilisateur): array
     {
@@ -42,6 +47,7 @@ class ActionsBonCommande
                 'icone' => $action['icone'],
                 'classe' => $action['classe'],
                 'url' => $this->url($action['route'] ?? null, $bon),
+                'methode' => $action['methode'] ?? 'GET',
                 'actif' => $action['actif'],
                 'titre' => $action['titre'],
             ];
@@ -99,6 +105,7 @@ class ActionsBonCommande
                     'classe' => 'btn-outline-danger',
                     'permission' => 'achat.bons_commande.destroy',
                     'route' => 'achat.bons-commande.destroy',
+                    'methode' => 'DELETE',
                     'actif' => true,
                     'titre' => 'Supprimer le brouillon',
                 ],
@@ -108,7 +115,10 @@ class ActionsBonCommande
                     'icone' => 'bi-send',
                     'classe' => 'btn-outline-warning',
                     'permission' => 'achat.bons_commande.soumettre',
-                    'route' => 'achat.bons-commande.soumettre',
+                    // Depuis la liste, « Soumettre » ouvre le RÉCAPITULATIF :
+                    // SW-01 exige une confirmation chiffrée, qu'on ne peut pas
+                    // produire depuis une ligne de tableau (SPEC_UX A-03 ②).
+                    'route' => 'achat.bons-commande.recapitulatif',
                     // Un brouillon sans ligne n'a rien à soumettre : bouton
                     // grisé et diagnostic explicite (SPEC_UX §0.3).
                     'actif' => $bon->nb_lignes > 0,
@@ -127,6 +137,7 @@ class ActionsBonCommande
                     'classe' => 'btn-outline-success',
                     'permission' => 'achat.bons_commande.valider',
                     'route' => 'achat.bons-commande.valider',
+                    'methode' => 'POST',
                     'actif' => true,
                     'titre' => 'Valider le bon',
                 ],
@@ -137,6 +148,7 @@ class ActionsBonCommande
                     'classe' => 'btn-outline-warning',
                     'permission' => 'achat.bons_commande.valider',
                     'route' => 'achat.bons-commande.renvoyer',
+                    'methode' => 'POST',
                     'actif' => true,
                     'titre' => 'Renvoyer en brouillon (motif obligatoire)',
                 ],
@@ -154,6 +166,7 @@ class ActionsBonCommande
                     'classe' => 'btn-outline-secondary',
                     'permission' => 'achat.bons_commande.soumettre',
                     'route' => 'achat.bons-commande.reprendre',
+                    'methode' => 'POST',
                     'actif' => true,
                     'titre' => 'Reprendre ma soumission',
                 ] : null,

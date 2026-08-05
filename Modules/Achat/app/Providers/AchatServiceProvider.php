@@ -3,7 +3,9 @@
 namespace Modules\Achat\Providers;
 
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Modules\Achat\Models\BonCommande;
 use Nwidart\Modules\Traits\PathNamespace;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -27,6 +29,30 @@ class AchatServiceProvider extends ServiceProvider
         $this->registerConfig();
         $this->registerViews();
         $this->loadMigrationsFrom(module_path($this->name, 'database/migrations'));
+        $this->registerBadgeAValider();
+    }
+
+    /**
+     * Badge « à valider » de la barre et de la sidebar (SPEC_UX §0.1).
+     *
+     * Le comptage vit ICI, dans un view composer, et non dans les deux
+     * partiels : il y était dupliqué, donc exécuté deux fois par page pour un
+     * résultat identique. Il n'est calculé que pour qui détient le visa — le
+     * badge ne dit rien d'actionnable aux autres, et une requête inutile reste
+     * une requête.
+     */
+    private function registerBadgeAValider(): void
+    {
+        View::composer(
+            ['achat::layouts.partials.navbar', 'achat::layouts.partials.sidebar'],
+            function ($view) {
+                $view->with('bonsAValider', once(function () {
+                    return auth()->user()?->can('achat.bons_commande.valider')
+                        ? BonCommande::query()->aValider()->count()
+                        : 0;
+                }));
+            }
+        );
     }
 
     /**

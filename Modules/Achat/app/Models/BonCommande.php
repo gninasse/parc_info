@@ -121,6 +121,7 @@ class BonCommande extends Model
         'montant_ttc' => 'decimal:2',
         'soumis_le' => 'datetime',
         'valide_le' => 'datetime',
+        'renvoi_le' => 'datetime',
     ];
 
     // ── Relations ──────────────────────────────────────────────────────────
@@ -163,6 +164,12 @@ class BonCommande extends Model
     public function validateur(): BelongsTo
     {
         return $this->belongsTo(User::class, 'valide_par');
+    }
+
+    /** Auteur du dernier renvoi en brouillon (UX2-07). */
+    public function renvoyeur(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'renvoi_par');
     }
 
     // ── Scopes ─────────────────────────────────────────────────────────────
@@ -303,7 +310,19 @@ class BonCommande extends Model
             'statut' => self::STATUT_SOUMIS,
             'soumis_par' => $parUtilisateur,
             'soumis_le' => now(),
+            // Une nouvelle soumission solde le renvoi précédent : l'encart
+            // jaune ne doit décrire que le dernier aller-retour en cours,
+            // pas ressurgir après correction (UX2-07).
+            'renvoi_motif' => null,
+            'renvoi_par' => null,
+            'renvoi_le' => null,
         ])->save();
+    }
+
+    /** Un brouillon qui revient du visa porte le motif de son renvoi. */
+    public function estRenvoye(): bool
+    {
+        return $this->statut === self::STATUT_BROUILLON && $this->renvoi_le !== null;
     }
 
     /** Renvoi motivé par le validateur, ou reprise par l'auteur (SFD §7.1). */

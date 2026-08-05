@@ -125,6 +125,23 @@ Modules/Achat/tests/migrations.sh         # migrate / rollback / réinstallation
 Modules/Achat/tests/Navigateur/executer.sh # écrans réels dans un DOM (jsdom)
 ```
 
+### Deux pièges rencontrés, à connaître avant de toucher au module
+
+**1. SQLite perd les CHECK dès qu'une migration recrée une table.**
+SQLite ne sait ajouter ni un `CHECK` ni une clé étrangère à une table
+existante : Laravel la **recrée** alors intégralement, et les contraintes
+posées par `SchemaChecks` disparaissent **sans la moindre erreur**. La base
+reste fonctionnelle, son filet de sécurité s'est évaporé en silence. Découvert
+parce que `SchemaInvariantsTest` a cessé de passer après l'ajout des colonnes
+de renvoi.
+
+La parade : sur SQLite, ajouter les colonnes **sans** contrainte de clé
+étrangère, ce qui autorise un vrai `ALTER TABLE ADD COLUMN` laissant la table
+intacte ; la contrainte reste posée sur PostgreSQL, où les suites tournent
+aussi. `MigrationsCycleTest::test_les_check_survivent_a_toutes_les_migrations`
+monte désormais la garde en relisant la DDL réelle.
+
+**2. Blade et les accès de tableau.**
 Les vues Blade du module ont livré deux fois le même piège : **une directive
 `@if`, `@json` ou toute expression inline contenant un accès de tableau
 (`$tableau['clé']`) fait échouer l'analyseur Blade** (« Unclosed '[' does not
