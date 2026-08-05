@@ -11,8 +11,8 @@ use Modules\Catalogue\Models\Fournisseur;
 use Modules\Core\Models\User;
 use Modules\Stock\Models\Concerns\EstDocumentStock;
 use Modules\Stock\Models\Concerns\JournaliseActiviteStock;
-use Modules\Stock\Models\Concerns\PorteDesDocuments;
 use Modules\Stock\Models\Concerns\PorteBeneficiaire;
+use Modules\Stock\Models\Concerns\PorteDesDocuments;
 
 class Entree extends Model
 {
@@ -62,6 +62,7 @@ class Entree extends Model
         'nature',
         'fournisseur_id',
         'reference_externe',
+        'bon_commande_id',
         'observation_type',
         'observation',
         'beneficiaire_type',
@@ -87,6 +88,26 @@ class Entree extends Model
     public function fournisseur(): BelongsTo
     {
         return $this->belongsTo(Fournisseur::class);
+    }
+
+    /**
+     * Bon de commande dont cette entrée est une livraison (raccordement
+     * PRQ-05). Nul en mode libre : retours, régularisations, achats hors
+     * module — le raccordement ajoute un mode, il n'en supprime aucun.
+     *
+     * Relation déclarée en chaîne de caractères : le module Stock ne dépend
+     * pas d'Achat (c'est Achat qui requiert Stock). Si Achat n'est pas
+     * installé, la colonne reste nulle et la relation n'est jamais sollicitée.
+     */
+    public function bonCommande(): BelongsTo
+    {
+        return $this->belongsTo(\Modules\Achat\Models\BonCommande::class, 'bon_commande_id');
+    }
+
+    /** Le bon est-il une livraison adossée à une commande ? */
+    public function estLieeAUneCommande(): bool
+    {
+        return $this->bon_commande_id !== null;
     }
 
     public function lignes(): HasMany
