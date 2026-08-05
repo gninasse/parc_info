@@ -107,6 +107,9 @@
                             @if(Route::has('stock.dashboard'))
                                 <a href="{{ route('stock.dashboard') }}" class="btn btn-outline-light">Stock</a>
                             @endif
+                            @if(Route::has('achat.dashboard'))
+                                <a href="{{ route('achat.dashboard') }}" class="btn btn-outline-light">Achat</a>
+                            @endif
                             <a href="{{ route('grh.dashboard') }}" class="btn btn-outline-light">GRH</a>
                             <a href="{{ route('cores.dashboard') }}" class="btn btn-outline-light">Administration</a>
                         </div>
@@ -131,6 +134,11 @@
                         @if(Route::has('stock.dashboard'))
                             <a href="{{ route('stock.dashboard') }}" class="btn btn-lg btn-success">
                                 <i class="fas fa-warehouse me-2"></i> Gestion des stocks
+                            </a>
+                        @endif
+                        @if(Route::has('achat.dashboard'))
+                            <a href="{{ route('achat.dashboard') }}" class="btn btn-lg btn-success">
+                                <i class="fas fa-file-invoice me-2"></i> Achats
                             </a>
                         @endif
                         <a href="{{ route('grh.dashboard') }}" class="btn btn-lg btn-success">
@@ -173,6 +181,20 @@
                             </div>
                             <p class="text-muted">Magasins et niveaux en temps réel, bons d'entrée, de sortie et de transfert, inventaires et journal des mouvements inaltérable.</p>
                             <a href="{{ route('stock.dashboard') }}" class="btn btn-sm btn-outline-success mt-auto align-self-start">Ouvrir le module</a>
+                        </div>
+                    </div>
+                    @endif
+                    @if(Route::has('achat.dashboard'))
+                    <div class="col-lg-3 col-md-6">
+                        <div class="card bg-dark border-secondary h-100 p-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="bg-emerald p-3 rounded-circle me-3" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; background-color: var(--emerald);">
+                                    <i class="fas fa-file-invoice fa-2x text-navy" style="color: var(--navy);"></i>
+                                </div>
+                                <h3 class="mb-0">Achats</h3>
+                            </div>
+                            <p class="text-muted">Bons de commande numérotés au visa, circuit de validation séparé, suivi des reliquats fournisseurs et réceptions intégrées au stock.</p>
+                            <a href="{{ route('achat.dashboard') }}" class="btn btn-sm btn-outline-success mt-auto align-self-start">Ouvrir le module</a>
                         </div>
                     </div>
                     @endif
