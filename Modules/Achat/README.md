@@ -125,6 +125,13 @@ Modules/Achat/tests/migrations.sh         # migrate / rollback / réinstallation
 Modules/Achat/tests/Navigateur/executer.sh # écrans réels dans un DOM (jsdom)
 ```
 
+Les vues Blade du module ont livré deux fois le même piège : **une directive
+`@if`, `@json` ou toute expression inline contenant un accès de tableau
+(`$tableau['clé']`) fait échouer l'analyseur Blade** (« Unclosed '[' does not
+match ')' »), en général au moment du rendu et donc en 500. La parade retenue
+partout : extraire la valeur dans un bloc `@php` en amont, puis n'utiliser que
+des variables simples dans les directives.
+
 La vérification **navigateur** complète les tests PHPUnit, qui s'arrêtent à la
 charge JSON. Elle rend la page réelle, y injecte la charge réellement servie,
 exécute le vrai JavaScript de la vue dans un DOM, et contrôle ce que
@@ -165,3 +172,4 @@ supprime ensuite ; vos données ne sont jamais touchées.
 | 5 | Le jalon d'installation annonce « **17 permissions** » | Le SFD §5 en compte **20 distinctes** : son tableau tient sur 14 lignes, dont 4 regroupent plusieurs permissions (`store` / `update` / `destroy`, `annuler` / `cloturer`, `documents.view` / `store` / `delete`, `rapports.view` / `export`). Le SFD faisant foi, les 20 sont posées — ni manquante, ni surnuméraire (vérifié par test). |
 | 6 | La maquette **P-08**, désignée comme référence de l'écran A-02, **n'existe pas dans le dépôt** | Aucun fichier ni mention (recherche exhaustive : le seul « P-08 » du dépôt est `EF-RAP-08`, un identifiant d'exigence sans rapport). L'écran suit donc `SPEC_UX_Achat.md` A-02, qui est déclaré normatif, et les gabarits réels du module Stock. À confirmer si une maquette graphique existe hors dépôt. |
 | 7 | L'action **« Reprendre »** (SFD §7.1 : l'auteur défait sa propre soumission) n'a **pas de permission dédiée** au SFD §5 | Rattachée à `achat.bons_commande.soumettre`, dont elle est l'exacte réciproque, et **restreinte à l'auteur du bon** (vérifié par test). Une permission dédiée serait à créer si la MOA veut dissocier les deux gestes. |
+| 8 | Le contrat `API_Inter_Modules.md` §2.1 garantit `taux_tva` **toujours renseigné** sur `GET /catalogue/api/articles`, et un tri `fournisseur_prefere_id` | Ni l'un ni l'autre n'étaient implémentés. Corrigé **dans le module Catalogue** (le contrat lui appartient) : `taux_tva` est exposé avec repli à 18.00, et le tri de pertinence est exprimé en `CASE WHEN` portable. Le test snapshot du Catalogue a été mis à jour — rupture délibérée qui rapproche l'API de son contrat. |

@@ -3,16 +3,26 @@
 namespace Modules\Achat\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use Exception;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Route;
+use Modules\Achat\Http\Requests\StoreBonCommandeRequest;
+use Modules\Achat\Http\Requests\UpdateBonCommandeRequest;
 use Modules\Achat\Models\BonCommande;
 use Modules\Achat\Services\AchatParametres;
 use Modules\Achat\Services\ActionsBonCommande;
+use Modules\Achat\Services\CalculMontantsService;
+use Modules\Achat\Services\LignesBonCommandeService;
 use Modules\Achat\Services\RechercheBonCommande;
+use Modules\Achat\Services\ReferencePrixService;
 use Modules\Catalogue\Models\Fournisseur;
+use Modules\Organisation\Models\Service;
 
 /**
  * A-02 — Liste des bons de commande (SPEC_UX A-02).
@@ -32,12 +42,21 @@ class BonCommandeController extends Controller implements HasMiddleware
         private readonly ActionsBonCommande $actions,
         private readonly RechercheBonCommande $recherche,
         private readonly AchatParametres $parametres,
+        private readonly LignesBonCommandeService $lignes,
+        private readonly CalculMontantsService $montants,
+        private readonly ReferencePrixService $referencePrix,
     ) {}
 
     public static function middleware(): array
     {
         return [
             new Middleware('permission:achat.bons_commande.index', only: ['index', 'getData']),
+            new Middleware('permission:achat.bons_commande.store', only: ['create', 'store']),
+            new Middleware('permission:achat.bons_commande.update', only: ['edit', 'update']),
+            new Middleware('permission:achat.bons_commande.destroy', only: ['destroy']),
+            // La reference de prix sert les DEUX ecrans de saisie : la
+            // creation comme l'edition y ont droit.
+            new Middleware('permission:achat.bons_commande.store|achat.bons_commande.update', only: ['referencePrix']),
         ];
     }
 
@@ -199,5 +218,235 @@ class BonCommandeController extends Controller implements HasMiddleware
     private function limite(Request $request): int
     {
         return max(1, min(100, (int) $request->input('limit', 10)));
+    }
+
+    // ═══ A-03 — Création et édition d'un brouillon (SPEC_UX A-03) ═══════════
+
+    /**
+     * Étape ① d'un nouveau brouillon. `?regularisation=1` ouvre le mode
+     * d'intérim, mais seulement si la porte est ouverte (A15) et que
+     * l'utilisateur en a le droit : sinon on retombe sur un bon ordinaire
+     * plutôt que d'afficher un écran qu'on refusera d'enregistrer.
+     */
+    public function create(Request $request)
+    {
+        $regularisation = $request->boolean('regularisation')
+            && $this->parametres->regularisationActive()
+            && $request->user()->can('achat.bons_commande.regulariser');
+
+        return view('achat::bons-commande.form', $this->donneesFormulaire(null, $regularisation));
+    }
+
+    /**
+     * Édition d'un brouillon. Hors brouillon, l'écran de saisie n'existe
+     * pas : redirection vers la fiche avec l'explication (SPEC_UX A-03), et
+     * non un 403 sec — l'utilisateur a le droit, c'est l'état qui s'y oppose.
+     */
+    public function edit(Request $request, int $id)
+    {
+        $bon = BonCommande::query()->with('lignes.article')->findOrFail($id);
+
+        if (! $bon->estModifiable()) {
+            return $this->redirigerVersLaFiche($bon, $bon->diagnosticModification());
+        }
+
+        return view('achat::bons-commande.form', $this->donneesFormulaire($bon, (bool) $bon->est_regularisation));
+    }
+
+    public function store(StoreBonCommandeRequest $request): JsonResponse
+    {
+        try {
+            $bon = DB::transaction(function () use ($request) {
+                $bon = BonCommande::create(array_merge(
+                    collect($request->validated())->except(['lignes', 'updated_at'])->all(),
+                    ['created_by' => $request->user()->id]
+                ));
+
+                $this->lignes->synchroniser($bon, $request->validated()['lignes'] ?? []);
+
+                return $bon;
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Brouillon enregistré.',
+                'data' => $this->etatBrouillon($bon->refresh()),
+            ]);
+        } catch (Exception $e) {
+            Log::error('Erreur à la création du brouillon de bon de commande', ['exception' => $e]);
+
+            return response()->json(['success' => false, 'message' => 'Une erreur interne est survenue.'], 500);
+        }
+    }
+
+    public function update(UpdateBonCommandeRequest $request, int $id): JsonResponse
+    {
+        $bon = BonCommande::query()->findOrFail($id);
+
+        // Hors brouillon : 409, jamais d'écrasement d'un document engagé.
+        if (! $bon->estModifiable()) {
+            return response()->json([
+                'success' => false,
+                'message' => $bon->diagnosticModification(),
+            ], 409);
+        }
+
+        if ($conflit = $this->detecterConflit($bon, $request->input('updated_at'))) {
+            return $conflit;
+        }
+
+        try {
+            DB::transaction(function () use ($request, $bon) {
+                $bon->update(collect($request->validated())->except(['lignes', 'updated_at'])->all());
+                $this->lignes->synchroniser($bon, $request->validated()['lignes'] ?? []);
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Brouillon enregistré.',
+                'data' => $this->etatBrouillon($bon->refresh()),
+            ]);
+        } catch (Exception $e) {
+            Log::error('Erreur à la modification du brouillon', ['exception' => $e, 'bon_id' => $bon->id]);
+
+            return response()->json(['success' => false, 'message' => 'Une erreur interne est survenue.'], 500);
+        }
+    }
+
+    /** Suppression réelle avec cascade — brouillon uniquement (SW-04). */
+    public function destroy(int $id): JsonResponse
+    {
+        $bon = BonCommande::query()->withCount('lignes as nb_lignes')->findOrFail($id);
+
+        if (! $bon->estSupprimable()) {
+            return response()->json([
+                'success' => false,
+                'message' => $bon->diagnosticModification(),
+            ], 409);
+        }
+
+        try {
+            $identifiant = $bon->numero_affiche;
+            $bon->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Le brouillon {$identifiant} a été supprimé.",
+            ]);
+        } catch (Exception $e) {
+            Log::error('Erreur à la suppression du brouillon', ['exception' => $e, 'bon_id' => $bon->id]);
+
+            return response()->json(['success' => false, 'message' => 'Une erreur interne est survenue.'], 500);
+        }
+    }
+
+    /**
+     * PO-01 — décomposition du prix d'un article, et écart du prix saisi.
+     *
+     * Servi par l'écran de saisie sous la permission de saisie : la référence
+     * de prix est une donnée d'achat sensible, elle ne s'ouvre pas au premier
+     * lecteur venu.
+     */
+    public function referencePrix(Request $request, int $articleId): JsonResponse
+    {
+        $decomposition = $this->referencePrix->pour($articleId);
+
+        if ($request->filled('prix')) {
+            $decomposition['ecart'] = $this->referencePrix->ecart(
+                $articleId,
+                (float) $request->input('prix')
+            );
+        }
+
+        return response()->json($decomposition);
+    }
+
+    /**
+     * Détection du conflit d'édition (SPEC_UX §15.2). On compare à la seconde
+     * près : `updated_at` est renvoyé au format ISO par le formulaire, et une
+     * comparaison de chaînes brutes échouerait sur des formats équivalents.
+     */
+    private function detecterConflit(BonCommande $bon, ?string $versionClient): ?JsonResponse
+    {
+        if ($versionClient === null || $bon->updated_at === null) {
+            return null;
+        }
+
+        if ($bon->updated_at->equalTo(\Illuminate\Support\Carbon::parse($versionClient))) {
+            return null;
+        }
+
+        return response()->json([
+            'success' => false,
+            'conflit' => true,
+            'message' => 'Ce brouillon a été modifié depuis votre ouverture ('
+                .($bon->updated_at->format('H\hi')).'). Rechargez-le ou écrasez-le avec votre version.',
+            'data' => ['updated_at' => $bon->updated_at->toIso8601String()],
+        ], 409);
+    }
+
+    /**
+     * État du brouillon après enregistrement : les montants CALCULÉS PAR LE
+     * SERVEUR y sont renvoyés, pour que l'écran remplace sa prévisualisation
+     * par la vérité (IA-1). Le `updated_at` sert de nouveau jeton de verrou.
+     */
+    private function etatBrouillon(BonCommande $bon): array
+    {
+        return [
+            'id' => $bon->id,
+            'numero_affiche' => $bon->numero_affiche,
+            'updated_at' => $bon->updated_at?->toIso8601String(),
+            'montant_ht' => (float) $bon->montant_ht,
+            'montant_tva' => (float) $bon->montant_tva,
+            'montant_ttc' => (float) $bon->montant_ttc,
+            'lignes' => $bon->lignes()->get()->map(fn ($ligne) => [
+                'id' => $ligne->id,
+                'article_id' => $ligne->article_id,
+                'designation' => $ligne->designation,
+                'nature' => $ligne->nature,
+                'quantite' => (float) $ligne->quantite,
+                'prix_unitaire_ht' => (float) $ligne->prix_unitaire_ht,
+                'taux_tva' => (float) $ligne->taux_tva,
+                'montant_ht' => $this->montants->montantHtLigne($ligne),
+            ])->values(),
+        ];
+    }
+
+    /** Données communes des écrans de saisie (création et édition). */
+    private function donneesFormulaire(?BonCommande $bon, bool $regularisation): array
+    {
+        return [
+            'bon' => $bon,
+            'estRegularisation' => $regularisation,
+            'fournisseurs' => Fournisseur::query()
+                ->where('est_actif', true)
+                ->orderBy('raison_sociale')
+                ->get(['id', 'raison_sociale']),
+            'services' => Service::query()
+                ->where('actif', true)
+                ->orderBy('libelle')
+                ->get(['id', 'libelle']),
+            'motifs' => $this->parametres->motifsObservation(),
+            'seuilEcartPct' => $this->parametres->seuilEcartPrixPct(),
+            'intermede' => [
+                'debut' => $this->parametres->intermedeDebut()?->toDateString(),
+                'fin' => $this->parametres->intermedeFin()?->toDateString(),
+            ],
+            'lignesExistantes' => $bon === null ? [] : $this->etatBrouillon($bon)['lignes'],
+        ];
+    }
+
+    /**
+     * Redirection vers la fiche quand elle existe, vers la liste sinon : tant
+     * que A-04 n'est pas livrée, mieux vaut la liste avec un message qu'une
+     * route inexistante.
+     */
+    private function redirigerVersLaFiche(BonCommande $bon, ?string $message)
+    {
+        $cible = Route::has('achat.bons-commande.show')
+            ? redirect()->route('achat.bons-commande.show', $bon->id)
+            : redirect()->route('achat.bons-commande.index');
+
+        return $cible->with('info', $message);
     }
 }

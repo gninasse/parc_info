@@ -46,4 +46,40 @@ file_put_contents(
     $appel(route('achat.bons-commande.data', ['search' => 'zzz-inexistant-zzz']), true)
 );
 
+/*
+ * A-03 — écrans de saisie. L'édition a besoin d'un brouillon PORTANT DES
+ * LIGNES : c'est le seul cas qui prouve le verrouillage du fournisseur, le
+ * rendu des pilules de TVA et la cohérence des totaux.
+ */
+$brouillon = \Modules\Achat\Models\BonCommande::query()
+    ->where('statut', \Modules\Achat\Models\BonCommande::STATUT_BROUILLON)
+    ->whereHas('lignes')
+    ->latest('id')
+    ->first()
+    ?? throw new RuntimeException(
+        "Aucun brouillon avec lignes : exécutez d'abord donnees_demo.php."
+    );
+
+file_put_contents("{$dossier}/form-create.html", $appel(route('achat.bons-commande.create')));
+file_put_contents("{$dossier}/form-edit.html", $appel(route('achat.bons-commande.edit', $brouillon->id)));
+
+// Les montants CALCULÉS PAR LE SERVEUR, pour les confronter à la
+// prévisualisation du navigateur (IA-1).
+$montants = app(\Modules\Achat\Services\CalculMontantsService::class);
+file_put_contents("{$dossier}/brouillon.json", json_encode([
+    'data' => [
+        'id' => $brouillon->id,
+        'montant_ht' => (float) $brouillon->montant_ht,
+        'montant_tva' => (float) $brouillon->montant_tva,
+        'montant_ttc' => (float) $brouillon->montant_ttc,
+        'lignes' => $brouillon->lignes->map(fn ($ligne) => [
+            'id' => $ligne->id,
+            'quantite' => (float) $ligne->quantite,
+            'prix_unitaire_ht' => (float) $ligne->prix_unitaire_ht,
+            'taux_tva' => (float) $ligne->taux_tva,
+            'montant_ht' => $montants->montantHtLigne($ligne),
+        ])->values(),
+    ],
+], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+
 echo "artefacts écrits dans {$dossier}\n";

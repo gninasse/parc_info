@@ -41,3 +41,7 @@ php artisan tinker --execute="require '$ICI/artefacts.php';"
 echo
 echo "→ Vérification du rendu de l'écran A-02"
 node "$ICI/rendu.cjs"
+
+echo
+echo "→ Vérification des écrans de saisie A-03 et M-01"
+node "$ICI/saisie.cjs"

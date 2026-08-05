@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\Achat\Models\BonCommande;
 use Modules\Achat\Models\IntegrationReception;
 use Modules\Achat\Models\LigneCommande;
+use Modules\Achat\Services\ReferencePrixService;
 
 /**
  * API inter-modules du module Achat (API_Inter_Modules.md §4).
@@ -28,9 +29,6 @@ class ApiController extends Controller implements HasMiddleware
     private const LIMIT_DEFAUT = 50;
 
     private const LIMIT_MAX = 100;
-
-    /** Fenêtre de la référence de prix : les 3 derniers bons (A14). */
-    private const PROFONDEUR_MOYENNE_PRIX = 3;
 
     public static function middleware(): array
     {
@@ -173,40 +171,14 @@ class ApiController extends Controller implements HasMiddleware
      * §4.4 — La référence de prix NON MANIPULABLE (A14) : le dernier prix
      * réellement payé, calculé sur les bons engagés. C'est ce qui rend un
      * écart visible même si le prix indicatif du Catalogue a été ajusté.
+     *
+     * Le calcul appartient à `ReferencePrixService`, qui alimente aussi le
+     * popover PO-01 de l'écran de saisie et la pilule d'écart : une seule
+     * définition de la référence, quel que soit l'endroit où elle s'affiche.
      */
-    public function historiquePrix(int $articleId): JsonResponse
+    public function historiquePrix(int $articleId, ReferencePrixService $reference): JsonResponse
     {
-        $lignes = LigneCommande::query()
-            ->join('achat_bons_commande', 'achat_bons_commande.id', '=', 'achat_lignes_commande.bon_commande_id')
-            ->where('achat_lignes_commande.article_id', $articleId)
-            ->whereIn('achat_bons_commande.statut', BonCommande::STATUTS_ENGAGES)
-            ->orderByDesc('achat_bons_commande.valide_le')
-            ->orderByDesc('achat_bons_commande.id')
-            ->get([
-                'achat_lignes_commande.prix_unitaire_ht',
-                'achat_bons_commande.numero',
-                'achat_bons_commande.valide_le',
-            ]);
-
-        $dernier = $lignes->first();
-
-        return response()->json([
-            'article_id' => $articleId,
-            'dernier_paye' => $dernier === null ? null : [
-                'prix' => number_format((float) $dernier->prix_unitaire_ht, 2, '.', ''),
-                'numero' => $dernier->numero,
-                'date' => $dernier->valide_le
-                    ? \Illuminate\Support\Carbon::parse($dernier->valide_le)->toDateString()
-                    : null,
-            ],
-            'moyenne_3_derniers' => $lignes->isEmpty() ? null : number_format(
-                (float) $lignes->take(self::PROFONDEUR_MOYENNE_PRIX)->avg('prix_unitaire_ht'),
-                2,
-                '.',
-                ''
-            ),
-            'nb_bc_references' => $lignes->count(),
-        ]);
+        return response()->json($reference->pour($articleId));
     }
 
     /** §4.5 — Cumul du mois par fournisseur, pour le Swal de visa (UX2-08). */

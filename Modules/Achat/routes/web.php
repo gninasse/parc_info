@@ -19,13 +19,21 @@ Route::middleware(['auth'])->prefix('achat')->name('achat.')->group(function () 
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
     /*
-    | A-02 — Liste des bons de commande. `.data` porte sa propre permission
-    | (SFD §8 : permission serveur sur TOUTES les routes) et la route littérale
-    | est déclarée avant tout segment /{id}.
+    | A-02 (liste) et A-03 (création / édition d'un brouillon). Les routes
+    | LITTÉRALES sont déclarées avant tout segment /{id} — sinon /create
+    | serait capté comme un identifiant. Chaque route porte sa permission
+    | serveur, y compris .data et la référence de prix (SFD §8).
     */
     Route::prefix('bons-commande')->name('bons-commande.')->group(function () {
         Route::get('/', [BonCommandeController::class, 'index'])->name('index');
         Route::get('/data', [BonCommandeController::class, 'getData'])->name('data');
+        Route::get('/create', [BonCommandeController::class, 'create'])->name('create');
+        Route::get('/reference-prix/{article}', [BonCommandeController::class, 'referencePrix'])->name('reference-prix');
+
+        Route::post('/', [BonCommandeController::class, 'store'])->name('store');
+        Route::get('/{id}/edit', [BonCommandeController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [BonCommandeController::class, 'update'])->name('update');
+        Route::delete('/{id}', [BonCommandeController::class, 'destroy'])->name('destroy');
     });
 
     /*
