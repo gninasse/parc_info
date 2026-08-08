@@ -12,6 +12,7 @@
  */
 import '../../catalogue/formatters.js';
 import { ModalPdf } from '../shared/modal-pdf.js';
+import { ActionsBc } from '../shared/actions-bc.js';
 
 const echapper = (texte) => $('<span>').text(texte ?? '').html();
 
@@ -119,9 +120,7 @@ $(function () {
     $('#btn-show').on('click', () => {
         const row = selection();
         if (!row) return;
-        // La fiche A-04 n'est pas encore livrée : le récapitulatif fait foi
-        // pour un brouillon, la liste se contente du diagnostic sinon.
-        window.location.href = route('achat.bons-commande.recapitulatif', row.id);
+        window.location.href = route('achat.bons-commande.show', row.id);
     });
 
     $('#btn-edit').on('click', () => {
@@ -145,55 +144,17 @@ $(function () {
     });
 
     // ── Commandes (transitions d'état) ─────────────────────────────────────
+    //
+    // Les confirmations (SW-02, SW-04, M-06) vivent dans le module partagé
+    // ActionsBc, commun à la liste et à la fiche A-04 : une seule source de
+    // vérité pour chaque Swal. Ici, le rappel rafraîchit le tableau.
 
-    const executer = (url, methode, donnees = {}) => $.ajax({
-        url,
-        method: methode,
-        data: JSON.stringify(donnees),
-        contentType: 'application/json',
-        dataType: 'json',
-    })
-        .done((reponse) => {
-            $table.bootstrapTable('refresh');
-            Swal.fire({
-                icon: 'success',
-                title: reponse.message,
-                timer: 2000,
-                showConfirmButton: false,
-                toast: true,
-                position: 'top-end',
-            });
-        })
-        .fail((xhr) => {
-            const reponse = xhr.responseJSON ?? {};
-            const detail = Array.isArray(reponse.blocages) && reponse.blocages.length > 0
-                ? `<ul class="text-start mb-0">${reponse.blocages.map((b) => `<li>${echapper(b.message)}</li>`).join('')}</ul>`
-                : null;
-
-            Swal.fire({
-                icon: 'error',
-                title: xhr.status === 409 ? 'Le bon a changé d\'état' : 'Action impossible',
-                html: detail,
-                text: detail ? undefined : (reponse.message ?? 'Action impossible.'),
-            });
-        });
+    const apres = () => $table.bootstrapTable('refresh');
 
     $('#btn-delete').on('click', () => {
         const row = selection();
         if (!row) return;
-
-        // SW-04 : confirmation chiffrée (SPEC_UX §15.1)
-        Swal.fire({
-            title: `Supprimer le ${row.numero_affiche} ?`,
-            text: `Ses ${row.nb_lignes} ligne(s) seront supprimées. Cette action ne laisse pas de trace : un brouillon n'engage rien.`,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#dc3545',
-            confirmButtonText: 'Supprimer',
-            cancelButtonText: 'Annuler',
-        }).then((r) => {
-            if (r.isConfirmed) executer(route('achat.bons-commande.destroy', row.id), 'DELETE');
-        });
+        ActionsBc.supprimer(row, route('achat.bons-commande.destroy', row.id), apres);
     });
 
     $('#btn-soumettre').on('click', () => {
@@ -207,103 +168,24 @@ $(function () {
     $('#btn-reprendre').on('click', () => {
         const row = selection();
         if (!row) return;
-
-        Swal.fire({
-            title: 'Reprendre ce bon ?',
-            text: `${row.numero_affiche} repassera en brouillon et redeviendra modifiable.`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: 'Reprendre',
-            cancelButtonText: 'Annuler',
-        }).then((r) => {
-            if (r.isConfirmed) executer(route('achat.bons-commande.reprendre', row.id), 'POST');
-        });
+        ActionsBc.reprendre(row, route('achat.bons-commande.reprendre', row.id), apres);
     });
 
     $('#btn-renvoyer').on('click', () => {
         const row = selection();
         if (!row) return;
-
-        // M-06 : le motif est LE dispositif — sans lui, l'auteur devine.
-        Swal.fire({
-            title: 'Renvoyer le bon en brouillon ?',
-            input: 'textarea',
-            inputLabel: 'Motif du renvoi',
-            inputPlaceholder: 'Ce que l\'auteur doit corriger…',
-            inputAttributes: { 'aria-label': 'Motif du renvoi' },
-            text: 'Le bon repassera en brouillon chez son auteur, qui pourra le corriger et le soumettre à nouveau.',
-            showCancelButton: true,
-            confirmButtonText: 'Renvoyer en brouillon',
-            cancelButtonText: 'Annuler',
-            inputValidator: (valeur) =>
-                (!valeur || valeur.trim().length < 5)
-                    ? 'Indiquez le motif du renvoi : l\'auteur doit savoir quoi corriger.'
-                    : undefined,
-        }).then((r) => {
-            if (r.isConfirmed) executer(route('achat.bons-commande.renvoyer', row.id), 'POST', { motif: r.value });
-        });
+        ActionsBc.renvoyer(row, route('achat.bons-commande.renvoyer', row.id), apres);
     });
 
-    /**
-     * SW-02 — le Swal ENRICHI du visa (UX2-08, UX4-03, UX4-07) : chiffres du
-     * bon, contexte de dépense, signaux de vigilance. Les signaux viennent du
-     * serveur et ne bloquent jamais. Repli gracieux si l'endpoint échoue : un
-     * incident réseau ne bloque pas le visa.
-     */
     $('#btn-valider').on('click', () => {
         const row = selection();
         if (!row) return;
-
-        const fcfa = (v) => Number(v ?? 0).toLocaleString('fr-FR', { maximumFractionDigits: 0 });
-
-        $.getJSON(route('achat.bons-commande.signaux', row.id))
-            .then((signaux) => {
-                const bon = signaux.bon ?? {};
-                const morceaux = [];
-
-                morceaux.push(`<p class="mb-2">${echapper(bon.numero_affiche)} · ${bon.nb_lignes ?? 0} ligne(s) · <strong>${fcfa(bon.montant_ttc)} FCFA TTC</strong> · ${echapper(bon.fournisseur ?? '')}</p>`);
-
-                if (signaux.cumul) {
-                    morceaux.push(`<p class="mb-2">📊 ${signaux.cumul.rang_du_mois}ᵉ bon de ce fournisseur ce mois-ci — cumul : ${fcfa(signaux.cumul.cumul_ttc_mois)} FCFA TTC</p>`);
-                }
-
-                (signaux.ecarts_prix ?? []).forEach((ecart) => {
-                    morceaux.push(`<p class="mb-1 text-warning">⚠ Ligne ${ecart.numero} : ${ecart.ecart_pct > 0 ? '+' : ''}${ecart.ecart_pct} % vs dernier payé (${fcfa(ecart.reference)} FCFA HT)</p>`);
-                });
-
-                if (signaux.fournisseur_recent) {
-                    const fr = signaux.fournisseur_recent;
-                    morceaux.push(`<p class="mb-1 text-warning">⚠ Fournisseur créé au Catalogue il y a ${fr.anciennete_jours} jour(s)${fr.premier_bc ? ' — premier bon de commande' : ''}</p>`);
-                }
-
-                if (signaux.auto_validation) {
-                    morceaux.push('<p class="mb-1 text-warning">⚠ Vous avez saisi ce bon vous-même : la validation sera marquée « auto-validation »</p>');
-                }
-
-                morceaux.push('<p class="mb-0 mt-2">Le bon recevra son numéro définitif et <strong>ne pourra plus être modifié</strong>.</p>');
-
-                return Swal.fire({
-                    title: 'Valider le bon de commande ?',
-                    html: `<div class="text-start">${morceaux.join('')}</div>`,
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: 'Valider le bon',
-                    cancelButtonText: 'Annuler',
-                    confirmButtonColor: '#198754',
-                });
-            })
-            .catch(() => Swal.fire({
-                title: 'Valider le bon de commande ?',
-                text: `${row.numero_affiche} recevra son numéro définitif et ne pourra plus être modifié.`,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Valider le bon',
-                cancelButtonText: 'Annuler',
-                confirmButtonColor: '#198754',
-            }))
-            .then((r) => {
-                if (r?.isConfirmed) executer(route('achat.bons-commande.valider', row.id), 'POST');
-            });
+        ActionsBc.valider(
+            row,
+            route('achat.bons-commande.signaux', row.id),
+            route('achat.bons-commande.valider', row.id),
+            apres
+        );
     });
 
     // ── Filtres et pied de tableau ─────────────────────────────────────────

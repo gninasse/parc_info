@@ -49,3 +49,7 @@ node "$ICI/saisie.cjs"
 echo
 echo "→ Vérification du circuit BROUILLON ⇄ SOUMIS"
 node "$ICI/circuit.cjs"
+
+echo
+echo "→ Vérification de la fiche A-04"
+node "$ICI/fiche.cjs"

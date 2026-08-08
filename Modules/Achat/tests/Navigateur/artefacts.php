@@ -143,4 +143,31 @@ if ($soumis !== null) {
     );
 }
 
+/*
+ * D-08 — la fiche A-04. Trois états couvrant les rendus qui divergent :
+ * un PARTIEL (colonnes de livraison + barres + clôture offerte), un
+ * BROUILLON (colonnes masquées) et un SOUMIS (visa offert au validateur —
+ * l'utilisateur des artefacts porte les deux casquettes).
+ */
+$fiches = [
+    // Le PARTIEL retenu est celui qui a une VRAIE histoire (trace
+    // d'intégration au journal) : un partiel de factory n'a rien à raconter,
+    // et c'est justement la chronologie qu'on vérifie (IA-14).
+    'fiche-partiel.html' => \Modules\Achat\Models\BonCommande::query()
+        ->where('statut', \Modules\Achat\Models\BonCommande::STATUT_PARTIEL)
+        ->whereIn('id', \Modules\Achat\Models\IntegrationReception::query()->select('bon_commande_id'))
+        ->latest('id')->first(),
+    'fiche-brouillon.html' => $brouillon,
+    'fiche-soumis.html' => $soumis,
+];
+
+foreach ($fiches as $fichier => $bon) {
+    if ($bon !== null) {
+        file_put_contents(
+            "{$dossier}/{$fichier}",
+            $appel(route('achat.bons-commande.show', $bon->id))
+        );
+    }
+}
+
 echo "artefacts écrits dans {$dossier}\n";

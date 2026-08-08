@@ -68,4 +68,27 @@ $circuit->renvoyer(
     'Le prix du toner dépasse le marché en cours : renégociez avant de resoumettre.'
 );
 
+/*
+ * Un bon PARTIEL passé par le CIRCUIT RÉEL (soumission → visa → réception) :
+ * c'est le seul dont la chronologie A-04 raconte quelque chose — les bons
+ * fabriqués par factory n'ont pas d'histoire au journal (IA-14 : la fiche ne
+ * reconstruit rien).
+ */
+$vecu = $creer([]);
+$circuit->soumettre($vecu, $auteur);
+app(\Modules\Achat\Services\VisaService::class)->valider($vecu->refresh(), $auteur);
+app(\Modules\Achat\Services\AchatReceptionService::class)->integrer(
+    $vecu->id,
+    990001,
+    $vecu->lignes()->get()->take(1)->map(fn ($l) => [
+        'article_id' => $l->article_id,
+        'quantite' => 6,
+    ])->values()->all(),
+    'ENT-2026-0034',
+    $auteur->id
+);
+
+// Un bon SOUMIS par le circuit réel, lui aussi avec son histoire au journal.
+$circuit->soumettre($creer([]), $auteur);
+
 echo 'Jeu de démonstration : '.BonCommande::count()." bons de commande.\n";

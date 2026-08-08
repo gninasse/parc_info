@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Modules\Achat\Exceptions\AchatException;
 use Modules\Achat\Exceptions\SoumissionRefuseeException;
+use Modules\Achat\Http\Requests\MotifRequest;
 use Modules\Achat\Http\Requests\RenvoyerBonCommandeRequest;
 use Modules\Achat\Http\Requests\StoreBonCommandeRequest;
 use Modules\Achat\Http\Requests\UpdateBonCommandeRequest;
@@ -21,8 +22,10 @@ use Modules\Achat\Models\BonCommande;
 use Modules\Achat\Services\AchatParametres;
 use Modules\Achat\Services\ActionsBonCommande;
 use Modules\Achat\Services\CalculMontantsService;
+use Modules\Achat\Services\ChronologieBonCommande;
 use Modules\Achat\Services\CircuitSoumissionService;
 use Modules\Achat\Services\ControlesSoumissionService;
+use Modules\Achat\Services\FinDeVieService;
 use Modules\Achat\Services\LignesBonCommandeService;
 use Modules\Achat\Services\RechercheBonCommande;
 use Modules\Achat\Services\ReferencePrixService;
@@ -54,12 +57,14 @@ class BonCommandeController extends Controller implements HasMiddleware
         private readonly ControlesSoumissionService $controles,
         private readonly CircuitSoumissionService $circuit,
         private readonly VisaService $visa,
+        private readonly ChronologieBonCommande $chronologie,
+        private readonly FinDeVieService $finDeVie,
     ) {}
 
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:achat.bons_commande.index', only: ['index', 'getData']),
+            new Middleware('permission:achat.bons_commande.index', only: ['index', 'getData', 'show']),
             new Middleware('permission:achat.bons_commande.store', only: ['create', 'store']),
             new Middleware('permission:achat.bons_commande.update', only: ['edit', 'update']),
             new Middleware('permission:achat.bons_commande.destroy', only: ['destroy']),
@@ -69,6 +74,11 @@ class BonCommandeController extends Controller implements HasMiddleware
             // Valider et renvoyer sont les deux faces du visa : une seule
             // permission les porte (SFD §5).
             new Middleware('permission:achat.bons_commande.valider', only: ['renvoyer', 'signaux', 'valider']),
+            // Fin de vie (SFD §7.5) : deux permissions dédiées, distinctes du
+            // visa — annuler un engagement n'est pas le même pouvoir que le
+            // créer.
+            new Middleware('permission:achat.bons_commande.annuler', only: ['annuler']),
+            new Middleware('permission:achat.bons_commande.cloturer', only: ['cloturer']),
             // La reference de prix sert les DEUX ecrans de saisie : la
             // creation comme l'edition y ont droit.
             new Middleware('permission:achat.bons_commande.store|achat.bons_commande.update', only: ['referencePrix']),
@@ -639,6 +649,90 @@ class BonCommandeController extends Controller implements HasMiddleware
             'data' => [
                 'id' => $bon->id,
                 'numero' => $bon->numero,
+                'statut' => $bon->statut,
+                'redirection' => $this->urlFiche($bon),
+            ],
+        ]);
+    }
+
+    // ═══ D-08 — La fiche A-04 (SPEC_UX A-04) ═════════════════════════════════
+
+    /**
+     * L'écran le plus partagé du module : bandeau d'état, barre d'actions
+     * issue de la MÊME grille serveur que la liste (ActionsBonCommande),
+     * onglets Lignes / Réceptions / Documents / Chronologie.
+     *
+     * Un brouillon aussi a sa fiche : c'est la cible des redirections « bon
+     * non modifiable » et le point d'entrée de la consultation, quel que soit
+     * le statut.
+     */
+    public function show(Request $request, int $id)
+    {
+        $bon = BonCommande::query()
+            ->with([
+                'lignes.article',
+                'fournisseur',
+                'serviceDemandeur',
+                'createur',
+                'validateur',
+            ])
+            ->findOrFail($id);
+
+        return view('achat::bons-commande.show', [
+            'bon' => $bon,
+            'actions' => $this->actions->pour($bon, $request->user()),
+            'decomposition' => $this->montants->decompositionParTaux($bon->lignes),
+            'chronologie' => $this->chronologie->pour($bon),
+            // UX4-03 : le badge « fournisseur récent » du bandeau, même signal
+            // que le Swal du visa — nul si le fournisseur est établi.
+            'fournisseurRecent' => $bon->estEngage() ? null : $this->visa->fournisseurRecent($bon),
+            // UX4-07 : l'auto-validation se lit sur la fiche après coup.
+            'autoValidation' => $bon->valide_par !== null
+                && $bon->created_by !== null
+                && $bon->valide_par === $bon->created_by,
+        ]);
+    }
+
+    // ═══ D-14 (partiel) — Fin de vie : M-07 annuler, M-03 clôturer ═══════════
+
+    /** M-07 — annulation d'un bon validé sans réception, motif obligatoire. */
+    public function annuler(MotifRequest $request, int $id): JsonResponse
+    {
+        $bon = BonCommande::query()->findOrFail($id);
+
+        try {
+            $bon = $this->finDeVie->annuler($bon, $request->user(), $request->validated()['motif']);
+        } catch (AchatException $e) {
+            return $this->refus($e);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Bon {$bon->numero} annulé.",
+            'data' => [
+                'id' => $bon->id,
+                'statut' => $bon->statut,
+                'redirection' => $this->urlFiche($bon),
+            ],
+        ]);
+    }
+
+    /** M-03 — clôture du reliquat d'un bon partiellement livré. */
+    public function cloturer(MotifRequest $request, int $id): JsonResponse
+    {
+        $bon = BonCommande::query()->findOrFail($id);
+
+        try {
+            $bon = $this->finDeVie->cloturer($bon, $request->user(), $request->validated()['motif']);
+        } catch (AchatException $e) {
+            return $this->refus($e);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Reliquat du bon {$bon->numero} clôturé.",
+            'data' => [
+                'id' => $bon->id,
                 'statut' => $bon->statut,
                 'redirection' => $this->urlFiche($bon),
             ],

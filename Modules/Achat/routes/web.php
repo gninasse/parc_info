@@ -50,6 +50,14 @@ Route::middleware(['auth'])->prefix('achat')->name('achat.')->group(function () 
         // Visa (SFD §7.2) : les signaux de SW-02 puis la validation elle-même.
         Route::get('/{id}/signaux', [BonCommandeController::class, 'signaux'])->name('signaux');
         Route::post('/{id}/valider', [BonCommandeController::class, 'valider'])->name('valider');
+
+        // Fin de vie (SFD §7.5) : M-07 annuler, M-03 clôturer le reliquat.
+        Route::post('/{id}/annuler', [BonCommandeController::class, 'annuler'])->name('annuler');
+        Route::post('/{id}/cloturer', [BonCommandeController::class, 'cloturer'])->name('cloturer');
+
+        // A-04 — la fiche, en DERNIER : /{id} capterait tout segment littéral
+        // déclaré après lui.
+        Route::get('/{id}', [BonCommandeController::class, 'show'])->name('show');
     });
 
     /*

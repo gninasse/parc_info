@@ -172,7 +172,7 @@ class ActionsBonCommande
                 ] : null,
             ])),
 
-            BonCommande::STATUT_VALIDE, BonCommande::STATUT_PARTIEL => [
+            BonCommande::STATUT_VALIDE, BonCommande::STATUT_PARTIEL => array_values(array_filter([
                 $voir,
                 $pdf,
                 // Présentes mais grisées : l'utilisateur a le droit, c'est
@@ -197,7 +197,37 @@ class ActionsBonCommande
                     'actif' => false,
                     'titre' => $bon->diagnosticModification(),
                 ],
-            ],
+                /*
+                 * M-07 — « présent seulement si aucune réception » (SPEC_UX
+                 * A-04) : l'annulation d'un bon déjà livré n'existe pas, même
+                 * grisée — la sortie est la clôture du reliquat. Un bon VALIDE
+                 * n'a par construction aucune réception (la première le passe
+                 * PARTIEL), le garde-fou reste pour un état incohérent.
+                 */
+                $bon->statut === BonCommande::STATUT_VALIDE && ! $bon->aDesReceptions() ? [
+                    'cle' => 'annuler',
+                    'libelle' => 'Annuler',
+                    'icone' => 'bi-x-octagon',
+                    'classe' => 'btn-outline-danger',
+                    'permission' => 'achat.bons_commande.annuler',
+                    'route' => 'achat.bons-commande.annuler',
+                    'methode' => 'POST',
+                    'actif' => true,
+                    'titre' => 'Annuler le bon (motif obligatoire)',
+                ] : null,
+                // M-03 — clôturer le reliquat d'un bon partiellement livré.
+                $bon->statut === BonCommande::STATUT_PARTIEL ? [
+                    'cle' => 'cloturer',
+                    'libelle' => 'Clôturer le reliquat',
+                    'icone' => 'bi-lock',
+                    'classe' => 'btn-outline-dark',
+                    'permission' => 'achat.bons_commande.cloturer',
+                    'route' => 'achat.bons-commande.cloturer',
+                    'methode' => 'POST',
+                    'actif' => true,
+                    'titre' => 'Renoncer au reste à livrer (motif obligatoire)',
+                ] : null,
+            ])),
 
             BonCommande::STATUT_LIVRE, BonCommande::STATUT_CLOTURE => [$voir, $pdf],
 

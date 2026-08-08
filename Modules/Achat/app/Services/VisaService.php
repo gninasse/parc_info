@@ -175,8 +175,9 @@ class VisaService
     /**
      * ⚠ « Fournisseur créé il y a 6 jours — premier BC » (UX4-03). Nul si le
      * fournisseur est établi : un signal permanent n'est plus un signal.
+     * Public : le bandeau de la fiche A-04 porte le même badge que le Swal.
      */
-    private function fournisseurRecent(BonCommande $bon): ?array
+    public function fournisseurRecent(BonCommande $bon): ?array
     {
         $fournisseur = DB::table('catalogue_fournisseurs')
             ->where('id', $bon->fournisseur_id)
