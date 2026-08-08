@@ -1,0 +1,14 @@
+{
+    "name": "Catalogue",
+    "alias": "catalogue",
+    "description": "Référentiel des articles, catégories et fournisseurs du CHU-YO",
+    "keywords": [],
+    "priority": 0,
+    "requires": [
+        "Core"
+    ],
+    "providers": [
+        "Modules\\Catalogue\\Providers\\CatalogueServiceProvider"
+    ],
+    "files": []
+}
