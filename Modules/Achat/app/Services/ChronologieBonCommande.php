@@ -156,6 +156,31 @@ class ChronologieBonCommande
                 ])->filter()->implode(' — ') ?: null,
             ],
 
+            // ── Le dossier documentaire (D-09) ─────────────────────────────
+            DocumentsBonCommande::EVENEMENT_DEPOT => [
+                'icone' => 'bi-paperclip',
+                'couleur' => 'info',
+                'phrase' => sprintf('Pièce jointe déposée — « %s »', $props->get('nom_original') ?? 'document'),
+                'details' => config('achat.types_documents.'.$props->get('type')),
+            ],
+
+            DocumentsBonCommande::EVENEMENT_SUPPRESSION => [
+                'icone' => 'bi-trash',
+                'couleur' => 'secondary',
+                'phrase' => sprintf('Pièce supprimée — « %s »', $props->get('nom_original') ?? 'document'),
+                'details' => null,
+            ],
+
+            // La pierre tombale est un acte grave : rouge, motif inclus.
+            DocumentsBonCommande::EVENEMENT_PIERRE_TOMBALE => [
+                'icone' => 'bi-trash',
+                'couleur' => 'danger',
+                'phrase' => sprintf('Pièce supprimée après validation — « %s »', $props->get('nom_original') ?? 'document'),
+                'details' => $props->get('motif') !== null
+                    ? 'Motif : « '.$props->get('motif').' »'
+                    : null,
+            ],
+
             // Les traces techniques (`updated`, `deleted`…) décrivent la
             // persistance des gestes ci-dessus : elles restent au journal.
             default => null,

@@ -155,8 +155,9 @@ if (existe('fiche-partiel.html')) {
                 return objet;
             };
             const $ = (sel) => (typeof sel === 'function' ? (window.__pret = sel) : fabriquer(sel));
-            $.ajax = () => ({ done: () => ({ fail: () => {} }) });
-            $.getJSON = () => ({ then: () => ({ catch: () => ({ then: () => {} }) }) });
+            $.ajax = () => ({ done: () => ({ fail: () => ({ always: () => {} }) }), fail: () => {}, always: () => {} });
+            const promesse = { done: () => promesse, fail: () => promesse, always: () => promesse, then: () => ({ catch: () => ({ then: () => {} }) }) };
+            $.getJSON = () => promesse;
             $.ajaxSetup = () => {};
             window.$ = $;
             window.jQuery = $;

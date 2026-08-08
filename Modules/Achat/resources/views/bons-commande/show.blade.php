@@ -203,6 +203,12 @@
                 </button>
             </li>
             <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#onglet-documents"
+                        type="button" role="tab" aria-controls="onglet-documents" aria-selected="false">
+                    Documents <span class="badge bg-secondary-subtle text-secondary-emphasis" id="compteur-documents">{{ $bon->documents->count() }}</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
                 <button class="nav-link" data-bs-toggle="tab" data-bs-target="#onglet-chronologie"
                         type="button" role="tab" aria-controls="onglet-chronologie" aria-selected="false">
                     Chronologie <span class="badge bg-secondary-subtle text-secondary-emphasis">{{ $chronologie->count() }}</span>
@@ -322,6 +328,43 @@
                 @endif
             </div>
 
+            {{-- ── Onglet Documents (D-09 : M-05, M-08, pierres tombales) ── --}}
+            <div class="tab-pane fade" id="onglet-documents" role="tabpanel"
+                 data-url-liste="{{ route('achat.bons-commande.documents.index', $bon->id) }}"
+                 data-url-depot="{{ route('achat.bons-commande.documents.store', $bon->id) }}">
+                @can('achat.documents.store')
+                    @if($bon->statut !== 'ANNULE')
+                        <div class="mb-3">
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="btn-ajouter-piece"
+                                    data-bs-toggle="modal" data-bs-target="#modal-piece">
+                                <i class="bi bi-paperclip me-1"></i>Ajouter une pièce
+                            </button>
+                        </div>
+                    @endif
+                @endcan
+
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle" id="table-documents">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Type</th>
+                                <th>Fichier</th>
+                                <th>Déposé par</th>
+                                <th>Date</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>{{-- rempli par le JS depuis la charge serveur --}}</tbody>
+                    </table>
+                </div>
+
+                {{-- EV-05 : l'état vide enseigne le geste. --}}
+                <p class="text-center text-muted py-3 mb-0 d-none" id="documents-vide">
+                    Aucune pièce au dossier. Le BC signé, le bordereau du fournisseur ou la
+                    facture pro forma se déposent ici pour ne plus dormir dans un classeur.
+                </p>
+            </div>
+
             {{-- ── Onglet Chronologie (IA-14 : le journal, rien que lui) ── --}}
             <div class="tab-pane fade" id="onglet-chronologie" role="tabpanel">
                 @forelse($chronologie as $element)
@@ -355,6 +398,47 @@
 </div>
 
 @include('achat::shared._modal_pdf')
+
+{{-- M-05 — dépôt d'une pièce (type + fichier, taille max paramétrée A-08) --}}
+@can('achat.documents.store')
+<div class="modal fade" id="modal-piece" tabindex="-1" aria-labelledby="modal-piece-titre" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="form-piece">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modal-piece-titre">Ajouter une pièce — {{ $bon->numero_affiche }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Type de pièce</label>
+                        <div class="d-flex flex-wrap gap-2" id="piece-types">
+                            @foreach(config('achat.types_documents') as $code => $libelle)
+                                <input type="radio" class="btn-check" name="type" id="type-{{ $code }}"
+                                       value="{{ $code }}" @checked($loop->first)>
+                                <label class="btn btn-sm btn-outline-secondary rounded-pill" for="type-{{ $code }}">{{ $libelle }}</label>
+                            @endforeach
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label" for="piece-fichier">Fichier</label>
+                        <input type="file" class="form-control" id="piece-fichier" name="fichier"
+                               accept=".{{ implode(',.', config('achat.documents.extensions')) }}" required>
+                        <div class="form-text">PDF, image ou document bureautique — {{ $tailleMaxPieceMo }} Mo maximum (paramètre de l'établissement).</div>
+                    </div>
+                    <div class="alert alert-danger d-none py-2 px-3 small" id="piece-erreur" role="alert"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary btn-sm" id="piece-deposer">
+                        <i class="bi bi-paperclip me-1"></i>Déposer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endcan
 
 @endsection
 

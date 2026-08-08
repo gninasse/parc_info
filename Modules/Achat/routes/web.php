@@ -5,6 +5,7 @@ use Modules\Achat\Http\Controllers\ApiController;
 use Modules\Achat\Http\Controllers\BonCommandeController;
 use Modules\Achat\Http\Controllers\BonCommandePdfController;
 use Modules\Achat\Http\Controllers\DashboardController;
+use Modules\Achat\Http\Controllers\DocumentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -54,6 +55,15 @@ Route::middleware(['auth'])->prefix('achat')->name('achat.')->group(function () 
         // Fin de vie (SFD §7.5) : M-07 annuler, M-03 clôturer le reliquat.
         Route::post('/{id}/annuler', [BonCommandeController::class, 'annuler'])->name('annuler');
         Route::post('/{id}/cloturer', [BonCommandeController::class, 'cloturer'])->name('cloturer');
+
+        // D-09 — pièces justificatives (M-05, M-08). Le téléchargement passe
+        // par cette route contrôlée : l'URL directe du fichier n'existe pas.
+        Route::prefix('{id}/documents')->name('documents.')->group(function () {
+            Route::get('/', [DocumentController::class, 'index'])->name('index');
+            Route::post('/', [DocumentController::class, 'store'])->name('store');
+            Route::get('/{document}/telecharger', [DocumentController::class, 'telecharger'])->name('telecharger');
+            Route::delete('/{document}', [DocumentController::class, 'destroy'])->name('destroy');
+        });
 
         // A-04 — la fiche, en DERNIER : /{id} capterait tout segment littéral
         // déclaré après lui.

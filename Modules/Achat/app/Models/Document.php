@@ -63,6 +63,30 @@ class Document extends Model
         return config('achat.types_documents.'.$this->type, $this->type);
     }
 
+    /** Icône Bootstrap correspondant au format (convention Stock). */
+    public function getIconeAttribute(): string
+    {
+        return match (true) {
+            $this->mime === 'application/pdf' => 'bi-file-earmark-pdf',
+            str_starts_with((string) $this->mime, 'image/') => 'bi-file-earmark-image',
+            str_contains((string) $this->mime, 'sheet') || str_contains((string) $this->mime, 'excel') => 'bi-file-earmark-spreadsheet',
+            str_contains((string) $this->mime, 'word') => 'bi-file-earmark-word',
+            default => 'bi-file-earmark',
+        };
+    }
+
+    /** Taille lisible : « 1,2 Mo » (convention Stock). */
+    public function getTailleLisibleAttribute(): string
+    {
+        $octets = (int) $this->taille;
+
+        return match (true) {
+            $octets >= 1_048_576 => number_format($octets / 1_048_576, 1, ',', ' ').' Mo',
+            $octets >= 1_024 => number_format($octets / 1_024, 0, ',', ' ').' Ko',
+            default => $octets.' o',
+        };
+    }
+
     /** Ligne grisée de l'onglet Documents (SPEC_UX A-04). */
     public function getLibellePierreTombaleAttribute(): ?string
     {

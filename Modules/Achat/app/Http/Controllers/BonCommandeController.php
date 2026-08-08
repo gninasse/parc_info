@@ -675,6 +675,8 @@ class BonCommandeController extends Controller implements HasMiddleware
                 'serviceDemandeur',
                 'createur',
                 'validateur',
+                'documents.createur',
+                'documents.suppresseur',
             ])
             ->findOrFail($id);
 
@@ -690,6 +692,8 @@ class BonCommandeController extends Controller implements HasMiddleware
             'autoValidation' => $bon->valide_par !== null
                 && $bon->created_by !== null
                 && $bon->valide_par === $bon->created_by,
+            // M-05 : la taille max des pièces est un paramètre A-08.
+            'tailleMaxPieceMo' => $this->parametres->tailleMaxPieceMo(),
         ]);
     }
 
