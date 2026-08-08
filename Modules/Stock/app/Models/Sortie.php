@@ -11,8 +11,8 @@ use Modules\Core\Models\User;
 use Modules\Grh\Models\Employe;
 use Modules\Stock\Models\Concerns\EstDocumentStock;
 use Modules\Stock\Models\Concerns\JournaliseActiviteStock;
-use Modules\Stock\Models\Concerns\PorteDesDocuments;
 use Modules\Stock\Models\Concerns\PorteBeneficiaire;
+use Modules\Stock\Models\Concerns\PorteDesDocuments;
 use Modules\Stock\Models\Contracts\DocumentAPointage;
 
 class Sortie extends Model implements DocumentAPointage

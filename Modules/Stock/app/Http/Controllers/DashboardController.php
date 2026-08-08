@@ -7,7 +7,6 @@ use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Modules\Catalogue\Models\Article;
 use Modules\Stock\Models\Entree;
 use Modules\Stock\Models\EquipementMagasin;
 use Modules\Stock\Models\Magasin;
@@ -172,7 +171,7 @@ class DashboardController extends Controller implements HasMiddleware
             ->select('stock_niveaux.*')
             ->whereRaw(Niveau::sqlStatutAlerte().' <> ?', [Niveau::STATUT_OK])
             ->where('stock_magasins.est_actif', true)
-            ->orderByRaw("CASE WHEN stock_niveaux.quantite <= 0 THEN 0 ELSE 1 END")
+            ->orderByRaw('CASE WHEN stock_niveaux.quantite <= 0 THEN 0 ELSE 1 END')
             ->orderBy('stock_niveaux.quantite')
             ->limit(self::MAX_ALERTES)
             ->get();

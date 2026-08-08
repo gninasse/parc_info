@@ -12,11 +12,11 @@ use Illuminate\Support\Facades\Log;
 use Modules\Grh\Models\Employe;
 use Modules\Organisation\Models\Local;
 use Modules\Organisation\Models\Site;
+use Modules\Stock\Http\Requests\StoreMagasinRequest;
+use Modules\Stock\Http\Requests\UpdateMagasinRequest;
 use Modules\Stock\Models\EquipementMagasin;
 use Modules\Stock\Models\Magasin;
 use Modules\Stock\Models\Mouvement;
-use Modules\Stock\Http\Requests\StoreMagasinRequest;
-use Modules\Stock\Http\Requests\UpdateMagasinRequest;
 
 class MagasinController extends Controller implements HasMiddleware
 {

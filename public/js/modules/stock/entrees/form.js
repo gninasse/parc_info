@@ -11,6 +11,7 @@
 import '../shared/formatters.js';
 import { SelecteurArticle } from '../shared/selecteur-article.js';
 import { SelecteurUnites } from '../shared/selecteur-unites.js';
+import { SelecteurCommande } from '../shared/selecteur-commande.js';
 import { validerEntree } from './validation.js';
 import { ErreursFormulaire, toastSucces } from '../shared/erreurs-formulaire.js';
 
@@ -22,31 +23,66 @@ $(function () {
     // La vérité du formulaire : {article, quantite, cout_unitaire} XOR {unite}
     const lignes = [];
 
+    /**
+     * Mode « Livraison sur commande » (RACCORDEMENT §2.3) : nul en mode
+     * libre. Quand il est actif : fournisseur imposé verrouillé, lignes
+     * plafonnées au reste à livrer, coût pré-rempli du PRIX FIGÉ (l'alerte
+     * ±20 % se calcule contre lui, pas contre le prix indicatif), articles
+     * hors commande refusés.
+     */
+    let commande = window.MODE_COMMANDE ?? null;
+
+    const ligneCommandePour = (articleId) => commande?.lignes.find((l) => l.article_id === Number(articleId)) ?? null;
+
     const echapper = (t) => $('<span>').text(t ?? '—').html();
 
-    // ── Alerte de coût ±20 % (config stock.seuil_alerte_cout) ─────────────
-    const coutSuspect = (cout, prixIndicatif) => {
-        if (!prixIndicatif || cout === null || cout === '' || isNaN(cout)) return false;
-        return Math.abs(cout - prixIndicatif) / prixIndicatif > seuilAlerte;
+    // ── Alerte de coût ±20 % — référence : prix indicatif en mode libre,
+    //    PRIX FIGÉ de la ligne BC en mode commande (§2.3) ───────────────
+    const referencePrix = (ligne) => {
+        if (commande && ligne.article) {
+            const ligneBc = ligneCommandePour(ligne.article.id);
+            if (ligneBc) return { valeur: ligneBc.prix_unitaire_ht, libelle: 'prix figé de la commande' };
+        }
+        return ligne.article?.prix_indicatif
+            ? { valeur: parseFloat(ligne.article.prix_indicatif), libelle: 'prix indicatif' }
+            : null;
+    };
+
+    const coutSuspect = (cout, reference) => {
+        if (!reference || cout === null || cout === '' || isNaN(cout)) return false;
+        return Math.abs(cout - reference) / reference > seuilAlerte;
     };
 
     const majAlerteCout = ($tr, ligne) => {
-        const prix = ligne.article?.prix_indicatif ? parseFloat(ligne.article.prix_indicatif) : null;
-        const suspect = coutSuspect(ligne.cout_unitaire, prix);
+        const ref = referencePrix(ligne);
+        const suspect = coutSuspect(ligne.cout_unitaire, ref?.valeur);
         const $icone = $tr.find('.alerte-cout');
         $icone.toggleClass('d-none', !suspect);
         if (suspect) {
             $icone.attr('data-bs-content',
-                `Coût saisi éloigné du prix indicatif (${Number(prix).toLocaleString('fr-FR')}) — vérifiez`);
+                `Coût saisi éloigné du ${ref.libelle} (${Number(ref.valeur).toLocaleString('fr-FR')}) — vérifiez`);
         }
     };
 
     // ── Rangées de la table unique ─────────────────────────────────────────
     const ajouterLigneArticle = (article, quantite = 1, coutUnitaire = null) => {
+        // Mode commande : l'article doit être SUR le BC (§2.3, message §15.2).
+        const ligneBc = commande ? ligneCommandePour(article.id) : null;
+        if (commande && !ligneBc) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Article hors commande',
+                text: 'Cet article n\'est pas sur la commande — créez un bon d\'entrée séparé.',
+            });
+            return null;
+        }
+
         const ligne = {
             article,
             quantite,
-            cout_unitaire: coutUnitaire ?? (article.prix_indicatif ? parseFloat(article.prix_indicatif) : null),
+            // Mode commande : coût pré-rempli du PRIX FIGÉ (jamais l'indicatif).
+            cout_unitaire: coutUnitaire
+                ?? (ligneBc ? ligneBc.prix_unitaire_ht : (article.prix_indicatif ? parseFloat(article.prix_indicatif) : null)),
         };
         lignes.push(ligne);
 
@@ -59,7 +95,11 @@ $(function () {
                     ${echapper(article.nom)}
                     ${estModele ? '<div class="small text-muted"><i class="bi bi-upc-scan me-1"></i>Modèle × N — n° de série à l\'étape suivante</div>' : ''}
                 </td>
-                <td><input type="number" class="form-control input-quantite" min="1" step="1" value="${quantite}"></td>
+                <td>
+                    <input type="number" class="form-control input-quantite" min="1" step="1" value="${quantite}"
+                           ${ligneBc ? `max="${ligneBc.reste_a_livrer}"` : ''}>
+                    <div class="invalid-feedback plafond-erreur"></div>
+                </td>
                 <td>
                     <div class="input-group">
                         <input type="number" class="form-control input-cout" min="0" step="any" value="${ligne.cout_unitaire ?? ''}">
@@ -74,6 +114,17 @@ $(function () {
 
         $tr.find('.input-quantite').on('input', function () {
             ligne.quantite = parseFloat(this.value) || 0;
+
+            // Plafond champ par champ (§2.3) : dépasser marque le champ sur
+            // place, le reste dans le message — le serveur revalide de toute
+            // façon (saisie ET validation sous verrou).
+            const bc = commande ? ligneCommandePour(article.id) : null;
+            const depasse = bc !== null && ligne.quantite > bc.reste_a_livrer;
+            this.classList.toggle('is-invalid', depasse);
+            $tr.find('.plafond-erreur').text(
+                depasse ? `Reste à livrer : ${Number(bc.reste_a_livrer).toLocaleString('fr-FR')}` : ''
+            );
+
             recalculer();
         });
 
@@ -165,12 +216,26 @@ $(function () {
         });
 
         $('#compteur-lignes').text(lignes.length);
-        $('#recap-barre').html(
-            `<strong>${articles}</strong> article(s) (${unitesArticles} u) · `
+
+        // Pied : compteurs + « sur BC-… · reste global après ce bon : N » (§2.3)
+        let recap = `<strong>${articles}</strong> article(s) (${unitesArticles} u) · `
             + `<strong>${unitesModeles}</strong> équipement(s) · `
             + `<strong>${rattachements}</strong> rattachement(s) · `
-            + `<strong>${Number(totalFcfa).toLocaleString('fr-FR')} FCFA</strong>`
-        );
+            + `<strong>${Number(totalFcfa).toLocaleString('fr-FR')} FCFA</strong>`;
+
+        if (commande) {
+            const resteGlobal = commande.lignes.reduce((somme, ligneBc) => {
+                const saisie = lignes
+                    .filter((l) => l.article && l.article.id === ligneBc.article_id)
+                    .reduce((s, l) => s + (l.quantite || 0), 0);
+                return somme + Math.max(0, ligneBc.reste_a_livrer - saisie);
+            }, 0);
+
+            recap += ` · <span class="text-primary">sur <span class="font-monospace">${echapper(commande.numero)}</span>`
+                + ` · reste global après ce bon : ${Number(resteGlobal).toLocaleString('fr-FR')} unité(s)</span>`;
+        }
+
+        $('#recap-barre').html(recap);
 
         // « Saisir les numéros de série » si ≥1 ligne modèle × N, sinon « ✓ Valider »
         const aDesModeles = unitesModeles > 0;
@@ -185,6 +250,7 @@ $(function () {
         nature: $('#e-nature').val(),
         fournisseur_id: $('#e-fournisseur').val() || null,
         reference_externe: $('#e-reference').val() || null,
+        bon_commande_id: commande?.id ?? null,
         observation_type: $('#e-observation-type').val() || null,
         observation: $('#e-observation').val() || null,
         lignes: lignes.map((ligne) => (ligne.unite
@@ -260,6 +326,121 @@ $(function () {
         dejaChoisies: lignes.filter((l) => l.unite).map((l) => l.unite.id),
         params: $('#e-nature').val() === 'retour' ? { nature: 'retour' } : {},
     }));
+
+    // ── Mode « Livraison sur commande » (RACCORDEMENT §2) ─────────────────
+
+    /**
+     * Applique ou retire l'habillage du mode commande : encart bleu,
+     * fournisseur imposé verrouillé, rattachements interdits. Les LIGNES ne
+     * sont pas touchées ici — la liaison les pré-remplit, la déliaison les
+     * CONSERVE re-libellées libres (§2.3).
+     */
+    const appliquerModeCommande = () => {
+        const actif = commande !== null;
+
+        $('#encart-commande').toggleClass('d-none', !actif).toggleClass('d-flex', actif);
+        $('#btn-lier-commande').toggleClass('d-none', actif);
+        $('#btn-choisir-unites').toggleClass('d-none', actif);
+
+        if (actif) {
+            $('#encart-commande-numero').text(commande.numero);
+            $('#encart-commande-fournisseur').text(commande.fournisseur ?? '');
+            $('#encart-commande-voir')
+                .toggleClass('d-none', !commande.url_fiche)
+                .attr('href', commande.url_fiche ?? '#');
+
+            // Fournisseur IMPOSÉ par le BC, champ verrouillé 🔒 (§2.3).
+            $('#e-fournisseur').val(String(commande.fournisseur_id)).trigger('change');
+            $('#e-fournisseur').prop('disabled', true);
+            $('#aide-fournisseur').html('<i class="bi bi-lock me-1"></i>Défini par la commande liée');
+            $('#e-reference').attr('placeholder', 'N° du BL papier du livreur');
+        } else {
+            $('#e-fournisseur').prop('disabled', false);
+            $('#aide-fournisseur').text('Référentiel du module Catalogue');
+            $('#e-reference').attr('placeholder', 'N° de BL ou de commande');
+        }
+
+        recalculer();
+    };
+
+    if (window.ACHAT_DISPONIBLE) {
+        const selecteurCommande = new SelecteurCommande({
+            url: route('achat.api.bons-commande.a-livrer'),
+            onChoisi: (bon) => {
+                // Le détail (lignes, restes, prix figés) vient du contrat §4.2.
+                $.getJSON(route('achat.api.bons-commande.lignes-a-livrer', bon.id))
+                    .done((res) => {
+                        commande = {
+                            id: res.bon_commande.id,
+                            numero: res.bon_commande.numero,
+                            fournisseur_id: res.bon_commande.fournisseur_id,
+                            fournisseur: bon.fournisseur?.nom,
+                            url_fiche: null,
+                            lignes: (res.lignes ?? []).map((l) => ({
+                                article_id: l.article_id,
+                                code: l.code,
+                                designation: l.designation,
+                                nature: l.nature,
+                                reste_a_livrer: parseFloat(l.reste_a_livrer),
+                                prix_unitaire_ht: parseFloat(l.prix_unitaire_ht),
+                            })),
+                        };
+
+                        // Pré-remplissage du RESTE (§2.3) : une ligne par ligne
+                        // de BC non soldée — quantité = reste, coût = prix figé.
+                        // Les rattachements d'unités n'ont pas leur place ici.
+                        lignes.splice(0, lignes.length);
+                        $('#table-lignes tbody').empty();
+
+                        commande.lignes.forEach((ligneBc) => {
+                            ajouterLigneArticle({
+                                id: ligneBc.article_id,
+                                code: ligneBc.code,
+                                nom: ligneBc.designation,
+                                nature: ligneBc.nature,
+                                prix_indicatif: null,
+                                unite_stock: '',
+                            }, ligneBc.reste_a_livrer, ligneBc.prix_unitaire_ht);
+                        });
+
+                        appliquerModeCommande();
+                    })
+                    .fail(() => Swal.fire({
+                        icon: 'error',
+                        title: 'Liaison impossible',
+                        text: 'Le détail de la commande n\'a pas pu être chargé — réessayez.',
+                    }));
+            },
+        });
+
+        $('#btn-lier-commande').on('click', () => selecteurCommande.ouvrir());
+
+        // Délier : confirmation, lignes CONSERVÉES re-libellées libres (§2.3).
+        $('#btn-delier-commande').on('click', () => {
+            Swal.fire({
+                title: 'Délier ce bon de la commande ?',
+                text: `Les lignes saisies sont conservées, mais elles ne compteront plus sur ${commande?.numero ?? 'la commande'}.`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Délier',
+                cancelButtonText: 'Annuler',
+            }).then((r) => {
+                if (!r.isConfirmed) return;
+                commande = null;
+                $('#table-lignes tbody .plafond-erreur').text('');
+                $('#table-lignes tbody .input-quantite').removeAttr('max').removeClass('is-invalid');
+                appliquerModeCommande();
+            });
+        });
+
+        // Un retour ne livre pas une commande : le bouton disparaît, et une
+        // liaison existante doit être défaite d'abord (la Request le refuse).
+        $('#e-nature').on('change', function () {
+            $('#btn-lier-commande').toggleClass('d-none', this.value === 'retour' || commande !== null);
+        });
+
+        appliquerModeCommande();
+    }
 
     $form.on('submit', (e) => { e.preventDefault(); enregistrer(); });
 

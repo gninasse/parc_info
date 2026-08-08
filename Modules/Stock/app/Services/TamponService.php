@@ -7,7 +7,6 @@ use Modules\Catalogue\Models\Article;
 use Modules\ParcInfo\Models\Equipement;
 use Modules\Stock\Exceptions\ReferencementException;
 use Modules\Stock\Models\Entree;
-use Modules\Stock\Models\LigneEntree;
 use Modules\Stock\Models\TamponEquipement;
 
 /**
@@ -246,6 +245,6 @@ class TamponService
             ->orderBy('id')
             ->pluck('id');
 
-        return ($ids->search($tampon->id)) + 1;
+        return $ids->search($tampon->id) + 1;
     }
 }

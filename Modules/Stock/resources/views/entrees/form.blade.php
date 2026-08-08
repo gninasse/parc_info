@@ -27,6 +27,24 @@
 {{-- Récapitulatif des erreurs de saisie (UX §0.6) --}}
 @include('stock::shared._erreurs_formulaire')
 
+@php
+    // Le mode commande n'existe que si le module Achat est installé : sans
+    // lui, le bouton, la modale et l'encart n'apparaissent pas (dégradation
+    // propre — RACCORDEMENT §6).
+    $achatDisponible = \Illuminate\Support\Facades\Schema::hasTable('achat_bons_commande');
+@endphp
+
+{{-- Encart bleu du mode « Livraison sur commande » (RACCORDEMENT §2.3) --}}
+<div class="alert alert-info d-none align-items-center gap-2 mb-3" id="encart-commande" role="note">
+    <i class="bi bi-link-45deg"></i>
+    <div class="flex-grow-1">
+        Livraison sur <strong id="encart-commande-numero" class="font-monospace"></strong>
+        — <span id="encart-commande-fournisseur"></span>
+    </div>
+    <a href="#" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary d-none" id="encart-commande-voir">Voir le BC</a>
+    <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-delier-commande">Délier</button>
+</div>
+
 <form id="entree-form" novalidate
       data-entree-id="{{ $entree?->id ?? '' }}"
       data-seuil-alerte-cout="{{ config('stock.seuil_alerte_cout', 0.20) }}">
@@ -67,12 +85,22 @@
                         <option value="{{ $fournisseur->id }}" @selected($entree?->fournisseur_id === $fournisseur->id)>{{ $fournisseur->raison_sociale }}</option>
                     @endforeach
                 </select>
-                <div class="form-text">Référentiel du module Catalogue</div>
+                <div class="form-text" id="aide-fournisseur">Référentiel du module Catalogue</div>
             </div>
             <div class="col-md-3">
                 <label class="form-label" for="e-reference">Référence externe</label>
-                <input type="text" class="form-control" id="e-reference" name="reference_externe"
-                       placeholder="N° de BL ou de commande" value="{{ $entree?->reference_externe }}">
+                <div class="input-group">
+                    <input type="text" class="form-control" id="e-reference" name="reference_externe"
+                           placeholder="N° de BL ou de commande" value="{{ $entree?->reference_externe }}">
+                    @if($achatDisponible)
+                        {{-- RACCORDEMENT §2.1 : le bouton du mode commande, adjacent
+                             à la référence. Caché sous nature Retour (JS). --}}
+                        <button type="button" class="btn btn-outline-primary" id="btn-lier-commande"
+                                title="Lier ce bon d'entrée à un bon de commande du module Achat">
+                            <i class="bi bi-link-45deg me-1"></i>Lier à une commande…
+                        </button>
+                    @endif
+                </div>
             </div>
             <div class="col-md-3">
                 <label class="form-label" for="e-nature">Nature</label>
@@ -176,6 +204,9 @@
 
 @include('stock::shared._selecteur_unites')
 @include('stock::shared._selecteur_article')
+@if($achatDisponible)
+    @include('stock::shared._selecteur_commande')
+@endif
 @endsection
 
 @php
@@ -206,6 +237,8 @@
 <script>
     window.ENTREE = @json($entreeJs);
     window.LIGNES_INITIALES = @json($lignesInitiales);
+    window.MODE_COMMANDE = @json($modeCommande ?? null);
+    window.ACHAT_DISPONIBLE = @json($achatDisponible);
 </script>
 <script type="module" src="{{ asset('js/modules/stock/entrees/form.js') }}?v={{ time() }}"></script>
 @endpush

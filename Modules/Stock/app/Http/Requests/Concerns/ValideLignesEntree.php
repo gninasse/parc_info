@@ -2,7 +2,9 @@
 
 namespace Modules\Stock\Http\Requests\Concerns;
 
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Modules\Catalogue\Models\Article;
 use Modules\ParcInfo\Models\Equipement;
 use Modules\Stock\Models\EquipementMagasin;
@@ -15,6 +17,13 @@ use Modules\Stock\Models\Magasin;
  * Lignes : {article_id XOR equipement_id, quantite, cout_unitaire?}.
  * article_id = quantitatif ou « modèle × N » ; equipement_id = rattachement
  * d'une unité existante « en stock » non rattachée.
+ *
+ * Mode « Livraison sur commande » (RACCORDEMENT §2.3) : quand le brouillon
+ * porte un bon_commande_id, le fournisseur est IMPOSÉ par le BC, chaque
+ * article doit être SUR la commande, et la quantité saisie est plafonnée au
+ * reste à livrer — contrôle champ par champ avec le reste dans le message.
+ * Le re-contrôle définitif sous verrou appartient à la validation (D-12) :
+ * ici on protège la saisie, pas les compteurs.
  */
 trait ValideLignesEntree
 {
@@ -34,6 +43,32 @@ trait ValideLignesEntree
             'nature' => ['required', Rule::in(['livraison', 'retour'])],
             'fournisseur_id' => ['nullable', 'integer', Rule::exists('catalogue_fournisseurs', 'id')],
             'reference_externe' => ['nullable', 'string', 'max:255'],
+
+            // Liaison à un bon de commande (PRQ-05). Uniquement sous nature
+            // livraison : un retour ne livre pas une commande.
+            'bon_commande_id' => [
+                'nullable', 'integer', 'prohibited_if:nature,retour',
+                function (string $attribute, $value, \Closure $fail) {
+                    if ($value === null) {
+                        return;
+                    }
+
+                    // Module Achat absent : la liaison n'existe pas.
+                    if (! Schema::hasTable('achat_bons_commande')) {
+                        $fail('Le module Achat n\'est pas installé : aucune commande à lier.');
+
+                        return;
+                    }
+
+                    $bon = \Modules\Achat\Models\BonCommande::query()->find($value);
+
+                    if ($bon === null) {
+                        $fail('Bon de commande introuvable.');
+                    } elseif (! in_array($bon->statut, \Modules\Achat\Models\BonCommande::STATUTS_RECEPTIONNABLES, true)) {
+                        $fail("Ce bon n'est pas livrable (statut : {$bon->statut_label}).");
+                    }
+                },
+            ],
             'observation_type' => ['nullable', Rule::in(array_keys(config('stock.motifs_observation_entree', [])))],
             'observation' => ['nullable', 'string', 'required_if:observation_type,autre'],
 
@@ -103,6 +138,84 @@ trait ValideLignesEntree
         ];
     }
 
+    /**
+     * Contrôles croisés du mode commande : ils lisent le BC entier, donc ils
+     * vivent APRÈS les règles champ à champ, quand la forme est déjà bonne.
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            $bonCommandeId = $this->input('bon_commande_id');
+
+            if ($bonCommandeId === null || $validator->errors()->has('bon_commande_id')) {
+                return;
+            }
+
+            $bon = \Modules\Achat\Models\BonCommande::query()
+                ->with('lignes')
+                ->find($bonCommandeId);
+
+            if ($bon === null) {
+                return; // déjà refusé par la règle du champ
+            }
+
+            // Fournisseur IMPOSÉ par le BC (§2.3) : le champ est verrouillé à
+            // l'écran, le serveur refuse quand même un POST forgé.
+            if ($this->filled('fournisseur_id') && (int) $this->input('fournisseur_id') !== (int) $bon->fournisseur_id) {
+                $validator->errors()->add(
+                    'fournisseur_id',
+                    'Le fournisseur est défini par la commande liée — il ne peut pas être changé.'
+                );
+            }
+
+            $lignesBc = $bon->lignes->keyBy('article_id');
+
+            foreach ($this->input('lignes', []) as $index => $ligne) {
+                $articleId = $ligne['article_id'] ?? null;
+
+                if ($articleId === null) {
+                    // Un rattachement d'unité existante n'est pas une ligne de
+                    // commande : pas de mélange sur un bon lié (§2.3).
+                    if (($ligne['equipement_id'] ?? null) !== null) {
+                        $validator->errors()->add(
+                            "lignes.{$index}.equipement_id",
+                            'Un bon lié à une commande ne rattache pas d\'unités existantes — créez un bon d\'entrée séparé.'
+                        );
+                    }
+
+                    continue;
+                }
+
+                $ligneBc = $lignesBc->get((int) $articleId);
+
+                // Article hors commande : refusé (§2.3, message §15.2).
+                if ($ligneBc === null) {
+                    $validator->errors()->add(
+                        "lignes.{$index}.article_id",
+                        'Cet article n\'est pas sur la commande — créez un bon d\'entrée séparé.'
+                    );
+
+                    continue;
+                }
+
+                // Plafond de SAISIE : quantité ≤ reste à livrer, champ par
+                // champ, le reste dans le message (§15.2).
+                $reste = $ligneBc->reste;
+                $quantite = (float) ($ligne['quantite'] ?? 0);
+
+                if ($quantite > $reste) {
+                    $validator->errors()->add(
+                        "lignes.{$index}.quantite",
+                        sprintf(
+                            'Quantité supérieure au reste à livrer (reste : %s).',
+                            rtrim(rtrim(number_format($reste, 2, ',', ' '), '0'), ',')
+                        )
+                    );
+                }
+            }
+        });
+    }
+
     protected function messagesSpecifiques(): array
     {
         return [
@@ -112,6 +225,7 @@ trait ValideLignesEntree
             'lignes.*.article_id.prohibits' => 'Une ligne porte un article OU une unité, pas les deux.',
             'observation.required_if' => 'Le texte d\'observation est requis pour le motif « Autre ».',
             'date_document.required' => 'La date de livraison est obligatoire.',
+            'bon_commande_id.prohibited_if' => 'Un retour ne livre pas une commande : déliez le bon avant de changer la nature.',
         ];
     }
 }

@@ -131,7 +131,7 @@ class ValiderSortieService
                 ->value('quantite') ?? 0);
 
             if ($disponible < (float) $ligne->quantite) {
-                $erreurs[$index] = "ligne ".($index + 1)." « {$ligne->article->nom} » : demandé "
+                $erreurs[$index] = 'ligne '.($index + 1)." « {$ligne->article->nom} » : demandé "
                     .rtrim(rtrim(number_format((float) $ligne->quantite, 2, ',', ' '), '0'), ',')
                     .', disponible '.rtrim(rtrim(number_format($disponible, 2, ',', ' '), '0'), ',');
             }

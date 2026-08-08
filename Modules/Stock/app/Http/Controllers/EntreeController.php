@@ -10,6 +10,7 @@ use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Modules\Catalogue\Models\Article;
 use Modules\Catalogue\Models\Fournisseur;
 use Modules\ParcInfo\Models\Equipement;
@@ -143,6 +144,7 @@ class EntreeController extends Controller implements HasMiddleware
                 ? (int) $request->input('magasin_id')
                 : app(\Modules\Stock\Services\MagasinContexteService::class)->magasinParDefautId(),
             'articlePrerempli' => $articlePrerempli?->only(['id', 'code', 'nom', 'nature', 'prix_indicatif', 'unite_stock']),
+            'modeCommande' => $this->modeCommande(null),
         ]);
     }
 
@@ -239,6 +241,7 @@ class EntreeController extends Controller implements HasMiddleware
             'fournisseurs' => Fournisseur::query()->where('est_actif', true)->orderBy('raison_sociale')->get(['id', 'raison_sociale']),
             'magasinPrerempli' => null,
             'articlePrerempli' => null,
+            'modeCommande' => $this->modeCommande($entree),
         ]);
     }
 
@@ -267,6 +270,54 @@ class EntreeController extends Controller implements HasMiddleware
 
             return response()->json(['success' => false, 'message' => 'Une erreur interne est survenue.'], 500);
         }
+    }
+
+    /**
+     * Contexte du mode « Livraison sur commande » (RACCORDEMENT §2.3) : ce
+     * que le formulaire doit savoir du BC lié — encart bleu, fournisseur
+     * imposé, plafonds par article, prix figés. Nul en mode libre ou si le
+     * module Achat n'est pas installé (dégradation propre).
+     */
+    private function modeCommande(?Entree $entree): ?array
+    {
+        if ($entree?->bon_commande_id === null || ! Schema::hasTable('achat_bons_commande')) {
+            return null;
+        }
+
+        $bon = \Modules\Achat\Models\BonCommande::query()
+            ->with('lignes.article:id,code')
+            ->find($entree->bon_commande_id);
+
+        if ($bon === null) {
+            return null;
+        }
+
+        return [
+            'id' => $bon->id,
+            'numero' => $bon->numero,
+            'statut' => $bon->statut,
+            'statut_label' => $bon->statut_label,
+            'fournisseur_id' => $bon->fournisseur_id,
+            'fournisseur' => $bon->fournisseur_libelle ?? $bon->fournisseur?->raison_sociale,
+            'url_fiche' => \Illuminate\Support\Facades\Route::has('achat.bons-commande.show')
+                ? route('achat.bons-commande.show', $bon->id)
+                : null,
+            // Par article : le plafond de saisie et le prix figé — ce que le
+            // JS applique champ par champ. Le reste INCLUT les quantités déjà
+            // posées sur CE brouillon (elles ne sont pas encore livrées).
+            'lignes' => $bon->lignes
+                ->filter(fn ($ligne) => $ligne->article_id !== null)
+                ->map(fn ($ligne) => [
+                    'article_id' => $ligne->article_id,
+                    'code' => $ligne->article?->code,
+                    'designation' => $ligne->designation,
+                    'nature' => $ligne->nature,
+                    'reste_a_livrer' => $ligne->reste,
+                    'prix_unitaire_ht' => (float) $ligne->prix_unitaire_ht,
+                ])
+                ->values()
+                ->all(),
+        ];
     }
 
     public function destroy($id): JsonResponse

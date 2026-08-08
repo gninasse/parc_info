@@ -20,6 +20,12 @@ use Modules\Stock\Models\TamponEquipement;
  * fiches ParcInfo (SerialisationService), mouvements (MouvementService),
  * rattachements, dénormalisations, numéro (NumerotationService), purge du
  * tampon, transition → VALIDE. Idempotente par jeton.
+ *
+ * Raccordement PRQ-05 (RACCORDEMENT §3) : si l'entrée est liée à un bon de
+ * commande, l'intégration Achat se fait DANS la même transaction — appel de
+ * service interne, pas d'événement asynchrone (ENF-TEC-04). Le re-contrôle
+ * du reste sous verrou appartient à AchatReceptionService : s'il refuse,
+ * TOUTE la validation Stock échoue et rien n'est écrit nulle part.
  */
 class ValiderEntreeService
 {
@@ -73,6 +79,15 @@ class ValiderEntreeService
             $this->denormaliserBeneficiaire($entree);
 
             $numero = $this->numerotation->attribuer($entree);
+
+            /*
+             * Raccordement PRQ-05 : notification transactionnelle à Achat,
+             * APRÈS le numéro (la trace côté Achat porte « ENT-2026-0034 »,
+             * pas « Brouillon #58 ») et AVANT le commit — si Achat refuse
+             * (reste insuffisant sous verrou, bon annulé entre-temps), tout
+             * ce qui précède est annulé avec.
+             */
+            $this->notifierAchat($entree, $lignes, $numero, $userId);
 
             // Purge du tampon (les références vivent désormais sur les fiches)
             TamponEquipement::query()
@@ -276,6 +291,57 @@ class ValiderEntreeService
 
         if ($libelle !== null) {
             $entree->forceFill(['beneficiaire_libelle' => $libelle])->save();
+        }
+    }
+
+    // ── Raccordement PRQ-05 : la notification transactionnelle ─────────────
+
+    /**
+     * Intègre la réception au bon de commande lié — DANS la transaction de
+     * validation (RACCORDEMENT §3, étape 4).
+     *
+     * AchatReceptionService re-contrôle le reste SOUS VERROU ligne à ligne :
+     * deux bons d'entrée concurrents sur le même reste ne peuvent pas le
+     * dépasser (IA-4), et un rejeu de la même entrée n'incrémente rien
+     * (idempotence par entree_id, IA-5). Son refus est traduit en
+     * ValidationEntreeException : la validation Stock échoue EN ENTIER,
+     * mouvements et fiches compris.
+     *
+     * Seules les lignes d'ARTICLES notifient : les rattachements d'unités
+     * existantes ne livrent pas une commande (et la Request les refuse sur
+     * un bon lié).
+     */
+    private function notifierAchat(Entree $entree, Collection $lignes, string $numero, ?int $userId): void
+    {
+        if ($entree->bon_commande_id === null) {
+            return;
+        }
+
+        $recues = $lignes
+            ->whereNotNull('article_id')
+            ->map(fn (LigneEntree $ligne) => [
+                'article_id' => (int) $ligne->article_id,
+                'quantite' => (float) $ligne->quantite,
+            ])
+            ->values()
+            ->all();
+
+        if ($recues === []) {
+            return;
+        }
+
+        try {
+            app(\Modules\Achat\Services\AchatReceptionService::class)->integrer(
+                $entree->bon_commande_id,
+                $entree->id,
+                $recues,
+                $numero,
+                $userId
+            );
+        } catch (\Modules\Achat\Exceptions\AchatReceptionException $e) {
+            // 422 ligne à ligne, message métier d'Achat conservé tel quel :
+            // il dit QUELLE ligne dépasse et propose la sortie.
+            throw new ValidationEntreeException($e->getMessage());
         }
     }
 }
