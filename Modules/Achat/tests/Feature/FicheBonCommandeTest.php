@@ -509,6 +509,59 @@ class FicheBonCommandeTest extends TestCase
         $this->assertSame('danger', $chronologie->last()['couleur']);
     }
 
+    // ═══ Onglet Réceptions (D-12 : intégrées + en cours, dégradation) ═══════
+
+    public function test_l_onglet_receptions_affiche_l_etat_vide_pedagogique(): void
+    {
+        $bon = $this->bonValideParLeCircuit();
+
+        $this->actingAs($this->acheteur())
+            ->get(route('achat.bons-commande.show', $bon->id))
+            ->assertOk()
+            ->assertSee('Les réceptions se')
+            ->assertSee('saisissent au magasin (module Stock)');
+    }
+
+    public function test_une_reception_integree_apparait_en_carte_avec_ses_lignes(): void
+    {
+        $bon = $this->bonValideParLeCircuit();
+        $ligne = $bon->lignes()->first();
+
+        app(AchatReceptionService::class)->integrer(
+            $bon->id,
+            4243,
+            [['article_id' => $ligne->article_id, 'quantite' => 6]],
+            'ENT-2026-0099'
+        );
+
+        $this->actingAs($this->acheteur())
+            ->get(route('achat.bons-commande.show', $bon->fresh()->id))
+            ->assertOk()
+            ->assertSee('ENT-2026-0099')
+            ->assertSee('Intégrées')
+            ->assertSee('reste 4', false);
+    }
+
+    public function test_un_brouillon_stock_lie_apparait_en_cours_non_integre(): void
+    {
+        if (! \Illuminate\Support\Facades\Schema::hasTable('stock_entrees')) {
+            $this->markTestSkipped('Module Stock absent.');
+        }
+
+        $bon = $this->bonValideParLeCircuit();
+
+        \Modules\Stock\Models\Entree::factory()->create([
+            'bon_commande_id' => $bon->id,
+            'magasin_id' => \Modules\Stock\Models\Magasin::factory()->create()->id,
+        ]);
+
+        $this->actingAs($this->acheteur())
+            ->get(route('achat.bons-commande.show', $bon->id))
+            ->assertOk()
+            ->assertSee('En cours côté magasin')
+            ->assertSee('non intégré — sans effet sur les reliquats');
+    }
+
     // ═══ Redirections vers la fiche (fin du repli « liste ») ════════════════
 
     public function test_editer_un_bon_valide_redirige_desormais_vers_sa_fiche(): void

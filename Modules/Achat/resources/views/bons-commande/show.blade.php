@@ -203,6 +203,12 @@
                 </button>
             </li>
             <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#onglet-receptions"
+                        type="button" role="tab" aria-controls="onglet-receptions" aria-selected="false">
+                    Réceptions <span class="badge bg-secondary-subtle text-secondary-emphasis">{{ $receptions['integrees']->count() }}</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
                 <button class="nav-link" data-bs-toggle="tab" data-bs-target="#onglet-documents"
                         type="button" role="tab" aria-controls="onglet-documents" aria-selected="false">
                     Documents <span class="badge bg-secondary-subtle text-secondary-emphasis" id="compteur-documents">{{ $bon->documents->count() }}</span>
@@ -325,6 +331,90 @@
                         @endif
                         {{ $bon->observation_texte }}
                     </div>
+                @endif
+            </div>
+
+            {{-- ── Onglet Réceptions (D-12, maquette P-03, UX2-09/UX-12) ── --}}
+            <div class="tab-pane fade" id="onglet-receptions" role="tabpanel">
+                @if($receptions['integrees']->isEmpty() && $receptions['en_cours']->isEmpty())
+                    {{-- EV-03 : l'état vide enseigne la frontière (UX3-02). --}}
+                    <p class="text-center text-muted py-4 mb-0" id="receptions-vide">
+                        Rien n'a encore été livré sur cette commande. Les réceptions se
+                        saisissent au magasin (module Stock) et apparaîtront ici.
+                    </p>
+                @endif
+
+                @if($receptions['integrees']->isNotEmpty())
+                    <h6 class="small text-uppercase text-muted">Intégrées <span class="fw-normal">— elles comptent dans les reliquats</span></h6>
+                    @foreach($receptions['integrees'] as $reception)
+                        <div class="card border mb-2 {{ $reception['est_contre_passation'] ? 'border-danger-subtle' : '' }}">
+                            <div class="card-body py-2">
+                                <div class="d-flex flex-wrap align-items-center gap-2">
+                                    @if($reception['est_contre_passation'])
+                                        <span class="badge bg-danger">Contre-passation</span>
+                                    @else
+                                        <span class="badge bg-success">Réception</span>
+                                    @endif
+                                    <span class="font-monospace fw-semibold">{{ $reception['reference'] }}</span>
+                                    <span class="text-muted small">
+                                        {{ $reception['quand']?->format('d/m/Y H:i') }}
+                                        @if($reception['magasin']) · {{ $reception['magasin'] }} @endif
+                                        · {{ rtrim(rtrim(number_format($reception['unites'], 2, ',', ' '), '0'), ',') }} unité(s)
+                                        @if($reception['par']) · par {{ $reception['par'] }} @endif
+                                    </span>
+                                    @if($reception['url_entree'])
+                                        <a href="{{ $reception['url_entree'] }}" class="ms-auto small">Voir le bon d'entrée →</a>
+                                    @endif
+                                </div>
+                                @if($reception['observation'])
+                                    <div class="small text-muted mt-1">Observation : {{ $reception['observation'] }}</div>
+                                @endif
+                                @if($reception['lignes']->isNotEmpty())
+                                    <div class="small mt-1">
+                                        @foreach($reception['lignes'] as $ligne)
+                                            <span class="badge bg-light text-dark border me-1">
+                                                {{ $ligne['designation'] ?? 'Ligne' }} :
+                                                {{ rtrim(rtrim(number_format((float) ($ligne['quantite'] ?? 0), 2, ',', ' '), '0'), ',') }}
+                                                <span class="text-muted">(reste {{ rtrim(rtrim(number_format((float) ($ligne['reste'] ?? 0), 2, ',', ' '), '0'), ',') }})</span>
+                                            </span>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    @endforeach
+                @endif
+
+                @if(! $receptions['magasin_disponible'])
+                    {{-- Dégradation PARTIELLE : la section explique, la fiche vit. --}}
+                    <div class="alert alert-warning small mt-3" role="alert" id="receptions-degradation">
+                        <i class="bi bi-plug me-1"></i>
+                        Le module Stock est indisponible : les bons en cours côté magasin ne peuvent pas
+                        être affichés. Les réceptions intégrées ci-dessus restent exactes.
+                    </div>
+                @elseif($receptions['en_cours']->isNotEmpty())
+                    <h6 class="small text-uppercase text-muted mt-3">En cours côté magasin</h6>
+                    @foreach($receptions['en_cours'] as $enCours)
+                        <div class="card border mb-2">
+                            <div class="card-body py-2 d-flex flex-wrap align-items-center gap-2">
+                                <span class="fst-italic">{{ $enCours['libelle'] }}</span>
+                                <span class="badge bg-warning text-dark">{{ $enCours['statut_label'] }}</span>
+                                <span class="text-muted small">
+                                    @if($enCours['magasin']) {{ $enCours['magasin'] }} · @endif
+                                    {{ rtrim(rtrim(number_format($enCours['unites'], 2, ',', ' '), '0'), ',') }} unité(s) annoncée(s)
+                                    @if($enCours['par']) · par {{ $enCours['par'] }} @endif
+                                </span>
+                                <span class="badge bg-light text-muted border ms-auto"
+                                      data-bs-toggle="tooltip"
+                                      title="Seule la validation du bon d'entrée met à jour les reliquats">
+                                    non intégré — sans effet sur les reliquats
+                                </span>
+                                @if($enCours['url_entree'])
+                                    <a href="{{ $enCours['url_entree'] }}" class="small">Ouvrir →</a>
+                                @endif
+                            </div>
+                        </div>
+                    @endforeach
                 @endif
             </div>
 

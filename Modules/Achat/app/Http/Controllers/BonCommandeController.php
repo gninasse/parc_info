@@ -27,6 +27,7 @@ use Modules\Achat\Services\CircuitSoumissionService;
 use Modules\Achat\Services\ControlesSoumissionService;
 use Modules\Achat\Services\FinDeVieService;
 use Modules\Achat\Services\LignesBonCommandeService;
+use Modules\Achat\Services\ReceptionsBonCommande;
 use Modules\Achat\Services\RechercheBonCommande;
 use Modules\Achat\Services\ReferencePrixService;
 use Modules\Achat\Services\VisaService;
@@ -59,6 +60,7 @@ class BonCommandeController extends Controller implements HasMiddleware
         private readonly VisaService $visa,
         private readonly ChronologieBonCommande $chronologie,
         private readonly FinDeVieService $finDeVie,
+        private readonly ReceptionsBonCommande $receptions,
     ) {}
 
     public static function middleware(): array
@@ -685,6 +687,11 @@ class BonCommandeController extends Controller implements HasMiddleware
             'actions' => $this->actions->pour($bon, $request->user()),
             'decomposition' => $this->montants->decompositionParTaux($bon->lignes),
             'chronologie' => $this->chronologie->pour($bon),
+            // Onglet Réceptions (D-12) : intégrées (vérité Achat) + en cours
+            // côté magasin (informatif, dégradation partielle si Stock coupe).
+            'receptions' => $bon->estEngage()
+                ? $this->receptions->pour($bon)
+                : ['integrees' => collect(), 'en_cours' => collect(), 'magasin_disponible' => true],
             // UX4-03 : le badge « fournisseur récent » du bandeau, même signal
             // que le Swal du visa — nul si le fournisseur est établi.
             'fournisseurRecent' => $bon->estEngage() ? null : $this->visa->fournisseurRecent($bon),
