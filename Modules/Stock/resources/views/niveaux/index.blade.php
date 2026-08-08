@@ -116,6 +116,7 @@
 </div>
 
 @include('stock::niveaux._modal_seuil')
+@include('stock::shared._erreurs_formulaire', ['id' => 'erreurs-hors-modale'])
 @endsection
 
 @push('js')

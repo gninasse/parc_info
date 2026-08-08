@@ -3,9 +3,12 @@
 namespace Modules\Stock\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Modules\Stock\Http\Requests\Concerns\MessagesValidationFr;
 
 class StoreMagasinRequest extends FormRequest
 {
+    use MessagesValidationFr;
+
     public function authorize(): bool
     {
         return true; // permissions portées par le middleware du contrôleur
@@ -22,7 +25,7 @@ class StoreMagasinRequest extends FormRequest
         ];
     }
 
-    public function messages(): array
+    protected function messagesSpecifiques(): array
     {
         return [
             'site_id.unique' => 'Ce site a déjà son magasin (règle « un magasin par site »).',

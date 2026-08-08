@@ -65,7 +65,7 @@ trait ValideLignesSortie
         ];
     }
 
-    public function messages(): array
+    protected function messagesSpecifiques(): array
     {
         return [
             'motif_type.required' => 'Le motif de sortie est obligatoire.',

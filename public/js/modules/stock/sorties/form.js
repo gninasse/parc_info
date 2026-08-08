@@ -12,6 +12,7 @@ import '../shared/formatters.js';
 import { SelecteurArticle } from '../shared/selecteur-article.js';
 import { SelecteurBeneficiaire } from '../shared/beneficiaire.js';
 import { validerDocument } from '../shared/valider-document.js';
+import { ErreursFormulaire, toastSucces } from '../shared/erreurs-formulaire.js';
 
 $(function () {
     const sortieId = $('#sortie-form').data('sortie-id') || null;
@@ -125,24 +126,29 @@ $(function () {
         lignes: lignes.map((ligne) => ({ article_id: ligne.article.id, quantite: ligne.quantite })),
     });
 
-    const afficherErreurs = (xhr) => {
-        if (xhr.status === 422 && xhr.responseJSON?.errors) {
-            const erreurs = xhr.responseJSON.errors;
-            const premiere = Object.keys(erreurs).find((c) => c.startsWith('lignes.'));
-            if (premiere) {
-                const index = Number(premiere.split('.')[1]);
-                $('#table-lignes tbody tr').eq(index).addClass('table-danger');
-                setTimeout(() => $('#table-lignes tbody tr').removeClass('table-danger'), 4000);
-            }
-            Swal.fire({
-                icon: 'error',
-                title: 'Formulaire incomplet',
-                html: Object.values(erreurs).flat().map((m) => echapper(m)).join('<br>'),
-            });
-            return;
-        }
-        Swal.fire({ icon: 'error', title: 'Erreur', text: xhr.responseJSON?.message ?? 'Une erreur est survenue.' });
-    };
+    const erreurs = new ErreursFormulaire('#sortie-form', {
+        lignes: {
+            conteneur: '#table-lignes tbody',
+            libelle: (index) => {
+                const ligne = lignes[index];
+                return ligne?.article ? `Ligne ${index + 1} (${ligne.article.code})` : `Ligne ${index + 1}`;
+            },
+        },
+        champs: {
+            beneficiaire_type: { selecteur: '#cartes-beneficiaire', libelle: 'Bénéficiaire' },
+            beneficiaire_direction_id: { selecteur: '#cartes-beneficiaire', libelle: 'Bénéficiaire' },
+            beneficiaire_service_id: { selecteur: '#cartes-beneficiaire', libelle: 'Bénéficiaire' },
+            beneficiaire_unite_id: { selecteur: '#cartes-beneficiaire', libelle: 'Bénéficiaire' },
+            beneficiaire_poste_id: { selecteur: '#cartes-beneficiaire', libelle: 'Bénéficiaire' },
+            beneficiaire_local_id: { selecteur: '#cartes-beneficiaire', libelle: 'Bénéficiaire' },
+            beneficiaire_employe_id: { selecteur: '#cartes-beneficiaire', libelle: 'Bénéficiaire' },
+            motif_type: { selecteur: '#pilules-motif', libelle: 'Motif' },
+            motif_texte: { selecteur: '#s-motif-texte', libelle: 'Texte du motif' },
+            remise_reelle_le: { selecteur: '#s-remise-reelle', libelle: 'Date et heure réelles de remise' },
+        },
+    });
+
+    const afficherErreurs = (xhr) => erreurs.afficher(xhr);
 
     const enregistrer = (surSucces) => {
         const $btn = $('#btn-enregistrer');
@@ -157,8 +163,9 @@ $(function () {
             success: (res) => {
                 if (!res.success) return;
                 if (surSucces) { surSucces(res); return; }
+                erreurs.effacer();
                 if (!sortieId) { window.location.href = route('stock.sorties.edit', res.data.id); return; }
-                Swal.fire({ icon: 'success', title: 'Enregistré', timer: 2000, showConfirmButton: false });
+                toastSucces('Brouillon enregistré');
             },
             error: afficherErreurs,
             complete: () => $btn.prop('disabled', false).html('<i class="fas fa-save me-1"></i>Enregistrer le brouillon'),

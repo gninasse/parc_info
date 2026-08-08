@@ -3,9 +3,12 @@
 namespace Modules\Stock\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Modules\Stock\Http\Requests\Concerns\MessagesValidationFr;
 
 class UpdateMagasinRequest extends FormRequest
 {
+    use MessagesValidationFr;
+
     public function authorize(): bool
     {
         return true;
@@ -25,7 +28,7 @@ class UpdateMagasinRequest extends FormRequest
         ];
     }
 
-    public function messages(): array
+    protected function messagesSpecifiques(): array
     {
         return [
             'libelle.required' => 'Le libellé est obligatoire.',

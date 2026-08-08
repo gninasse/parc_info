@@ -24,6 +24,9 @@
 {{-- Fil d'étapes ①②③ (S12) --}}
 @include('stock::shared._stepper', ['etapeCourante' => 1])
 
+{{-- Récapitulatif des erreurs de saisie (UX §0.6) --}}
+@include('stock::shared._erreurs_formulaire')
+
 <form id="entree-form" novalidate
       data-entree-id="{{ $entree?->id ?? '' }}"
       data-seuil-alerte-cout="{{ config('stock.seuil_alerte_cout', 0.20) }}">

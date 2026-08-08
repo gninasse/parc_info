@@ -3,11 +3,12 @@
 namespace Modules\Stock\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Modules\Stock\Http\Requests\Concerns\MessagesValidationFr;
 use Modules\Stock\Http\Requests\Concerns\ValideLignesEntree;
 
 class StoreEntreeRequest extends FormRequest
 {
-    use ValideLignesEntree;
+    use MessagesValidationFr, ValideLignesEntree;
 
     public function authorize(): bool
     {

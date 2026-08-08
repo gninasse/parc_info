@@ -22,6 +22,9 @@
 
 @include('stock::shared._stepper', ['etapeCourante' => 1, 'etapes' => ['Quantités', 'Pointage des unités', 'Validation']])
 
+{{-- Récapitulatif des erreurs de saisie (UX §0.6) --}}
+@include('stock::shared._erreurs_formulaire')
+
 <form id="transfert-form" novalidate data-transfert-id="{{ $transfert?->id ?? '' }}">
 
 {{-- En-tête (UX §5.2) : Source → ⇄ → Cible --}}

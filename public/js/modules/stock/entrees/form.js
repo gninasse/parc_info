@@ -12,6 +12,7 @@ import '../shared/formatters.js';
 import { SelecteurArticle } from '../shared/selecteur-article.js';
 import { SelecteurUnites } from '../shared/selecteur-unites.js';
 import { validerEntree } from './validation.js';
+import { ErreursFormulaire, toastSucces } from '../shared/erreurs-formulaire.js';
 
 $(function () {
     const $form = $('#entree-form');
@@ -191,20 +192,24 @@ $(function () {
             : { article_id: ligne.article.id, quantite: ligne.quantite, cout_unitaire: ligne.cout_unitaire })),
     });
 
-    const afficherErreurs = (xhr) => {
-        if (xhr.status === 422 && xhr.responseJSON?.errors) {
-            const erreurs = xhr.responseJSON.errors;
-            const premiere = Object.keys(erreurs).find((c) => c.startsWith('lignes.'));
-            if (premiere) {
-                const index = Number(premiere.split('.')[1]);
-                $('#table-lignes tbody tr').eq(index).addClass('table-danger');
-                setTimeout(() => $('#table-lignes tbody tr').removeClass('table-danger'), 4000);
-            }
-            Swal.fire({ icon: 'error', title: 'Formulaire incomplet', html: Object.values(erreurs).flat().map((m) => echapper(m)).join('<br>') });
-            return;
-        }
-        Swal.fire({ icon: 'error', title: 'Erreur', text: xhr.responseJSON?.message ?? 'Une erreur est survenue.' });
-    };
+    // Affichage unifié des erreurs (bandeau + champs + lignes surlignées)
+    const erreurs = new ErreursFormulaire('#entree-form', {
+        lignes: {
+            conteneur: '#table-lignes tbody',
+            libelle: (index) => {
+                const ligne = lignes[index];
+                return ligne?.article
+                    ? `Ligne ${index + 1} (${ligne.article.code})`
+                    : `Ligne ${index + 1}`;
+            },
+        },
+        champs: {
+            observation: { selecteur: '#e-observation', libelle: 'Observation' },
+            observation_type: { selecteur: '#pilules-observation', libelle: 'Type d\'observation' },
+        },
+    });
+
+    const afficherErreurs = (xhr) => erreurs.afficher(xhr);
 
     const enregistrer = (surSucces) => {
         const $btn = $('#btn-enregistrer');
@@ -219,8 +224,9 @@ $(function () {
             success: (res) => {
                 if (!res.success) return;
                 if (surSucces) { surSucces(res); return; }
+                erreurs.effacer();
                 if (!entreeId) { window.location.href = route('stock.entrees.edit', res.data.id); return; }
-                Swal.fire({ icon: 'success', title: 'Enregistré', timer: 2000, showConfirmButton: false });
+                toastSucces('Brouillon enregistré');
             },
             error: (xhr) => afficherErreurs(xhr),
             complete: () => $btn.prop('disabled', false).html('<i class="fas fa-save me-1"></i>Enregistrer le brouillon'),

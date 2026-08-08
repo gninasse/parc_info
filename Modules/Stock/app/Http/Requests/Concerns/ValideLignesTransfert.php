@@ -51,7 +51,7 @@ trait ValideLignesTransfert
         ];
     }
 
-    public function messages(): array
+    protected function messagesSpecifiques(): array
     {
         return [
             'magasin_cible_id.different' => 'Le magasin cible est identique à la source.',

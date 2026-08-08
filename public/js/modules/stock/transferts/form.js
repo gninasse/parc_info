@@ -10,6 +10,7 @@
 import '../shared/formatters.js';
 import { SelecteurArticle } from '../shared/selecteur-article.js';
 import { validerDocument } from '../shared/valider-document.js';
+import { ErreursFormulaire, toastSucces } from '../shared/erreurs-formulaire.js';
 
 $(function () {
     const transfertId = $('#transfert-form').data('transfert-id') || null;
@@ -113,24 +114,21 @@ $(function () {
         lignes: lignes.map((ligne) => ({ article_id: ligne.article.id, quantite: ligne.quantite })),
     });
 
-    const afficherErreurs = (xhr) => {
-        if (xhr.status === 422 && xhr.responseJSON?.errors) {
-            const erreurs = xhr.responseJSON.errors;
-            const premiere = Object.keys(erreurs).find((c) => c.startsWith('lignes.'));
-            if (premiere) {
-                const index = Number(premiere.split('.')[1]);
-                $('#table-lignes tbody tr').eq(index).addClass('table-danger');
-                setTimeout(() => $('#table-lignes tbody tr').removeClass('table-danger'), 4000);
-            }
-            Swal.fire({
-                icon: 'error',
-                title: 'Formulaire incomplet',
-                html: Object.values(erreurs).flat().map((m) => echapper(m)).join('<br>'),
-            });
-            return;
-        }
-        Swal.fire({ icon: 'error', title: 'Erreur', text: xhr.responseJSON?.message ?? 'Une erreur est survenue.' });
-    };
+    const erreurs = new ErreursFormulaire('#transfert-form', {
+        lignes: {
+            conteneur: '#table-lignes tbody',
+            libelle: (index) => {
+                const ligne = lignes[index];
+                return ligne?.article ? `Ligne ${index + 1} (${ligne.article.code})` : `Ligne ${index + 1}`;
+            },
+        },
+        champs: {
+            magasin_source_id: { selecteur: '#t-source', libelle: 'Magasin source' },
+            magasin_cible_id: { selecteur: '#t-cible', libelle: 'Magasin cible' },
+        },
+    });
+
+    const afficherErreurs = (xhr) => erreurs.afficher(xhr);
 
     const enregistrer = (surSucces) => {
         const $btn = $('#btn-enregistrer');
@@ -145,8 +143,9 @@ $(function () {
             success: (res) => {
                 if (!res.success) return;
                 if (surSucces) { surSucces(res); return; }
+                erreurs.effacer();
                 if (!transfertId) { window.location.href = route('stock.transferts.edit', res.data.id); return; }
-                Swal.fire({ icon: 'success', title: 'Enregistré', timer: 2000, showConfirmButton: false });
+                toastSucces('Brouillon enregistré');
             },
             error: afficherErreurs,
             complete: () => $btn.prop('disabled', false).html('<i class="fas fa-save me-1"></i>Enregistrer le brouillon'),

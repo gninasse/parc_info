@@ -103,7 +103,7 @@ trait ValideLignesEntree
         ];
     }
 
-    public function messages(): array
+    protected function messagesSpecifiques(): array
     {
         return [
             'lignes.*.quantite.gt' => 'La quantité doit être strictement positive.',
