@@ -19,9 +19,12 @@ return new class extends Migration
             $table->id();
             $table->morphs('documentable'); // documentable_type + documentable_id
             $table->string('nom_original');
-            $table->string('chemin');
-            $table->string('mime');
-            $table->unsignedBigInteger('taille');
+            // Nullable : une PIERRE TOMBALE (BR-01) conserve la ligne mais
+            // n'a plus de fichier. Amendé pour les bases existantes par la
+            // migration 2026_08_09_000001.
+            $table->string('chemin')->nullable();
+            $table->string('mime')->nullable();
+            $table->unsignedBigInteger('taille')->nullable();
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
         });

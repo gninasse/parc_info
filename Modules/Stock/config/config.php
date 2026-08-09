@@ -50,4 +50,22 @@ return [
         'taille_max_ko' => 5120, // 5 Mo par fichier
         'extensions' => ['pdf', 'png', 'jpg', 'jpeg', 'webp', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'txt'],
     ],
+
+    /*
+     * BR-01 — le bordereau du fournisseur est-il EXIGÉ pour valider une
+     * entrée liée à un bon de commande ?
+     *
+     * `false` en v1 : le quai passe avant la paperasse, et un magasinier
+     * bloqué devant un camion contourne le logiciel. L'établissement qui
+     * veut durcir la règle passe ce paramètre à `true` — la validation
+     * refuse alors une entrée liée sans pièce `bl_fournisseur`.
+     */
+    'bl_obligatoire_si_commande' => env('STOCK_BL_OBLIGATOIRE', false),
+
+    /*
+     * BR-02 — le bordereau de réception est un document de QUAI : il se
+     * signe devant le livreur, qui n'a pas à lire les prix négociés par
+     * l'établissement. Les coûts en sont donc absents par défaut.
+     */
+    'afficher_couts_bordereau' => env('STOCK_COUTS_BORDEREAU', false),
 ];

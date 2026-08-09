@@ -23,11 +23,30 @@ class Document extends Model
 
     public const DOSSIER = 'stock/documents';
 
+    /** BR-01 — nature de la pièce (le BL du livreur n'est pas une photo). */
+    public const TYPE_BL_FOURNISSEUR = 'bl_fournisseur';
+
+    public const TYPE_PHOTO_LIVRAISON = 'photo_livraison';
+
+    public const TYPE_AUTRE = 'autre';
+
+    public const TYPES = [
+        self::TYPE_BL_FOURNISSEUR => 'Bordereau du fournisseur',
+        self::TYPE_PHOTO_LIVRAISON => 'Photo de la livraison',
+        self::TYPE_AUTRE => 'Autre pièce',
+    ];
+
     protected $table = 'stock_documents';
+
+    protected $attributes = [
+        'type' => self::TYPE_AUTRE,
+        'est_supprime' => false,
+    ];
 
     protected $fillable = [
         'documentable_type',
         'documentable_id',
+        'type',
         'nom_original',
         'chemin',
         'mime',
@@ -37,13 +56,20 @@ class Document extends Model
 
     protected $casts = [
         'taille' => 'integer',
+        'est_supprime' => 'boolean',
+        'supprime_le' => 'datetime',
     ];
 
     protected static function booted(): void
     {
-        // Le fichier suit la ligne : suppression de l'un = suppression de l'autre
+        /*
+         * Le fichier suit la ligne — SAUF pour une pierre tombale, dont le
+         * fichier a déjà été effacé à la pose (le chemin est nul).
+         */
         static::deleted(function (Document $document) {
-            Storage::disk(self::DISQUE)->delete($document->chemin);
+            if ($document->chemin !== null) {
+                Storage::disk(self::DISQUE)->delete($document->chemin);
+            }
         });
     }
 
@@ -59,7 +85,7 @@ class Document extends Model
 
     public function estImage(): bool
     {
-        return str_starts_with($this->mime, 'image/');
+        return str_starts_with((string) $this->mime, 'image/');
     }
 
     public function estPdf(): bool
@@ -73,10 +99,52 @@ class Document extends Model
         return match (true) {
             $this->estPdf() => 'bi-file-earmark-pdf',
             $this->estImage() => 'bi-file-earmark-image',
-            str_contains($this->mime, 'sheet') || str_contains($this->mime, 'excel') => 'bi-file-earmark-spreadsheet',
-            str_contains($this->mime, 'word') => 'bi-file-earmark-word',
+            str_contains((string) $this->mime, 'sheet') || str_contains((string) $this->mime, 'excel') => 'bi-file-earmark-spreadsheet',
+            str_contains((string) $this->mime, 'word') => 'bi-file-earmark-word',
             default => 'bi-file-earmark',
         };
+    }
+
+    /** Libellé de la nature de pièce (BR-01). */
+    public function getTypeLabelAttribute(): string
+    {
+        return self::TYPES[$this->type] ?? self::TYPES[self::TYPE_AUTRE];
+    }
+
+    public function estBlFournisseur(): bool
+    {
+        return $this->type === self::TYPE_BL_FOURNISSEUR;
+    }
+
+    /** Pièces vivantes : les pierres tombales n'ont plus de fichier. */
+    public function scopeVivants($query)
+    {
+        return $query->where('est_supprime', false);
+    }
+
+    public function scopeDeType($query, string $type)
+    {
+        return $query->where('type', $type);
+    }
+
+    /** Ligne grisée de la liste des pièces (même doctrine qu'Achat A16). */
+    public function getLibellePierreTombaleAttribute(): ?string
+    {
+        if (! $this->est_supprime) {
+            return null;
+        }
+
+        return sprintf(
+            'Pièce supprimée par %s le %s — motif : « %s »',
+            $this->suppresseur?->name ?? 'un utilisateur supprimé',
+            $this->supprime_le?->format('d/m/Y à H:i') ?? '—',
+            $this->motif_suppression
+        );
+    }
+
+    public function suppresseur(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'supprime_par');
     }
 
     /** Taille lisible : « 1,2 Mo ». */

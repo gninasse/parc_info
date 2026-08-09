@@ -142,6 +142,9 @@ class ValiderEntreeService
             }
         }
 
+        // BR-01 — le bordereau du fournisseur, si l'établissement l'exige.
+        $this->verifierBordereauFournisseur($entree);
+
         // I14 — tampon complet ligne par ligne
         $modeles = $lignes->filter(fn (LigneEntree $l) => $l->article_id !== null && $l->article->nature === Article::NATURE_EQUIPEMENT);
         $manquantes = 0;
@@ -295,6 +298,39 @@ class ValiderEntreeService
     }
 
     // ── Raccordement PRQ-05 : la notification transactionnelle ─────────────
+
+    /**
+     * BR-01 — garde PARAMÉTRABLE du bordereau fournisseur.
+     *
+     * Désactivée en v1 (`stock.bl_obligatoire_si_commande`) : le quai passe
+     * avant la paperasse, et un magasinier bloqué devant un camion contourne
+     * le logiciel. L'établissement qui veut durcir la règle l'active — la
+     * validation refuse alors une entrée LIÉE À UN BC sans pièce jointe de
+     * type `bl_fournisseur`.
+     */
+    private function verifierBordereauFournisseur(Entree $entree): void
+    {
+        if (! config('stock.bl_obligatoire_si_commande', false)) {
+            return;
+        }
+
+        // La garde ne vaut que pour les livraisons ADOSSÉES à une commande :
+        // un retour ou une entrée libre n'a pas de bordereau fournisseur.
+        if ($entree->bon_commande_id === null) {
+            return;
+        }
+
+        $aUnBl = $entree->documents()
+            ->where('est_supprime', false)
+            ->where('type', \Modules\Stock\Models\Document::TYPE_BL_FOURNISSEUR)
+            ->exists();
+
+        if (! $aUnBl) {
+            throw new ValidationEntreeException(
+                'Joignez le bordereau du fournisseur (paramètre de l\'établissement).'
+            );
+        }
+    }
 
     /**
      * Intègre la réception au bon de commande lié — DANS la transaction de

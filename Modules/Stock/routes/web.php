@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Stock\Http\Controllers\BordereauReceptionController;
 use Modules\Stock\Http\Controllers\DashboardController;
 use Modules\Stock\Http\Controllers\DocumentController;
 use Modules\Stock\Http\Controllers\EntreeController;
@@ -45,6 +46,8 @@ Route::middleware(['auth'])->prefix('stock')->name('stock.')->group(function () 
         Route::post('/{id}/retour-brouillon', [EntreeController::class, 'retourBrouillon'])->name('retour-brouillon');
         Route::post('/{id}/valider', [EntreeController::class, 'valider'])->name('valider');
         Route::get('/{id}/pdf', [EntreeController::class, 'pdf'])->name('pdf');
+        // BR-02 — bordereau de réception : la preuve signable de la livraison.
+        Route::get('/{id}/bordereau-reception', BordereauReceptionController::class)->name('bordereau-reception');
     });
 
     // Magasins (référentiel — UX §9) : routes littérales avant /{id}

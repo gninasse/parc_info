@@ -122,18 +122,25 @@ class DocumentsTest extends TestCase
         ], ['Accept' => 'application/json'])->assertOk();
 
         $piece = $this->entree->documents()->first();
+        $chemin = $piece->chemin;
         $this->entree->forceFill(['statut' => Entree::STATUT_VALIDE])->save();
 
-        // Plus d'ajout ni de suppression…
+        // Plus aucun ajout après validation : le dossier est figé.
         $this->actingAs($this->user)
             ->post($this->url(), ['fichiers' => [UploadedFile::fake()->create('apres.pdf', 10, 'application/pdf')]], ['Accept' => 'application/json'])
             ->assertStatus(409);
 
+        // La suppression n'est plus un refus sec : depuis la reprise des
+        // bordereaux, elle exige un motif et laisse une pierre tombale.
         $this->actingAs($this->user)
             ->deleteJson($this->url("/{$piece->id}"))
-            ->assertStatus(409);
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('motif');
 
-        // … mais la consultation et le téléchargement restent ouverts
+        $this->assertTrue($piece->fresh()->exists, 'La pièce ne doit pas disparaître sans motif.');
+        Storage::disk(Document::DISQUE)->assertExists($chemin);
+
+        // … et la consultation reste ouverte tant que rien n'a été supprimé.
         $this->actingAs($this->user)->getJson($this->url())->assertOk();
         $this->actingAs($this->user)->get($this->url("/{$piece->id}"))->assertOk();
     }
