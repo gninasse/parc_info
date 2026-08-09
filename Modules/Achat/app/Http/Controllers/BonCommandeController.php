@@ -713,6 +713,10 @@ class BonCommandeController extends Controller implements HasMiddleware
             'diagnosticsImmateriels' => $lignesImmaterielles
                 ->mapWithKeys(fn ($ligne) => [$ligne->id => $this->diagnosticReception($bon, $ligne)])
                 ->all(),
+            // D-15 : les équipements dont ce bon documente l'origine (M-09).
+            'rattachements' => $bon->est_regularisation
+                ? $bon->rattachements()->with(['equipement:id,code_inventaire,numero_serie,modele', 'createur:id,name'])->orderBy('id')->get()
+                : collect(),
         ]);
     }
 

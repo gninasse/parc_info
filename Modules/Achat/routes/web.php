@@ -7,6 +7,7 @@ use Modules\Achat\Http\Controllers\BonCommandePdfController;
 use Modules\Achat\Http\Controllers\DashboardController;
 use Modules\Achat\Http\Controllers\DocumentController;
 use Modules\Achat\Http\Controllers\ReceptionLicencesController;
+use Modules\Achat\Http\Controllers\RegularisationController;
 use Modules\Achat\Http\Controllers\ReliquatController;
 
 /*
@@ -101,6 +102,18 @@ Route::middleware(['auth'])->prefix('achat')->name('achat.')->group(function () 
         Route::get('/', [ReliquatController::class, 'index'])->name('index');
         Route::get('/data', [ReliquatController::class, 'getData'])->name('data');
         Route::get('/export', [ReliquatController::class, 'export'])->name('export');
+    });
+
+    /*
+    | D-15 — régularisation de l'intérim (A15, M-09). `regulariser` documente
+    | la dette ; `administration.manage` rouvre la porte après extinction.
+    */
+    Route::prefix('regularisation')->name('regularisation.')->group(function () {
+        Route::get('/etat', [RegularisationController::class, 'etat'])->name('etat');
+        Route::get('/equipements-candidats', [RegularisationController::class, 'candidats'])->name('candidats');
+        Route::post('/reactiver', [RegularisationController::class, 'reactiver'])->name('reactiver');
+        Route::post('/{id}/rattacher', [RegularisationController::class, 'rattacher'])->name('rattacher');
+        Route::delete('/{id}/equipements/{equipement}', [RegularisationController::class, 'detacher'])->name('detacher');
     });
 
     /*

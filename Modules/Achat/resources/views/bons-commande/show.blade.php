@@ -224,6 +224,14 @@
                     Documents <span class="badge bg-secondary-subtle text-secondary-emphasis" id="compteur-documents">{{ $bon->documents->count() }}</span>
                 </button>
             </li>
+            @if($bon->est_regularisation)
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#onglet-rattachements"
+                        type="button" role="tab" aria-controls="onglet-rattachements" aria-selected="false">
+                    Équipements rattachés <span class="badge bg-secondary-subtle text-secondary-emphasis">{{ $rattachements->count() }}</span>
+                </button>
+            </li>
+            @endif
             <li class="nav-item" role="presentation">
                 <button class="nav-link" data-bs-toggle="tab" data-bs-target="#onglet-chronologie"
                         type="button" role="tab" aria-controls="onglet-chronologie" aria-selected="false">
@@ -535,6 +543,70 @@
                 </p>
             </div>
 
+            {{-- ── Onglet Équipements rattachés (D-15, M-09) ──────────── --}}
+            @if($bon->est_regularisation)
+            <div class="tab-pane fade" id="onglet-rattachements" role="tabpanel"
+                 data-url-detacher="{{ route('achat.regularisation.detacher', [$bon->id, 0]) }}">
+                @can('achat.bons_commande.regulariser')
+                    @if($bon->estEngage())
+                        <div class="mb-3 d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary"
+                                    data-bs-toggle="modal" data-bs-target="#modal-rattachement">
+                                <i class="bi bi-link-45deg me-1"></i>Rattacher des équipements…
+                            </button>
+                            <span class="small text-muted">
+                                Documenter l'origine du matériel entré pendant l'intérim.
+                            </span>
+                        </div>
+                    @else
+                        <div class="alert alert-secondary py-2 small">
+                            Le bon doit être validé avant de recevoir des rattachements.
+                        </div>
+                    @endif
+                @endcan
+
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle" id="table-rattachements">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Code inventaire</th>
+                                <th>Modèle</th>
+                                <th>N° de série</th>
+                                <th>Rattaché par</th>
+                                <th>Le</th>
+                                <th class="text-end"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($rattachements as $rattachement)
+                                <tr data-equipement-id="{{ $rattachement->equipement_id }}">
+                                    <td class="font-monospace">{{ $rattachement->equipement?->code_inventaire ?? '—' }}</td>
+                                    <td>{{ $rattachement->equipement?->modele ?? '—' }}</td>
+                                    <td class="font-monospace small">{{ $rattachement->equipement?->numero_serie ?? '—' }}</td>
+                                    <td>{{ $rattachement->createur?->name ?? '—' }}</td>
+                                    <td>{{ $rattachement->created_at?->format('d/m/Y H:i') }}</td>
+                                    <td class="text-end">
+                                        @can('achat.bons_commande.regulariser')
+                                            <button type="button" class="btn btn-sm btn-outline-danger btn-detacher"
+                                                    title="Détacher (erreur de saisie)">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        @endcan
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">
+                                        Aucun équipement rattaché à ce bon de régularisation.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @endif
+
             {{-- ── Onglet Chronologie (IA-14 : le journal, rien que lui) ── --}}
             <div class="tab-pane fade" id="onglet-chronologie" role="tabpanel">
                 @forelse($chronologie as $element)
@@ -568,6 +640,10 @@
 </div>
 
 @include('achat::shared._modal_pdf')
+
+@if($bon->est_regularisation)
+    @include('achat::bons-commande._modal_rattachement')
+@endif
 
 {{-- M-05 — dépôt d'une pièce (type + fichier, taille max paramétrée A-08) --}}
 @can('achat.documents.store')

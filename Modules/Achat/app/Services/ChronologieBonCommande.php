@@ -181,6 +181,24 @@ class ChronologieBonCommande
                     : null,
             ],
 
+            // ── La régularisation de l'intérim (D-15, M-09) ────────────────
+            RegularisationService::EVENEMENT_RATTACHEMENT => [
+                'icone' => 'bi-link-45deg',
+                'couleur' => 'warning',
+                'phrase' => sprintf(
+                    '%s équipement(s) rattaché(s) — origine documentée',
+                    $props->get('nombre') ?? 0
+                ),
+                'details' => collect($props->get('equipements') ?? [])->implode(' · ') ?: null,
+            ],
+
+            RegularisationService::EVENEMENT_DETACHEMENT => [
+                'icone' => 'bi-x-lg',
+                'couleur' => 'secondary',
+                'phrase' => sprintf('Équipement détaché — %s', $props->get('equipement') ?? 'inconnu'),
+                'details' => null,
+            ],
+
             // Les traces techniques (`updated`, `deleted`…) décrivent la
             // persistance des gestes ci-dessus : elles restent au journal.
             default => null,

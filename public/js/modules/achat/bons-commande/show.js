@@ -299,6 +299,148 @@ $(function () {
         });
     });
 
+    // ── M-09 — rattachement d'équipements (D-15, régularisation) ───────────
+
+    const $rattachement = $('#corps-rattachement');
+
+    if ($rattachement.length > 0) {
+        const selectionnes = new Set();
+        let candidats = [];
+
+        const echapperTexte = (t) => $('<span>').text(t ?? '—').html();
+
+        const majCompteur = () => {
+            $('#rat-nombre').text(selectionnes.size);
+            $('#rat-compteur').text(`${selectionnes.size} sélectionné(s)`);
+            $('#rat-confirmer').prop('disabled', selectionnes.size === 0);
+        };
+
+        const rendre = () => {
+            const $liste = $('#rat-liste').empty();
+            $('#rat-vide').toggleClass('d-none', candidats.length > 0);
+
+            candidats.forEach((equipement) => {
+                $liste.append(`
+                    <tr data-id="${equipement.id}">
+                        <td><input type="checkbox" class="form-check-input rat-case"
+                                   ${selectionnes.has(equipement.id) ? 'checked' : ''}
+                                   aria-label="Choisir ${echapperTexte(equipement.code_inventaire)}"></td>
+                        <td class="font-monospace">${echapperTexte(equipement.code_inventaire)}</td>
+                        <td>${echapperTexte(equipement.modele)}</td>
+                        <td class="font-monospace small">${echapperTexte(equipement.numero_serie)}</td>
+                        <td>${echapperTexte(equipement.date_acquisition)}</td>
+                        <td>${echapperTexte(equipement.statut)}</td>
+                    </tr>`);
+            });
+
+            majCompteur();
+        };
+
+        const charger = () => {
+            $.getJSON($rattachement.data('url-candidats'), { q: $('#rat-recherche').val() })
+                .done((reponse) => {
+                    candidats = reponse.data ?? [];
+                    // La DETTE est le chiffre qui compte : elle doit se voir
+                    // décroître à mesure qu'on documente (UX-17).
+                    $('#badge-dette').text(`Dette : ${reponse.dette_restante} équipement(s) sans origine`);
+                    rendre();
+                });
+        };
+
+        $('#modal-rattachement').on('shown.bs.modal', () => {
+            selectionnes.clear();
+            $('#rat-recherche').val('').trigger('focus');
+            charger();
+        });
+
+        let minuterieRat = null;
+        $('#rat-recherche').on('input', () => {
+            clearTimeout(minuterieRat);
+            minuterieRat = setTimeout(charger, 300);
+        });
+
+        // Clic n'importe où sur la ligne = cocher (le pointeur l'annonce).
+        $('#rat-liste').on('click', 'tr', function (e) {
+            const id = Number($(this).data('id'));
+            const $case = $(this).find('.rat-case');
+
+            if (e.target !== $case[0]) $case.prop('checked', !$case.prop('checked'));
+
+            if ($case.prop('checked')) selectionnes.add(id);
+            else selectionnes.delete(id);
+
+            majCompteur();
+        });
+
+        $('#rat-tout').on('change', function () {
+            const tout = this.checked;
+            candidats.forEach((equipement) => (tout ? selectionnes.add(equipement.id) : selectionnes.delete(equipement.id)));
+            $('#rat-liste .rat-case').prop('checked', tout);
+            majCompteur();
+        });
+
+        $('#rat-confirmer').on('click', function () {
+            $(this).prop('disabled', true);
+
+            $.ajax({
+                url: $rattachement.data('url-rattacher'),
+                method: 'POST',
+                data: JSON.stringify({ equipements: [...selectionnes] }),
+                contentType: 'application/json',
+                dataType: 'json',
+            })
+                .done((reponse) => {
+                    // L'extinction de la porte est un événement : on ne la
+                    // glisse pas dans un toast fugace.
+                    if (reponse.data?.eteinte) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Dette de l\'intérim soldée',
+                            text: reponse.message,
+                            confirmButtonText: 'Compris',
+                        }).then(() => window.location.reload());
+                        return;
+                    }
+
+                    window.location.reload();
+                })
+                .fail((xhr) => {
+                    $(this).prop('disabled', false);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Rattachement impossible',
+                        text: xhr.responseJSON?.message ?? '',
+                    });
+                });
+        });
+
+        // Détachement (erreur de saisie) : la dette remonte, c'est tracé.
+        $('#table-rattachements').on('click', '.btn-detacher', function () {
+            const $tr = $(this).closest('tr');
+            const id = $tr.data('equipement-id');
+            const url = String($('#onglet-rattachements').data('url-detacher')).replace(/\/0$/, `/${id}`);
+
+            Swal.fire({
+                title: 'Détacher cet équipement ?',
+                text: 'Il redeviendra « sans commande d\'origine » et retournera dans la liste à documenter.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Détacher',
+                cancelButtonText: 'Annuler',
+            }).then((r) => {
+                if (!r.isConfirmed) return;
+
+                $.ajax({ url, method: 'DELETE', dataType: 'json' })
+                    .done(() => window.location.reload())
+                    .fail((xhr) => Swal.fire({
+                        icon: 'error',
+                        title: 'Détachement impossible',
+                        text: xhr.responseJSON?.message ?? '',
+                    }));
+            });
+        });
+    }
+
     // Infobulles des badges et boutons grisés (diagnostics §0.3).
     $('[data-bs-toggle="tooltip"]').each((_, element) => new bootstrap.Tooltip(element));
 });
