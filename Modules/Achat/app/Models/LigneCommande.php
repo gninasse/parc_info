@@ -30,6 +30,7 @@ class LigneCommande extends Model
         'nature',
         'prix_unitaire_ht',
         'taux_tva',
+        'compte_comptable',
         'quantite',
     ];
 

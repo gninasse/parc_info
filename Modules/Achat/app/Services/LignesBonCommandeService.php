@@ -69,6 +69,10 @@ class LignesBonCommandeService
             // Le taux du Catalogue, ou 18 % à défaut : une ligne sans taux
             // rendrait le calcul de TVA impossible (contrat API §2.1).
             'taux_tva' => $donnees['taux_tva'] ?? $article->taux_tva ?? 18.00,
+            // D-24 : l'imputation comptable est figée elle aussi. Réaffecter
+            // un article à un autre compte au Catalogue ne doit pas réécrire
+            // l'imputation d'exercices déjà clos.
+            'compte_comptable' => $article->compte_comptable,
             // ── Valeurs négociées, saisies par l'acheteur ─────────────────
             'quantite' => $donnees['quantite'],
             'prix_unitaire_ht' => $donnees['prix_unitaire_ht'] ?? $article->prix_indicatif ?? 0,

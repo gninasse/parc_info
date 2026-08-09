@@ -40,20 +40,32 @@ $(function () {
         Object.entries(filtres()).filter(([, valeur]) => valeur !== '' && valeur !== undefined)
     ).toString();
 
+    /*
+     * Les drapeaux techniques (`non_impute`…) pilotent l'affichage mais ne
+     * sont pas des colonnes : les montrer imposerait à l'utilisateur de lire
+     * « true / false » dans un état comptable.
+     */
+    const DRAPEAUX = ['non_impute'];
+
     const rendreTableau = (lignes) => {
         if (!lignes || lignes.length === 0) {
             return '<p class="text-center text-muted py-4 mb-0">Aucune donnée pour ce périmètre.</p>';
         }
 
-        const colonnes = Object.keys(lignes[0]);
+        const colonnes = Object.keys(lignes[0]).filter((c) => !DRAPEAUX.includes(c));
 
         return `<table class="table table-sm table-hover align-middle">
             <thead class="table-light"><tr>${colonnes.map((c) => `<th>${echapper(libelleColonne(c))}</th>`).join('')}</tr></thead>
-            <tbody>${lignes.map((ligne) => `<tr>${colonnes.map((c) => cellule(ligne[c])).join('')}</tr>`).join('')}</tbody>
+            <tbody>${lignes.map((ligne) => {
+                // D-24 : « Non imputé » se distingue en orange — c'est une
+                // dépense à classer, pas un compte de plus.
+                const classe = ligne.non_impute ? ' class="table-warning"' : '';
+                return `<tr${classe}>${colonnes.map((c) => cellule(ligne[c])).join('')}</tr>`;
+            }).join('')}</tbody>
         </table>`;
     };
 
-    /** La carte Signaux affiche 8 blocs, chacun avec son aide. */
+    /** La carte Signaux affiche ses blocs, chacun avec son aide. */
     const rendreSignaux = (signaux) => Object.values(signaux).map((signal) => `
         <section class="mb-4">
             <h6 class="fw-bold mb-1">${echapper(signal.titre)}</h6>

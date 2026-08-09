@@ -98,8 +98,25 @@
         </div>
     @endcan
 
-    {{-- UX-18 : l'attente reste VISIBLE plutôt que d'être passée sous silence --}}
-    @unless($imputationDisponible)
+    {{--
+        UX-18 : l'attente reste VISIBLE tant que le prérequis manque, et
+        cède la place à la carte réelle le jour où il arrive. La bascule est
+        portée par le SCHÉMA, pas par une constante : personne n'aura à
+        penser à retirer la mention.
+    --}}
+    @if($imputationDisponible)
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 carte-rapport" data-carte="imputation">
+                <div class="card-body">
+                    <h6 class="fw-bold mb-1"><i class="bi bi-calculator me-2 text-primary"></i>Imputation comptable</h6>
+                    <p class="small text-muted mb-0">
+                        Dépenses engagées par compte, sur l'imputation figée à la commande.
+                        Les lignes sans compte figurent sous « Non imputé ».
+                    </p>
+                </div>
+            </div>
+        </div>
+    @else
         <div class="col-md-6 col-lg-4">
             <div class="card h-100 carte-indisponible">
                 <div class="card-body">
@@ -111,7 +128,7 @@
                 </div>
             </div>
         </div>
-    @endunless
+    @endif
 </div>
 
 {{-- ── Aperçu de la carte choisie ──────────────────────────────────────── --}}

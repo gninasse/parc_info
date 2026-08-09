@@ -4,6 +4,7 @@ namespace Modules\Achat\Services;
 
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Modules\Achat\Models\BonCommande;
 
 /**
@@ -110,6 +111,56 @@ class StatistiquesAchatService
                 'montant_ht' => round((float) $ligne->ht, 2),
                 'montant_ttc' => round((float) $ligne->ttc, 2),
             ])
+            ->all();
+    }
+
+    /**
+     * D-24 — dépenses par IMPUTATION COMPTABLE.
+     *
+     * Calculée sur le compte FIGÉ à la ligne (et non sur celui de l'article
+     * aujourd'hui) : c'est la différence entre « ce qui a été imputé » et
+     * « ce qu'on imputerait maintenant ». Réaffecter un article à un autre
+     * compte au Catalogue ne doit pas réécrire un exercice clos.
+     *
+     * Les lignes sans imputation ne sont **jamais masquées** : elles
+     * apparaissent sous « Non imputé ». Un état qui tairait ce qu'il ne sait
+     * pas classer laisserait croire que le total est complet, et personne
+     * n'irait chercher les 30 % manquants.
+     *
+     * @return list<array{compte: string, nombre_lignes: int, montant_ht: float, montant_ttc: float, non_impute: bool}>
+     */
+    public function depensesParImputation(bool $avecRegularisations = false, ?string $du = null, ?string $au = null): array
+    {
+        if (! Schema::hasColumn('achat_lignes_commande', 'compte_comptable')) {
+            return [];
+        }
+
+        $bons = $this->requeteEngages($avecRegularisations, $du, $au)->select('achat_bons_commande.id');
+
+        return DB::table('achat_lignes_commande')
+            ->whereIn('bon_commande_id', $bons)
+            ->groupBy('compte_comptable')
+            ->selectRaw('compte_comptable')
+            ->selectRaw('COUNT(*) AS nombre_lignes')
+            ->selectRaw('COALESCE(SUM(quantite * prix_unitaire_ht), 0) AS ht')
+            // La TVA est portée par la ligne : le TTC se recompose ici plutôt
+            // que d'être lu sur le bon, dont les lignes peuvent relever de
+            // comptes différents. Division par 100.0 — en entier, elle vaut 0.
+            ->selectRaw('COALESCE(SUM(quantite * prix_unitaire_ht * (1 + taux_tva / 100.0)), 0) AS ttc')
+            ->orderByDesc('ht')
+            ->get()
+            ->map(function ($ligne) {
+                $compte = $ligne->compte_comptable;
+                $nonImpute = $compte === null || trim((string) $compte) === '';
+
+                return [
+                    'compte' => $nonImpute ? 'Non imputé' : $compte,
+                    'nombre_lignes' => (int) $ligne->nombre_lignes,
+                    'montant_ht' => round((float) $ligne->ht, 2),
+                    'montant_ttc' => round((float) $ligne->ttc, 2),
+                    'non_impute' => $nonImpute,
+                ];
+            })
             ->all();
     }
 
