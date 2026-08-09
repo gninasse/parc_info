@@ -11,9 +11,11 @@ const NATURES = {
     piece: { court: 'P', libelle: 'Pièce', classes: 'text-white', style: 'background-color:#6f42c1;', icone: '' },
     equipement: { court: 'E', libelle: 'Équipement', classes: 'bg-dark', icone: '' },
     licence: { court: 'L', libelle: 'Licence', classes: 'text-dark', style: 'background-color:#e2d9f3;', icone: '<i class="fas fa-key me-1"></i>' },
+    // P0-A : service commandé, jamais stocké — badge S sarcelle.
+    prestation: { court: 'S', libelle: 'Prestation', classes: 'text-white', style: 'background-color:#20c997;', icone: '' },
 };
 
-/** Badge de nature : E gris foncé, C cyan, P violet, L violet clair + clé. */
+/** Badge de nature : E gris foncé, C cyan, P violet, L violet clair + clé, S sarcelle. */
 window.natureBadgeFormatter = function (value) {
     const nature = NATURES[value];
     if (!nature) return echapper(value);
@@ -32,9 +34,9 @@ window.fcfaFormatter = function (value) {
     return `${Number(value).toLocaleString('fr-FR', { maximumFractionDigits: 0 })} FCFA`;
 };
 
-/** Seuil : tiret pour les natures sans stock (equipement/licence). */
+/** Seuil : tiret pour les natures sans stock (equipement/licence/prestation). */
 window.seuilFormatter = function (value, row) {
-    if (row.nature === 'equipement' || row.nature === 'licence' || value === null || value === undefined) return '—';
+    if (row.nature === 'equipement' || row.nature === 'licence' || row.nature === 'prestation' || value === null || value === undefined) return '—';
     return Number(value).toLocaleString('fr-FR');
 };
 

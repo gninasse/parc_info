@@ -35,6 +35,7 @@
                             <option value="consommable">C — Consommables</option>
                             <option value="piece">P — Pièces</option>
                             <option value="licence">L — Licences</option>
+                            <option value="prestation">S — Prestations</option>
                         </select>
                     </div>
                 </div>

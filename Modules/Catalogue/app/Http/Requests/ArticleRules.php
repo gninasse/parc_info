@@ -47,7 +47,9 @@ class ArticleRules
             'notes' => ['nullable', 'string'],
         ];
 
-        // Règles conditionnelles par nature (§3.1)
+        // Règles conditionnelles par nature (§3.1). La prestation (P0-A) est
+        // immatérielle comme la licence : aucun champ de stock, pas de
+        // logiciel, pas de catégorie d'équipements.
         $estEquipement = $nature === Article::NATURE_EQUIPEMENT;
         $estLicence = $nature === Article::NATURE_LICENCE;
         $estStockable = in_array($nature, [Article::NATURE_CONSOMMABLE, Article::NATURE_PIECE], true);

@@ -30,8 +30,9 @@
         'piece' => ['Pièces détachées', 'fas fa-cogs', 'primary'],
         'equipement' => ['Modèles d\'équipements', 'fas fa-desktop', 'dark'],
         'licence' => ['Licences', 'fas fa-key', 'secondary'],
+        'prestation' => ['Prestations', 'fas fa-handshake', 'success'],
     ] as $nature => [$libelle, $icone, $couleur])
-    <div class="col-md-3">
+    <div class="col-md">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body d-flex align-items-center">
                 <div class="rounded-circle bg-{{ $couleur }} bg-opacity-10 d-flex align-items-center justify-content-center me-3" style="width:48px;height:48px;">
@@ -59,6 +60,7 @@
                     <option value="piece">Pièce détachée</option>
                     <option value="equipement">Équipement</option>
                     <option value="licence">Licence</option>
+                    <option value="prestation">Prestation</option>
                 </select>
             </div>
             <div class="col-md-3">

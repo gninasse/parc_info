@@ -13,7 +13,10 @@ return new class extends Migration
             $table->id();
             $table->string('code')->unique();
             $table->string('nom');
-            $table->enum('nature', ['consommable', 'piece', 'equipement', 'licence']);
+            // P0-A : « prestation » ajoutée à la liste pour les installations
+            // NEUVES ; l'existant PostgreSQL est amendé par la migration
+            // 2026_08_08_000001 (recréation du CHECK).
+            $table->enum('nature', ['consommable', 'piece', 'equipement', 'licence', 'prestation']);
             $table->boolean('est_stockable');
             $table->foreignId('categorie_id')->constrained('catalogue_categories')->onDelete('restrict');
             $table->foreignId('marque_id')->nullable()->constrained('parc_info_marques')->onDelete('set null');

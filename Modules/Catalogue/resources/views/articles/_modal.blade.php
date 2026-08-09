@@ -15,15 +15,16 @@
 
                 <div class="modal-body">
 
-                    {{-- Choix de nature : 4 cartes radio, verrouillées en édition (C6) --}}
+                    {{-- Choix de nature : 5 cartes radio, verrouillées en édition (C6) --}}
                     <div class="row g-2 mb-3" id="cartes-nature">
                         @foreach([
                             'consommable' => ['Consommable', 'fas fa-box-open', 'Consommé en quantités (toner, câble…)'],
                             'piece' => ['Pièce détachée', 'fas fa-cogs', 'Pièce avec compatibilités'],
                             'equipement' => ['Équipement', 'fas fa-desktop', 'Un modèle commandable ; les numéros de série seront créés à la réception'],
                             'licence' => ['Licence', 'fas fa-key', 'Produit logiciel commandable, non stocké'],
+                            'prestation' => ['Prestation', 'fas fa-handshake', 'Service commandé (maintenance, formation…), soldé par un constat de service fait'],
                         ] as $nature => [$libelle, $icone, $aide])
-                        <div class="col-md-3">
+                        <div class="col-md">
                             <label class="carte-nature d-block p-2 h-100 mb-0" data-nature-carte="{{ $nature }}">
                                 <span class="coche-nature"><i class="fas fa-check-circle"></i></span>
                                 <span class="cadenas-nature d-none position-absolute bottom-0 end-0 m-1 text-muted"
@@ -42,6 +43,13 @@
                     <div class="alert alert-info py-2 d-none" id="info-licence" data-nature="licence">
                         <i class="fas fa-info-circle me-1"></i>
                         Article non stocké : la réception créera directement les licences dans le parc.
+                    </div>
+
+                    {{-- Encart nature prestation (P0-A) --}}
+                    <div class="alert alert-info py-2 d-none" id="info-prestation" data-nature="prestation">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Service non stocké : la commande se solde par un constat de service fait
+                        dans le module Achat — rien n'entre jamais en magasin.
                     </div>
 
                     {{-- Onglets --}}

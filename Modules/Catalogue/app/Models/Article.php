@@ -27,11 +27,15 @@ class Article extends Model
 
     public const NATURE_LICENCE = 'licence';
 
+    /** P0-A — service commandé (maintenance, formation…), jamais stocké. */
+    public const NATURE_PRESTATION = 'prestation';
+
     public const NATURES = [
         self::NATURE_CONSOMMABLE,
         self::NATURE_PIECE,
         self::NATURE_EQUIPEMENT,
         self::NATURE_LICENCE,
+        self::NATURE_PRESTATION,
     ];
 
     public const NATURE_LABELS = [
@@ -39,6 +43,7 @@ class Article extends Model
         self::NATURE_PIECE => 'Pièce détachée',
         self::NATURE_EQUIPEMENT => 'Équipement',
         self::NATURE_LICENCE => 'Licence',
+        self::NATURE_PRESTATION => 'Prestation',
     ];
 
     public const CODE_PREFIXES = [
@@ -46,6 +51,17 @@ class Article extends Model
         self::NATURE_PIECE => 'PIE',
         self::NATURE_EQUIPEMENT => 'EQP',
         self::NATURE_LICENCE => 'LIC',
+        self::NATURE_PRESTATION => 'PRE',
+    ];
+
+    /**
+     * Natures immatérielles (C10, P0-A) : est_stockable est forcé à FAUX,
+     * et Stock les refuse à l'entrée (« un article non stockable ne peut pas
+     * entrer en stock »).
+     */
+    public const NATURES_NON_STOCKABLES = [
+        self::NATURE_LICENCE,
+        self::NATURE_PRESTATION,
     ];
 
     protected $fillable = [
@@ -85,15 +101,16 @@ class Article extends Model
 
         static::saving(function (self $article) {
             if (! $article->exists) {
-                // est_stockable est dérivé de la nature : seule une licence est immatérielle.
-                $article->est_stockable = $article->nature !== self::NATURE_LICENCE;
+                // est_stockable est dérivé de la nature : licence et prestation
+                // sont immatérielles (C10, P0-A) — elles ne touchent jamais Stock.
+                $article->est_stockable = ! in_array($article->nature, self::NATURES_NON_STOCKABLES, true);
                 $article->code = $article->code ?: static::generateCode($article->nature);
                 $article->created_by = $article->created_by ?? auth()->id();
             }
 
             // §6.1 : l'unité est forcée à « unité » pour les modèles d'équipements
-            // et les licences (les quantités n'y ont pas d'unité métier).
-            if (in_array($article->nature, [self::NATURE_EQUIPEMENT, self::NATURE_LICENCE], true)) {
+            // et les natures immatérielles (les quantités n'y ont pas d'unité métier).
+            if (in_array($article->nature, [self::NATURE_EQUIPEMENT, self::NATURE_LICENCE, self::NATURE_PRESTATION], true)) {
                 $article->unite_stock = 'unité';
             }
 
@@ -134,11 +151,11 @@ class Article extends Model
             throw new InvalidArgumentException('Seul un article de nature « licence » peut référencer un logiciel.');
         }
 
-        if ($this->nature === self::NATURE_LICENCE && $this->seuil_defaut !== null) {
-            throw new InvalidArgumentException('Le seuil par défaut est réservé aux natures stockables (une licence ne se stocke pas).');
+        if (in_array($this->nature, self::NATURES_NON_STOCKABLES, true) && $this->seuil_defaut !== null) {
+            throw new InvalidArgumentException('Le seuil par défaut est réservé aux natures stockables (une '.self::NATURE_LABELS[$this->nature].' ne se stocke pas).');
         }
 
-        if (in_array($this->nature, [self::NATURE_EQUIPEMENT, self::NATURE_LICENCE], true) && $this->compatibilites !== null) {
+        if (in_array($this->nature, [self::NATURE_EQUIPEMENT, self::NATURE_LICENCE, self::NATURE_PRESTATION], true) && $this->compatibilites !== null) {
             throw new InvalidArgumentException('Les compatibilités sont réservées aux consommables et aux pièces détachées.');
         }
     }
