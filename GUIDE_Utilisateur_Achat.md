@@ -194,7 +194,29 @@ Le bordereau ne porte **aucun prix** : c'est un document de quai, le livreur n'a
 
 ---
 
-## 8. Questions fréquentes
+## 8. Être averti sans être noyé
+
+Vous n'avez plus à guetter : le module vous prévient de ce qui vous concerne.
+
+| Vous recevez | Quand | Qui la reçoit |
+|---|---|---|
+| **Un bon attend mon visa** | Un bon est soumis | Les personnes habilitées à viser |
+| **Mon bon a été renvoyé** | Un validateur le renvoie en brouillon | L'auteur du bon, **avec le motif** |
+| **Une livraison a été reçue** | Le magasin valide une entrée sur votre bon | L'auteur du bon |
+| **Mes bons en attente** | Chaque lundi matin | Les auteurs de bons non livrés au-delà du délai |
+
+Deux principes valent la peine d'être connus :
+
+- **Vous ne recevez que ce qui vous concerne.** Les destinataires sont déduits de vos **permissions** : si vous ne pouvez pas viser, aucun bon à viser ne vous parviendra, même en laissant l'interrupteur ouvert. Et vous n'êtes jamais averti d'un geste que vous venez de faire vous-même.
+- **Le résumé du lundi est unique.** Dix bons en retard donnent **un** message, pas dix.
+
+**La cloche** (en haut à droite) porte une pastille rouge tant qu'il reste des messages non lus. Ouvrir un message le marque lu ; « Tout marquer comme lu » vide la pastille d'un coup.
+
+**Vous réglez ce que vous recevez** : `Achat → cloche → Régler mes notifications`, ou directement `/achat/preferences-notification`. Chaque type se règle sur deux canaux, l'application et le courriel, et chaque interrupteur s'enregistre seul. Ces réglages sont **les vôtres** : personne d'autre n'est affecté, et vous n'avez besoin de personne pour les changer. Coupez le courriel et gardez la cloche si votre messagerie déborde : l'information reste consultable au lieu d'être perdue dans un filtre.
+
+---
+
+## 9. Questions fréquentes
 
 **Pourquoi mon bouton est-il grisé ?**
 Survolez-le : une infobulle dit toujours pourquoi. Il n'y a jamais de bouton inactif sans explication.
@@ -216,7 +238,7 @@ Non. Vous pouvez l'annuler (avec motif) s'il n'a rien reçu. Un document qui a p
 
 ---
 
-## 9. À qui s'adresser
+## 10. À qui s'adresser
 
 | Sujet | Interlocuteur |
 |---|---|
@@ -224,6 +246,7 @@ Non. Vous pouvez l'annuler (avec motif) s'il n'a rien reçu. Un document qui a p
 | Une permission manquante, un rôle à ajuster | Administrateur (module Core) |
 | Un paramètre à changer (seuils, délais, taille des pièces) | `Achat → Administration` (profil habilité) |
 | Une réception qui n'apparaît pas | Le magasin : la validation du bon d'entrée est ce qui déclenche tout |
+| Trop de courriels, ou pas assez | Personne : `Achat → cloche → Régler mes notifications`, c'est à vous |
 
 ---
 

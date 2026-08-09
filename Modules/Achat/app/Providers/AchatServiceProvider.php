@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Modules\Achat\Models\BonCommande;
+use Modules\Achat\Notifications\NotificationAchat;
 use Nwidart\Modules\Traits\PathNamespace;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -30,6 +31,7 @@ class AchatServiceProvider extends ServiceProvider
         $this->registerViews();
         $this->loadMigrationsFrom(module_path($this->name, 'database/migrations'));
         $this->registerBadgeAValider();
+        $this->registerCompteurNotifications();
     }
 
     /**
@@ -56,6 +58,28 @@ class AchatServiceProvider extends ServiceProvider
     }
 
     /**
+     * Pastille de la cloche (D-22).
+     *
+     * Comptée au rendu pour que la pastille soit juste dès le premier
+     * affichage : la rafraîchir en JavaScript après coup ferait clignoter un
+     * zéro sur chaque page. Le filtre porte sur la colonne `type`, pas sur le
+     * JSON `data` — la table `notifications` est partagée avec le reste de
+     * l'application, et une comparaison de texte se comporte pareil sous
+     * SQLite et sous PostgreSQL.
+     */
+    private function registerCompteurNotifications(): void
+    {
+        View::composer('achat::layouts.partials.navbar', function ($view) {
+            $view->with('notificationsNonLues', once(function () {
+                return auth()->user()
+                    ?->unreadNotifications()
+                    ->where('type', NotificationAchat::class)
+                    ->count() ?? 0;
+            }));
+        });
+    }
+
+    /**
      * Register the service provider.
      */
     public function register(): void
@@ -74,13 +98,34 @@ class AchatServiceProvider extends ServiceProvider
             // suivi de mise en service se lise en une commande plutôt que de
             // dépendre d'un relevé manuel que personne ne fera.
             \Modules\Achat\Console\IndicateursMiseEnServiceCommand::class,
+            // D-22 — le résumé hebdomadaire des reliquats : un courriel par
+            // reliquat noierait le destinataire, un résumé se lit.
+            \Modules\Achat\Console\ResumeReliquatsCommand::class,
         ]);
     }
 
     /**
      * Register command Schedules.
      */
-    protected function registerCommandSchedules(): void {}
+    /**
+     * D-22 — le résumé des reliquats part le LUNDI matin.
+     *
+     * Les relances fournisseurs se font en début de semaine : un résumé reçu
+     * le vendredi soir n'est jamais traité. La planification vit ici plutôt
+     * que dans un fichier central pour qu'un module désinstallé emporte ses
+     * tâches avec lui.
+     */
+    protected function registerCommandSchedules(): void
+    {
+        $this->app->booted(function () {
+            $programmateur = $this->app->make(\Illuminate\Console\Scheduling\Schedule::class);
+
+            $programmateur->command('achat:resume-reliquats')
+                ->weeklyOn(1, '07:30')
+                ->withoutOverlapping()
+                ->onOneServer();
+        });
+    }
 
     /**
      * Register translations.

@@ -8,6 +8,8 @@ use Modules\Achat\Http\Controllers\BonCommandePdfController;
 use Modules\Achat\Http\Controllers\DashboardController;
 use Modules\Achat\Http\Controllers\DocumentController;
 use Modules\Achat\Http\Controllers\DocumentsReceptionController;
+use Modules\Achat\Http\Controllers\NotificationsClocheController;
+use Modules\Achat\Http\Controllers\PreferencesNotificationController;
 use Modules\Achat\Http\Controllers\RapportController;
 use Modules\Achat\Http\Controllers\ReceptionLicencesController;
 use Modules\Achat\Http\Controllers\RegularisationController;
@@ -151,6 +153,30 @@ Route::middleware(['auth'])->prefix('achat')->name('achat.')->group(function () 
     */
     Route::get('/administration', [AdministrationController::class, 'index'])->name('administration');
     Route::patch('/parametres/{cle}', [AdministrationController::class, 'modifier'])->name('parametres.modifier');
+
+    /*
+    | D-22 — préférences de notification. Elles sont PERSONNELLES : la
+    | permission exigée est celle d'utiliser le module, pas celle de
+    | l'administrer. Obliger un utilisateur noyé de courriels à passer par un
+    | administrateur le pousserait à filtrer dans sa messagerie, et
+    | l'information serait perdue pour de bon.
+    */
+    Route::get('/preferences-notification', [PreferencesNotificationController::class, 'index'])
+        ->name('preferences-notification');
+    Route::patch('/preferences-notification/{type}', [PreferencesNotificationController::class, 'modifier'])
+        ->name('preferences-notification.modifier');
+
+    /*
+    | La cloche. Sans elle le canal « database » écrirait dans une table que
+    | personne ne lit. Lire n'est pas viser : la permission exigée est celle
+    | d'utiliser le module.
+    */
+    Route::get('/notifications', [NotificationsClocheController::class, 'index'])
+        ->name('notifications.index');
+    Route::post('/notifications/{notification}/lue', [NotificationsClocheController::class, 'marquerLue'])
+        ->name('notifications.lue');
+    Route::post('/notifications/toutes-lues', [NotificationsClocheController::class, 'marquerToutesLues'])
+        ->name('notifications.toutes-lues');
 
     /*
     | API inter-modules (API_Inter_Modules.md §4) — permission achat.api.view

@@ -24,7 +24,8 @@ saisie du brouillon au reliquat soldé, réceptions physiques comprises.
 | Régularisation | Rattachement d'équipements existants, dette réelle, extinction automatique |
 | Restitution | 9 Signaux, rapports exportables (CSV/XLSX/PDF), PDF du bon avec QR |
 | **Bordereaux (lot BR)** | Pièces jointes typées et pierre tombale · bordereau de réception signable · **proxy documentaire** (un acheteur sans droit Stock consulte les pièces de ses commandes) · **écarts BL** structurés |
-| Tests | 513 tests serveur, joués sur les deux SGBD, plus deux harnais navigateur |
+| **Notifications (D-22)** | 4 types (bon à viser, renvoi motivé, livraison reçue, résumé hebdomadaire du lundi) · destinataires déduits des **permissions** · cloche avec pastille · préférences **personnelles** par canal · déclencheurs **hors transaction** : un serveur de messagerie en panne ne défait aucune action métier |
+| Tests | 605 tests serveur, joués sur les deux SGBD, plus deux harnais navigateur |
 
 ---
 

@@ -28,6 +28,7 @@ use Modules\Achat\Services\ControlesSoumissionService;
 use Modules\Achat\Services\DuplicationBonCommande;
 use Modules\Achat\Services\FinDeVieService;
 use Modules\Achat\Services\LignesBonCommandeService;
+use Modules\Achat\Services\NotificationsAchat;
 use Modules\Achat\Services\ReceptionsBonCommande;
 use Modules\Achat\Services\RechercheBonCommande;
 use Modules\Achat\Services\ReferencePrixService;
@@ -63,6 +64,7 @@ class BonCommandeController extends Controller implements HasMiddleware
         private readonly FinDeVieService $finDeVie,
         private readonly ReceptionsBonCommande $receptions,
         private readonly DuplicationBonCommande $duplication,
+        private readonly NotificationsAchat $notifications,
     ) {}
 
     public static function middleware(): array
@@ -541,6 +543,10 @@ class BonCommandeController extends Controller implements HasMiddleware
             return $this->refus($e);
         }
 
+        // D-22 : notifier APRÈS la transaction, jamais dedans. Un serveur de
+        // mail injoignable ne doit pas défaire une soumission réussie.
+        $this->notifications->bonSoumis($bon, $request->user());
+
         return response()->json([
             'success' => true,
             'message' => 'Bon soumis au visa.',
@@ -562,6 +568,10 @@ class BonCommandeController extends Controller implements HasMiddleware
         } catch (AchatException $e) {
             return $this->refus($e);
         }
+
+        // Le motif part AVEC la notification : un renvoi sans raison lisible
+        // se solde par un appel téléphonique, ce qui annule le bénéfice.
+        $this->notifications->bonRenvoye($bon, $request->validated()['motif'], $request->user());
 
         return response()->json([
             'success' => true,

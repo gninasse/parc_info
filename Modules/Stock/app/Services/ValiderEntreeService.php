@@ -60,7 +60,7 @@ class ValiderEntreeService
             throw ValidationEntreeException::sansLigne();
         }
 
-        return DB::transaction(function () use ($entree, $lignes, $jeton, $userId) {
+        $recap = DB::transaction(function () use ($entree, $lignes, $jeton, $userId) {
             // Préconditions I11/I14 revérifiées SOUS transaction : rien n'est
             // écrit si l'une échoue, le statut reste inchangé.
             $this->verifierPreconditions($entree, $lignes);
@@ -108,6 +108,51 @@ class ValiderEntreeService
 
             return $this->recapDocument($entree->refresh());
         });
+
+        /*
+         * D-22 — la notification part APRÈS la transaction, jamais dedans.
+         *
+         * Deux raisons : une notification n'a pas à pouvoir faire échouer une
+         * validation (un serveur de mail injoignable ne doit pas défaire une
+         * réception physique déjà faite), et elle ne doit annoncer que ce qui
+         * est réellement acquis — à l'intérieur, la transaction peut encore
+         * échouer après l'envoi.
+         */
+        $this->notifierReceptionAAchat($entree->refresh());
+
+        return $recap;
+    }
+
+    /**
+     * Prévient l'auteur du bon de commande qu'une livraison est arrivée.
+     *
+     * Lecture seule et défensive : si le module Achat est absent, ou si la
+     * notification échoue, la validation Stock reste acquise.
+     */
+    private function notifierReceptionAAchat(Entree $entree): void
+    {
+        if ($entree->bon_commande_id === null) {
+            return;
+        }
+
+        try {
+            $bon = \Modules\Achat\Models\BonCommande::query()->find($entree->bon_commande_id);
+
+            if ($bon === null) {
+                return;
+            }
+
+            app(\Modules\Achat\Services\NotificationsAchat::class)->receptionIntegree(
+                $bon,
+                (string) $entree->numero,
+                (float) $entree->lignes()->whereNotNull('article_id')->sum('quantite'),
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Notification de réception non envoyée', [
+                'entree_id' => $entree->id,
+                'exception' => $e->getMessage(),
+            ]);
+        }
     }
 
     /** Récapitulatif chiffré (SW-VALIDER-ENT) — recalculable après coup (I9). */

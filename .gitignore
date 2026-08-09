@@ -19,6 +19,10 @@
 /public/storage
 /storage/*.key
 /storage/pail
+# Sauvegardes PostgreSQL prises avant les tests (procédure RETEX §5) : elles
+# contiennent les DONNÉES RÉELLES de l'établissement et n'ont rien à faire
+# dans le dépôt.
+/storage/dumps
 /vendor
 Homestead.json
 Homestead.yaml

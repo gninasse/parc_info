@@ -96,6 +96,17 @@ Ces tests ont été **vérifiés par sabotage** : une route volontairement dépo
 
 `ListeBonsCommandeTest`, `FicheBonCommandeTest`, `TableauDeBordTest`, `RapportsTest`, `ReliquatsTest`, `AdministrationTest` : chaque KPI est confronté à la liste qu'il prétend résumer, chaque export à son contenu, chaque paramètre à son effet **en bout de chaîne** (un paramètre modifié doit changer le comportement, pas seulement la ligne en base).
 
+### Notifications (D-22)
+
+Une notification est un **confort** greffé sur une action métier : tout l'enjeu est qu'elle ne puisse jamais nuire à cette action, ni partir à qui n'est pas concerné.
+
+| Suite | Ce qu'elle protège |
+|---|---|
+| `NotificationsAchatTest` | Les destinataires se déduisent des **permissions** — retirer le visa à quelqu'un suffit à arrêter ses notifications, aucune liste n'est à tenir à jour. L'auteur ne s'auto-notifie pas. L'absence de préférence vaut **actif** (une notification qu'il faut activer n'est jamais activée). Le résumé hebdomadaire est **groupé par destinataire** : un courriel, pas un par reliquat. |
+| `NotificationsClocheTest` | On ne voit **que** ses propres notifications (un identifiant deviné renvoie 404, il ne marque pas lue celle d'un collègue) et **que** celles du module Achat — la table `notifications` est partagée avec le reste de l'application, d'où un filtre sur la colonne `type` plutôt que sur le JSON `data`, comparable à l'identique sous SQLite et PostgreSQL. |
+
+Le test le plus important de l'ensemble est `test_un_echec_de_notification_ne_defait_pas_la_soumission` : il **supprime la table des préférences** puis soumet un bon, et exige que la soumission aboutisse. Sans ce garde-fou, un serveur de messagerie injoignable bloquerait le circuit d'engagement de l'établissement. Les déclencheurs sont pour cette raison placés **après** les transactions, jamais dedans.
+
 ### Vérification navigateur
 
 Les tests PHPUnit s'arrêtent à la réponse HTTP. Deux harnais exécutent le **vrai** JavaScript des vues dans un DOM (jsdom) et contrôlent ce que l'utilisateur voit :
@@ -123,4 +134,4 @@ Les tests PHPUnit s'arrêtent à la réponse HTTP. Deux harnais exécutent le **
 
 ---
 
-*Ce document décrit l'état au 09/08/2026 : 497 méthodes de test dans `Modules/Achat/tests/Feature`, suites vertes sur SQLite et PostgreSQL.*
+*Ce document décrit l'état au 09/08/2026 : 605 tests dans `Modules/Achat`, suites vertes sur SQLite et PostgreSQL.*
