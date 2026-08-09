@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Achat\Http\Controllers\AdministrationController;
 use Modules\Achat\Http\Controllers\ApiController;
 use Modules\Achat\Http\Controllers\BonCommandeController;
 use Modules\Achat\Http\Controllers\BonCommandePdfController;
@@ -129,6 +130,13 @@ Route::middleware(['auth'])->prefix('achat')->name('achat.')->group(function () 
         Route::get('/{carte}/data', [RapportController::class, 'donnees'])->name('donnees');
         Route::get('/{carte}/export', [RapportController::class, 'export'])->name('export');
     });
+
+    /*
+    | A-08 — administration (D-17). La leçon de la v1 : jamais de table de
+    | paramètres sans écran. Effet immédiat, journal de l'ancienne valeur.
+    */
+    Route::get('/administration', [AdministrationController::class, 'index'])->name('administration');
+    Route::patch('/parametres/{cle}', [AdministrationController::class, 'modifier'])->name('parametres.modifier');
 
     /*
     | API inter-modules (API_Inter_Modules.md §4) — permission achat.api.view
