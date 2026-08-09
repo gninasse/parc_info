@@ -69,8 +69,12 @@ class AchatServiceProvider extends ServiceProvider
      */
     protected function registerCommands(): void
     {
-        // Aucune commande Artisan à ce stade — pas de déclaration morte.
-        $this->commands([]);
+        $this->commands([
+            // D-20 — les 3 indicateurs du jalon J+30 (SFD §9.2), pour que le
+            // suivi de mise en service se lise en une commande plutôt que de
+            // dépendre d'un relevé manuel que personne ne fera.
+            \Modules\Achat\Console\IndicateursMiseEnServiceCommand::class,
+        ]);
     }
 
     /**

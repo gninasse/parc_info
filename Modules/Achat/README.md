@@ -141,6 +141,41 @@ règle qu'il ne faut jamais assouplir : ils **ne modifient aucun compteur**. Les
 reliquats ne connaissent que le compté. C'est cette neutralité qui permet au
 magasinier de déclarer un écart sans risque, donc de le déclarer.
 
+## Mise en service (SFD §9.2)
+
+L'ordre compte : le module ouvre avec la **dette réelle affichée**, pas avec
+un compteur à zéro qui donnerait une fausse impression de départ propre.
+
+| Étape | Ce qu'il faut faire |
+|---|---|
+| Prérequis | Catalogue et Stock installés et recettés |
+| Installation | `php artisan module:migrate Achat` puis les seeders (rôles, paramètres, bornes d'intérim) ; attribuer les rôles |
+| **Semaine 0** | L'acheteuse saisit les **bons de régularisation** AVANT l'ouverture générale : les acquisitions de la période d'intérim entrent au dossier, et la dette devient visible |
+| Jour 1 | Encart d'accueil, remise du guide utilisateur (`GUIDE_Utilisateur_Achat.md`) |
+| Semaines 1–2 | Règle « plus aucun équipement saisi directement dans ParcInfo ». Les contournements sont **détectés, pas bloqués** : on veut savoir, pas empêcher — un blocage produirait des contournements invisibles |
+| Revue | Examiner les 403 fréquents : un refus répété signale un rôle mal taillé, pas un utilisateur indiscipliné |
+| **Jalon J+30** | `php artisan achat:indicateurs` |
+
+### Les trois indicateurs du jalon
+
+```bash
+php artisan achat:indicateurs                    # depuis l'origine
+php artisan achat:indicateurs --du=2026-08-01     # sur une période
+```
+
+1. **Dette de régularisation** — équipements du parc sans bon de commande.
+   Elle doit décroître ; si elle stagne, la saisie de la semaine 0 n'a pas
+   été menée à bout ;
+2. **Délai médian soumission → visa**, par validateur. La médiane et non la
+   moyenne : un bon oublié trois mois ne doit pas masquer le quotidien ;
+3. **Part des réceptions liées à un bon** — l'indicateur d'adoption, cible
+   100 %. Les bons d'entrée non liés sont **nommés** dans la sortie : le
+   chiffre ne sert à rien si on ne peut pas aller voir les cas. Les retours
+   de bénéficiaire en sont exclus (ils ne livrent aucune commande).
+
+Ces trois chiffres se lisent ensemble. Une dette qui stagne avec un délai de
+visa court signale un problème de saisie, pas de circuit.
+
 ## Tests
 
 ```bash
@@ -255,6 +290,18 @@ module ES), sans quoi deux utilitaires homonymes provoquent un
 « already declared » qui n'existe pas dans le navigateur.
 
 ---
+
+## Documentation
+
+| Document | Pour qui |
+|---|---|
+| `GUIDE_Utilisateur_Achat.md` | Acheteur, validateur, magasinier — le circuit, les gestes, les corrections |
+| `TESTS_Achat.md` | Développeur — ce qui est vérifié, comment, et ce qui ne l'est pas |
+| `docs/modules/ANALYSE_Achat.md` | Reprise du module — décisions structurantes, pièges, limites assumées |
+| `SFD_Achat.md` · `SPEC_UX_Achat.md` | Spécifications (la seconde est normative pour les écrans et les textes) |
+| `CDC_Achat_v2.md` §12 | Cahier de recette (28 scénarios) |
+| `API_Inter_Modules.md` | Contrats avec Catalogue, Stock et ParcInfo |
+| `RACCORDEMENT_Achat_Stock.md` | Le raccordement PRQ-05 dans le détail |
 
 ## Écarts signalés (SFD)
 
