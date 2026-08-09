@@ -11,6 +11,9 @@ Route::middleware(['auth'])->prefix('catalogue')->name('catalogue.')->group(func
     Route::prefix('api')->name('api.')->group(function () {
         Route::get('/articles', [ApiController::class, 'articles'])->name('articles');
         Route::get('/articles/{id}', [ApiController::class, 'article'])->name('articles.show');
+        // §2.4 — historique du prix indicatif : alimente la décomposition du
+        // prix d'Achat (PO-01) et son signal « référence modifiée » (A14).
+        Route::get('/articles/{id}/journal-prix', [ApiController::class, 'journalPrix'])->name('articles.journal-prix');
         Route::get('/categories', [ApiController::class, 'categories'])->name('categories');
         Route::get('/fournisseurs', [ApiController::class, 'fournisseurs'])->name('fournisseurs');
     });

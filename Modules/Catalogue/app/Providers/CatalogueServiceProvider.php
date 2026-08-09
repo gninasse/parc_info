@@ -45,6 +45,10 @@ class CatalogueServiceProvider extends ServiceProvider
     {
         $this->commands([
             \Modules\Catalogue\Console\Commands\MigrateParcInfoCommand::class,
+            // P0-B — reprise des imputations comptables depuis le tableur du
+            // service financier (renseigner 400 articles à la main n'arrivera
+            // jamais).
+            \Modules\Catalogue\Console\Commands\ImporterComptesComptablesCommand::class,
         ]);
     }
 

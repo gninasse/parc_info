@@ -111,6 +111,18 @@
                                     <label for="f-tva" class="form-label">Taux de TVA (%)</label>
                                     <input type="number" class="form-control" id="f-tva" name="taux_tva" min="0" max="100" step="0.01" value="18">
                                 </div>
+                                {{--
+                                    P0-B (PRQ-03) — l'imputation comptable. Format LIBRE en v1 :
+                                    le plan comptable de l'établissement n'est pas arrêté dans
+                                    l'application, et imposer un format reviendrait à choisir
+                                    à la place du service financier.
+                                --}}
+                                <div class="col-md-6">
+                                    <label for="f-compte" class="form-label">Compte comptable</label>
+                                    <input type="text" class="form-control" id="f-compte" name="compte_comptable"
+                                           maxlength="50" placeholder="ex. 6063">
+                                    <div class="form-text">Plan comptable de l'établissement — facultatif.</div>
+                                </div>
                             </div>
                         </div>
 

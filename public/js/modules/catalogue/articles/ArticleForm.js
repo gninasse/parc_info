@@ -56,6 +56,7 @@ export class ArticleForm {
         $('#f-reference').val(data.reference_constructeur ?? '');
         $('#f-prix').val(data.prix_indicatif ?? '');
         $('#f-tva').val(data.taux_tva ?? 18);
+        $('#f-compte').val(data.compte_comptable ?? '');
         $('#f-unite').val(data.unite_stock ?? '');
         $('#f-seuil').val(data.seuil_defaut ?? '');
         $('#f-categorie-equipement').val(data.categorie_equipement_id ?? '').trigger('change.select2');
@@ -184,6 +185,7 @@ export class ArticleForm {
         $('#article-id').val('');
         $('#f-code').prop('disabled', false);
         $('#f-tva').val(18);
+        $('#f-compte').val('');
         $('#f-fournisseur, #f-marque, #f-categorie-equipement, #f-logiciel').val('').trigger('change.select2');
         $('#f-compatibilites').val([]).trigger('change.select2');
         new bootstrap.Tab(document.querySelector('#onglet-general-tab')).show();

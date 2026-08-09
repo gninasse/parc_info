@@ -75,6 +75,7 @@ class Article extends Model
         'unite_stock',
         'prix_indicatif',
         'taux_tva',
+        'compte_comptable',
         'seuil_defaut',
         'fournisseur_principal_id',
         'categorie_equipement_id',

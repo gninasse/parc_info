@@ -481,20 +481,35 @@ class RapportsTest extends TestCase
 
     // ═══ L'écran ════════════════════════════════════════════════════════════
 
-    public function test_la_carte_imputation_annonce_son_attente(): void
+    /**
+     * UX-18 — l'attente d'un prérequis reste VISIBLE, puis disparaît d'
+     * elle-même le jour où il est livré.
+     *
+     * Ce test a d'abord vérifié le message « Bientôt disponible » ; depuis
+     * P0-B (le champ `compte_comptable` du Catalogue), il vérifie l'inverse :
+     * la carte d'attente ne doit plus s'afficher. Une mention « en attente »
+     * qui survit à la livraison du prérequis est pire que pas de mention du
+     * tout — elle apprend à l'utilisateur à ne plus lire l'écran.
+     */
+    public function test_la_carte_d_attente_disparait_une_fois_le_prerequis_livre(): void
     {
+        $imputationDisponible = \Illuminate\Support\Facades\Schema::hasColumn(
+            'catalogue_articles',
+            'compte_comptable'
+        );
+
+        $this->assertTrue(
+            $imputationDisponible,
+            'P0-B est livré : le champ compte_comptable doit exister au Catalogue.'
+        );
+
         $contenu = $this->actingAs($this->lecteur)
             ->get(route('achat.rapports.index'))
             ->assertOk()
             ->getContent();
 
-        // UX-18 : l'attente reste visible, elle ne disparaît pas du produit.
-        if (! \Illuminate\Support\Facades\Schema::hasColumn('catalogue_articles', 'compte_comptable')) {
-            $this->assertStringContainsString('Bientôt disponible', $contenu);
-            $this->assertStringContainsString('PRQ-03', $contenu);
-        } else {
-            $this->markTestSkipped('Le compte comptable existe (P0-B livré) : la carte n\'est plus en attente.');
-        }
+        $this->assertStringNotContainsString('Bientôt disponible', $contenu);
+        $this->assertStringNotContainsString('PRQ-03', $contenu);
     }
 
     public function test_la_page_affiche_les_six_cartes_et_les_filtres(): void

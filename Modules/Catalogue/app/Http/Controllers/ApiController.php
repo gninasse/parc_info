@@ -10,6 +10,7 @@ use Illuminate\Routing\Controllers\Middleware;
 use Modules\Catalogue\Models\Article;
 use Modules\Catalogue\Models\Categorie;
 use Modules\Catalogue\Models\Fournisseur;
+use Modules\Core\Models\Activity;
 
 /**
  * API inter-modules du catalogue (SFD §2.5).
@@ -23,6 +24,19 @@ class ApiController extends Controller implements HasMiddleware
     private const LIMIT_DEFAUT = 50;
 
     private const LIMIT_MAX = 200;
+
+    /** §2.4 — fenêtre du journal des prix : au-delà, l'information est morte. */
+    private const FENETRE_JOURNAL_MOIS = 12;
+
+    /** Entrées de prix rendues au plus. */
+    private const LIMITE_JOURNAL = 50;
+
+    /**
+     * Traces lues avant filtrage. Le journal d'un article mêle tous ses
+     * changements ; il en faut donc plus que 50 pour espérer y trouver 50
+     * modifications de PRIX, sans pour autant tout charger.
+     */
+    private const LIMITE_JOURNAL_BRUT = 500;
 
     public static function middleware(): array
     {
@@ -144,6 +158,83 @@ class ApiController extends Controller implements HasMiddleware
     }
 
     /**
+     * §2.4 — l'historique des modifications du PRIX INDICATIF d'un article.
+     *
+     * Il alimente deux choses côté Achat : la décomposition du prix affichée
+     * à la saisie (PO-01) et le signal « référence modifiée il y a moins de
+     * 30 jours » (A14). L'enjeu est simple à énoncer : un prix indicatif
+     * relevé juste avant une commande fait disparaître l'écart de prix, et
+     * cet endroit est le seul où cette manœuvre se voit.
+     *
+     * Deux précautions :
+     *
+     *   - on ne rend QUE les modifications de prix. Le journal d'un article
+     *     contient tout le reste (changements de catégorie, de fournisseur,
+     *     désactivations) : le servir en bloc exposerait, à qui a
+     *     `catalogue.api.view`, un historique qu'il n'a pas demandé ;
+     *   - la fenêtre est bornée à 12 mois et 50 entrées. Un article dont le
+     *     prix bouge chaque semaine depuis cinq ans ne doit pas rendre une
+     *     réponse de plusieurs mégaoctets à chaque saisie de ligne.
+     */
+    public function journalPrix(Request $request, $id): JsonResponse
+    {
+        $article = Article::query()->findOrFail($id);
+
+        $lignes = Activity::query()
+            ->where('subject_type', Article::class)
+            ->where('subject_id', $article->id)
+            ->where('event', 'updated')
+            ->where('created_at', '>=', now()->subMonths(self::FENETRE_JOURNAL_MOIS))
+            ->with('causer:id,name')
+            ->orderByDesc('id')
+            // On lit large puis on filtre en PHP : le prix est enfoui dans
+            // une colonne JSON dont l'interrogation SQL diffère d'un SGBD à
+            // l'autre (`->>` sur PostgreSQL, `json_extract` sur SQLite), et
+            // la portabilité prime ici sur une optimisation invisible à
+            // cette échelle.
+            ->limit(self::LIMITE_JOURNAL_BRUT)
+            ->get()
+            ->map(function (Activity $activite) {
+                $proprietes = $activite->properties ?? collect();
+                $avant = $proprietes->get('old') ?? [];
+                $apres = $proprietes->get('attributes') ?? [];
+
+                // Seules les traces qui ont VRAIMENT touché le prix.
+                if (! array_key_exists('prix_indicatif', $apres) || ! array_key_exists('prix_indicatif', $avant)) {
+                    return null;
+                }
+
+                if ((string) $apres['prix_indicatif'] === (string) $avant['prix_indicatif']) {
+                    return null;
+                }
+
+                return [
+                    'date' => $activite->created_at?->toDateString(),
+                    'ancien' => $this->montantOuNull($avant['prix_indicatif']),
+                    'nouveau' => $this->montantOuNull($apres['prix_indicatif']),
+                    'par' => $activite->causer?->name,
+                ];
+            })
+            ->filter()
+            ->take(self::LIMITE_JOURNAL)
+            ->values();
+
+        return response()->json([
+            'article_id' => $article->id,
+            'code' => $article->code,
+            'prix_indicatif' => $article->prix_indicatif,
+            'fenetre_mois' => self::FENETRE_JOURNAL_MOIS,
+            'data' => $lignes,
+        ]);
+    }
+
+    /** Même convention de montant que le reste de l'API : chaîne à 2 décimales. */
+    private function montantOuNull(mixed $valeur): ?string
+    {
+        return $valeur === null ? null : number_format((float) $valeur, 2, '.', '');
+    }
+
+    /**
      * Fiche compacte d'article — décimaux en chaînes (casts decimal:2).
      */
     private function articleCompact(Article $article): array
@@ -161,6 +252,8 @@ class ApiController extends Controller implements HasMiddleware
             // contenter d'un null. La valeur par défaut du schéma (18.00) est
             // reprise ici pour les fiches antérieures à la colonne.
             'taux_tva' => $article->taux_tva ?? '18.00',
+            // P0-B (PRQ-03) : l'imputation, pour l'état par compte d'Achat.
+            'compte_comptable' => $article->compte_comptable,
             'categorie' => $article->categorie_chemin,
             'fournisseur_principal_id' => $article->fournisseur_principal_id,
             'categorie_equipement_id' => $article->categorie_equipement_id,

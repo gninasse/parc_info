@@ -65,15 +65,30 @@ Consommé par : M-01/M-02 (Achat), modale article (Stock), écrans ParcInfo. Gar
 
 ### 2.2 `GET /catalogue/api/articles/{id}` — fiche compacte
 
-Mêmes champs + `compte_comptable` (dès PRQ-03), `seuil_defaut`, `fiche_active_depuis`. 404 si inexistant (les inactifs restent lisibles : `actif=false`).
+Mêmes champs, sous la clé `data`. 404 si inexistant (les inactifs restent lisibles : `actif=false`).
+
+**`compte_comptable`** *(livré par P0-B)* : l'imputation de l'article, **nullable** et de **format libre** en v1 — le plan comptable de l'établissement n'est pas arrêté dans l'application, et imposer un format reviendrait à choisir à la place du service financier. Il est exposé par `§2.1` comme par `§2.2`, et alimentera l'état par imputation d'Achat (D-24).
 
 ### 2.3 `GET /catalogue/api/fournisseurs` — recherche bornée
 
 `q`, `actifs`, `limit` → `{ id, nom, contact, telephone, email, actif, cree_le }`. Le champ `cree_le` alimente le signal « fournisseur récent » d'Achat (UX4-03).
 
-### 2.4 `GET /catalogue/api/articles/{id}/journal-prix`
+### 2.4 `GET /catalogue/api/articles/{id}/journal-prix` *(livré par P0-C)*
 
-Historique des modifications du **prix indicatif** (journal Catalogue) : `[{ "date": "2026-07-12", "ancien": "645000.00", "nouveau": "820000.00", "par": "R. Ouédraogo" }]`, borné aux 12 derniers mois. Alimente PO-01 et le signal « réf. modifiée < 30 j » (A14).
+Historique des modifications du **prix indicatif**, lu dans le journal du Catalogue :
+
+```json
+{ "article_id": 12, "code": "CONS-00001", "prix_indicatif": "52000.00",
+  "fenetre_mois": 12,
+  "data": [ { "date": "2026-07-12", "ancien": "645000.00",
+              "nouveau": "820000.00", "par": "R. Ouédraogo" } ] }
+```
+
+Du plus récent au plus ancien, borné à **12 mois et 50 entrées**. Alimente la décomposition du prix (PO-01) et le signal « référence modifiée < 30 j » (A14).
+
+**Ce que l'endpoint ne rend PAS** : le journal d'un article contient tous ses changements (catégorie, fournisseur, désactivation). Seules les modifications de `prix_indicatif` sont servies — exposer le reste donnerait, à qui détient `catalogue.api.view`, un historique qu'il n'a pas demandé, et noierait le signal dans le bruit.
+
+Cet endpoint est le seul endroit où se voit une manœuvre simple : relever le prix indicatif juste avant de commander fait disparaître l'écart de prix affiché à l'acheteur.
 
 ---
 

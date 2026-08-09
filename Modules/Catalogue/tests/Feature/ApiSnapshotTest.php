@@ -104,6 +104,7 @@ class ApiSnapshotTest extends TestCase
                         'seuil_defaut' => '5.00',
                         'prix_indicatif' => '45000.00',
                         'taux_tva' => '18.00',
+                        'compte_comptable' => null,
                         'categorie' => 'Impression > Toners',
                         'fournisseur_principal_id' => $this->sitb->id,
                         'categorie_equipement_id' => null,
@@ -118,6 +119,7 @@ class ApiSnapshotTest extends TestCase
                         'seuil_defaut' => null,
                         'prix_indicatif' => null,
                         'taux_tva' => '18.00',
+                        'compte_comptable' => null,
                         'categorie' => 'Impression',
                         'fournisseur_principal_id' => null,
                         'categorie_equipement_id' => null,
@@ -167,6 +169,7 @@ class ApiSnapshotTest extends TestCase
                     'seuil_defaut' => '5.00',
                     'prix_indicatif' => '45000.00',
                     'taux_tva' => '18.00',
+                    'compte_comptable' => null,
                     'categorie' => 'Impression > Toners',
                     'fournisseur_principal_id' => $this->sitb->id,
                     'categorie_equipement_id' => null,
@@ -243,5 +246,109 @@ class ApiSnapshotTest extends TestCase
         $this->actingAs($sansDroit)
             ->getJson(route('catalogue.api.articles.show', $this->toner->id))
             ->assertStatus(403);
+    }
+
+    // ══ §2.4 — le journal des prix ═══════════════════════════════════════════
+
+    /**
+     * L'endpoint rend les modifications du PRIX INDICATIF, et elles seules.
+     *
+     * C'est ce qui permet à Achat de dire « référence modifiée il y a 3 jours »
+     * au moment où l'acheteur s'en sert comme repère : un prix indicatif
+     * relevé juste avant une commande ferait disparaître l'écart de prix, et
+     * cet endroit est le seul où la manœuvre se voit.
+     */
+    public function test_journal_prix_rend_les_modifications_de_prix(): void
+    {
+        $this->actingAs($this->utilisateur);
+
+        $this->toner->update(['prix_indicatif' => 48000]);
+        $this->toner->update(['prix_indicatif' => 52000]);
+
+        $reponse = $this->actingAs($this->utilisateur)
+            ->getJson(route('catalogue.api.articles.journal-prix', $this->toner->id))
+            ->assertOk();
+
+        $reponse->assertJsonStructure([
+            'article_id', 'code', 'prix_indicatif', 'fenetre_mois',
+            'data' => [['date', 'ancien', 'nouveau', 'par']],
+        ]);
+
+        $donnees = $reponse->json('data');
+
+        $this->assertCount(2, $donnees);
+        // Du plus récent au plus ancien : c'est la dernière modification qui
+        // intéresse l'acheteur.
+        $this->assertSame('52000.00', $donnees[0]['nouveau']);
+        $this->assertSame('48000.00', $donnees[0]['ancien']);
+        // L'auteur est le `name` du compte, comme partout ailleurs dans l'API.
+        $this->assertSame('Api', $donnees[0]['par']);
+        $this->assertSame(12, $reponse->json('fenetre_mois'));
+    }
+
+    /**
+     * Le journal d'un article contient TOUS ses changements. En servir la
+     * totalité exposerait, à qui a `catalogue.api.view`, un historique qu'il
+     * n'a pas demandé — et noierait le signal dans le bruit.
+     */
+    public function test_journal_prix_n_expose_pas_les_autres_modifications(): void
+    {
+        $this->actingAs($this->utilisateur);
+
+        $this->toner->update(['nom' => 'Toner renomme']);
+        $this->toner->update(['est_actif' => false]);
+        $this->toner->update(['prix_indicatif' => 61000]);
+
+        $donnees = $this->actingAs($this->utilisateur)
+            ->getJson(route('catalogue.api.articles.journal-prix', $this->toner->id))
+            ->assertOk()
+            ->json('data');
+
+        $this->assertCount(1, $donnees, 'Seule la modification de prix doit figurer.');
+        $this->assertSame('61000.00', $donnees[0]['nouveau']);
+
+        $brut = json_encode($donnees);
+        $this->assertStringNotContainsString('Toner renomme', $brut);
+        $this->assertStringNotContainsString('est_actif', $brut);
+    }
+
+    /** Un article dont le prix n'a jamais bougé rend un tableau vide, pas une erreur. */
+    public function test_journal_prix_d_un_article_sans_historique(): void
+    {
+        $this->actingAs($this->utilisateur)
+            ->getJson(route('catalogue.api.articles.journal-prix', $this->toner->id))
+            ->assertOk()
+            ->assertJsonPath('data', []);
+    }
+
+    /** Au-delà de 12 mois, l'information est morte : elle n'est plus servie. */
+    public function test_journal_prix_est_borne_a_douze_mois(): void
+    {
+        $this->actingAs($this->utilisateur);
+        $this->toner->update(['prix_indicatif' => 44000]);
+
+        \Modules\Core\Models\Activity::query()->latest('id')->first()
+            ->forceFill(['created_at' => now()->subMonths(14)])->save();
+
+        $this->actingAs($this->utilisateur)
+            ->getJson(route('catalogue.api.articles.journal-prix', $this->toner->id))
+            ->assertOk()
+            ->assertJsonPath('data', []);
+    }
+
+    public function test_journal_prix_exige_la_permission_et_un_article_existant(): void
+    {
+        $sansDroit = User::create([
+            'name' => 'Sans', 'last_name' => 'Droit JP', 'user_name' => 'sans_droit_jp',
+            'email' => 'sans-jp@example.com', 'password' => bcrypt('password'),
+        ]);
+
+        $this->actingAs($sansDroit)
+            ->getJson(route('catalogue.api.articles.journal-prix', $this->toner->id))
+            ->assertStatus(403);
+
+        $this->actingAs($this->utilisateur)
+            ->getJson(route('catalogue.api.articles.journal-prix', 999999))
+            ->assertStatus(404);
     }
 }

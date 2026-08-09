@@ -43,6 +43,9 @@ class ArticleRules
             'reference_constructeur' => $referenceUnique,
             'prix_indicatif' => ['nullable', 'numeric', 'min:0'],
             'taux_tva' => ['nullable', 'numeric', 'between:0,100'],
+            // P0-B (PRQ-03) : format LIBRE en v1 — le plan comptable de
+            // l'établissement n'est pas arrêté dans l'application.
+            'compte_comptable' => ['nullable', 'string', 'max:50'],
             'fournisseur_principal_id' => ['nullable', 'exists:catalogue_fournisseurs,id'],
             'notes' => ['nullable', 'string'],
         ];
@@ -103,6 +106,7 @@ class ArticleRules
             'prix_indicatif.min' => 'Le prix indicatif ne peut pas être négatif.',
             'taux_tva.between' => 'Le taux de TVA doit être compris entre 0 et 100.',
             'taux_tva.numeric' => 'Le taux de TVA doit être un nombre.',
+            'compte_comptable.max' => 'Le compte comptable ne dépasse pas 50 caractères.',
             'fournisseur_principal_id.exists' => 'Le fournisseur est introuvable.',
             'categorie_equipement_id.required' => "La catégorie d'équipements du parc est obligatoire pour un modèle d'équipement.",
             'categorie_equipement_id.exists' => "La catégorie d'équipements est introuvable.",
