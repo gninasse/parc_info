@@ -6,6 +6,7 @@ use Modules\Achat\Http\Controllers\BonCommandeController;
 use Modules\Achat\Http\Controllers\BonCommandePdfController;
 use Modules\Achat\Http\Controllers\DashboardController;
 use Modules\Achat\Http\Controllers\DocumentController;
+use Modules\Achat\Http\Controllers\RapportController;
 use Modules\Achat\Http\Controllers\ReceptionLicencesController;
 use Modules\Achat\Http\Controllers\RegularisationController;
 use Modules\Achat\Http\Controllers\ReliquatController;
@@ -114,6 +115,19 @@ Route::middleware(['auth'])->prefix('achat')->name('achat.')->group(function () 
         Route::post('/reactiver', [RegularisationController::class, 'reactiver'])->name('reactiver');
         Route::post('/{id}/rattacher', [RegularisationController::class, 'rattacher'])->name('rattacher');
         Route::delete('/{id}/equipements/{equipement}', [RegularisationController::class, 'detacher'])->name('detacher');
+    });
+
+    /*
+    | A-07 — rapports (D-16). Trois permissions distinctes : consulter,
+    | exporter, et lire les SIGNAUX (contrôle, UX4-09).
+    */
+    Route::prefix('rapports')->name('rapports.')->group(function () {
+        Route::get('/', [RapportController::class, 'index'])->name('index');
+        // Littérales avant /{carte}, sinon « signaux » serait pris pour une carte.
+        Route::get('/signaux', [RapportController::class, 'signaux'])->name('signaux');
+        Route::get('/signaux/export', [RapportController::class, 'exportSignaux'])->name('signaux-export');
+        Route::get('/{carte}/data', [RapportController::class, 'donnees'])->name('donnees');
+        Route::get('/{carte}/export', [RapportController::class, 'export'])->name('export');
     });
 
     /*

@@ -8,7 +8,6 @@ use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Achat\Models\BonCommande;
-use Modules\Achat\Models\RegularisationRattachement;
 use Modules\Achat\Services\AchatParametres;
 
 /**
@@ -23,7 +22,11 @@ class DashboardController extends Controller implements HasMiddleware
     /** Nombre de lignes du tableau « reliquats les plus anciens » (Z3). */
     private const MAX_RELIQUATS = 5;
 
-    public function __construct(private readonly AchatParametres $parametres) {}
+    public function __construct(
+        private readonly AchatParametres $parametres,
+        private readonly \Modules\Achat\Services\StatistiquesAchatService $statistiques,
+        private readonly \Modules\Achat\Services\RegularisationService $regularisation,
+    ) {}
 
     public static function middleware(): array
     {
@@ -63,17 +66,16 @@ class DashboardController extends Controller implements HasMiddleware
     }
 
     /**
-     * Montant HT engagé sur le mois courant. Les régularisations en sont
-     * exclues : elles documentent le passé et fausseraient la dépense du mois
-     * (SFD §7.6).
+     * Montant HT engagé sur le mois courant.
+     *
+     * Délégué au service PARTAGÉ (D-16) : le tableau de bord, la carte de
+     * rapport et l'export doivent afficher le même chiffre — même source,
+     * même arrondi, même périmètre. Les régularisations en sont exclues :
+     * elles documentent le passé et fausseraient la dépense du mois.
      */
     private function engageDuMois(): float
     {
-        return (float) BonCommande::query()
-            ->engages()
-            ->horsRegularisation()
-            ->whereBetween('date_document', [now()->startOfMonth(), now()->endOfMonth()])
-            ->sum('montant_ht');
+        return $this->statistiques->engageDuMois()['ht'];
     }
 
     /** Lignes dont le reste dort depuis plus de N jours (N = paramètre A-08). */
@@ -90,15 +92,14 @@ class DashboardController extends Controller implements HasMiddleware
      * Équipements du parc sans commande d'origine — la dette d'intérim
      * (A15). La carte disparaît à zéro : l'objectif est de la faire
      * disparaître, pas de l'afficher éternellement (UX2-12).
+     *
+     * Déléguée au service de régularisation (D-15), qui déduit aussi les
+     * équipements tracés par la chaîne Stock — sinon le tableau de bord
+     * annoncerait une dette que l'écran M-09 ne montre pas.
      */
     private function detteInterim(): int
     {
-        return DB::table('parc_info_equipements')
-            ->whereNotIn(
-                'parc_info_equipements.id',
-                RegularisationRattachement::query()->select('equipement_id')
-            )
-            ->count();
+        return $this->regularisation->detteRestante();
     }
 
     /** Z3 — les 5 reliquats les plus anciens, avec leur âge. */
