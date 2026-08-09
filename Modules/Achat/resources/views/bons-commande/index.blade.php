@@ -162,6 +162,13 @@
                     <i class="bi bi-printer"></i>
                 </button>
             @endcan
+            {{-- D-23 : recommander à partir d'un bon existant (prix actualisés). --}}
+            @can('achat.bons_commande.store')
+                <button id="btn-dupliquer" class="btn btn-outline-secondary btn-sm" disabled
+                        data-bs-toggle="tooltip" title="Dupliquer">
+                    <i class="bi bi-files"></i>
+                </button>
+            @endcan
             {{-- Menu de régularisation : présent seulement si la porte
                  d'intérim est ouverte (A15) et si l'utilisateur en a le droit. --}}
             @can('achat.bons_commande.regulariser')

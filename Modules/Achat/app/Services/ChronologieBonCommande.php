@@ -302,6 +302,31 @@ class ChronologieBonCommande
                 ])->filter()->implode(' — ') ?: null,
             ],
 
+            // D-23 — la filiation : d'où vient ce bon.
+            DuplicationBonCommande::EVENEMENT => [
+                'icone' => 'bi-files',
+                'couleur' => 'secondary',
+                'phrase' => sprintf(
+                    'Dupliqué depuis %s',
+                    $props->get('origine_numero') ?? 'un autre bon'
+                ),
+                'details' => sprintf(
+                    '%s ligne(s) reprises, prix actualisés au jour de la duplication',
+                    $props->get('nb_lignes') ?? '—'
+                ),
+            ],
+
+            // D-21 — l'autre origine possible : une alerte de stock.
+            \Modules\Achat\Http\Controllers\ApiController::EVENEMENT_DEPUIS_ALERTE => [
+                'icone' => 'bi-cart-plus',
+                'couleur' => 'info',
+                'phrase' => 'Créé depuis une alerte de seuil au magasin',
+                'details' => collect([
+                    $props->get('magasin'),
+                    implode(', ', (array) ($props->get('articles') ?? [])),
+                ])->filter()->implode(' — ') ?: null,
+            ],
+
             // ── Le dossier documentaire (D-09) ─────────────────────────────
             DocumentsBonCommande::EVENEMENT_DEPOT => [
                 'icone' => 'bi-paperclip',

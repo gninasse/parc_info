@@ -111,6 +111,7 @@ $(function () {
         configurer('#btn-valider', ligne?.peut_valider);
         configurer('#btn-renvoyer', ligne?.peut_renvoyer);
         configurer('#btn-imprimer', ligne?.peut_imprimer, 'Le PDF n\'existe qu\'après validation');
+        configurer('#btn-dupliquer', ligne?.peut_dupliquer, ligne?.diagnostic_duplication);
     };
 
     $table.on('check.bs.table uncheck.bs.table load-success.bs.table', rafraichirToolbar);
@@ -143,13 +144,98 @@ $(function () {
         ModalPdf.ouvrir({ url: row.url_pdf, titre: `Bon de commande ${row.numero_affiche}` });
     });
 
+    /** Rafraîchit le tableau après une action — utilisé par tous les gestes. */
+    const apres = () => $table.bootstrapTable('refresh');
+
+    /*
+     * ── D-23 : dupliquer ──────────────────────────────────────────────────
+     *
+     * Le trimestre de consommables se recommande. Mais les prix sont
+     * RE-FIGÉS au jour de la duplication : la confirmation le dit avant, et
+     * le compte rendu montre après ce qui a bougé — un acheteur qui découvre
+     * un écart de 30 % au moment de soumettre a perdu son temps.
+     */
+    const tableauDesEcarts = (comparaisons) => {
+        const ecarts = (comparaisons ?? [])
+            .filter((c) => c.ecart_pct !== null && Math.abs(c.ecart_pct) >= 1);
+
+        if (ecarts.length === 0) {
+            return '<p class="small text-success mb-0">Aucun prix n\'a changé depuis le bon d\'origine.</p>';
+        }
+
+        const lignes = ecarts.map((c) => {
+            const couleur = c.ecart_pct > 0 ? 'text-danger' : 'text-success';
+            const signe = c.ecart_pct > 0 ? '+' : '';
+
+            return '<tr>'
+                + '<td>' + echapper(c.designation) + '</td>'
+                + '<td class="text-end">' + c.prix_precedent.toLocaleString('fr-FR') + '</td>'
+                + '<td class="text-end">' + c.prix_propose.toLocaleString('fr-FR') + '</td>'
+                + '<td class="text-end ' + couleur + '">' + signe + c.ecart_pct + ' %</td>'
+                + '</tr>';
+        }).join('');
+
+        return '<table class="table table-sm small mb-0"><thead><tr>'
+            + '<th>Article</th><th class="text-end">Négocié</th>'
+            + '<th class="text-end">Aujourd\'hui</th><th class="text-end">Écart</th>'
+            + '</tr></thead><tbody>' + lignes + '</tbody></table>';
+    };
+
+    $('#btn-dupliquer').on('click', () => {
+        const row = selection();
+        if (!row) return;
+
+        Swal.fire({
+            icon: 'question',
+            title: 'Dupliquer ' + row.numero_affiche + ' ?',
+            html: '<p class="mb-1">Un brouillon sera créé avec les mêmes articles et quantités.</p>'
+                + '<p class="small text-muted mb-0">Les prix et taux de TVA seront <strong>actualisés</strong> '
+                + 'au jour d\'aujourd\'hui : le bon d\'origine reste inchangé.</p>',
+            showCancelButton: true,
+            confirmButtonText: 'Dupliquer',
+            cancelButtonText: 'Annuler',
+        }).then((choix) => {
+            if (!choix.isConfirmed) return;
+
+            $.ajax({
+                url: route('achat.bons-commande.dupliquer', row.id),
+                method: 'POST',
+                dataType: 'json',
+            })
+                .done((reponse) => {
+                    const alertes = (reponse.data.avertissements ?? [])
+                        .map((a) => '<li>' + echapper(a) + '</li>').join('');
+
+                    Swal.fire({
+                        icon: alertes ? 'warning' : 'success',
+                        title: 'Brouillon créé',
+                        html: '<p class="mb-2">' + echapper(reponse.message) + '</p>'
+                            + (alertes ? '<ul class="small text-start text-warning-emphasis">' + alertes + '</ul>' : '')
+                            + tableauDesEcarts(reponse.data.comparaisons),
+                        width: 680,
+                        showCancelButton: true,
+                        confirmButtonText: 'Ouvrir le brouillon',
+                        cancelButtonText: 'Rester ici',
+                    }).then((suite) => {
+                        if (suite.isConfirmed) window.location.href = reponse.data.redirection;
+                        else apres();
+                    });
+                })
+                .fail((xhr) => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Duplication impossible',
+                        text: xhr.responseJSON?.message ?? 'Une erreur est survenue.',
+                    });
+                });
+        });
+    });
+
     // ── Commandes (transitions d'état) ─────────────────────────────────────
     //
     // Les confirmations (SW-02, SW-04, M-06) vivent dans le module partagé
     // ActionsBc, commun à la liste et à la fiche A-04 : une seule source de
     // vérité pour chaque Swal. Ici, le rappel rafraîchit le tableau.
-
-    const apres = () => $table.bootstrapTable('refresh');
 
     $('#btn-delete').on('click', () => {
         const row = selection();

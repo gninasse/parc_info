@@ -85,6 +85,30 @@ class ActionsBonCommande
             'titre' => 'Imprimer le bon',
         ];
 
+        /*
+         * D-23 — « Dupliquer » vaut pour TOUS les statuts sauf ANNULÉ : le
+         * trimestre de consommables se recommande, qu'il ait été livré,
+         * clôturé ou qu'il soit encore en brouillon. Un bon annulé, lui, a
+         * été écarté pour une raison : le reproduire d'un clic reviendrait à
+         * contourner cette décision.
+         *
+         * Le bouton est grisé sur un bon sans ligne (rien à dupliquer), avec
+         * son diagnostic — jamais un bouton mort sans explication (§0.3).
+         */
+        $dupliquer = [
+            'cle' => 'dupliquer',
+            'libelle' => 'Dupliquer',
+            'icone' => 'bi-files',
+            'classe' => 'btn-outline-secondary',
+            'permission' => 'achat.bons_commande.store',
+            'route' => 'achat.bons-commande.dupliquer',
+            'methode' => 'POST',
+            'actif' => $bon->nb_lignes > 0,
+            'titre' => $bon->nb_lignes > 0
+                ? 'Créer un brouillon depuis ce bon (prix actualisés)'
+                : 'Dupliquer (aucune ligne)',
+        ];
+
         return match ($bon->statut) {
             BonCommande::STATUT_BROUILLON => [
                 $voir,
@@ -126,6 +150,7 @@ class ActionsBonCommande
                         ? 'Soumettre au visa'
                         : 'Soumettre (aucune ligne)',
                 ],
+                $dupliquer,
             ],
 
             BonCommande::STATUT_SOUMIS => array_values(array_filter([
@@ -170,6 +195,7 @@ class ActionsBonCommande
                     'actif' => true,
                     'titre' => 'Reprendre ma soumission',
                 ] : null,
+                $dupliquer,
             ])),
 
             BonCommande::STATUT_VALIDE, BonCommande::STATUT_PARTIEL => array_values(array_filter([
@@ -227,9 +253,12 @@ class ActionsBonCommande
                     'actif' => true,
                     'titre' => 'Renoncer au reste à livrer (motif obligatoire)',
                 ] : null,
+                $dupliquer,
             ])),
 
-            BonCommande::STATUT_LIVRE, BonCommande::STATUT_CLOTURE => [$voir, $pdf],
+            // Un bon livré ou clôturé se recommande : c'est même le cas le
+            // plus fréquent (le trimestre suivant).
+            BonCommande::STATUT_LIVRE, BonCommande::STATUT_CLOTURE => [$voir, $pdf, $dupliquer],
 
             // Un bon annulé est sans effet : il n'a pas de PDF à imprimer.
             BonCommande::STATUT_ANNULE => [$voir],

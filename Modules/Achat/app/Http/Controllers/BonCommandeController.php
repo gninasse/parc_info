@@ -25,6 +25,7 @@ use Modules\Achat\Services\CalculMontantsService;
 use Modules\Achat\Services\ChronologieBonCommande;
 use Modules\Achat\Services\CircuitSoumissionService;
 use Modules\Achat\Services\ControlesSoumissionService;
+use Modules\Achat\Services\DuplicationBonCommande;
 use Modules\Achat\Services\FinDeVieService;
 use Modules\Achat\Services\LignesBonCommandeService;
 use Modules\Achat\Services\ReceptionsBonCommande;
@@ -61,13 +62,16 @@ class BonCommandeController extends Controller implements HasMiddleware
         private readonly ChronologieBonCommande $chronologie,
         private readonly FinDeVieService $finDeVie,
         private readonly ReceptionsBonCommande $receptions,
+        private readonly DuplicationBonCommande $duplication,
     ) {}
 
     public static function middleware(): array
     {
         return [
             new Middleware('permission:achat.bons_commande.index', only: ['index', 'getData', 'show']),
-            new Middleware('permission:achat.bons_commande.store', only: ['create', 'store']),
+            // D-23 : dupliquer, c'est CRÉER un bon — même permission que la
+            // saisie, et non une permission de lecture.
+            new Middleware('permission:achat.bons_commande.store', only: ['create', 'store', 'dupliquer']),
             new Middleware('permission:achat.bons_commande.update', only: ['edit', 'update']),
             new Middleware('permission:achat.bons_commande.destroy', only: ['destroy']),
             // Le récapitulatif de l'étape ② précède immédiatement la
@@ -202,6 +206,10 @@ class BonCommandeController extends Controller implements HasMiddleware
             'peut_valider' => $actions->has('valider'),
             'peut_renvoyer' => $actions->has('renvoyer'),
             'peut_imprimer' => $actions->has('pdf'),
+            // D-23 : la duplication est offerte sur tous les statuts sauf
+            // ANNULÉ, et grisée sur un bon sans ligne.
+            'peut_dupliquer' => (bool) ($actions['dupliquer']['actif'] ?? false),
+            'diagnostic_duplication' => $actions['dupliquer']['titre'] ?? null,
             // Diagnostics des boutons grisés par l'état (SPEC_UX §0.3)
             'diagnostic_modification' => $actions['modifier']['titre'] ?? null,
             'diagnostic_soumission' => $actions['soumettre']['titre'] ?? null,
@@ -768,6 +776,54 @@ class BonCommandeController extends Controller implements HasMiddleware
                 'id' => $bon->id,
                 'statut' => $bon->statut,
                 'redirection' => $this->urlFiche($bon),
+            ],
+        ]);
+    }
+
+    /**
+     * D-23 — dupliquer un bon en brouillon.
+     *
+     * Le geste sert au quotidien : le trimestre de consommables ressemble au
+     * précédent. Mais les valeurs sont RE-FIGÉES au jour de la duplication
+     * (extension d'IA-2) — recopier un prix de l'an dernier dans un bon qu'on
+     * s'apprête à engager reviendrait à commander à un prix qui n'existe plus.
+     *
+     * Un bon ANNULÉ ne se duplique pas : il a été écarté pour une raison, et
+     * la reproduire d'un clic reviendrait à contourner cette décision.
+     */
+    public function dupliquer(Request $request, int $id): JsonResponse
+    {
+        $bon = BonCommande::query()->with('lignes')->findOrFail($id);
+
+        if ($bon->statut === BonCommande::STATUT_ANNULE) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Un bon annulé ne se duplique pas : il a été écarté pour une raison.',
+            ], 409);
+        }
+
+        if ($bon->lignes->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ce bon n\'a aucune ligne à dupliquer.',
+            ], 422);
+        }
+
+        $resultat = $this->duplication->dupliquer($bon, $request->user());
+
+        return response()->json([
+            'success' => true,
+            'message' => sprintf(
+                'Brouillon créé depuis %s — les prix ont été actualisés au jour de la duplication.',
+                $bon->numero_affiche
+            ),
+            'data' => [
+                'id' => $resultat['bon']->id,
+                'redirection' => route('achat.bons-commande.edit', $resultat['bon']->id),
+                // L'écran affiche ces deux listes : ce qui demande vérification,
+                // et ce que l'acheteur avait négocié la dernière fois.
+                'avertissements' => $resultat['avertissements'],
+                'comparaisons' => $resultat['comparaisons'],
             ],
         ]);
     }

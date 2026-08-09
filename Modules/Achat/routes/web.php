@@ -60,6 +60,10 @@ Route::middleware(['auth'])->prefix('achat')->name('achat.')->group(function () 
 
         // Fin de vie (SFD §7.5) : M-07 annuler, M-03 clôturer le reliquat.
         Route::post('/{id}/annuler', [BonCommandeController::class, 'annuler'])->name('annuler');
+
+        // D-23 — duplication : POST, car elle CRÉE un bon. Une action qui
+        // écrit ne s'expose pas en GET (un lien partagé la déclencherait).
+        Route::post('/{id}/dupliquer', [BonCommandeController::class, 'dupliquer'])->name('dupliquer');
         Route::post('/{id}/cloturer', [BonCommandeController::class, 'cloturer'])->name('cloturer');
 
         // D-09 — pièces justificatives (M-05, M-08). Le téléchargement passe
