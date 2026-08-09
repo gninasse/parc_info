@@ -201,6 +201,104 @@ $(function () {
         });
     }
 
+    // ── Onglet Licences (D-13 : pré-écran A-05, M-04 service fait) ─────────
+
+    /**
+     * Pré-écran A-05 : « Réceptionner combien d'unités ? ». Le serveur dit
+     * d'abord s'il est possible d'ouvrir (IA-9 : logiciel rattaché) — un
+     * blocage se lit AVANT la saisie, avec son lien de correction.
+     */
+    $('#table-licences').on('click', '.btn-receptionner-licences', function () {
+        const urlPreparer = $(this).data('url-preparer');
+        const urlOuvrir = $(this).data('url-ouvrir');
+        const designation = $(this).data('designation');
+
+        $.getJSON(urlPreparer).done((contexte) => {
+            if (!contexte.peut_ouvrir) {
+                const lien = contexte.blocage?.url_correction;
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Réception impossible',
+                    html: `<p class="mb-2">${contexte.blocage?.message ?? ''}</p>`
+                        + (lien ? `<a href="${lien}" target="_blank" rel="noopener">Corriger la fiche article →</a>` : ''),
+                });
+                return;
+            }
+
+            const reste = contexte.ligne.reste;
+
+            Swal.fire({
+                title: 'Réceptionner combien d\'unités ?',
+                html: `<p class="mb-2 text-start">${designation}<br><small class="text-muted">Reste à livrer : ${reste}</small></p>`,
+                input: 'number',
+                inputValue: reste,
+                inputAttributes: { min: 1, max: reste, step: 1, 'aria-label': 'Quantité à réceptionner' },
+                showCancelButton: true,
+                confirmButtonText: 'Commencer la saisie',
+                cancelButtonText: 'Annuler',
+                inputValidator: (valeur) => {
+                    const n = Number(valeur);
+                    if (!n || n <= 0) return 'Indiquez une quantité positive.';
+                    if (n > reste) return `Le reste à livrer est de ${reste}.`;
+                    return undefined;
+                },
+            }).then((r) => {
+                if (!r.isConfirmed) return;
+
+                // POST (transition d'état) : formulaire jetable plutôt qu'AJAX,
+                // la réponse est une redirection vers le wizard plein écran.
+                const $form = $('<form method="POST">')
+                    .attr('action', urlOuvrir)
+                    .append($('<input type="hidden" name="_token">').val($('meta[name="csrf-token"]').attr('content')))
+                    .append($('<input type="hidden" name="quantite">').val(r.value));
+                $('body').append($form);
+                $form.trigger('submit');
+            });
+        });
+    });
+
+    /** M-04 — constat de service fait : une date, un commentaire, la ligne est soldée. */
+    $('#table-licences').on('click', '.btn-service-fait', function () {
+        const url = $(this).data('url');
+        const designation = $(this).data('designation');
+
+        Swal.fire({
+            title: 'Constater le service fait',
+            html: `<p class="text-start mb-2">${designation}</p>
+                <label class="form-label small d-block text-start" for="sf-date">Date du service fait</label>
+                <input type="date" id="sf-date" class="swal2-input mt-0" value="${new Date().toISOString().slice(0, 10)}">
+                <label class="form-label small d-block text-start mt-2" for="sf-commentaire">Commentaire (facultatif)</label>
+                <textarea id="sf-commentaire" class="swal2-textarea mt-0" placeholder="Conditions d'exécution, réserves…"></textarea>`,
+            showCancelButton: true,
+            confirmButtonText: 'Constater',
+            cancelButtonText: 'Annuler',
+            preConfirm: () => {
+                const date = document.getElementById('sf-date').value;
+                if (!date) {
+                    Swal.showValidationMessage('Indiquez la date du service fait.');
+                    return false;
+                }
+                return { date, commentaire: document.getElementById('sf-commentaire').value };
+            },
+        }).then((r) => {
+            if (!r.isConfirmed) return;
+
+            $.ajax({
+                url,
+                method: 'POST',
+                data: JSON.stringify(r.value),
+                contentType: 'application/json',
+                dataType: 'json',
+            })
+                .done((reponse) => { window.location.href = reponse.data.redirection; })
+                .fail((xhr) => Swal.fire({
+                    icon: 'error',
+                    title: 'Constat impossible',
+                    text: xhr.responseJSON?.message ?? '',
+                }));
+        });
+    });
+
     // Infobulles des badges et boutons grisés (diagnostics §0.3).
     $('[data-bs-toggle="tooltip"]').each((_, element) => new bootstrap.Tooltip(element));
 });

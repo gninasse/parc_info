@@ -58,6 +58,8 @@
 @php
     $couleurStatut = $bon->statut_couleur === 'orange' ? 'warning text-dark' : $bon->statut_couleur;
     $lignesLivraison = $bon->estEngage();
+    // Quantité lisible : « 6 » plutôt que « 6,00 », partagé par tous les onglets.
+    $qte = fn ($v) => rtrim(rtrim(number_format((float) $v, 2, ',', ' '), '0'), ',');
 @endphp
 
 {{-- ── Bandeau d'état (toujours visible, SPEC_UX A-04) ─────────────────── --}}
@@ -202,6 +204,14 @@
                     Lignes <span class="badge bg-secondary-subtle text-secondary-emphasis">{{ $bon->lignes->count() }}</span>
                 </button>
             </li>
+            @if($lignesImmaterielles->isNotEmpty())
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#onglet-licences"
+                        type="button" role="tab" aria-controls="onglet-licences" aria-selected="false">
+                    Licences <span class="badge bg-secondary-subtle text-secondary-emphasis">{{ $lignesImmaterielles->count() }}</span>
+                </button>
+            </li>
+            @endif
             <li class="nav-item" role="presentation">
                 <button class="nav-link" data-bs-toggle="tab" data-bs-target="#onglet-receptions"
                         type="button" role="tab" aria-controls="onglet-receptions" aria-selected="false">
@@ -247,9 +257,6 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @php
-                                $qte = fn ($v) => rtrim(rtrim(number_format((float) $v, 2, ',', ' '), '0'), ',');
-                            @endphp
                             @forelse($bon->lignes as $ligne)
                                 <tr>
                                     <td><span class="badge bg-secondary-subtle text-secondary-emphasis">{{ $ligne->nature }}</span></td>
@@ -333,6 +340,79 @@
                     </div>
                 @endif
             </div>
+
+            {{-- ── Onglet Licences (D-13 : A-05 et M-04) ──────────────── --}}
+            @if($lignesImmaterielles->isNotEmpty())
+            <div class="tab-pane fade" id="onglet-licences" role="tabpanel">
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle" id="table-licences">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Nature</th>
+                                <th>Article</th>
+                                <th class="text-end">Reçues / commandées</th>
+                                <th>Progression</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($lignesImmaterielles as $ligne)
+                                @php
+                                    $progression = $ligne->progression;
+                                    $diagnostic = $diagnosticsImmateriels[$ligne->id] ?? null;
+                                @endphp
+                                <tr data-ligne-id="{{ $ligne->id }}">
+                                    <td><span class="badge bg-secondary-subtle text-secondary-emphasis">{{ $ligne->nature }}</span></td>
+                                    <td>
+                                        {{ $ligne->designation }}
+                                        @if($ligne->service_fait_le)
+                                            <div class="small text-success">
+                                                <i class="bi bi-check-circle me-1"></i>Service fait le
+                                                {{ $ligne->service_fait_le->format('d/m/Y') }}
+                                                @if($ligne->service_fait_commentaire)
+                                                    — {{ $ligne->service_fait_commentaire }}
+                                                @endif
+                                            </div>
+                                        @endif
+                                    </td>
+                                    <td class="text-end">{{ $qte($ligne->quantite_livree) }} / {{ $qte($ligne->quantite) }}</td>
+                                    <td>
+                                        <div class="progress barre-ligne" role="progressbar"
+                                             aria-label="Progression de réception"
+                                             aria-valuenow="{{ $progression }}" aria-valuemin="0" aria-valuemax="100">
+                                            <div class="progress-bar {{ $progression >= 100 ? 'bg-success' : 'bg-warning' }}"
+                                                 style="width: {{ min($progression, 100) }}%"></div>
+                                        </div>
+                                    </td>
+                                    <td class="text-end">
+                                        @can('achat.licences.receptionner')
+                                            @if($ligne->estPrestation())
+                                                <button type="button" class="btn btn-sm btn-outline-primary btn-service-fait"
+                                                        data-url="{{ route('achat.licences.service-fait', [$bon->id, $ligne->id]) }}"
+                                                        data-designation="{{ $ligne->designation }}"
+                                                        @disabled($diagnostic !== null)
+                                                        title="{{ $diagnostic ?? 'Constater le service fait' }}">
+                                                    <i class="bi bi-clipboard-check me-1"></i>Constater le service fait
+                                                </button>
+                                            @else
+                                                <button type="button" class="btn btn-sm btn-outline-primary btn-receptionner-licences"
+                                                        data-url-preparer="{{ route('achat.licences.preparer', [$bon->id, $ligne->id]) }}"
+                                                        data-url-ouvrir="{{ route('achat.licences.ouvrir', [$bon->id, $ligne->id]) }}"
+                                                        data-designation="{{ $ligne->designation }}"
+                                                        @disabled($diagnostic !== null)
+                                                        title="{{ $diagnostic ?? 'Réceptionner les licences' }}">
+                                                    <i class="bi bi-key me-1"></i>Réceptionner…
+                                                </button>
+                                            @endif
+                                        @endcan
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @endif
 
             {{-- ── Onglet Réceptions (D-12, maquette P-03, UX2-09/UX-12) ── --}}
             <div class="tab-pane fade" id="onglet-receptions" role="tabpanel">

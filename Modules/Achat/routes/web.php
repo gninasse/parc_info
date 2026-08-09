@@ -6,6 +6,7 @@ use Modules\Achat\Http\Controllers\BonCommandeController;
 use Modules\Achat\Http\Controllers\BonCommandePdfController;
 use Modules\Achat\Http\Controllers\DashboardController;
 use Modules\Achat\Http\Controllers\DocumentController;
+use Modules\Achat\Http\Controllers\ReceptionLicencesController;
 
 /*
 |--------------------------------------------------------------------------
@@ -68,6 +69,27 @@ Route::middleware(['auth'])->prefix('achat')->name('achat.')->group(function () 
         // A-04 — la fiche, en DERNIER : /{id} capterait tout segment littéral
         // déclaré après lui.
         Route::get('/{id}', [BonCommandeController::class, 'show'])->name('show');
+    });
+
+    /*
+    | A-05 — réception des natures NON STOCKABLES (D-13). Permission
+    | achat.licences.receptionner portée par le contrôleur ; le préfixe est
+    | distinct de /bons-commande/{id} pour ne pas entrer en collision avec
+    | la fiche, déclarée en dernier.
+    */
+    Route::prefix('licences/{bon}/lignes/{ligne}')->name('licences.')->group(function () {
+        Route::get('/preparer', [ReceptionLicencesController::class, 'preparer'])->name('preparer');
+        Route::post('/ouvrir', [ReceptionLicencesController::class, 'ouvrir'])->name('ouvrir');
+        Route::post('/service-fait', [ReceptionLicencesController::class, 'serviceFait'])->name('service-fait');
+
+        Route::prefix('receptions/{reception}')->group(function () {
+            Route::get('/', [ReceptionLicencesController::class, 'wizard'])->name('wizard');
+            Route::post('/cles', [ReceptionLicencesController::class, 'saisir'])->name('saisir');
+            Route::post('/importer', [ReceptionLicencesController::class, 'importer'])->name('importer');
+            Route::delete('/cles/{tampon}', [ReceptionLicencesController::class, 'supprimerCle'])->name('supprimer-cle');
+            Route::post('/finaliser', [ReceptionLicencesController::class, 'finaliser'])->name('finaliser');
+            Route::post('/abandonner', [ReceptionLicencesController::class, 'abandonner'])->name('abandonner');
+        });
     });
 
     /*

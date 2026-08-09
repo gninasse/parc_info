@@ -23,7 +23,9 @@ return new class extends Migration
 
             $table->date('date_acquisition');
             $table->date('date_activation')->nullable();
-            $table->date('date_expiration');
+            // Nullable : une licence PERPÉTUELLE n'expire pas (amendé par la
+            // migration 2026_08_09_000001 pour les bases existantes).
+            $table->date('date_expiration')->nullable();
             $table->date('date_renouvellement_prochain')->nullable();
 
             $table->decimal('cout_unitaire', 10, 2)->nullable();

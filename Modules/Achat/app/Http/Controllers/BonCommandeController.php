@@ -682,6 +682,12 @@ class BonCommandeController extends Controller implements HasMiddleware
             ])
             ->findOrFail($id);
 
+        // Natures immatérielles (licence, prestation) : elles se réceptionnent
+        // hors magasin, dans l'onglet dédié (D-13).
+        $lignesImmaterielles = $bon->lignes->filter(
+            fn ($ligne) => $ligne->estLicence() || $ligne->estPrestation()
+        )->values();
+
         return view('achat::bons-commande.show', [
             'bon' => $bon,
             'actions' => $this->actions->pour($bon, $request->user()),
@@ -701,7 +707,41 @@ class BonCommandeController extends Controller implements HasMiddleware
                 && $bon->valide_par === $bon->created_by,
             // M-05 : la taille max des pièces est un paramètre A-08.
             'tailleMaxPieceMo' => $this->parametres->tailleMaxPieceMo(),
+            // Onglet Licences (D-13) : lignes des natures immatérielles, avec
+            // leur diagnostic d'action (grisé + raison, SPEC_UX §0.3).
+            'lignesImmaterielles' => $lignesImmaterielles,
+            'diagnosticsImmateriels' => $lignesImmaterielles
+                ->mapWithKeys(fn ($ligne) => [$ligne->id => $this->diagnosticReception($bon, $ligne)])
+                ->all(),
         ]);
+    }
+
+    /**
+     * Pourquoi le bouton de réception d'une ligne immatérielle est grisé —
+     * ou `null` s'il est ouvert (SPEC_UX A-04, doctrine §0.3).
+     */
+    private function diagnosticReception(BonCommande $bon, $ligne): ?string
+    {
+        if (! in_array($bon->statut, BonCommande::STATUTS_RECEPTIONNABLES, true)) {
+            return 'Le bon doit être validé pour réceptionner.';
+        }
+
+        if ($ligne->estSoldee()) {
+            return $ligne->estPrestation()
+                ? 'Service déjà constaté.'
+                : 'Toutes les licences ont été reçues.';
+        }
+
+        // IA-9 : la garde du logiciel se dit ici aussi, avant même le clic.
+        if ($ligne->estLicence()) {
+            $article = \Modules\Catalogue\Models\Article::query()->find($ligne->article_id);
+
+            if ($article === null || $article->logiciel_id === null) {
+                return 'Article sans logiciel rattaché : corrigez la fiche au Catalogue.';
+            }
+        }
+
+        return null;
     }
 
     // ═══ D-14 (partiel) — Fin de vie : M-07 annuler, M-03 clôturer ═══════════
