@@ -53,3 +53,7 @@ node "$ICI/circuit.cjs"
 echo
 echo "→ Vérification de la fiche A-04"
 node "$ICI/fiche.cjs"
+
+echo
+echo "→ Accessibilité des parcours critiques (SPEC_UX §18)"
+node "$ICI/accessibilite.cjs"

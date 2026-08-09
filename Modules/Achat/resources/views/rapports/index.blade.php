@@ -91,7 +91,7 @@
                            title="Permission dédiée : achat.rapports.signaux"></i>
                     </h6>
                     <p class="small text-muted mb-0">
-                        8 indicateurs de vigilance — ils signalent, ils n'accusent pas.
+                        9 indicateurs de vigilance — ils signalent, ils n'accusent pas.
                     </p>
                 </div>
             </div>

@@ -470,13 +470,13 @@ Règles d'écriture : voix active, vouvoiement, chiffres avant les mots, jamais 
 | Ligne sans prix | « Indiquez le prix négocié (le prix de référence est de 650 000 FCFA HT). » |
 | Quantité nulle/négative | « La quantité doit être supérieure à zéro. » |
 | Aucune ligne à la soumission | Bouton : `Soumettre (aucune ligne)` ; si contourné : « Ajoutez au moins une ligne avant de soumettre. » |
-| Licence sans logiciel (ouverture wizard) | « Impossible de réceptionner : l'article CONS-LIC-0007 n'a pas de logiciel rattaché. `[Corriger la fiche article →]` » |
-| Clé en doublon (wizard) | « Cette clé est déjà saisie à la ligne 4. » |
+| Licence sans logiciel (ouverture wizard) | « La ligne licence « {code} » n'a pas de logiciel rattaché au Catalogue : la réception serait impossible. » — *texte livré, qui nomme la ligne fautive plutôt que l'article* |
+| Clé en doublon (wizard) | « La clé « {clé} » est déjà saisie dans cette réception. » — *texte livré : la clé est citée, ce qui vaut mieux qu'un numéro de ligne dans une grille défilante* |
 | Quantité de clés ≠ quantité réceptionnée | Bouton : `Finaliser (13 clés manquantes)` |
 | Date hors intérim (régularisation) | « La date doit être comprise entre le 27/07/2026 et le {date de mise en service}. » |
-| Dépassement du reste (notification Stock, côté magasin) | « Ligne Latitude 3540 : reste à livrer 10 — pour l'excédent, créez un bon de commande complémentaire ou refusez à la livraison. » |
+| Dépassement du reste (notification Stock, côté magasin) | « Ligne {désignation} : reste à livrer {reste}, or {annoncé} sont annoncés — pour l'excédent, créez un bon de commande complémentaire ou refusez à la livraison. » — *texte livré, qui rappelle aussi la quantité annoncée* |
 | Fichier trop lourd (M-05) | « Le fichier dépasse {N} Mo (taille actuelle : 18 Mo). Compressez-le ou déposez-le en plusieurs parties. » |
-| Type de fichier refusé (M-05) | « Seuls les PDF et les images sont acceptés. » |
+| Type de fichier refusé (M-05) | « Format non accepté : joignez un PDF, une image ou un document bureautique. » — *texte livré, aligné sur les extensions réellement admises* |
 | Conflit d'édition (409) | « Ce brouillon a été modifié depuis votre ouverture (par vous-même, à 14 h 02, dans un autre onglet). `[Recharger]` `[Écraser avec ma version]` » |
 | BL manquant sur une entrée liée (BR-01, si `bl_obligatoire_si_commande`) | « Joignez le bordereau du fournisseur (paramètre de l'établissement). » — au magasin, à la validation du bon d'entrée |
 | Écarts déclarés sans le bon motif (BR-04) | « Choisissez le motif "Écart BL — réclamation" pour déclarer des écarts de livraison. » |
@@ -490,12 +490,12 @@ Règles d'écriture : voix active, vouvoiement, chiffres avant les mots, jamais 
 | ID | Écran | Texte |
 |---|---|---|
 | EV-01 | A-01 | « Aucun bon de commande pour l'instant. `[Créer le premier bon]` — ou explorez le `[Catalogue]` pour préparer vos articles. » |
-| EV-02 | A-02 | « Aucun bon ne correspond à ces filtres. `[Réinitialiser les filtres]` · `[Nouveau bon de commande]` » |
+| EV-02 | A-02 | « Aucun bon de commande ne correspond à ces filtres. » + `[Réinitialiser les filtres]` |
 | EV-03 | A-04 Réceptions | « Rien n'a encore été livré sur cette commande. Les réceptions se saisissent au magasin (module Stock) et apparaîtront ici automatiquement. » |
-| EV-04 | A-06 | « Aucun reliquat : toutes les commandes validées sont soldées ✔ » |
-| EV-05 | A-04 Documents | « Aucune pièce jointe. Le bon signé et le bordereau du fournisseur ont leur place ici. `[📎 Ajouter une pièce]` » |
+| EV-04 | A-06 | « Aucun reliquat — toutes les commandes validées sont soldées ✔ » |
+| EV-05 | A-04 Documents | « Aucune pièce au dossier. Le BC signé, le bordereau du fournisseur ou la facture pro forma se déposent ici pour ne plus dormir dans un classeur. » + `[📎 Ajouter une pièce]` |
 | EV-06 | A-04 Chronologie | *(impossible par construction : la création est toujours journalisée)* |
-| EV-07 | A-07 carte Signaux | « Aucun signal sur la période. C'est le résultat attendu d'un fonctionnement normal. » |
+| EV-07 | A-07 carte Signaux | « ✔ Aucun signal sur ce périmètre. » — affiché **par indicateur**, la carte en présentant neuf : un état vide global masquerait les huit autres |
 
 ### 15.4 Toasts de succès (2 s, coin haut droit)
 

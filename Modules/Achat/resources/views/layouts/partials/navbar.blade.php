@@ -69,12 +69,18 @@
                   <a href="{{ route('cores.profile') }}" class="btn btn-outline-secondary btn-sm">
                     <i class="bi bi-person me-1"></i> Mon Profil
                   </a>
-                  <a href="#" class="btn btn-danger btn-sm"
-                     onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                     <i class="bi bi-box-arrow-right me-1"></i> Quitter
-                  </a>
-                  <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
+                  {{--
+                      Déconnexion : c'est une ACTION, pas une navigation. Un <a> qui
+                      soumet un formulaire déroute les technologies d'assistance (le
+                      lecteur d'écran annonce un lien vers nulle part) et ne répond pas
+                      à la barre d'espace. Un vrai bouton dans le formulaire règle les
+                      deux, sans JavaScript.
+                  --}}
+                  <form action="{{ route('logout') }}" method="POST" class="m-0">
                       @csrf
+                      <button type="submit" class="btn btn-danger btn-sm">
+                          <i class="bi bi-box-arrow-right me-1"></i> Quitter
+                      </button>
                   </form>
                 </li>
                 <!--end::Menu Footer-->

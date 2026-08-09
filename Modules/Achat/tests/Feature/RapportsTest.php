@@ -116,6 +116,27 @@ class RapportsTest extends TestCase
             ->assertSee('achat.rapports.view');
     }
 
+    /**
+     * L'écran annonce un NOMBRE d'indicateurs : il doit être celui que le
+     * service sert réellement. Le libellé « 8 indicateurs » est resté faux
+     * après l'ajout du 9e signal (BR-04) — un chiffre écrit en dur dans une
+     * vue ne se met pas à jour tout seul, ce test s'en charge.
+     */
+    public function test_la_carte_signaux_annonce_le_bon_nombre_d_indicateurs(): void
+    {
+        $controleur = $this->utilisateur([
+            'achat.rapports.view',
+            'achat.rapports.signaux',
+        ], 'controleur-libelle@example.com');
+
+        $nombre = count(app(SignauxService::class)->tous());
+
+        $this->actingAs($controleur)
+            ->get(route('achat.rapports.index'))
+            ->assertOk()
+            ->assertSee("{$nombre} indicateurs de vigilance");
+    }
+
     /** UX4-09 : les Signaux ont leur PROPRE permission. */
     public function test_les_signaux_exigent_leur_permission_dediee(): void
     {

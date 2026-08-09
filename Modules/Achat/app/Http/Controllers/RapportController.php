@@ -83,7 +83,7 @@ class RapportController extends Controller implements HasMiddleware
         ]);
     }
 
-    /** Carte Signaux : les 8 indicateurs, sous permission dédiée. */
+    /** Carte Signaux : les 9 indicateurs (SFD §7.7 + BR-04), sous permission dédiée. */
     public function signaux(Request $request): JsonResponse
     {
         return response()->json([

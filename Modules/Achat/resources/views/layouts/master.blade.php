@@ -88,8 +88,9 @@
       <!--begin::Footer-->
       <footer class="app-footer">
         <div class="float-end d-none d-sm-inline">CHU-YO | Module Achat</div>
-        <strong>Copyright &copy; 2025 <a href="#" class="text-decoration-none">CHU-YO</a>.</strong>
-        tous droits reservés.
+        {{-- Le nom de l'établissement n'est pas un lien : il n'ouvre rien. --}}
+        <strong>Copyright &copy; {{ date('Y') }} CHU-YO.</strong>
+        Tous droits réservés.
       </footer>
       <!--end::Footer-->
     </div>
