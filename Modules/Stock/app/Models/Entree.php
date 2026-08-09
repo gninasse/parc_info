@@ -65,6 +65,7 @@ class Entree extends Model
         'bon_commande_id',
         'observation_type',
         'observation',
+        'ecarts_bl',
         'beneficiaire_type',
         'beneficiaire_direction_id',
         'beneficiaire_service_id',
@@ -78,7 +79,41 @@ class Entree extends Model
     protected $casts = [
         'date_document' => 'date',
         'valide_le' => 'datetime',
+        // BR-04 : le rapprochement BL ↔ saisie, ligne à ligne.
+        'ecarts_bl' => 'array',
     ];
+
+    /**
+     * BR-04 — motifs courts d'un écart constaté au quai.
+     *
+     * Trois cas couvrent la réalité du comptoir : il en manque, c'est abîmé
+     * et refusé, ou le livreur en apporte plus que commandé et on refuse le
+     * surplus. Le texte libre reste dans l'observation.
+     */
+    public const MOTIFS_ECART = [
+        'manquant' => 'Manquant',
+        'endommage_refuse' => 'Endommagé — refusé',
+        'excedent_refuse' => 'Excédent refusé',
+    ];
+
+    /** L'observation qui déclenche la saisie structurée des écarts. */
+    public const OBSERVATION_ECART_BL = 'ecart_bl';
+
+    /**
+     * Les écarts déclarés, nettoyés — jamais null, toujours itérable.
+     *
+     * @return \Illuminate\Support\Collection<int, array>
+     */
+    public function ecartsDeclares(): \Illuminate\Support\Collection
+    {
+        return collect($this->ecarts_bl ?? [])->filter(fn ($ligne) => is_array($ligne))->values();
+    }
+
+    /** Y a-t-il un écart déclaré sur cette réception ? (pilule rouge d'Achat) */
+    public function aUnEcartBl(): bool
+    {
+        return $this->ecartsDeclares()->isNotEmpty();
+    }
 
     public function magasin(): BelongsTo
     {

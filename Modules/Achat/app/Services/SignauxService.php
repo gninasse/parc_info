@@ -9,7 +9,8 @@ use Modules\Achat\Models\Document;
 use Modules\Achat\Models\LigneCommande;
 
 /**
- * Les 8 SIGNAUX du SFD §7.7 — la carte sous permission dédiée (UX4-09).
+ * Les 9 SIGNAUX du SFD §7.7 (le 9e ajouté par BR-04) — la carte sous
+ * permission dédiée (UX4-09).
  *
  * Doctrine, et elle n'est pas négociable : ces indicateurs SIGNALENT, ils
  * n'accusent pas. Un écart de prix peut être parfaitement justifié, une
@@ -31,7 +32,7 @@ class SignauxService
     ) {}
 
     /**
-     * Les huit indicateurs, dans l'ordre du SFD.
+     * Les neuf indicateurs, dans l'ordre du SFD.
      *
      * @return array<string, array{titre: string, aide: string, lignes: list<array<string, mixed>>}>
      */
@@ -78,6 +79,14 @@ class SignauxService
                 'titre' => 'Pièces supprimées après validation',
                 'aide' => 'Suppressions motivées de pièces justificatives sur des bons engagés (A16).',
                 'lignes' => $this->pierresTombales($du, $au),
+            ],
+            // BR-04 — le 9e signal : ce que les fournisseurs annoncent face à
+            // ce qu'ils livrent réellement.
+            'ecarts_bl' => [
+                'titre' => 'Écarts de livraison déclarés par fournisseur',
+                'aide' => 'Part des livraisons où le magasin a constaté un écart entre le bordereau '
+                    .'annoncé et le compté reçu. Le fournisseur qui annonce 10 et livre 8 se lit sur une ligne.',
+                'lignes' => $this->ecartsBlParFournisseur($du, $au),
             ],
         ];
     }
@@ -417,6 +426,75 @@ class SignauxService
                 'motif' => $document->motif_suppression,
             ])
             ->all();
+    }
+
+    // ── 9. Écarts BL par fournisseur (BR-04) ──────────────────────────
+
+    /**
+     * Le TAUX de livraisons avec écart déclaré, par fournisseur.
+     *
+     * Un nombre brut d'écarts ne dit rien : trois écarts sur trois cents
+     * livraisons est une broutille, trois sur quatre est un problème. C'est
+     * donc le taux qui figure ici, avec son dénominateur à côté.
+     *
+     * Lecture défensive du module Stock : sans lui, le signal rend une liste
+     * vide plutôt que d'empêcher l'affichage des huit autres.
+     */
+    private function ecartsBlParFournisseur(?string $du, ?string $au): array
+    {
+        if (! Schema::hasTable('stock_entrees') || ! Schema::hasColumn('stock_entrees', 'ecarts_bl')) {
+            return [];
+        }
+
+        $entrees = DB::table('stock_entrees')
+            ->leftJoin('catalogue_fournisseurs', 'catalogue_fournisseurs.id', '=', 'stock_entrees.fournisseur_id')
+            ->where('stock_entrees.statut', 'VALIDE')
+            ->when($du !== null, fn ($q) => $q->whereDate('stock_entrees.date_document', '>=', $du))
+            ->when($au !== null, fn ($q) => $q->whereDate('stock_entrees.date_document', '<=', $au))
+            ->get([
+                'stock_entrees.id',
+                'stock_entrees.numero',
+                'stock_entrees.ecarts_bl',
+                'stock_entrees.fournisseur_id',
+                'catalogue_fournisseurs.raison_sociale AS fournisseur',
+            ]);
+
+        $resultats = [];
+
+        foreach ($entrees->groupBy('fournisseur_id') as $fournisseurId => $livraisons) {
+            if ($fournisseurId === null || $fournisseurId === '') {
+                continue; // une entrée sans fournisseur ne met personne en cause
+            }
+
+            $avecEcart = $livraisons->filter(fn ($entree) => $this->compterEcarts($entree->ecarts_bl) > 0);
+
+            if ($avecEcart->isEmpty()) {
+                continue;
+            }
+
+            $resultats[] = [
+                'fournisseur' => $livraisons->first()->fournisseur ?? '—',
+                'livraisons' => $livraisons->count(),
+                'livraisons_avec_ecart' => $avecEcart->count(),
+                'taux_pct' => round($avecEcart->count() * 100 / max(1, $livraisons->count()), 1),
+                'lignes_en_ecart' => $avecEcart->sum(fn ($entree) => $this->compterEcarts($entree->ecarts_bl)),
+                'bons_entree' => $avecEcart->pluck('numero')->filter()->implode(', '),
+            ];
+        }
+
+        usort($resultats, fn ($a, $b) => $b['taux_pct'] <=> $a['taux_pct']);
+
+        return $resultats;
+    }
+
+    /** Le JSON arrive décodé (PostgreSQL) ou en chaîne (SQLite). */
+    private function compterEcarts(mixed $brut): int
+    {
+        if (is_string($brut)) {
+            $brut = json_decode($brut, true);
+        }
+
+        return is_array($brut) ? count($brut) : 0;
     }
 
     // ── Base commune ───────────────────────────────────────────────────────

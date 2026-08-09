@@ -72,6 +72,20 @@ trait ValideLignesEntree
             'observation_type' => ['nullable', Rule::in(array_keys(config('stock.motifs_observation_entree', [])))],
             'observation' => ['nullable', 'string', 'required_if:observation_type,autre'],
 
+            /*
+             * BR-04 — le rapprochement BL ↔ saisie.
+             *
+             * FACULTATIF par construction : jamais un frein au quai. Le
+             * magasinier pressé valide sans rien remplir, comme avant. Mais
+             * s'il déclare un écart, celui-ci doit être exploitable — sinon
+             * la pièce de réclamation ne vaut rien devant le fournisseur.
+             */
+            'ecarts_bl' => ['nullable', 'array', 'max:200'],
+            'ecarts_bl.*.article_id' => ['required', 'integer', Rule::exists('catalogue_articles', 'id')],
+            'ecarts_bl.*.quantite_annoncee_bl' => ['required', 'numeric', 'min:0'],
+            'ecarts_bl.*.quantite_comptee' => ['required', 'numeric', 'min:0'],
+            'ecarts_bl.*.motif' => ['required', Rule::in(array_keys(\Modules\Stock\Models\Entree::MOTIFS_ECART))],
+
             // Bénéficiaire d'origine — retours uniquement, optionnel
             'beneficiaire_type' => ['nullable', 'required_with:beneficiaire_direction_id,beneficiaire_service_id,beneficiaire_unite_id,beneficiaire_poste_id,beneficiaire_local_id,beneficiaire_employe_id', Rule::in(['direction', 'service', 'unite', 'poste', 'local', 'employe'])],
             'beneficiaire_direction_id' => ['nullable', 'integer', Rule::exists('organisation_directions', 'id')],
@@ -145,6 +159,8 @@ trait ValideLignesEntree
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
+            $this->controlerEcartsBl($validator);
+
             $bonCommandeId = $this->input('bon_commande_id');
 
             if ($bonCommandeId === null || $validator->errors()->has('bon_commande_id')) {
@@ -214,6 +230,67 @@ trait ValideLignesEntree
                 }
             }
         });
+    }
+
+    /**
+     * BR-04 — cohérence du rapprochement BL, quand il est renseigné.
+     *
+     * Trois exigences, et pas une de plus (le quai n'est pas un guichet) :
+     *
+     *   1. le motif « Écart BL — réclamation » : déclarer des écarts sous
+     *      « Livraison conforme » produirait un bordereau qui se contredit ;
+     *   2. l'article concerné est SUR le bon d'entrée — un écart porte sur ce
+     *      qu'on a reçu, pas sur une ligne imaginaire ;
+     *   3. l'écart en est un : annoncé ≠ compté. Deux nombres égaux ne
+     *      documentent rien et pollueraient le signal par fournisseur.
+     */
+    private function controlerEcartsBl(Validator $validator): void
+    {
+        $ecarts = $this->input('ecarts_bl', []);
+
+        if (! is_array($ecarts) || $ecarts === []) {
+            return;
+        }
+
+        if ($this->input('observation_type') !== \Modules\Stock\Models\Entree::OBSERVATION_ECART_BL) {
+            $validator->errors()->add(
+                'ecarts_bl',
+                'Choisissez le motif « Écart BL — réclamation » pour déclarer des écarts de livraison.'
+            );
+
+            return;
+        }
+
+        $articlesDuBon = collect($this->input('lignes', []))
+            ->pluck('article_id')
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        foreach ($ecarts as $index => $ecart) {
+            if (! is_array($ecart)) {
+                continue;
+            }
+
+            $articleId = (int) ($ecart['article_id'] ?? 0);
+
+            if ($articleId > 0 && ! in_array($articleId, $articlesDuBon, true)) {
+                $validator->errors()->add(
+                    "ecarts_bl.{$index}.article_id",
+                    'Cet article n\'est pas sur le bon d\'entrée : un écart porte sur une ligne reçue.'
+                );
+            }
+
+            $annoncee = (float) ($ecart['quantite_annoncee_bl'] ?? 0);
+            $comptee = (float) ($ecart['quantite_comptee'] ?? 0);
+
+            if (abs($annoncee - $comptee) < 0.0001) {
+                $validator->errors()->add(
+                    "ecarts_bl.{$index}.quantite_comptee",
+                    'Annoncé et compté sont identiques : il n\'y a pas d\'écart à déclarer.'
+                );
+            }
+        }
     }
 
     protected function messagesSpecifiques(): array

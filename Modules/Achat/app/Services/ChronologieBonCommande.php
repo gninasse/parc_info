@@ -53,6 +53,10 @@ class ChronologieBonCommande
             ->where('bon_commande_id', $bon->id)
             ->pluck('id');
 
+        // Une seule lecture des écarts pour toute la timeline (et non une par
+        // ligne de journal, ce qui multiplierait les requêtes par vingt).
+        $ecarts = $this->ecartsParEntree($bon);
+
         return Activity::query()
             ->forModule('achat')
             ->with('causer:id,name')
@@ -72,7 +76,7 @@ class ChronologieBonCommande
             ->orderBy('created_at')
             ->orderBy('id')
             ->get()
-            ->map(fn (Activity $activite) => $this->presenter($activite, $bon))
+            ->map(fn (Activity $activite) => $this->presenter($activite, $bon, $ecarts))
             ->filter()
             // BR-03 : les pièces déposées au magasin sur les livraisons de CE
             // bon. Elles viennent du journal STOCK, mais racontent l'histoire
@@ -165,11 +169,52 @@ class ChronologieBonCommande
         }
     }
 
+    /**
+     * BR-04 — le nombre de lignes en écart, par bon d'entrée lié.
+     *
+     * Lecture défensive : les deux tables sont vérifiées avant d'être
+     * interrogées (même raison qu'au-dessus — sur PostgreSQL, une requête en
+     * erreur avorte la transaction et condamnerait toute la fiche).
+     *
+     * @return Collection<int, int> entree_id => nombre de lignes en écart
+     */
+    private function ecartsParEntree(BonCommande $bon): Collection
+    {
+        try {
+            if (! Schema::hasTable('stock_entrees') || ! Schema::hasColumn('stock_entrees', 'ecarts_bl')) {
+                return collect();
+            }
+
+            return DB::table('stock_entrees')
+                ->where('bon_commande_id', $bon->id)
+                ->whereNotNull('ecarts_bl')
+                ->pluck('ecarts_bl', 'id')
+                ->map(function ($brut) {
+                    if (is_string($brut)) {
+                        $brut = json_decode($brut, true);
+                    }
+
+                    return is_array($brut) ? count($brut) : 0;
+                })
+                ->filter();
+        } catch (\Throwable) {
+            return collect();
+        }
+    }
+
+    /** « — écart BL déclaré : 2 ligne(s) », ou rien. */
+    private function mentionEcart(mixed $entreeId, Collection $ecarts): string
+    {
+        $nombre = $entreeId === null ? 0 : (int) $ecarts->get((int) $entreeId, 0);
+
+        return $nombre > 0 ? sprintf(' — écart BL déclaré : %d ligne(s)', $nombre) : '';
+    }
+
     /** Une ligne du journal devient une phrase au passé — ou rien (trace technique). */
-    private function presenter(Activity $activite, BonCommande $bon): ?array
+    private function presenter(Activity $activite, BonCommande $bon, Collection $ecarts): ?array
     {
         $element = $activite->subject_type === IntegrationReception::class
-            ? $this->presenterIntegration($activite)
+            ? $this->presenterIntegration($activite, $ecarts)
             : $this->presenterBon($activite, $bon);
 
         if ($element === null) {
@@ -310,7 +355,7 @@ class ChronologieBonCommande
      * Réceptions et contre-passations : l'événement `created` de la trace
      * d'intégration (API_Inter_Modules §5.1) EST l'acte au journal.
      */
-    private function presenterIntegration(Activity $activite): ?array
+    private function presenterIntegration(Activity $activite, Collection $ecarts): ?array
     {
         if ($activite->description !== 'created') {
             return null;
@@ -338,9 +383,12 @@ class ChronologieBonCommande
             'icone' => 'bi-box-arrow-in-down',
             'couleur' => 'success',
             'phrase' => sprintf(
-                'Réception %s intégrée — %s unité(s)',
+                'Réception %s intégrée — %s unité(s)%s',
                 $reference ?? 'du magasin',
-                rtrim(rtrim(number_format($unites, 2, ',', ' '), '0'), ',')
+                rtrim(rtrim(number_format($unites, 2, ',', ' '), '0'), ','),
+                // BR-04 : l'écart déclaré se lit dans l'histoire du bon, sans
+                // avoir à déplier la carte de réception.
+                $this->mentionEcart($attributs->get('entree_id'), $ecarts)
             ),
             'details' => $detail->isNotEmpty()
                 ? $detail->map(fn ($ligne) => sprintf(

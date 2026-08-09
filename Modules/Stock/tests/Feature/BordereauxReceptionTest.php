@@ -488,35 +488,26 @@ class BordereauxReceptionTest extends TestCase
     }
 
     /** Le HTML du gabarit, sans passer par le rendu PDF (plus lisible). */
+    /**
+     * Le bordereau rendu en HTML, par le VRAI contrôleur.
+     *
+     * On ne réimplémente pas l'appel à la vue ici : un double des paramètres
+     * diverge dès qu'une donnée s'ajoute au gabarit (c'est arrivé avec le
+     * bloc des écarts de BR-04, et les tests tombaient sans qu'aucun défaut
+     * n'existe). On intercepte donc le rendu de la vue elle-même.
+     */
     private function rendreBordereau(Entree $entree): string
     {
-        $entree = $entree->fresh([
-            'magasin', 'fournisseur', 'lignes.article', 'createur', 'valideur', 'bonCommande',
-        ]);
+        $capture = null;
 
-        $controleur = new \ReflectionClass(\Modules\Stock\Http\Controllers\BordereauReceptionController::class);
-        $instance = $controleur->newInstance();
+        \Illuminate\Support\Facades\View::creator('stock::pdf.bordereau_reception', function ($vue) use (&$capture) {
+            $capture = $vue;
+        });
 
-        $unites = $controleur->getMethod('unitesSerialisees');
-        $unites->setAccessible(true);
+        $this->actingAs($this->magasinier)
+            ->get(route('stock.entrees.bordereau-reception', $entree->id))
+            ->assertOk();
 
-        $contre = $controleur->getMethod('contrePassation');
-        $contre->setAccessible(true);
-
-        return view('stock::pdf.bordereau_reception', [
-            'entree' => $entree,
-            'quantitatives' => $entree->lignes->filter(
-                fn ($ligne) => $ligne->article_id !== null && $ligne->article?->nature !== 'equipement'
-            ),
-            'unites' => $unites->invoke($instance, $entree),
-            'blFournisseurs' => $entree->documents()
-                ->where('est_supprime', false)
-                ->where('type', Document::TYPE_BL_FOURNISSEUR)
-                ->get(),
-            'afficherCouts' => (bool) config('stock.afficher_couts_bordereau', false),
-            'contrePassation' => $contre->invoke($instance, $entree),
-            'qr' => null,
-            'genereLe' => now(),
-        ])->render();
+        return $capture !== null ? $capture->render() : '';
     }
 }

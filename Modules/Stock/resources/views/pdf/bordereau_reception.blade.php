@@ -51,6 +51,16 @@
 
         .pied { position: fixed; bottom: -12mm; left: 0; right: 0; font-size: 7px; color: #6c757d; text-align: center; }
         .bl { font-size: 8px; color: #495057; margin-top: 1.5mm; }
+
+        /* BR-04 — les écarts constatés : LA pièce de réclamation. Encadrée
+           en rouge parce que c'est le bloc que le livreur doit lire avant
+           de signer, et celui qu'on ressortira face au fournisseur. */
+        .ecarts { margin-top: 4mm; border: 0.8px solid #dc3545; padding: 2.5mm; }
+        .ecarts h3 { font-size: 10px; margin: 0 0 1.5mm; color: #dc3545; }
+        table.ecarts-lignes { width: 100%; border-collapse: collapse; }
+        table.ecarts-lignes th, table.ecarts-lignes td { border: 0.4px solid #f1aeb5; padding: 1.4mm 2mm; }
+        table.ecarts-lignes th { background: #f8d7da; font-size: 8px; text-transform: uppercase; text-align: left; }
+        .ecarts .mention { font-size: 7px; color: #842029; margin-top: 1.5mm; }
     </style>
 </head>
 <body>
@@ -186,6 +196,45 @@
         </div>
     @endif
 </div>
+
+{{-- ── BR-04 : les écarts constatés — la pièce de réclamation ────────── --}}
+@if($ecarts->isNotEmpty())
+    <div class="ecarts">
+        <h3>Écarts constatés à la réception</h3>
+        <table class="ecarts-lignes">
+            <thead>
+                <tr>
+                    <th>Désignation</th>
+                    <th style="width:24mm; text-align:right;">Annoncé au BL</th>
+                    <th style="width:24mm; text-align:right;">Compté reçu</th>
+                    <th style="width:20mm; text-align:right;">Écart</th>
+                    <th style="width:34mm;">Motif</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($ecarts as $ecart)
+                    @php
+                        $annoncee = (float) ($ecart['quantite_annoncee_bl'] ?? 0);
+                        $comptee = (float) ($ecart['quantite_comptee'] ?? 0);
+                        $delta = $comptee - $annoncee;
+                    @endphp
+                    <tr>
+                        <td>{{ $ecart['designation'] ?? 'Article' }}</td>
+                        <td class="nombre">{{ rtrim(rtrim(number_format($annoncee, 2, ',', ' '), '0'), ',') }}</td>
+                        <td class="nombre">{{ rtrim(rtrim(number_format($comptee, 2, ',', ' '), '0'), ',') }}</td>
+                        <td class="nombre">{{ $delta > 0 ? '+' : '' }}{{ rtrim(rtrim(number_format($delta, 2, ',', ' '), '0'), ',') }}</td>
+                        <td>{{ \Modules\Stock\Models\Entree::MOTIFS_ECART[$ecart['motif'] ?? ''] ?? $ecart['motif'] ?? '' }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+        <div class="mention">
+            Ces écarts sont constatés contradictoirement au moment de la livraison.
+            La signature du livreur ci-dessous vaut reconnaissance des quantités
+            réellement remises. Seules les quantités COMPTÉES entrent en stock.
+        </div>
+    </div>
+@endif
 
 {{-- ── Les deux signatures : sans contradiction, pas de réclamation ────── --}}
 <table class="signatures">

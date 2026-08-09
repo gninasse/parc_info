@@ -29,6 +29,17 @@ use Modules\Achat\Models\IntegrationReception;
  */
 class ReceptionsBonCommande
 {
+    /**
+     * BR-04 — libellés des motifs d'écart (source : `Stock\Models\Entree`).
+     * Recopiés ici pour la même raison que le reste du service : la fiche
+     * d'un bon ne dépend pas du chargement du module voisin pour s'afficher.
+     */
+    private const MOTIFS_ECART = [
+        'manquant' => 'Manquant',
+        'endommage_refuse' => 'Endommagé — refusé',
+        'excedent_refuse' => 'Excédent refusé',
+    ];
+
     public function __construct(private readonly DocumentsReception $documents) {}
 
     /**
@@ -85,8 +96,44 @@ class ReceptionsBonCommande
                         ? $documents->get($integration->entree_id, collect())
                         : collect(),
                     'url_bordereau' => $this->urlBordereau($bon, $integration, $entree),
+                    // BR-04 — la pilule rouge « Écart BL » et son détail. Elle
+                    // DOCUMENTE : aucun compteur ne s'en trouve modifié, les
+                    // reliquats ne connaîtront jamais que le compté (RGC-02).
+                    'ecarts_bl' => $this->ecarts($entree),
                 ];
             });
+    }
+
+    /**
+     * Les écarts BL d'une entrée, prêts à l'affichage.
+     *
+     * Lecture défensive du JSON : la colonne peut arriver décodée (PostgreSQL
+     * json) ou en chaîne (SQLite), et l'entrée peut manquer.
+     *
+     * @return Collection<int, array>
+     */
+    private function ecarts(?object $entree): Collection
+    {
+        $brut = $entree->ecarts_bl ?? null;
+
+        if (is_string($brut)) {
+            $brut = json_decode($brut, true);
+        }
+
+        if (! is_array($brut)) {
+            return collect();
+        }
+
+        return collect($brut)
+            ->filter(fn ($ligne) => is_array($ligne))
+            ->map(fn (array $ligne) => [
+                'designation' => $ligne['designation'] ?? 'Article',
+                'annoncee' => (float) ($ligne['quantite_annoncee_bl'] ?? 0),
+                'comptee' => (float) ($ligne['quantite_comptee'] ?? 0),
+                'ecart' => (float) ($ligne['quantite_comptee'] ?? 0) - (float) ($ligne['quantite_annoncee_bl'] ?? 0),
+                'motif' => self::MOTIFS_ECART[$ligne['motif'] ?? ''] ?? ($ligne['motif'] ?? ''),
+            ])
+            ->values();
     }
 
     /**
@@ -187,6 +234,8 @@ class ReceptionsBonCommande
                     'stock_entrees.numero',
                     'stock_entrees.date_document',
                     'stock_entrees.observation',
+                    // BR-04 : le rapprochement BL ↔ saisie déclaré au quai.
+                    'stock_entrees.ecarts_bl',
                     'stock_magasins.libelle AS magasin',
                 ])
                 ->keyBy('id');

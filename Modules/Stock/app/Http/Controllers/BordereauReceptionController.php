@@ -81,6 +81,9 @@ class BordereauReceptionController extends Controller implements HasMiddleware
                 ->where('type', Document::TYPE_BL_FOURNISSEUR)
                 ->get(),
             'afficherCouts' => (bool) config('stock.afficher_couts_bordereau', false),
+            // BR-04 : les écarts déclarés au quai — le bloc que le livreur
+            // contresigne, et la pièce qu'on ressortira face au fournisseur.
+            'ecarts' => $entree->ecartsDeclares(),
             // Filigrane si un contre-mouvement a défait tout ou partie de
             // cette entrée : le document en circulation doit le dire.
             'contrePassation' => $this->contrePassation($entree),

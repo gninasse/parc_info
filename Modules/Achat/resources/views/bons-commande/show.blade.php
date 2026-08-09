@@ -457,6 +457,53 @@
                                 @if($reception['observation'])
                                     <div class="small text-muted mt-1">Observation : {{ $reception['observation'] }}</div>
                                 @endif
+
+                                {{--
+                                    BR-04 — l'écart entre ce que le BL annonçait et ce qui a été
+                                    compté. Il DOCUMENTE et signale : aucun compteur ne s'en
+                                    trouve modifié, les reliquats ne connaissent que le compté.
+                                --}}
+                                @if(($reception['ecarts_bl'] ?? collect())->isNotEmpty())
+                                    <div class="mt-2">
+                                        <button class="btn btn-sm btn-danger py-0 px-2" type="button"
+                                                data-bs-toggle="collapse"
+                                                data-bs-target="#ecarts-{{ $loop->index }}"
+                                                aria-expanded="false">
+                                            <i class="bi bi-exclamation-triangle me-1"></i>Écart BL
+                                            <span class="badge bg-white text-danger ms-1">{{ $reception['ecarts_bl']->count() }}</span>
+                                        </button>
+                                        <div class="collapse mt-2" id="ecarts-{{ $loop->index }}">
+                                            <table class="table table-sm mb-1 small">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Désignation</th>
+                                                        <th class="text-end">Annoncé au BL</th>
+                                                        <th class="text-end">Compté reçu</th>
+                                                        <th class="text-end">Écart</th>
+                                                        <th>Motif</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach($reception['ecarts_bl'] as $ecart)
+                                                        <tr>
+                                                            <td>{{ $ecart['designation'] }}</td>
+                                                            <td class="text-end">{{ rtrim(rtrim(number_format($ecart['annoncee'], 2, ',', ' '), '0'), ',') }}</td>
+                                                            <td class="text-end">{{ rtrim(rtrim(number_format($ecart['comptee'], 2, ',', ' '), '0'), ',') }}</td>
+                                                            <td class="text-end fw-semibold {{ $ecart['ecart'] < 0 ? 'text-danger' : 'text-warning-emphasis' }}">
+                                                                {{ $ecart['ecart'] > 0 ? '+' : '' }}{{ rtrim(rtrim(number_format($ecart['ecart'], 2, ',', ' '), '0'), ',') }}
+                                                            </td>
+                                                            <td>{{ $ecart['motif'] }}</td>
+                                                        </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                            <p class="small text-muted mb-0">
+                                                Seules les quantités comptées sont entrées en stock et déduites du
+                                                reste à livrer : l'écart déclaré ne modifie aucun compteur.
+                                            </p>
+                                        </div>
+                                    </div>
+                                @endif
                                 @if($reception['lignes']->isNotEmpty())
                                     <div class="small mt-1">
                                         @foreach($reception['lignes'] as $ligne)

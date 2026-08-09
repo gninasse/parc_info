@@ -353,11 +353,12 @@ class RapportsTest extends TestCase
 
     // ═══ Les 8 Signaux (SFD §7.7) ═══════════════════════════════════════════
 
-    public function test_les_huit_signaux_sont_tous_servis(): void
+    public function test_les_neuf_signaux_sont_tous_servis(): void
     {
         $signaux = app(SignauxService::class)->tous();
 
-        $this->assertCount(8, $signaux);
+        // Huit au SFD §7.7, plus les écarts BL par fournisseur (BR-04).
+        $this->assertCount(9, $signaux);
 
         foreach ($signaux as $cle => $signal) {
             $this->assertArrayHasKey('titre', $signal, "Le signal {$cle} doit porter un titre.");

@@ -154,7 +154,8 @@ class EntreeController extends Controller implements HasMiddleware
             $entree = DB::transaction(function () use ($request) {
                 $entree = Entree::create(array_merge(
                     collect($request->validated())->except('lignes')->all(),
-                    ['created_by' => auth()->id()]
+                    ['created_by' => auth()->id()],
+                    $this->ecartsBlNormalises($request->validated())
                 ));
 
                 $this->synchroniserLignes($entree, $request->validated()['lignes'] ?? []);
@@ -256,7 +257,10 @@ class EntreeController extends Controller implements HasMiddleware
 
         try {
             DB::transaction(function () use ($request, $entree) {
-                $entree->update(collect($request->validated())->except('lignes')->all());
+                $entree->update(array_merge(
+                    collect($request->validated())->except('lignes')->all(),
+                    $this->ecartsBlNormalises($request->validated())
+                ));
                 $this->synchroniserLignes($entree, $request->validated()['lignes'] ?? []);
             });
 
@@ -270,6 +274,39 @@ class EntreeController extends Controller implements HasMiddleware
 
             return response()->json(['success' => false, 'message' => 'Une erreur interne est survenue.'], 500);
         }
+    }
+
+    /**
+     * BR-04 — écarts BL enrichis côté SERVEUR.
+     *
+     * La désignation imprimée sur la pièce de réclamation vient du catalogue,
+     * jamais du client : un POST forgé ne doit pas pouvoir faire signer au
+     * livreur un libellé choisi par l'expéditeur de la requête. Même doctrine
+     * que les montants d'Achat, calculés une seule fois côté serveur.
+     *
+     * @return array{ecarts_bl?: array}
+     */
+    private function ecartsBlNormalises(array $valide): array
+    {
+        $ecarts = $valide['ecarts_bl'] ?? null;
+
+        if (! is_array($ecarts) || $ecarts === []) {
+            // Le tableau vide vaut « plus d'écart » : on efface, sinon un
+            // écart corrigé resterait imprimé sur le bordereau.
+            return ['ecarts_bl' => null];
+        }
+
+        $designations = \Modules\Catalogue\Models\Article::query()
+            ->whereIn('id', collect($ecarts)->pluck('article_id')->filter()->all())
+            ->pluck('nom', 'id');
+
+        return ['ecarts_bl' => collect($ecarts)->map(fn (array $ecart) => [
+            'article_id' => (int) $ecart['article_id'],
+            'designation' => $designations[(int) $ecart['article_id']] ?? 'Article',
+            'quantite_annoncee_bl' => (float) $ecart['quantite_annoncee_bl'],
+            'quantite_comptee' => (float) $ecart['quantite_comptee'],
+            'motif' => $ecart['motif'],
+        ])->values()->all()];
     }
 
     /**

@@ -46,3 +46,7 @@ node "$ICI/rendu.cjs"
 echo
 echo "→ Vérification des interactions"
 node "$ICI/interactions.cjs"
+
+echo
+echo "→ Vérification de la saisie des écarts BL (BR-04)"
+node "$ICI/ecarts-bl.cjs"

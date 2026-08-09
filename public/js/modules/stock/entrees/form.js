@@ -256,6 +256,9 @@ $(function () {
         lignes: lignes.map((ligne) => (ligne.unite
             ? { equipement_id: ligne.unite.id, quantite: 1, cout_unitaire: ligne.cout_unitaire }
             : { article_id: ligne.article.id, quantite: ligne.quantite, cout_unitaire: ligne.cout_unitaire })),
+        // BR-04 : le rapprochement BL, envoyé seulement sous son motif — un
+        // écart déclaré puis le motif changé serait refusé par le serveur.
+        ecarts_bl: $('#e-observation-type').val() === 'ecart_bl' ? ecartsSaisis() : [],
     });
 
     // Affichage unifié des erreurs (bandeau + champs + lignes surlignées)
@@ -299,6 +302,95 @@ $(function () {
         });
     };
 
+    /*
+     * ── BR-04 : le rapprochement BL ↔ saisie ─────────────────────────────
+     *
+     * Mini-tableau facultatif, visible sous le seul motif « Écart BL ».
+     * L'article proposé vient des LIGNES DÉJÀ SAISIES du bon : on ne déclare
+     * pas un écart sur une marchandise qu'on n'a pas reçue. Le « compté » est
+     * pré-rempli avec la quantité de la ligne, ce qui reste vrai dans neuf cas
+     * sur dix (il manque des cartons, on n'a pas recompté le reste).
+     */
+    const motifsEcart = window.MOTIFS_ECART ?? {};
+
+    const ecartsSaisis = () => $('#table-ecarts tbody tr').map(function () {
+        const $l = $(this);
+        const articleId = $l.find('.ecart-article').val();
+
+        if (!articleId) return null;
+
+        return {
+            article_id: Number(articleId),
+            quantite_annoncee_bl: parseFloat($l.find('.ecart-annoncee').val()) || 0,
+            quantite_comptee: parseFloat($l.find('.ecart-comptee').val()) || 0,
+            motif: $l.find('.ecart-motif').val(),
+        };
+    }).get().filter(Boolean);
+
+    const majEcartsVide = () => {
+        $('#ecarts-vide').toggleClass('d-none', $('#table-ecarts tbody tr').length > 0);
+    };
+
+    const ajouterLigneEcart = (ecart = null) => {
+        // Les articles du bon : un écart porte sur une ligne reçue.
+        const options = lignes
+            .filter((l) => l.article)
+            .map((l) => `<option value="${l.article.id}" data-quantite="${l.quantite}"
+                ${Number(ecart?.article_id) === l.article.id ? 'selected' : ''}>${echapper(l.article.nom)}</option>`)
+            .join('');
+
+        if (!options) {
+            // Avertissement, pas un succès : le geste n'a pas abouti.
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'info',
+                title: 'Ajoutez d\'abord les lignes reçues : un écart porte sur un article du bon.',
+                showConfirmButton: false,
+                timer: 3200,
+            });
+            return;
+        }
+
+        const motifs = Object.entries(motifsEcart)
+            .map(([cle, libelle]) => `<option value="${cle}" ${ecart?.motif === cle ? 'selected' : ''}>${echapper(libelle)}</option>`)
+            .join('');
+
+        const $ligne = $(`
+            <tr>
+                <td><select class="form-select form-select-sm ecart-article">${options}</select></td>
+                <td><input type="number" step="0.01" min="0" class="form-control form-control-sm ecart-annoncee"
+                           value="${ecart?.quantite_annoncee_bl ?? ''}" placeholder="Annoncé"></td>
+                <td><input type="number" step="0.01" min="0" class="form-control form-control-sm ecart-comptee"
+                           value="${ecart?.quantite_comptee ?? ''}" placeholder="Compté"></td>
+                <td><select class="form-select form-select-sm ecart-motif">${motifs}</select></td>
+                <td class="text-end">
+                    <button type="button" class="btn btn-sm btn-link text-danger p-0 btn-retirer-ecart"
+                            title="Retirer cette ligne"><i class="bi bi-x-lg"></i></button>
+                </td>
+            </tr>
+        `);
+
+        // Compté pré-rempli depuis la ligne du bon : c'est ce qui est vrai
+        // dans la plupart des cas, et une saisie de moins au comptoir.
+        if (ecart === null) {
+            const $article = $ligne.find('.ecart-article');
+            $ligne.find('.ecart-comptee').val($article.find(':selected').data('quantite') ?? '');
+            $article.on('change', function () {
+                $ligne.find('.ecart-comptee').val($(this).find(':selected').data('quantite') ?? '');
+            });
+        }
+
+        $('#table-ecarts tbody').append($ligne);
+        majEcartsVide();
+    };
+
+    $('#btn-ajouter-ecart').on('click', () => ajouterLigneEcart());
+    $('#table-ecarts').on('click', '.btn-retirer-ecart', function () {
+        $(this).closest('tr').remove();
+        majEcartsVide();
+    });
+
     // ── Événements de page ────────────────────────────────────────────────
     $('#e-magasin, #e-fournisseur').select2({ theme: 'bootstrap-5', allowClear: true, placeholder: '' });
 
@@ -309,6 +401,8 @@ $(function () {
         $('#e-observation-type').val(motif);
         $('#e-observation').toggleClass('d-none', motif !== 'autre' && !$('#e-observation').val());
         if (motif === 'autre') $('#e-observation').removeClass('d-none').trigger('focus');
+        // BR-04 : le tableau des écarts ne s'ouvre que sous son motif.
+        $('#bloc-ecarts-bl').toggleClass('d-none', motif !== 'ecart_bl');
     });
 
     // Sélecteur d'article en modale (remplace le Select2 de ligne)
@@ -492,6 +586,13 @@ $(function () {
         }
         ajouterLigneArticle(initiale.article, initiale.quantite, initiale.cout_unitaire);
     });
+
+    /*
+     * BR-04 : les écarts existants APRÈS les lignes — leur liste d'articles
+     * se construit à partir des lignes du bon, qui doivent donc être là.
+     */
+    (window.ECARTS_INITIAUX ?? []).forEach((ecart) => ajouterLigneEcart(ecart));
+    majEcartsVide();
 
     // Popovers (en-tête + alertes de coût, délégation car lignes dynamiques)
     document.querySelectorAll('[data-bs-toggle="popover"]').forEach((el) => new bootstrap.Popover(el));

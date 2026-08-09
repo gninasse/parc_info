@@ -129,6 +129,55 @@
                           placeholder="Texte requis pour le motif « Autre »">{{ $entree?->observation }}</textarea>
             </div>
         </div>
+
+        {{--
+            BR-04 — le rapprochement BL ↔ saisie.
+
+            N'apparaît QUE sous le motif « Écart BL — réclamation », et reste
+            FACULTATIF : un formulaire qui freine au comptoir n'est jamais
+            rempli. Ce qui est saisi ici s'imprime sur le bordereau et se fait
+            contresigner par le livreur ; en revanche, aucune quantité ici ne
+            touche le stock ni les reliquats — seul le compté des lignes compte.
+        --}}
+        <div class="row g-3 mt-1 @if(($entree?->observation_type) !== \Modules\Stock\Models\Entree::OBSERVATION_ECART_BL) d-none @endif"
+             id="bloc-ecarts-bl">
+            <div class="col-12">
+                <div class="border border-danger-subtle rounded p-3 bg-danger-subtle bg-opacity-10">
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                        <h6 class="fw-bold mb-0 text-danger-emphasis">
+                            <i class="bi bi-exclamation-triangle me-1"></i>Écarts constatés (facultatif)
+                        </h6>
+                        <span class="small text-muted">
+                            Ce que le bordereau annonçait, face à ce qui a été compté.
+                        </span>
+                        <button type="button" class="btn btn-sm btn-outline-danger ms-auto" id="btn-ajouter-ecart">
+                            <i class="bi bi-plus-lg me-1"></i>Ajouter une ligne
+                        </button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-1" id="table-ecarts">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Article reçu</th>
+                                    <th style="width:16%">Annoncé au BL</th>
+                                    <th style="width:16%">Compté reçu</th>
+                                    <th style="width:20%">Motif</th>
+                                    <th style="width:5%"></th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+
+                    <p class="small text-muted mb-0" id="ecarts-vide">
+                        Aucun écart déclaré. Les quantités reçues restent celles des lignes du bon :
+                        un écart déclaré ici <strong>ne modifie aucun compteur</strong>, il documente
+                        la réclamation et alimente le suivi des fournisseurs.
+                    </p>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -239,6 +288,10 @@
     window.LIGNES_INITIALES = @json($lignesInitiales);
     window.MODE_COMMANDE = @json($modeCommande ?? null);
     window.ACHAT_DISPONIBLE = @json($achatDisponible);
+    // BR-04 : les motifs viennent du SERVEUR (source : Stock\Models\Entree),
+    // le navigateur ne décide pas de la nomenclature d'une réclamation.
+    window.MOTIFS_ECART = @json(\Modules\Stock\Models\Entree::MOTIFS_ECART);
+    window.ECARTS_INITIAUX = @json($entree?->ecartsDeclares() ?? []);
 </script>
 <script type="module" src="{{ asset('js/modules/stock/entrees/form.js') }}?v={{ time() }}"></script>
 @endpush
