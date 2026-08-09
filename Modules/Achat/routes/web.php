@@ -7,6 +7,7 @@ use Modules\Achat\Http\Controllers\BonCommandePdfController;
 use Modules\Achat\Http\Controllers\DashboardController;
 use Modules\Achat\Http\Controllers\DocumentController;
 use Modules\Achat\Http\Controllers\ReceptionLicencesController;
+use Modules\Achat\Http\Controllers\ReliquatController;
 
 /*
 |--------------------------------------------------------------------------
@@ -90,6 +91,16 @@ Route::middleware(['auth'])->prefix('achat')->name('achat.')->group(function () 
             Route::post('/finaliser', [ReceptionLicencesController::class, 'finaliser'])->name('finaliser');
             Route::post('/abandonner', [ReceptionLicencesController::class, 'abandonner'])->name('abandonner');
         });
+    });
+
+    /*
+    | A-06 — reliquats (D-14) : la to-do fournisseurs. Lecture seule ; la
+    | clôture passe par la route du bon (M-03), avec sa propre permission.
+    */
+    Route::prefix('reliquats')->name('reliquats.')->group(function () {
+        Route::get('/', [ReliquatController::class, 'index'])->name('index');
+        Route::get('/data', [ReliquatController::class, 'getData'])->name('data');
+        Route::get('/export', [ReliquatController::class, 'export'])->name('export');
     });
 
     /*
