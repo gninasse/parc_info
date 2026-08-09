@@ -3,6 +3,7 @@
 > **Date** : 03/08/2026 · **Branche** : `refactor/stock-rebuild` · **Statut** : **version 3.0 — document consolidé**, à faire valider
 > **Ce document remplace** les SFD v1.0 → v2.3 : toutes les décisions (D1–D17), les révisions successives et les **meilleures options des trois sessions de brainstorming** (Entrées, Sorties, Transferts) y sont intégrées in extenso, sans bloc d'amendement.
 > **Documents liés** : `SFD_Catalogue.md` v1.0-c (prérequis), `CADRAGE_Catalogue.md` (C1–C11), `BRAINSTORMING_{Entrees,Sorties,Transferts}_Stock.md` (genèse des choix), `TESTS_Stock.md`, `API_Stock.md`, `PLAN_Dev_Stock.md`, analyses des modules existants.
+> **Amendements liés (chantier Achat, 2026)** : `RACCORDEMENT_Achat_Stock.md` (PRQ-05 — le mode « Livraison sur commande », la transaction étendue et sa notification) et `API_Inter_Modules.md` (les contrats consommés et exposés). Le lot BR y a ajouté les pièces jointes typées, le bordereau de réception et les écarts BL, décrits au §6.2 ci-dessous. `DESIGN.md` porte désormais les conventions d'interface nées de ce chantier.
 
 ---
 
@@ -258,7 +259,9 @@ Deux règles portent tout le reste :
 
 **`stock_lignes_transferts`** : `transfert_id` `cascade` ; `article_id` (`CHECK`) ; `quantite` > 0 ; timestamps.
 
-**`stock_tampon_equipements`** *(généralisée — D13/D14/D17)* : `ligne_entree_id` XOR `ligne_sortie_id` XOR `ligne_transfert_id` (FK `cascade`, `CHECK` une seule) ; **entrées** : `numero_serie` saisi (unique tampon + contrôle applicatif ParcInfo, saisie ET validation), `equipement_id` renseigné à la validation ; **sorties/transferts** : `equipement_id` pointé (unité du magasin, unique par tampon ; refus si déjà pointée dans un autre bon non validé) ; purgé à la validation, vidé au retour brouillon.
+**`stock_tampon_equipements`** *(généralisée — D13/D14/D17)* : `ligne_entree_id` XOR `ligne_sortie_id` XOR `ligne_transfert_id` (FK `cascade`, `CHECK` une seule) ; **entrées** : `numero_serie` saisi (unique tampon + contrôle applicatif ParcInfo, saisie ET validation), `equipement_id` renseigné à la validation ; **sorties/transferts** : `equipement_id` pointé (unité du magasin, unique par tampon ; refus si déjà pointée dans un autre bon non validé) ; purgé à la validation, vidé au retour brouillon. **`etat`** nullable : l'état de l'unité (Neuf, Reconditionné…), saisi **par unité** au wizard de référencement.
+
+> **Écart D10 consigné** (P0-E) — la décision D10 énonçait que les fiches créées à la sérialisation portent l'état « Neuf ». L'implémentation retient un état **par unité**, porté par le tampon : une livraison mêle couramment du neuf et du reconditionné, et forcer « Neuf » pour tous obligeait à corriger chaque fiche ensuite dans ParcInfo — ce que personne ne fait. La valeur reste facultative ; à défaut, la fiche est créée en état **« bon »** (`SerialisationService::creerFiche`) — et non « Neuf » comme l'annonçait D10, un matériel livré neuf pouvant arriver abîmé.
 
 **`stock_inventaires`** : socle + `statut` enum(`EN_COURS`,`VALIDE`,`ANNULE`) ; `magasin_id` `restrict` ; `perimetre` enum ; `motif_global`. **`stock_lignes_inventaire`** : `inventaire_id` ; `article_id` XOR `equipement_id` ; `quantite_theorique` figée ; `quantite_physique` nullable ; `pointage` enum(`PRESENT`,`ABSENT`,`TROUVE`) pour les unités ; `mouvement_id` nullable (ajustement généré).
 

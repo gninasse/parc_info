@@ -101,3 +101,114 @@ The layout is fundamentally modular and based on Bootstrap 5 utility classes.
 - **Show / Profile Views**: Uses an "In-Place Edit" pattern. The page loads with all form fields disabled. An "Edit" button toggles the view, enabling fields and revealing "Save/Cancel" buttons.
 - **State Management**: Button states in lists are highly dynamic. Buttons (Edit, Activate, Delete) are disabled by default and enabled conditionally via JavaScript based on the number and state of the selected rows in the table.
 - **Confirmation**: Destructive or state-changing actions always trigger a standard `SweetAlert2` confirmation modal styled with the appropriate semantic color.
+
+---
+
+# Conventions issues des modules Stock et Achat (2026)
+
+*Ces règles sont nées de décisions prises en cours de chantier. Elles sont
+consignées ici pour être reprises telles quelles par les modules suivants —
+non par goût de l'uniformité, mais parce que chacune répond à un problème
+rencontré.*
+
+## La sémantique du JAUNE
+
+Le jaune ne signifie **ni « attention », ni « erreur »**. Il signifie
+**« verrouillé, en cours d'officialisation »**.
+
+Un bon de commande soumis au visa est jaune : son auteur ne peut plus le
+modifier, le validateur ne s'est pas encore prononcé. C'est un état
+d'attente, pas un défaut. Employer le jaune pour signaler un problème dans
+un autre écran brouillerait ce sens, et l'utilisateur cesserait de faire la
+différence.
+
+| Couleur | Sens | Exemple |
+|---|---|---|
+| Gris | Brouillon, sans effet | « Brouillon #58 » |
+| **Jaune** | **Verrouillé, en officialisation** | Bon soumis au visa |
+| Bleu | Engagé, en cours | Bon validé, livraison partielle |
+| Vert | Abouti | Bon livré, réception intégrée |
+| Rouge | Refus, annulation, écart | Renvoi motivé, contre-passation, écart BL |
+| Noir/foncé | Fin de vie assumée | Reliquat clôturé |
+
+## Le code des alertes
+
+- **Rouge** = une action est attendue de l'utilisateur (un refus à traiter,
+  un écart à réclamer) ;
+- **Orange** = vigilance, aucune action imposée (un signal, un prix qui
+  s'écarte de la référence) ;
+- **Orange hachuré** = dette héritée, à résorber progressivement (la
+  régularisation de l'intérim).
+
+La distinction rouge/orange n'est pas décorative : une application dont tout
+est rouge n'a plus de rouge.
+
+## Jamais d'information par la couleur seule
+
+Chaque pilule de statut porte **un libellé**, et chaque badge sémantique un
+pictogramme (✔ / ⚠ / ⛔). Un daltonien, une impression en noir et blanc, ou
+un écran mal réglé ne doivent pas faire perdre l'information.
+
+## Le pied de tableau à compteurs
+
+Toute liste porteuse d'enjeux financiers affiche un pied de tableau qui
+**totalise ce qui est affiché**, en qualifiant le montant (HT / TTC). Un
+total sans qualification est une question qu'on laisse à l'utilisateur, et
+il y répondra à sa manière.
+
+## Les 403 nominatives
+
+Un refus de permission nomme **la permission manquante**, jamais un simple
+« accès refusé ». L'utilisateur peut ainsi transmettre une demande précise à
+son administrateur, plutôt qu'un « ça ne marche pas ».
+
+> « Cette action requiert la permission « achat.bons_commande.valider ». »
+
+## Les boutons grisés portent leur diagnostic
+
+Un bouton inactif sans explication est une impasse. Chaque bouton grisé
+porte une infobulle (et un `aria-describedby`) qui dit **pourquoi** :
+
+> Bouton « Modifier » grisé — « Un bon validé ne se modifie plus
+> (BC-2026-0041). »
+
+## Les impressions s'ouvrent en modale
+
+Tout PDF (bon de commande, bordereau de réception, états) s'affiche dans une
+**modale à iframe**, avec impression directe, téléchargement et ouverture en
+onglet. Jamais un onglet imposé : l'utilisateur perdrait son contexte de
+travail, et sur les listes, sa sélection.
+
+## Les sélections passent par une modale
+
+Choisir un article, un fournisseur, une commande ou des unités se fait dans
+une **modale de sélection** (recherche, colonnes utiles, sélection simple ou
+multiple), jamais dans une liste déroulante. Un catalogue de 400 articles ne
+se parcourt pas dans un `select`.
+
+## Une toolbar, pas une colonne d'actions
+
+Les listes n'ont **pas de colonne d'actions** en bout de ligne. On
+sélectionne une ligne (radio ou case), et la **toolbar** au-dessus du
+tableau s'active. Cela évite les tableaux qui débordent horizontalement, et
+rend les actions découvrables au même endroit sur tous les écrans.
+
+## Les états vides enseignent
+
+Un écran vide ne dit pas « aucun résultat ». Il dit ce qu'il faut faire, et
+d'où viendra la donnée :
+
+> « Rien n'a encore été livré sur cette commande. Les réceptions se
+> saisissent au magasin (module Stock) et apparaîtront ici. »
+
+C'est souvent le seul endroit où un utilisateur apprend la frontière entre
+deux modules.
+
+## Une attente affichée disparaît le jour de la livraison
+
+Quand une fonctionnalité dépend d'un prérequis non livré, on l'affiche
+**désactivée avec sa raison** plutôt que de la masquer — l'utilisateur sait
+qu'elle est prévue. Mais la mention doit disparaître **automatiquement** le
+jour où le prérequis arrive (condition sur le schéma, pas sur une constante
+à changer à la main) : une carte « bientôt disponible » qui survit à sa
+livraison apprend à ne plus lire l'écran.
