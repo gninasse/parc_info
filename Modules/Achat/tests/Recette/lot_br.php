@@ -47,7 +47,7 @@ Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::except(['*']);
 $resultats = [];
 $verifier = function (string $reference, string $attendu, bool $ok) use (&$resultats) {
     $resultats[] = [$ok, $reference, $attendu];
-    echo ($ok ? "  ok     " : "  ÉCHEC  ").str_pad($reference, 10).$attendu.PHP_EOL;
+    echo ($ok ? '  ok     ' : '  ÉCHEC  ').str_pad($reference, 10).$attendu.PHP_EOL;
 };
 
 /** Un appel HTTP réel, avec la session de l'utilisateur donné. */
@@ -88,7 +88,7 @@ try {
         'prix_unitaire_ht' => 42000,
     ]);
 
-    echo PHP_EOL."── REC-24 : le bordereau signé par le livreur, avec écarts ──".PHP_EOL;
+    echo PHP_EOL.'── REC-24 : le bordereau signé par le livreur, avec écarts ──'.PHP_EOL;
 
     // Le BL annonce 10, on compte 8.
     $reponse = $appeler('POST', route('stock.entrees.store'), [
@@ -126,7 +126,7 @@ try {
     file_put_contents(sys_get_temp_dir().'/recette_bordereau.pdf', $pdf);
     $verifier('REC-24', 'le bordereau PDF est produit', str_starts_with($pdf, '%PDF'));
 
-    echo PHP_EOL."── REC-23 : la garde « BL obligatoire » ──".PHP_EOL;
+    echo PHP_EOL.'── REC-23 : la garde « BL obligatoire » ──'.PHP_EOL;
 
     config(['stock.bl_obligatoire_si_commande' => true]);
 
@@ -157,7 +157,7 @@ try {
 
     config(['stock.bl_obligatoire_si_commande' => false]);
 
-    echo PHP_EOL."── REC-25 : la consultation croisée depuis Achat ──".PHP_EOL;
+    echo PHP_EOL.'── REC-25 : la consultation croisée depuis Achat ──'.PHP_EOL;
 
     $piece = Entree::query()->findOrFail($sansBl)->documents()->firstOrFail();
 
@@ -200,7 +200,7 @@ try {
     $apresSuppression = $appeler('GET', route('achat.bons-commande.receptions.documents', [$bon->id, $sansBl, $piece->id]), [], $acheteur);
     $verifier('REC-26', 'le téléchargement répond 410 depuis Achat', $apresSuppression->getStatusCode() === 410);
 
-    echo PHP_EOL."── REC-27 : le 9e signal ──".PHP_EOL;
+    echo PHP_EOL.'── REC-27 : le 9e signal ──'.PHP_EOL;
 
     Auth::login($acheteur);
     $signal = app(\Modules\Achat\Services\SignauxService::class)->tous()['ecarts_bl'];
@@ -211,7 +211,7 @@ try {
     $verifier('REC-27', 'le fournisseur en écart y figure avec son taux',
         $lignes->contains(fn ($l) => $l['livraisons_avec_ecart'] >= 1 && $l['taux_pct'] > 0));
 
-    echo PHP_EOL."── REC-28 : Achat survit à un Stock indisponible ──".PHP_EOL;
+    echo PHP_EOL.'── REC-28 : Achat survit à un Stock indisponible ──'.PHP_EOL;
 
     DB::statement('ALTER TABLE stock_documents RENAME TO stock_documents_recette');
 
@@ -226,9 +226,9 @@ try {
     echo PHP_EOL;
     $echecs = collect($resultats)->reject(fn ($r) => $r[0])->count();
     echo $echecs === 0
-        ? "RECETTE DU LOT BR : ".count($resultats)." contrôles, tous conformes".PHP_EOL
+        ? 'RECETTE DU LOT BR : '.count($resultats).' contrôles, tous conformes'.PHP_EOL
         : "RECETTE : {$echecs} contrôle(s) en échec sur ".count($resultats).PHP_EOL;
 } finally {
     DB::rollBack();
-    echo "base de développement inchangée (transaction annulée)".PHP_EOL;
+    echo 'base de développement inchangée (transaction annulée)'.PHP_EOL;
 }

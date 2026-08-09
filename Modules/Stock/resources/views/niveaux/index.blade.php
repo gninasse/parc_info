@@ -67,6 +67,26 @@
     <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
         <h6 class="mb-0 fw-bold"><i class="bi bi-clipboard-data me-2 text-primary"></i>État des stocks</h6>
         <div class="d-flex gap-2">
+            {{--
+                D-21 — fermer la boucle rupture → commande. Le magasinier
+                sélectionne les articles en alerte et ouvre un brouillon de
+                commande, au lieu de signaler le manque par téléphone à
+                charge pour l'acheteur de tout ressaisir.
+
+                La permission vérifiée est celle d'ACHAT : le bouton n'apparaît
+                que pour qui peut réellement créer un bon (le serveur le
+                revérifie de toute façon).
+            --}}
+            @if(auth()->user()->can('achat.bons_commande.store') && auth()->user()->can('achat.api.view'))
+            <button id="btn-commander" class="btn btn-primary btn-sm" disabled
+                    data-url="{{ route('achat.api.bons-commande.brouillon-depuis-articles') }}"
+                    data-bs-toggle="tooltip"
+                    title="Sélectionnez un ou plusieurs articles à commander">
+                <i class="bi bi-cart-plus me-1"></i>Commander
+                <span class="badge bg-white text-primary ms-1 d-none" id="compteur-commander">0</span>
+            </button>
+            @endif
+
             @can('stock.niveaux.seuil')
             <button id="btn-seuil-article" class="btn btn-outline-primary btn-sm">
                 <i class="bi bi-sliders me-1"></i>Seuil sur un article
@@ -100,6 +120,8 @@
                class="table table-hover align-middle mb-0">
             <thead class="table-light">
                 <tr>
+                    {{-- D-21 : sélection multiple pour la commande groupée. --}}
+                    <th data-field="selection" data-checkbox="true"></th>
                     <th data-field="nature" data-formatter="natureBadgeFormatter" data-align="center">Nature</th>
                     <th data-field="article_nom" data-formatter="articleFormatter" data-sortable="true" data-sort-name="article">Article</th>
                     <th data-field="magasin" data-sortable="true" data-sort-name="magasin">Magasin</th>

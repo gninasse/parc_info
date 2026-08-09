@@ -47,6 +47,15 @@ return [
         'taille_max_piece_mo' => '10',
 
         /*
+         * D-21 — quantité proposée quand on commande depuis une alerte de
+         * seuil : `seuil × facteur`. C'est un point de départ, pas une
+         * prescription. Calculer un réapprovisionnement optimal demanderait
+         * une consommation historique et des délais fournisseurs dont on ne
+         * dispose pas ; l'acheteur ajuste, il connaît le marché.
+         */
+        'facteur_reapprovisionnement' => '2',
+
+        /*
          * Régularisation ACTIVE à l'installation : le plan de mise en service
          * (SFD §9.2) prévoit la saisie des BC d'intérim en « semaine 0 », avant
          * l'ouverture générale — le module doit donc ouvrir la porte, pas la

@@ -236,6 +236,9 @@ class NiveauController extends Controller implements HasMiddleware
 
         return [
             'id' => $niveau->id,
+            // D-21 : l'identifiant de l'ARTICLE (et non celui du niveau) est
+            // ce que l'API d'Achat attend pour ouvrir un brouillon.
+            'article_id' => $niveau->article_id,
             'article_code' => $niveau->article->code,
             'article_nom' => $niveau->article->nom,
             'nature' => $niveau->article->nature,

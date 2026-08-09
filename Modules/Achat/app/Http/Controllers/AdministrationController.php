@@ -33,6 +33,7 @@ class AdministrationController extends Controller implements HasMiddleware
         Parametre::PREFIXE_NUMEROTATION => ['required', 'string', 'max:8', 'regex:/^[A-Z0-9\-]+$/'],
         Parametre::DELAI_ALERTE_RELIQUAT_JOURS => ['required', 'integer', 'min:1', 'max:365'],
         Parametre::SEUIL_ECART_PRIX_PCT => ['required', 'integer', 'min:1', 'max:100'],
+        Parametre::FACTEUR_REAPPROVISIONNEMENT => ['required', 'integer', 'min:1', 'max:12'],
         Parametre::TAILLE_MAX_PIECE_MO => ['required', 'integer', 'min:1', 'max:100'],
         Parametre::REGULARISATION_ACTIVE => ['required', 'boolean'],
         Parametre::INTERMEDE_DEBUT => ['nullable', 'date'],
@@ -52,6 +53,10 @@ class AdministrationController extends Controller implements HasMiddleware
         Parametre::SEUIL_ECART_PRIX_PCT => [
             'min' => 'Un seuil à 0 % signalerait toutes les lignes : le signal se noierait.',
             'max' => 'Le seuil s\'exprime en pourcentage (1 à 100).',
+        ],
+        Parametre::FACTEUR_REAPPROVISIONNEMENT => [
+            'min' => 'Un facteur à 0 proposerait des quantités nulles : le brouillon serait vide.',
+            'max' => 'Au-delà de 12 fois le seuil, la proposition perd son sens.',
         ],
         Parametre::TAILLE_MAX_PIECE_MO => [
             'max' => 'Au-delà de 100 Mo, le dépôt échouerait avant d\'arriver au serveur.',
@@ -76,6 +81,7 @@ class AdministrationController extends Controller implements HasMiddleware
             'prefixe' => $this->parametres->prefixeNumerotation(),
             'delaiReliquat' => $this->parametres->delaiAlerteReliquatJours(),
             'seuilEcart' => $this->parametres->seuilEcartPrixPct(),
+            'facteurReappro' => $this->parametres->facteurReapprovisionnement(),
             'tailleMaxPiece' => $this->parametres->tailleMaxPieceMo(),
             'motifs' => $this->parametres->motifsObservation(),
             'regularisationActive' => $this->parametres->regularisationActive(),

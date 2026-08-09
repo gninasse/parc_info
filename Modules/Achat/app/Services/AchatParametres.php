@@ -30,6 +30,7 @@ class AchatParametres
         Parametre::PREFIXE_NUMEROTATION => 'string',
         Parametre::DELAI_ALERTE_RELIQUAT_JOURS => 'int',
         Parametre::SEUIL_ECART_PRIX_PCT => 'int',
+        Parametre::FACTEUR_REAPPROVISIONNEMENT => 'int',
         Parametre::TAILLE_MAX_PIECE_MO => 'int',
         Parametre::REGULARISATION_ACTIVE => 'bool',
         Parametre::INTERMEDE_DEBUT => 'date',
@@ -78,6 +79,16 @@ class AchatParametres
     public function seuilEcartPrixPct(): int
     {
         return (int) $this->get(Parametre::SEUIL_ECART_PRIX_PCT);
+    }
+
+    /**
+     * D-21 — multiplicateur du seuil pour la quantité proposée depuis une
+     * alerte de stock. Borné à 1 au minimum : un facteur nul proposerait
+     * zéro, et un brouillon à zéro ne sert à rien.
+     */
+    public function facteurReapprovisionnement(): int
+    {
+        return max(1, (int) $this->get(Parametre::FACTEUR_REAPPROVISIONNEMENT));
     }
 
     public function tailleMaxPieceMo(): int

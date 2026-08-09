@@ -28,6 +28,9 @@ class Parametre extends Model
 
     public const SEUIL_ECART_PRIX_PCT = 'seuil_ecart_prix_pct';
 
+    /** D-21 — multiplicateur du seuil pour la quantité proposée. */
+    public const FACTEUR_REAPPROVISIONNEMENT = 'facteur_reapprovisionnement';
+
     public const TAILLE_MAX_PIECE_MO = 'taille_max_piece_mo';
 
     public const REGULARISATION_ACTIVE = 'regularisation_active';

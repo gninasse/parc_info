@@ -105,6 +105,9 @@ class AdministrationTest extends TestCase
             'prefixe_numerotation',
             'delai_alerte_reliquat_jours',
             'seuil_ecart_prix_pct',
+            // D-21 : la quantité proposée quand le magasin commande depuis
+            // une alerte doit rester administrable, sinon elle est figée.
+            'facteur_reapprovisionnement',
             'taille_max_piece_mo',
             'motifs_observation',
         ] as $cle) {

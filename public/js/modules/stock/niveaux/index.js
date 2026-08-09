@@ -79,4 +79,138 @@ $(function () {
         );
         window.location.href = `${route('stock.niveaux.export')}?${params.toString()}`;
     });
+
+    /*
+     * ── D-21 : « Commander » depuis les alertes ──────────────────────────
+     *
+     * Le magasinier coche les articles qui manquent et ouvre un BROUILLON de
+     * commande. C'est la fin du signalement par téléphone, et du délai qu'il
+     * imposait : l'acheteur reprend un bon déjà pré-rempli.
+     *
+     * Trois précautions à l'écran, le serveur restant maître :
+     *   - le même article peut apparaître sur plusieurs magasins : on
+     *     dédoublonne, sinon la commande porterait deux fois la même ligne ;
+     *   - un article sous inventaire est écarté (son niveau est en cours de
+     *     recomptage : sa quantité n'est pas fiable à cet instant) ;
+     *   - si le serveur ne peut pas déterminer le fournisseur, il le dit, et
+     *     on pose la question plutôt que de choisir à sa place.
+     */
+    const $boutonCommander = $('#btn-commander');
+
+    const articlesSelectionnes = () => {
+        const lignes = $table.bootstrapTable('getSelections') ?? [];
+
+        // Dédoublonnage par article : un même article peut manquer dans
+        // deux magasins, cela reste UNE ligne de commande.
+        const parArticle = new Map();
+
+        lignes
+            .filter((ligne) => !ligne.sous_inventaire && ligne.article_id)
+            .forEach((ligne) => parArticle.set(ligne.article_id, ligne));
+
+        return Array.from(parArticle.values());
+    };
+
+    const rafraichirBoutonCommander = () => {
+        if ($boutonCommander.length === 0) return;
+
+        const articles = articlesSelectionnes();
+        const $compteur = $('#compteur-commander');
+
+        $boutonCommander.prop('disabled', articles.length === 0);
+        $compteur.toggleClass('d-none', articles.length === 0).text(articles.length);
+    };
+
+    $table.on('check.bs.table uncheck.bs.table check-all.bs.table uncheck-all.bs.table load-success.bs.table',
+        rafraichirBoutonCommander);
+
+    /** Envoie la demande, en laissant le serveur trancher le fournisseur. */
+    const demanderBrouillon = (articles, fournisseurId = null) => {
+        const charge = { article_ids: articles.map((a) => a.article_id) };
+
+        if (fournisseurId) charge.fournisseur_id = fournisseurId;
+
+        // Le magasin d'origine : purement informatif, il enrichit le journal.
+        const magasin = $('#filter-magasin option:selected').text();
+        if ($('#filter-magasin').val()) charge.magasin = magasin;
+
+        $.ajax({
+            url: $boutonCommander.data('url'),
+            method: 'POST',
+            data: JSON.stringify(charge),
+            contentType: 'application/json',
+            dataType: 'json',
+        })
+            .done((reponse) => {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Brouillon créé',
+                    text: reponse.message,
+                    confirmButtonText: 'Ouvrir le brouillon',
+                    showCancelButton: true,
+                    cancelButtonText: 'Rester ici',
+                }).then((choix) => {
+                    if (choix.isConfirmed) window.location.href = reponse.data.url;
+                });
+            })
+            .fail((xhr) => {
+                const reponse = xhr.responseJSON ?? {};
+
+                // Le serveur ne peut pas déterminer le fournisseur : on pose
+                // la question, on ne choisit pas à sa place.
+                if (reponse.motif === 'fournisseur_indetermine') {
+                    const choix = (reponse.data?.fournisseurs ?? []);
+
+                    if (choix.length === 0) {
+                        Swal.fire({ icon: 'info', title: 'Fournisseur à choisir', text: reponse.message });
+                        return;
+                    }
+
+                    Swal.fire({
+                        icon: 'question',
+                        title: 'Quel fournisseur ?',
+                        text: reponse.message,
+                        input: 'select',
+                        inputOptions: Object.fromEntries(choix.map((f) => [f.id, f.nom])),
+                        inputPlaceholder: 'Choisir…',
+                        showCancelButton: true,
+                        confirmButtonText: 'Créer le brouillon',
+                        cancelButtonText: 'Annuler',
+                    }).then((reponseUtilisateur) => {
+                        if (reponseUtilisateur.isConfirmed && reponseUtilisateur.value) {
+                            demanderBrouillon(articles, reponseUtilisateur.value);
+                        }
+                    });
+
+                    return;
+                }
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Commande impossible',
+                    text: reponse.message ?? 'Une erreur est survenue.',
+                });
+            });
+    };
+
+    $boutonCommander.on('click', function () {
+        const articles = articlesSelectionnes();
+
+        if (articles.length === 0) return;
+
+        const libelles = articles.slice(0, 5).map((a) => a.article_nom).join(', ');
+
+        Swal.fire({
+            icon: 'question',
+            title: `Commander ${articles.length} article(s) ?`,
+            html: `<p class="mb-1">${libelles}${articles.length > 5 ? '…' : ''}</p>
+                   <p class="small text-muted mb-0">Un brouillon de commande sera créé.
+                   Les quantités proposées restent modifiables par l'acheteur.</p>`,
+            showCancelButton: true,
+            confirmButtonText: 'Créer le brouillon',
+            cancelButtonText: 'Annuler',
+        }).then((choix) => {
+            if (choix.isConfirmed) demanderBrouillon(articles);
+        });
+    });
 });

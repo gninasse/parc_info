@@ -208,7 +208,31 @@ Vue consolidée (miroir de l'onglet Réceptions, pour d'éventuels écrans tiers
 
 Depuis **BR-03/BR-04**, l'onglet Réceptions de la fiche enrichit chaque carte de ce que Stock a déposé : le **bordereau de réception** (route proxy), les **pièces jointes typées**, et les **écarts BL** avec leur détail. Ces informations sont *illustratives* : elles n'entrent dans aucun calcul d'Achat, dont les compteurs restent établis par §5.1 seul.
 
-### 4.7 Routes proxy documentaires *(BR-03 — non publiques)*
+### 4.7 `POST /achat/api/bons-commande/brouillon-depuis-articles` *(D-21)*
+
+Le seul point d'**écriture** de cette API. Il ferme la boucle « rupture → commande » : le magasinier qui constate un manque ouvre lui-même un brouillon, au lieu de le signaler par téléphone à charge pour l'acheteur de tout ressaisir.
+
+```json
+// requête
+{ "article_ids": [12, 44], "magasin": "Magasin CHU-YO", "fournisseur_id": 4 }
+
+// réponse
+{ "success": true, "message": "Brouillon créé à partir de 2 article(s) en alerte.",
+  "data": { "id": 91, "nb_lignes": 2, "fournisseur_id": 4,
+            "url": "/achat/bons-commande/91/modifier" } }
+```
+
+**Permissions** : `achat.api.view` (le groupe) **et** `achat.bons_commande.store` — ce point d'entrée écrit, lire l'API ne suffit pas.
+
+Trois règles, toutes assumées :
+
+1. il crée un **BROUILLON**, jamais un bon soumis. Le geste part du magasin : il ne saurait engager l'établissement. L'acheteur reprend la main sur un bon qu'il complète, corrige ou supprime ;
+2. le **fournisseur n'est jamais deviné**. Un bon s'adresse à un fournisseur unique. Si les articles n'ont pas le même fournisseur préféré, la demande est refusée en **422** avec `motif: "fournisseur_indetermine"` et la liste des fournisseurs concernés — l'appelant pose la question, puis renvoie `fournisseur_id`. Élire un fournisseur au hasard produirait des lignes commandées au mauvais endroit, erreur silencieuse découverte à la livraison ;
+3. la **quantité proposée** est `seuil × facteur_reapprovisionnement` (paramètre d'établissement, 2 par défaut), 1 à défaut de seuil. C'est un point de départ : calculer un réapprovisionnement optimal demanderait une consommation historique et des délais fournisseurs dont on ne dispose pas.
+
+La provenance est journalisée (`creation_depuis_alerte_seuil`, avec le magasin et les codes d'articles) : six mois plus tard, on doit pouvoir dire d'où venait un bon — et donc mesurer si la boucle fonctionne.
+
+### 4.8 Routes proxy documentaires *(BR-03 — non publiques)*
 
 | Route | Permission exigée | Réponses |
 |---|---|---|
@@ -249,8 +273,9 @@ Ce ne sont pas des API : elles servent l'interface d'Achat. Elles figurent ici p
 |---|---|---|
 | `catalogue.api.view` | Rôles Achat, Stock, ParcInfo | §2 |
 | `stock.api.view` | Rôles Achat | §3 |
-| `achat.api.view` | Rôles Stock (Magasinier, Superviseur) | §4.1–4.6 |
-| `achat.documents.view` + `achat.bons_commande.index` | Rôles Achat | §4.7 (proxy documentaire) |
+| `achat.api.view` | Rôles Stock (Magasinier, Superviseur) | §4.1–4.6 (lecture) |
+| `achat.documents.view` + `achat.bons_commande.index` | Rôles Achat | §4.8 (proxy documentaire) |
+| `achat.api.view` + `achat.bons_commande.store` | Rôles Stock habilités à commander | §4.7 (brouillon depuis une alerte) |
 | *(services internes)* | — sans permission HTTP : sécurité portée par l'opération appelante | §5 |
 
 ### IA-16 — la frontière documentaire *(BR-05)*

@@ -89,6 +89,27 @@
         </div>
     </div>
 
+    {{-- Facteur de réapprovisionnement (D-21) --}}
+    <div class="col-md-6">
+        <div class="card h-100 carte-parametre" data-cle="facteur_reapprovisionnement">
+            <div class="card-body">
+                <h6 class="fw-bold mb-1">Facteur de réapprovisionnement</h6>
+                <p class="small text-muted">
+                    Quantité proposée quand le magasin commande depuis une alerte de seuil :
+                    <strong>seuil × facteur</strong>. Un point de départ, que l'acheteur ajuste.
+                </p>
+
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text">seuil ×</span>
+                    <input type="number" class="form-control champ-parametre" value="{{ $facteurReappro }}"
+                           min="1" max="12" aria-label="Facteur de réapprovisionnement">
+                    <button class="btn btn-outline-primary btn-enregistrer" type="button">Enregistrer</button>
+                </div>
+                <div class="invalid-feedback d-block small message-erreur"></div>
+            </div>
+        </div>
+    </div>
+
     {{-- Taille max des pièces --}}
     <div class="col-md-6">
         <div class="card h-100 carte-parametre" data-cle="taille_max_piece_mo">

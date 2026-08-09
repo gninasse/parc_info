@@ -157,6 +157,12 @@ Route::middleware(['auth'])->prefix('achat')->name('achat.')->group(function () 
         Route::prefix('bons-commande')->name('bons-commande.')->group(function () {
             Route::get('/a-livrer', [ApiController::class, 'bonsCommandeALivrer'])->name('a-livrer');
             Route::get('/resoudre', [ApiController::class, 'resoudre'])->name('resoudre');
+            // §4.7 (D-21) — le SEUL point d'écriture de cette API : il crée un
+            // brouillon depuis les articles en alerte du Stock. La permission
+            // de création est vérifiée dans le contrôleur, en plus de
+            // `achat.api.view` qui ouvre le groupe.
+            Route::post('/brouillon-depuis-articles', [ApiController::class, 'brouillonDepuisArticles'])
+                ->name('brouillon-depuis-articles');
             Route::get('/{id}/lignes-a-livrer', [ApiController::class, 'lignesALivrer'])->name('lignes-a-livrer');
             Route::get('/{id}/receptions', [ApiController::class, 'receptions'])->name('receptions');
         });
