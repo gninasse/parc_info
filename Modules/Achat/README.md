@@ -9,24 +9,22 @@ Chaîne d'engagement fournisseur : bons de commande, visa, réceptions et reliqu
 
 ## État d'avancement
 
-Ce module est en construction. Le **socle** est livré et vérifié ; les écrans
-métier restent à développer.
+Le module est **fonctionnellement complet** : la chaîne d'engagement va de la
+saisie du brouillon au reliquat soldé, réceptions physiques comprises.
 
 | Livré | Contenu |
 |---|---|
 | Structure | `module.json` (requires Core, Catalogue, Stock, ParcInfo, Organisation), providers, layout, sidebar, navbar |
 | Modèle de données | Les 8 tables du SFD §6.2, avec leurs contraintes `CHECK` actives sur SQLite **et** PostgreSQL |
 | Permissions | Les 20 permissions du SFD §5 + les 3 rôles seedés, intégrés aux écrans de Core |
-| Services fondateurs | `NumerotationService` (IA-3), `CalculMontantsService` (IA-1) |
-| Écran | A-01 — tableau de bord (état vide EV-01) |
-| Chrome | Sidebar « CHU-YO \| ACHAT », topbar à accès rapides, fil d'Ariane (SPEC_UX §0.1) |
-| **Raccordement Stock (PRQ-05)** | `stock_entrees.bon_commande_id`, les 6 endpoints d'API (§4) et le service d'intégration `AchatReceptionService` (§5.1/5.2) |
-| Tests | 126 tests, joués sur les deux SGBD |
-
-À développer : A-02 à A-08, les 9 modales, le wizard de licences, les exports et
-le PDF. Côté Stock, le mode « Livraison sur commande » (modale M-02, scan QR,
-pré-remplissage, appel du service à la validation) reste à câbler dans ses
-écrans : le contrat serveur, lui, est livré et testé.
+| Écrans | A-01 tableau de bord · A-02 liste · A-03 saisie · A-04 fiche (Lignes, Réceptions, Licences, Documents, Chronologie) · A-05 réception de licences · A-06 reliquats · A-07 rapports et Signaux · A-08 administration |
+| Circuit | Brouillon → soumission → visa → validation numérotée ; renvoi motivé, reprise par l'auteur, annulation, clôture de reliquat |
+| Réceptions (PRQ-05) | Liaison depuis Stock, intégration transactionnelle sous verrou, idempotence, contre-passation |
+| Licences et prestations | Wizard de saisie des clés (reprise de session), service fait |
+| Régularisation | Rattachement d'équipements existants, dette réelle, extinction automatique |
+| Restitution | 9 Signaux, rapports exportables (CSV/XLSX/PDF), PDF du bon avec QR |
+| **Bordereaux (lot BR)** | Pièces jointes typées et pierre tombale · bordereau de réception signable · **proxy documentaire** (un acheteur sans droit Stock consulte les pièces de ses commandes) · **écarts BL** structurés |
+| Tests | 513 tests serveur, joués sur les deux SGBD, plus deux harnais navigateur |
 
 ---
 
@@ -116,6 +114,33 @@ verrou** au moment de l'intégration (deux bons d'entrée concurrents sur le mê
 reste ne peuvent pas passer tous les deux) ; l'idempotence par `entree_id`
 permet de rejouer une notification sans double incrément.
 
+### Le dossier documentaire de la livraison (lot BR)
+
+L'acheteur qui conteste une facture a besoin du BL signé. Il devait ouvrir le
+module Stock, donc en avoir les droits : dans les faits, il téléphonait au
+magasin. Deux routes **proxy** d'Achat servent désormais ces pièces :
+
+```
+GET /achat/bons-commande/{id}/receptions/{entree}/bordereau
+GET /achat/bons-commande/{id}/receptions/{entree}/documents/{doc}
+```
+
+Elles vérifient `achat.bons_commande.index` **et** `achat.documents.view`, puis
+relaient le fichier depuis le disque privé de Stock. Aucune permission Stock
+n'est exigée, aucune URL Stock n'est rendue.
+
+Le verrou qui compte vraiment est le **troisième** : la pièce doit appartenir à
+une entrée liée à CE bon (invariant **IA-16**). Sans lui, un identifiant deviné
+donnerait accès à tout le magasin, permission en poche. La réponse est `404` et
+non `403` : pour l'acheteur, une pièce absente de son dossier n'existe pas, et
+nous n'apprenons rien à qui sonde. `InvariantDocumentsReceptionTest` balaie la
+matrice complète — cinq profils × quatre routes.
+
+Les **écarts BL** (`stock_entrees.ecarts_bl`) remontent aussi ici, avec une
+règle qu'il ne faut jamais assouplir : ils **ne modifient aucun compteur**. Les
+reliquats ne connaissent que le compté. C'est cette neutralité qui permet au
+magasinier de déclarer un écart sans risque, donc de le déclarer.
+
 ## Tests
 
 ```bash
@@ -125,7 +150,7 @@ Modules/Achat/tests/migrations.sh         # migrate / rollback / réinstallation
 Modules/Achat/tests/Navigateur/executer.sh # écrans réels dans un DOM (jsdom)
 ```
 
-### Deux pièges rencontrés, à connaître avant de toucher au module
+### Les pièges rencontrés, à connaître avant de toucher au module
 
 **1. SQLite perd les CHECK dès qu'une migration recrée une table.**
 SQLite ne sait ajouter ni un `CHECK` ni une clé étrangère à une table
@@ -176,6 +201,50 @@ d'où la recréation de table par `SchemaChecks`) : réussir sur l'un ne prouve
 rien pour l'autre. Le script PostgreSQL migre dans un schéma isolé et le
 supprime ensuite ; vos données ne sont jamais touchées.
 
+### Les autres pièges, dans l'ordre où ils ont mordu
+
+**3. La division entière en SQL.** `taux_tva / 100` vaut **0** quand les deux
+opérandes sont entiers : toute une colonne de TVA à zéro, sans erreur. Écrire
+`/ 100.0`.
+
+**4. `SUM` ajouté à une projection casse sur PostgreSQL, pas sur SQLite.**
+PostgreSQL exige que toute colonne projetée figure au `GROUP BY` ; SQLite s'en
+accommode. Un agrégat ajouté à une requête Eloquent embarque les colonnes du
+`select` implicite et des relations chargées d'avance. Parade : `select()`
+explicite et `withoutEagerLoads()`.
+
+**5. `addMonth()` saute un mois depuis le 31.** Le 31 janvier + 1 mois donne le
+3 mars (débordement). Utiliser `addMonthNoOverflow()` partout où une échéance
+se calcule.
+
+**6. Une requête en erreur AVORTE la transaction PostgreSQL.** Interroger une
+table absente (module non installé) lève `25P02` et condamne **tout ce qui
+suit**, y compris hors du service fautif : le `try/catch` attrape l'exception
+mais la page est déjà perdue. SQLite, lui, tolère la même faute en silence.
+Il faut donc vérifier `Schema::hasTable()` pour **chaque** table interrogée,
+et pas seulement pour la première. Trouvé par la suite PostgreSQL, invisible
+sur SQLite.
+
+**7. Une trace `activity()` sans sujet ne porte pas le module.** Le journal
+filtre par `module` : une trace émise sans `->tap()` sort du périmètre et
+disparaît des chronologies. De même, `causedBy()` doit être posé
+explicitement dans les services appelés hors HTTP, sinon l'auteur est perdu.
+
+**8. Un test qui recopie l'appel d'une vue finit par mentir.** Le test du
+bordereau reconstruisait les paramètres passés au gabarit ; à l'ajout d'une
+donnée, quatre tests sont tombés alors que le produit était juste. Un test doit
+appeler le **vrai** contrôleur et intercepter le rendu, jamais réimplémenter ce
+qu'il vérifie.
+
+**9. jsdom : `$(document).ready` est différé, et `submit` n'est pas `click`.**
+Un harnais qui contrôle le DOM immédiatement après l'injection mesure un écran
+dont les gestionnaires ne sont pas encore branchés. Et déclencher `click` sur
+un bouton `type="submit"` appelle `requestSubmit()`, non implémenté par jsdom :
+c'est l'événement `submit` du formulaire qu'il faut déclencher. Enfin, chaque
+module JS doit être injecté **dans sa propre portée** (comme le ferait un
+module ES), sans quoi deux utilitaires homonymes provoquent un
+« already declared » qui n'existe pas dans le navigateur.
+
 ---
 
 ## Écarts signalés (SFD)
@@ -190,3 +259,6 @@ supprime ensuite ; vos données ne sont jamais touchées.
 | 6 | La maquette **P-08**, désignée comme référence de l'écran A-02, **n'existe pas dans le dépôt** | Aucun fichier ni mention (recherche exhaustive : le seul « P-08 » du dépôt est `EF-RAP-08`, un identifiant d'exigence sans rapport). L'écran suit donc `SPEC_UX_Achat.md` A-02, qui est déclaré normatif, et les gabarits réels du module Stock. À confirmer si une maquette graphique existe hors dépôt. |
 | 7 | L'action **« Reprendre »** (SFD §7.1 : l'auteur défait sa propre soumission) n'a **pas de permission dédiée** au SFD §5 | Rattachée à `achat.bons_commande.soumettre`, dont elle est l'exacte réciproque, et **restreinte à l'auteur du bon** (vérifié par test). Une permission dédiée serait à créer si la MOA veut dissocier les deux gestes. |
 | 8 | Le contrat `API_Inter_Modules.md` §2.1 garantit `taux_tva` **toujours renseigné** sur `GET /catalogue/api/articles`, et un tri `fournisseur_prefere_id` | Ni l'un ni l'autre n'étaient implémentés. Corrigé **dans le module Catalogue** (le contrat lui appartient) : `taux_tva` est exposé avec repli à 18.00, et le tri de pertinence est exprimé en `CASE WHEN` portable. Le test snapshot du Catalogue a été mis à jour — rupture délibérée qui rapproche l'API de son contrat. |
+| 9 | `API_Inter_Modules.md` §3.2 spécifie un endpoint HTTP `GET /stock/api/entrees/liees` | **Implémenté en lecture directe** de `stock_entrees` par `ReceptionsBonCommande`, comme `RechercheBonCommande` : la fiche d'un bon ne doit pas dépendre du chargement d'un module voisin, ni d'un aller-retour HTTP, pour afficher SES données. La forme des données reste le contrat ; l'endpoint sera ajouté quand un consommateur tiers en aura besoin. Écart consigné au document (§3.2). |
+| 10 | Le SFD Achat §7.7 annonce **8 signaux** | Le lot BR-04 en ajoute un **9e** (écarts de livraison par fournisseur), prévu par le recueil de prompts et non par le SFD initial. §7.7 amendé en conséquence. |
+| 11 | Le SFD Stock ne décrivait pas la table `stock_documents` | Décrite au §6.2 avec le typage des pièces (BR-01), la pierre tombale et les paramètres `bl_obligatoire_si_commande` / `afficher_couts_bordereau`. |
