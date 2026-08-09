@@ -105,6 +105,28 @@
         </div>
     </div>
 
+    {{-- En cours de réception : lecture croisée du Stock. La carte est
+         MASQUÉE si la lecture échoue (null) — annoncer zéro dirait « rien
+         en cours », ce qui serait un mensonge (dégradation partielle). --}}
+    @if($kpis['en_cours_reception'] !== null)
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100 kpi position-relative">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center gap-2 mb-1 text-info">
+                        <i class="bi bi-truck"></i>
+                        <span class="small text-uppercase text-muted">En cours de réception</span>
+                    </div>
+                    <div class="fs-3 fw-bold">{{ number_format($kpis['en_cours_reception'], 0, ',', ' ') }}</div>
+                    <div class="small text-muted">bon(s) d'entrée en saisie au magasin</div>
+                    @if(Route::has('stock.entrees.index'))
+                        <a href="{{ route('stock.entrees.index') }}"
+                           class="stretched-link" aria-label="Voir les bons d'entrée du magasin"></a>
+                    @endif
+                </div>
+            </div>
+        </div>
+    @endif
+
     {{-- Dette d'intérim : carte MASQUÉE à zéro — l'objectif est qu'elle
          disparaisse, pas qu'elle s'affiche éternellement (UX2-12) --}}
     @if($kpis['dette_interim'] > 0)
@@ -150,6 +172,50 @@
         </div>
     </div>
 @else
+    {{-- ── Z2 : dépenses engagées, 12 mois glissants ──────────────────── --}}
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-0 py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <h6 class="mb-0 fw-bold">
+                <i class="bi bi-graph-up me-2 text-primary"></i>Dépenses engagées — 12 mois glissants
+            </h6>
+
+            {{-- Bascule HT/TTC : par défaut HT (la dépense négociée) --}}
+            <div class="btn-group btn-group-sm" role="group" aria-label="Base de montant">
+                <input type="radio" class="btn-check" name="base-montant" id="base-ht" value="ht" checked autocomplete="off">
+                <label class="btn btn-outline-secondary" for="base-ht">HT</label>
+                <input type="radio" class="btn-check" name="base-montant" id="base-ttc" value="ttc" autocomplete="off">
+                <label class="btn btn-outline-secondary" for="base-ttc">TTC</label>
+            </div>
+        </div>
+        <div class="card-body">
+            {{-- Les régularisations en sont exclues (elles documentent le
+                 passé) : le graphique décrit l'activité, pas le rattrapage. --}}
+            <canvas id="graphique-evolution" height="80"
+                    data-evolution='@json($evolution)'
+                    aria-label="Dépenses engagées par mois sur douze mois"></canvas>
+
+            {{-- Équivalent textuel : un graphique seul n'est pas accessible. --}}
+            <details class="mt-2">
+                <summary class="small text-muted">Voir les chiffres du graphique</summary>
+                <table class="table table-sm mt-2 mb-0">
+                    <thead class="table-light">
+                        <tr><th>Mois</th><th class="text-end">Bons</th><th class="text-end">Montant HT</th><th class="text-end">Montant TTC</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach($evolution as $mois)
+                            <tr>
+                                <td>{{ $mois['libelle'] }}</td>
+                                <td class="text-end">{{ $mois['nombre'] }}</td>
+                                <td class="text-end">{{ number_format($mois['montant_ht'], 0, ',', ' ') }}</td>
+                                <td class="text-end">{{ number_format($mois['montant_ttc'], 0, ',', ' ') }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </details>
+        </div>
+    </div>
+
     <div class="row g-3">
         {{-- ── Z3 : reliquats les plus anciens ────────────────────────── --}}
         <div class="col-lg-8">
@@ -208,7 +274,7 @@
 
         {{-- ── Z5 : actions rapides ───────────────────────────────────── --}}
         <div class="col-lg-4">
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-sm mb-3">
                 <div class="card-header bg-white border-0 py-3">
                     <h6 class="mb-0 fw-bold"><i class="bi bi-lightning-charge me-2 text-primary"></i>Actions rapides</h6>
                 </div>
@@ -235,8 +301,44 @@
                     @endcan
                 </div>
             </div>
+
+            {{-- ── Z4 : les 10 derniers événements (journal réel) ────────── --}}
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-clock-history me-2 text-primary"></i>Derniers événements</h6>
+                </div>
+                <div class="card-body pt-2">
+                    @forelse($evenements as $evenement)
+                        <div class="d-flex gap-2 py-2 {{ ! $loop->last ? 'border-bottom' : '' }}">
+                            <span class="badge bg-{{ $evenement['couleur'] }} align-self-start">
+                                <i class="bi {{ $evenement['icone'] }}"></i>
+                            </span>
+                            <div class="flex-grow-1 small">
+                                @if($evenement['url'])
+                                    <a href="{{ $evenement['url'] }}" class="text-decoration-none">{{ $evenement['phrase'] }}</a>
+                                @else
+                                    {{ $evenement['phrase'] }}
+                                @endif
+                                <div class="text-muted">
+                                    {{ $evenement['auteur'] ?? '—' }} ·
+                                    {{ $evenement['quand']?->diffForHumans() }}
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <p class="text-muted small text-center py-3 mb-0">
+                            Aucune activité récente sur le module.
+                        </p>
+                    @endforelse
+                </div>
+            </div>
         </div>
     </div>
 @endif
 
 @endsection
+
+@push('js')
+<script src="{{ asset('plugins/chartjs/chart.min.js') }}"></script>
+<script type="module" src="{{ asset('js/modules/achat/dashboard/index.js') }}?v={{ time() }}"></script>
+@endpush

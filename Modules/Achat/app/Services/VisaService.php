@@ -118,6 +118,10 @@ class VisaService
 
             activity('achat')
                 ->performedOn($bon)
+                // L'acteur est posé EXPLICITEMENT : sans lui, une validation
+                // déclenchée hors requête HTTP (commande, tâche de fond)
+                // perdrait son auteur — et un visa sans visage ne vaut rien.
+                ->causedBy($validateur)
                 ->withProperties([
                     'numero' => $bon->numero,
                     'montant_ttc' => (float) $bon->montant_ttc,

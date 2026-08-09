@@ -22,6 +22,47 @@ class DashboardController extends Controller implements HasMiddleware
     /** Nombre de lignes du tableau « reliquats les plus anciens » (Z3). */
     private const MAX_RELIQUATS = 5;
 
+    /** Z4 — le fil d'activité (SPEC_UX A-01). */
+    private const MAX_EVENEMENTS = 10;
+
+    /**
+     * Les événements qui MÉRITENT le fil : ceux qui engagent ou soldent.
+     * Un dépôt de pièce ou une ouverture de wizard n'apprend rien à qui
+     * survole son tableau de bord le matin — la fiche les raconte.
+     */
+    private const EVENEMENTS_NOTABLES = [
+        'soumission',
+        'renvoi_en_brouillon',
+        'validation',
+        'annulation',
+        'cloture_reliquat',
+        'reception_licences',
+        'service_fait',
+        'rattachement_regularisation',
+    ];
+
+    private const ICONES_EVENEMENTS = [
+        'soumission' => 'bi-send',
+        'renvoi_en_brouillon' => 'bi-arrow-return-left',
+        'validation' => 'bi-check-lg',
+        'annulation' => 'bi-x-octagon',
+        'cloture_reliquat' => 'bi-lock',
+        'reception_licences' => 'bi-key',
+        'service_fait' => 'bi-clipboard-check',
+        'rattachement_regularisation' => 'bi-link-45deg',
+    ];
+
+    private const COULEURS_EVENEMENTS = [
+        'soumission' => 'warning',
+        'renvoi_en_brouillon' => 'danger',
+        'validation' => 'primary',
+        'annulation' => 'danger',
+        'cloture_reliquat' => 'dark',
+        'reception_licences' => 'success',
+        'service_fait' => 'success',
+        'rattachement_regularisation' => 'warning',
+    ];
+
     public function __construct(
         private readonly AchatParametres $parametres,
         private readonly \Modules\Achat\Services\StatistiquesAchatService $statistiques,
@@ -42,6 +83,11 @@ class DashboardController extends Controller implements HasMiddleware
             'delaiAlerteReliquat' => $this->parametres->delaiAlerteReliquatJours(),
             'reliquatsAnciens' => $this->reliquatsLesPlusAnciens(),
             'regularisationActive' => $this->parametres->regularisationActive(),
+            // Z2 — le graphique 12 mois vient du service PARTAGÉ (D-16) :
+            // c'est le même que la carte de rapport, au chiffre près.
+            'evolution' => $this->statistiques->evolutionDouzeMois(),
+            // Z4 — le fil des 10 derniers événements, issu du journal réel.
+            'evenements' => $this->derniersEvenements(),
         ]);
     }
 
@@ -61,8 +107,38 @@ class DashboardController extends Controller implements HasMiddleware
                 ->whereIn('statut', [BonCommande::STATUT_VALIDE, BonCommande::STATUT_PARTIEL])
                 ->count(),
             'reliquats_anciens' => $this->compterReliquatsAnciens(),
+            // Lecture croisée du Stock : informative, et DÉGRADABLE — si le
+            // module est coupé, la carte s'efface au lieu de casser la page.
+            'en_cours_reception' => $this->enCoursDeReception(),
             'dette_interim' => $this->detteInterim(),
         ];
+    }
+
+    /**
+     * Bons d'entrée LIÉS à une commande, non encore validés : ce que le
+     * magasin est en train de saisir.
+     *
+     * `null` (et non zéro) quand la lecture échoue : zéro dirait « rien en
+     * cours », ce qui est un mensonge — la carte se masque à la place.
+     */
+    private function enCoursDeReception(): ?int
+    {
+        try {
+            if (! \Illuminate\Support\Facades\Schema::hasTable('stock_entrees')) {
+                return null;
+            }
+
+            return DB::table('stock_entrees')
+                ->whereNotNull('bon_commande_id')
+                ->whereNotIn('statut', ['VALIDE', 'ANNULE'])
+                ->count();
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Lecture des entrées Stock impossible pour le tableau de bord', [
+                'exception' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 
     /**
@@ -143,5 +219,71 @@ class DashboardController extends Controller implements HasMiddleware
             ->join('achat_bons_commande', 'achat_bons_commande.id', '=', 'achat_lignes_commande.bon_commande_id')
             ->whereIn('achat_bons_commande.statut', BonCommande::STATUTS_RECEPTIONNABLES)
             ->whereColumn('achat_lignes_commande.quantite_livree', '<', 'achat_lignes_commande.quantite');
+    }
+
+    /**
+     * Z4 — les 10 derniers événements du module, lus DANS LE JOURNAL.
+     *
+     * Même doctrine que la chronologie de la fiche (IA-14) : rien n'est
+     * reconstruit depuis les colonnes. On réutilise le présentateur de
+     * ChronologieBonCommande pour que la même action se raconte avec les
+     * mêmes mots sur les deux écrans.
+     */
+    private function derniersEvenements(): Collection
+    {
+        $traces = \Modules\Core\Models\Activity::query()
+            ->forModule('achat')
+            ->where('subject_type', BonCommande::class)
+            ->whereIn('description', self::EVENEMENTS_NOTABLES)
+            ->with('causer:id,name')
+            ->latest('created_at')
+            ->latest('id')
+            ->limit(self::MAX_EVENEMENTS)
+            ->get();
+
+        $bons = BonCommande::query()
+            ->whereIn('id', $traces->pluck('subject_id')->filter()->unique())
+            ->get(['id', 'numero'])
+            ->keyBy('id');
+
+        return $traces->map(function ($trace) use ($bons) {
+            $bon = $bons->get($trace->subject_id);
+
+            return [
+                'phrase' => $this->phraseEvenement($trace, $bon),
+                'icone' => self::ICONES_EVENEMENTS[$trace->description] ?? 'bi-dot',
+                'couleur' => self::COULEURS_EVENEMENTS[$trace->description] ?? 'secondary',
+                'auteur' => $trace->causer?->name,
+                'quand' => $trace->created_at,
+                'url' => $bon !== null && \Illuminate\Support\Facades\Route::has('achat.bons-commande.show')
+                    ? route('achat.bons-commande.show', $bon->id)
+                    : null,
+            ];
+        });
+    }
+
+    /** Phrase au passé, avec le numéro du bon quand il en porte un. */
+    private function phraseEvenement($trace, ?BonCommande $bon): string
+    {
+        $document = $bon?->numero ?? 'Un bon';
+        $props = $trace->properties ?? collect();
+
+        return match ($trace->description) {
+            \Modules\Achat\Services\CircuitSoumissionService::EVENEMENT_SOUMISSION => "{$document} soumis au visa",
+            \Modules\Achat\Services\CircuitSoumissionService::EVENEMENT_RENVOI => "{$document} renvoyé en brouillon",
+            \Modules\Achat\Services\VisaService::EVENEMENT_VALIDATION => sprintf(
+                '%s validé', $props->get('numero') ?? $document
+            ),
+            \Modules\Achat\Services\FinDeVieService::EVENEMENT_ANNULATION => "{$document} annulé",
+            \Modules\Achat\Services\FinDeVieService::EVENEMENT_CLOTURE => "Reliquat de {$document} clôturé",
+            \Modules\Achat\Services\ReceptionLicencesService::EVENEMENT_FINALISATION => sprintf(
+                '%s licence(s) reçue(s) sur %s', $props->get('licences_creees') ?? '', $document
+            ),
+            \Modules\Achat\Services\ReceptionLicencesService::EVENEMENT_SERVICE_FAIT => "Service fait constaté sur {$document}",
+            \Modules\Achat\Services\RegularisationService::EVENEMENT_RATTACHEMENT => sprintf(
+                '%s équipement(s) rattaché(s) à %s', $props->get('nombre') ?? '', $document
+            ),
+            default => "{$document} — activité",
+        };
     }
 }

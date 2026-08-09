@@ -73,6 +73,7 @@ class CircuitSoumissionService
 
             activity('achat')
                 ->performedOn($bon)
+                ->causedBy($auteur)
                 ->withProperties([
                     'montant_ttc' => (float) $bon->montant_ttc,
                     'nb_lignes' => $bon->lignes()->count(),
@@ -139,6 +140,9 @@ class CircuitSoumissionService
 
             activity('achat')
                 ->performedOn($bon)
+                // Comme au visa : l'acteur est posé explicitement, pour que
+                // la trace survive à un appel hors requête HTTP.
+                ->causedBy($acteur)
                 ->withProperties(array_filter([
                     'motif' => $motif,
                     'auteur_bon' => $bon->created_by,
