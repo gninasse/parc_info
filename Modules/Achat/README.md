@@ -148,7 +148,16 @@ php artisan test Modules/Achat            # SQLite (suite par défaut)
 Modules/Achat/tests/postgres.sh           # PostgreSQL réel, schéma isolé
 Modules/Achat/tests/migrations.sh         # migrate / rollback / réinstallation
 Modules/Achat/tests/Navigateur/executer.sh # écrans réels dans un DOM (jsdom)
+php Modules/Achat/tests/Recette/lot_br.php # recette du lot BR sur la base réelle
 ```
+
+La **recette du lot BR** (CDC §12.3, REC-23 → REC-28) joue le parcours du
+recetteur sur la base de développement : vrais comptes, vraies permissions,
+vrais contrôleurs — dépôt du BL au comptoir, garde `bl_obligatoire_si_commande`,
+bordereau signé avec écarts, consultation croisée depuis Achat, pierre tombale,
+9e signal, et Stock coupé. Tout se déroule dans une transaction **annulée** :
+la base ressort intacte. Le bordereau PDF et la fiche produits sont laissés
+dans le dossier temporaire pour inspection à l'œil.
 
 ### Les pièges rencontrés, à connaître avant de toucher au module
 
