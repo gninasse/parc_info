@@ -7,6 +7,7 @@ use Modules\Achat\Http\Controllers\BonCommandeController;
 use Modules\Achat\Http\Controllers\BonCommandePdfController;
 use Modules\Achat\Http\Controllers\DashboardController;
 use Modules\Achat\Http\Controllers\DocumentController;
+use Modules\Achat\Http\Controllers\DocumentsReceptionController;
 use Modules\Achat\Http\Controllers\RapportController;
 use Modules\Achat\Http\Controllers\ReceptionLicencesController;
 use Modules\Achat\Http\Controllers\RegularisationController;
@@ -68,6 +69,15 @@ Route::middleware(['auth'])->prefix('achat')->name('achat.')->group(function () 
             Route::post('/', [DocumentController::class, 'store'])->name('store');
             Route::get('/{document}/telecharger', [DocumentController::class, 'telecharger'])->name('telecharger');
             Route::delete('/{document}', [DocumentController::class, 'destroy'])->name('destroy');
+        });
+
+        // BR-03 — le dossier documentaire de la LIVRAISON, servi par Achat.
+        // Routes PROXY : elles vérifient les permissions d'Achat puis relaient
+        // les fichiers de Stock. Aucune URL Stock n'est exposée, et aucun droit
+        // Stock n'est exigé — l'acheteur consulte les pièces de SES commandes.
+        Route::prefix('{id}/receptions/{entree}')->name('receptions.')->group(function () {
+            Route::get('/bordereau', [DocumentsReceptionController::class, 'bordereau'])->name('bordereau');
+            Route::get('/documents/{document}', [DocumentsReceptionController::class, 'telecharger'])->name('documents');
         });
 
         // A-04 — la fiche, en DERNIER : /{id} capterait tout segment littéral

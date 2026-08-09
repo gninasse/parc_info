@@ -31,6 +31,18 @@ $(function () {
         });
     });
 
+    /*
+     * BR-03 — le bordereau de réception d'une livraison, dans la MÊME modale.
+     * Délégation : les cartes de l'onglet Réceptions sont rendues par le
+     * serveur, et le seront encore après un rechargement partiel.
+     */
+    $(document).on('click', '.js-bordereau', function () {
+        ModalPdf.ouvrir({
+            url: $(this).data('url'),
+            titre: $(this).data('titre') || 'Bordereau de réception',
+        });
+    });
+
     // ── Commandes : chaque bouton POST porte son URL serveur ───────────────
 
     $('#action-supprimer').on('click', function () {

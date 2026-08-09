@@ -29,6 +29,8 @@ use Modules\Achat\Models\IntegrationReception;
  */
 class ReceptionsBonCommande
 {
+    public function __construct(private readonly DocumentsReception $documents) {}
+
     /**
      * @return array{integrees: Collection, en_cours: Collection, magasin_disponible: bool}
      */
@@ -45,13 +47,17 @@ class ReceptionsBonCommande
     {
         $entrees = $this->entreesLiees($bon);
 
+        // BR-03 : le dossier documentaire de la livraison, lu une seule fois
+        // pour toutes les cartes (une requête, pas une par réception).
+        $documents = $this->documents->parEntree($bon);
+
         return IntegrationReception::query()
             ->where('bon_commande_id', $bon->id)
             ->with('createur:id,name')
             ->orderBy('created_at')
             ->orderBy('id')
             ->get()
-            ->map(function (IntegrationReception $integration) use ($entrees) {
+            ->map(function (IntegrationReception $integration) use ($entrees, $documents, $bon) {
                 $entree = $integration->entree_id !== null
                     ? $entrees->get($integration->entree_id)
                     : null;
@@ -73,8 +79,35 @@ class ReceptionsBonCommande
                     'url_entree' => $entree !== null && \Illuminate\Support\Facades\Route::has('stock.entrees.show')
                         ? route('stock.entrees.show', $entree->id)
                         : null,
+                    // BR-03 — les pièces de CETTE livraison et son bordereau,
+                    // servis par les routes proxy d'Achat (jamais par Stock).
+                    'documents' => $integration->entree_id !== null
+                        ? $documents->get($integration->entree_id, collect())
+                        : collect(),
+                    'url_bordereau' => $this->urlBordereau($bon, $integration, $entree),
                 ];
             });
+    }
+
+    /**
+     * Le lien vers le bordereau de réception (BR-02), servi par le proxy.
+     *
+     * Il n'existe que pour une trace portant une ENTRÉE — ce qui exclut de
+     * fait les contre-passations, que le schéma rattache à un mouvement et
+     * jamais à une entrée (CHECK `chk_integrations_cle_selon_sens`) : elles
+     * défont une livraison, elles n'en attestent pas.
+     */
+    private function urlBordereau(BonCommande $bon, IntegrationReception $integration, ?object $entree): ?string
+    {
+        if ($integration->entree_id === null || $entree === null) {
+            return null;
+        }
+
+        if (! (auth()->user()?->can('achat.documents.view') ?? false)) {
+            return null;
+        }
+
+        return route('achat.bons-commande.receptions.bordereau', [$bon->id, $integration->entree_id]);
     }
 
     /**
@@ -120,6 +153,9 @@ class ReceptionsBonCommande
                         'url_entree' => \Illuminate\Support\Facades\Route::has('stock.entrees.edit')
                             ? route('stock.entrees.edit', $entree->id)
                             : null,
+                        // BR-03 : indicateur INFORMATIF — le magasin a-t-il déjà
+                        // numérisé le bordereau du livreur ? Rien n'en dépend.
+                        'bl_joint' => $this->documents->aUnBlFournisseur((int) $entree->id),
                     ];
                 });
 

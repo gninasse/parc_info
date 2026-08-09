@@ -468,6 +468,49 @@
                                         @endforeach
                                     </div>
                                 @endif
+
+                                {{--
+                                    BR-03 — le dossier documentaire de la livraison.
+                                    Les liens passent TOUS par les routes proxy d'Achat :
+                                    un acheteur sans aucun droit Stock sort ici le BL signé
+                                    de sa commande, ce qui est précisément le but.
+                                --}}
+                                @if($reception['url_bordereau'] || ($reception['documents'] ?? collect())->isNotEmpty())
+                                    <div class="d-flex flex-wrap align-items-center gap-2 mt-2 pt-2 border-top">
+                                        @if($reception['url_bordereau'])
+                                            <button type="button" class="btn btn-sm btn-outline-primary js-bordereau"
+                                                    data-url="{{ $reception['url_bordereau'] }}"
+                                                    data-titre="Bordereau de réception — {{ $reception['reference'] }}">
+                                                <i class="bi bi-printer me-1"></i>Bordereau de réception
+                                            </button>
+                                        @endif
+
+                                        @foreach($reception['documents'] ?? collect() as $piece)
+                                            @if($piece['est_supprime'])
+                                                {{-- Pierre tombale : la pièce a existé, elle a été retirée. --}}
+                                                <span class="badge bg-light text-muted border text-decoration-line-through"
+                                                      data-bs-toggle="tooltip"
+                                                      title="Pièce supprimée du dossier de réception">
+                                                    <i class="bi bi-paperclip me-1"></i>{{ $piece['nom_original'] }}
+                                                </span>
+                                            @elseif($piece['url_telechargement'])
+                                                <a href="{{ $piece['url_telechargement'] }}"
+                                                   class="btn btn-sm btn-outline-secondary js-piece-reception">
+                                                    <i class="bi bi-paperclip me-1"></i>
+                                                    {{ $piece['type_label'] }}
+                                                    <span class="text-muted">· {{ $piece['taille_lisible'] }}</span>
+                                                </a>
+                                            @else
+                                                {{-- Sans achat.documents.view : la pièce se sait, ne se lit pas. --}}
+                                                <span class="badge bg-light text-muted border"
+                                                      data-bs-toggle="tooltip"
+                                                      title="Consultation réservée : permission « pièces justificatives »">
+                                                    <i class="bi bi-lock me-1"></i>{{ $piece['type_label'] }}
+                                                </span>
+                                            @endif
+                                        @endforeach
+                                    </div>
+                                @endif
                             </div>
                         </div>
                     @endforeach
@@ -492,6 +535,24 @@
                                     {{ rtrim(rtrim(number_format($enCours['unites'], 2, ',', ' '), '0'), ',') }} unité(s) annoncée(s)
                                     @if($enCours['par']) · par {{ $enCours['par'] }} @endif
                                 </span>
+                                {{--
+                                    BR-03 — indicateur INFORMATIF : le magasin a-t-il déjà
+                                    numérisé le bordereau du livreur ? Aucune décision n'en
+                                    dépend, mais l'acheteur qui relance sait à quoi s'en tenir.
+                                --}}
+                                @if($enCours['bl_joint'] ?? false)
+                                    <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle"
+                                          data-bs-toggle="tooltip"
+                                          title="Le magasin a numérisé le bordereau du fournisseur">
+                                        <i class="bi bi-paperclip me-1"></i>BL joint
+                                    </span>
+                                @else
+                                    <span class="badge bg-light text-muted border"
+                                          data-bs-toggle="tooltip"
+                                          title="Aucun bordereau fournisseur numérisé pour l'instant">
+                                        BL non joint
+                                    </span>
+                                @endif
                                 <span class="badge bg-light text-muted border ms-auto"
                                       data-bs-toggle="tooltip"
                                       title="Seule la validation du bon d'entrée met à jour les reliquats">

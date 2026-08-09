@@ -41,6 +41,19 @@ class BordereauReceptionController extends Controller implements HasMiddleware
 
     public function __invoke(int $id)
     {
+        return $this->rendre($id);
+    }
+
+    /**
+     * La génération elle-même, sans le contrôle de permission du middleware.
+     *
+     * Elle est publique parce que le PROXY d'Achat (BR-03) la réutilise : un
+     * acheteur sans droits Stock consulte le bordereau de SES commandes, après
+     * les contrôles d'Achat. Réimplémenter le gabarit là-bas produirait deux
+     * bordereaux capables de diverger, ce qui vaut moins que pas de bordereau.
+     */
+    public function rendre(int $id)
+    {
         $entree = Entree::query()
             ->with([
                 'magasin',

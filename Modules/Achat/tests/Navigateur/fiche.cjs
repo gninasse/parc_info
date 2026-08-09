@@ -127,9 +127,29 @@ if (existe('fiche-partiel.html')) {
         url: 'https://parc_info.local/achat/bons-commande/1',
         beforeParse(window) {
             const clics = {};
+            const delegues = {};
             // Double minimal de jQuery : la fiche (et les scripts inline du
             // layout) ne se servent que de $(sel), .length, .data, .on, .attr.
             const fabriquer = (selecteur) => {
+                // $(document).on('click', '.js-x', …) : délégation. Le double
+                // la retient à part, sinon BR-03 (bordereaux de réception)
+                // passerait pour non branché.
+                if (selecteur === window.document || selecteur === window) {
+                    return {
+                        length: 1,
+                        on: (evt, cible, gestionnaire) => {
+                            if (typeof cible === 'string') delegues[cible] = gestionnaire;
+                            return fabriquer(selecteur);
+                        },
+                        ready: (fn) => { fn(); return fabriquer(selecteur); },
+                        data: () => undefined,
+                        attr: () => undefined,
+                        text: () => '',
+                        each: () => fabriquer(selecteur),
+                        prop: () => fabriquer(selecteur),
+                    };
+                }
+
                 const elements = typeof selecteur === 'function'
                     ? []
                     : (typeof selecteur === 'string' && !selecteur.trim().startsWith('<')
@@ -167,6 +187,7 @@ if (existe('fiche-partiel.html')) {
             window.OverlayScrollbarsGlobal = { OverlayScrollbars: () => {} };
             window.route = () => '';
             window.__clics = clics;
+            window.__delegues = delegues;
             window.onerror = (m) => erreurs.push(String(m));
         },
     });
@@ -197,6 +218,12 @@ if (existe('fiche-partiel.html')) {
     verifier('les données du bon sont lues depuis la barre',
         dom.window.__clics && Object.keys(dom.window.__clics).length > 0,
         Object.keys(dom.window.__clics ?? {}).join(', '));
+
+    // BR-03 : le bordereau d'une livraison s'ouvre dans la MODALE iframe,
+    // jamais dans un onglet — même exigence que le PDF du bon.
+    verifier('le bordereau de réception est branché sur la modale (BR-03)',
+        typeof dom.window.__delegues?.['.js-bordereau'] === 'function',
+        Object.keys(dom.window.__delegues ?? {}).join(', '));
 }
 
 console.log('');

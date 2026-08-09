@@ -3,6 +3,9 @@
 namespace Modules\Achat\Services;
 
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Modules\Achat\Models\BonCommande;
 use Modules\Achat\Models\IntegrationReception;
 use Modules\Core\Models\Activity;
@@ -27,6 +30,16 @@ use Modules\Core\Models\Activity;
  */
 class ChronologieBonCommande
 {
+    /**
+     * BR-03 — natures des pièces déposées au magasin, telles qu'Achat les
+     * raconte (le module Stock en reste la source : `Stock\Models\Document`).
+     */
+    private const PIECES_STOCK = [
+        'bl_fournisseur' => 'Bordereau du fournisseur',
+        'photo_livraison' => 'Photo de la livraison',
+        'autre' => 'Pièce',
+    ];
+
     /**
      * Les éléments de la timeline, du plus ancien au plus récent.
      *
@@ -61,7 +74,95 @@ class ChronologieBonCommande
             ->get()
             ->map(fn (Activity $activite) => $this->presenter($activite, $bon))
             ->filter()
+            // BR-03 : les pièces déposées au magasin sur les livraisons de CE
+            // bon. Elles viennent du journal STOCK, mais racontent l'histoire
+            // de cette commande : l'acheteur voit arriver le BL sans quitter
+            // sa fiche. IA-14 tient toujours — chaque élément reste une ligne
+            // de `activity_log`, simplement d'un autre module.
+            ->merge($this->piecesDesLivraisons($bon))
+            ->sortBy([['quand', 'asc'], ['id', 'asc']])
             ->values();
+    }
+
+    /**
+     * Les dépôts de pièces sur les bons d'entrée liés, relayés depuis Stock.
+     *
+     * Lecture DÉFENSIVE : si le module Stock est absent (table manquante,
+     * modèle non chargé), la chronologie perd ces lignes et garde toutes les
+     * siennes. Une fiche ne tombe pas parce que le magasin est en maintenance.
+     *
+     * @return Collection<int, array>
+     */
+    private function piecesDesLivraisons(BonCommande $bon): Collection
+    {
+        try {
+            /*
+             * Les DEUX tables sont vérifiées avant d'être interrogées.
+             *
+             * Sur PostgreSQL, une requête en erreur (table absente) AVORTE la
+             * transaction en cours : tout ce qui suit échoue en 25P02, y
+             * compris hors de ce service. Le try/catch ne suffirait pas — il
+             * attraperait l'exception, mais la fiche serait déjà condamnée.
+             * SQLite, lui, tolère la même faute sans rien dire : le défaut ne
+             * se voit qu'en exécutant la suite sur les deux moteurs.
+             */
+            if (! Schema::hasTable('stock_entrees') || ! Schema::hasTable('stock_documents')) {
+                return collect();
+            }
+
+            $entrees = DB::table('stock_entrees')
+                ->where('bon_commande_id', $bon->id)
+                ->pluck('numero', 'id');
+
+            if ($entrees->isEmpty()) {
+                return collect();
+            }
+
+            $documents = DB::table('stock_documents')
+                ->whereIn('documentable_id', $entrees->keys()->all())
+                ->where('documentable_type', 'Modules\Stock\Models\Entree')
+                ->pluck('documentable_id', 'id');
+
+            if ($documents->isEmpty()) {
+                return collect();
+            }
+
+            return Activity::query()
+                ->forModule('stock')
+                ->with('causer:id,name')
+                ->where('subject_type', 'Modules\Stock\Models\Document')
+                ->whereIn('subject_id', $documents->keys()->all())
+                ->where('description', 'created')
+                ->orderBy('created_at')
+                ->get()
+                ->map(function (Activity $activite) use ($documents, $entrees) {
+                    $attributs = collect($activite->properties?->get('attributes') ?? []);
+                    $entreeId = $documents->get($activite->subject_id);
+                    $entree = $entrees->get($entreeId);
+
+                    return [
+                        'id' => $activite->id,
+                        'icone' => 'bi-paperclip',
+                        'couleur' => 'info',
+                        'phrase' => sprintf(
+                            '%s joint%s au magasin%s',
+                            self::PIECES_STOCK[$attributs->get('type')] ?? 'Pièce',
+                            $attributs->get('type') === 'photo_livraison' ? 'e' : '',
+                            $entree !== null ? ' sur '.$entree : ''
+                        ),
+                        'details' => $attributs->get('nom_original'),
+                        'auteur' => $activite->causer?->name,
+                        'quand' => $activite->created_at,
+                    ];
+                });
+        } catch (\Throwable $e) {
+            Log::warning('Chronologie : pièces de livraison illisibles', [
+                'bon_commande_id' => $bon->id,
+                'exception' => $e->getMessage(),
+            ]);
+
+            return collect();
+        }
     }
 
     /** Une ligne du journal devient une phrase au passé — ou rien (trace technique). */
