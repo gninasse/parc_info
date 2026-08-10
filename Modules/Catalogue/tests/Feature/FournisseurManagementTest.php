@@ -133,13 +133,17 @@ class FournisseurManagementTest extends TestCase
     {
         $fournisseur = $this->fournisseur(['raison_sociale' => 'SITB Burkina']);
 
+        // La fiche est organisée en ONGLETS depuis l'ajout du carnet de
+        // contacts : on vérifie les panneaux, et non plus les titres des
+        // cartes empilées (« 01 — Coordonnées » et suivants) qu'ils ont
+        // remplacés.
         $this->actingAs($this->userWith('catalogue.fournisseurs.index'))
             ->get(route('catalogue.fournisseurs.show', $fournisseur->id))
             ->assertStatus(200)
             ->assertSee('SITB Burkina')
-            ->assertSee('01 — Coordonnées')
-            ->assertSee('02 — Articles au catalogue')
-            ->assertSee("03 — Journal d'activité", false);
+            ->assertSee('onglet-informations')
+            ->assertSee('onglet-articles')
+            ->assertSee('onglet-journal');
     }
 
     public function test_store_cree_avec_un_code_genere_automatiquement(): void

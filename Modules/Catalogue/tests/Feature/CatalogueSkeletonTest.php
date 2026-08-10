@@ -64,25 +64,58 @@ class CatalogueSkeletonTest extends TestCase
         $this->assertArrayNotHasKey('catalogue', $sans->getModuleNavigation());
     }
 
-    public function test_seeder_creates_the_sixteen_permissions_with_module_catalogue(): void
+    /**
+     * Le nombre n'est plus figé dans le NOM du test : il a changé à chaque
+     * ajout légitime de permission (16 → 20 avec le carnet de contacts), et
+     * un intitulé qui ment est pire qu'un intitulé vague. Ce qui compte est
+     * que TOUTE permission déclarée soit effectivement seedée avec son
+     * module — c'est cela qu'on vérifie.
+     */
+    public function test_seeder_creates_every_declared_permission_with_module_catalogue(): void
     {
         $attendues = array_keys(require module_path('Catalogue', 'config/permissions.php'));
 
-        $this->assertCount(16, $attendues);
+        $this->assertNotEmpty($attendues);
         $this->assertSame(
-            16,
+            count($attendues),
             \Spatie\Permission\Models\Permission::where('module', 'catalogue')
                 ->whereIn('name', $attendues)->count()
         );
     }
 
+    /**
+     * Les rôles se DÉDUISENT des permissions (voir le seeder) : on recalcule
+     * donc les effectifs attendus au lieu de les recopier, sinon le test
+     * devrait être réécrit à chaque ajout — et le recopiage finit toujours
+     * par masquer une erreur de répartition.
+     */
     public function test_seeder_creates_the_three_roles_and_is_idempotent(): void
     {
         $this->seed(CataloguePermissionsSeeder::class);
 
-        $this->assertSame(16, Role::findByName('Administrateur catalogue')->permissions->count());
-        $this->assertSame(13, Role::findByName('Gestionnaire catalogue')->permissions->count());
-        $this->assertSame(4, Role::findByName('Consultation catalogue')->permissions->count());
+        $permissions = array_keys(require module_path('Catalogue', 'config/permissions.php'));
+
+        $consultation = array_filter(
+            $permissions,
+            fn (string $nom) => str_ends_with($nom, '.index') || $nom === 'catalogue.api.view'
+        );
+        $gestion = array_filter($permissions, fn (string $nom) => ! str_ends_with($nom, '.destroy'));
+
+        $this->assertSame(count($permissions), Role::findByName('Administrateur catalogue')->permissions->count());
+        $this->assertSame(count($gestion), Role::findByName('Gestionnaire catalogue')->permissions->count());
+        $this->assertSame(count($consultation), Role::findByName('Consultation catalogue')->permissions->count());
         $this->assertSame(3, Role::where('name', 'like', '%catalogue%')->count());
+
+        // Le rôle de consultation ne doit JAMAIS pouvoir écrire : c'est la
+        // seule propriété de fond ici, et elle mérite d'être affirmée
+        // explicitement plutôt que déduite d'un décompte.
+        $lecture = Role::findByName('Consultation catalogue')->permissions->pluck('name');
+
+        foreach ($lecture as $nom) {
+            $this->assertTrue(
+                str_ends_with($nom, '.index') || $nom === 'catalogue.api.view',
+                "Le rôle de consultation ne devrait pas porter « {$nom} »."
+            );
+        }
     }
 }

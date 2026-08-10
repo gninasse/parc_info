@@ -18,7 +18,12 @@ export class FournisseurActions {
 
         $('#btn-edit').on('click', () => {
             const id = this.table.getSelectedId();
-            if (id) this._loadAndEdit(id);
+            // L'édition se fait SUR LA FICHE, pas dans une modale posée
+            // au-dessus du tableau : on modifie en voyant les contacts, les
+            // articles et le journal du fournisseur, au lieu d'éditer à
+            // l'aveugle. Le paramètre ?edit=1 demande à la fiche d'ouvrir la
+            // modale d'emblée, sans clic supplémentaire.
+            if (id) window.location.href = `${route('catalogue.fournisseurs.show', id)}?edit=1`;
         });
 
         $('#btn-toggle').on('click', () => {
@@ -29,18 +34,6 @@ export class FournisseurActions {
         $('#btn-delete').on('click', () => {
             const id = this.table.getSelectedId();
             if (id) this._confirmDelete(id);
-        });
-    }
-
-    _loadAndEdit(id) {
-        $.ajax({
-            url: route('catalogue.fournisseurs.show', id),
-            method: 'GET',
-            dataType: 'json',
-            success: (res) => {
-                if (res.success) this.form.openForEdit(res.data);
-            },
-            error: () => Swal.fire({ icon: 'error', title: 'Erreur', text: 'Impossible de charger les données.' }),
         });
     }
 

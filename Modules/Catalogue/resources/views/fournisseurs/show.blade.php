@@ -68,120 +68,222 @@
         </div>
     </div>
 
-    {{-- 01 — Coordonnées --}}
-    <div class="card border-0 shadow-sm mb-3">
-        <div class="card-header bg-white border-0 pt-3 pb-0">
-            <h6 class="fw-bold text-uppercase small text-muted mb-0">01 — Coordonnées</h6>
+    {{-- ── Onglets ─────────────────────────────────────────────────────────
+         Même structure que la fiche du bon de commande (Achat A-04) : des
+         boutons (et non des liens) porteurs de data-bs-toggle, avec les
+         attributs ARIA, et un compteur en pastille sur les onglets qui
+         listent des éléments. --}}
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white">
+            <ul class="nav nav-tabs card-header-tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#onglet-informations"
+                            type="button" role="tab" aria-controls="onglet-informations" aria-selected="true">
+                        <i class="fas fa-circle-info me-1"></i>Informations
+                    </button>
+                </li>
+                @can('catalogue.contacts.index')
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#onglet-contacts"
+                            type="button" role="tab" aria-controls="onglet-contacts" aria-selected="false">
+                        <i class="fas fa-address-book me-1"></i>Contacts
+                        <span class="badge bg-secondary-subtle text-secondary-emphasis" id="compteur-contacts">{{ $nbContacts }}</span>
+                    </button>
+                </li>
+                @endcan
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#onglet-articles"
+                            type="button" role="tab" aria-controls="onglet-articles" aria-selected="false">
+                        <i class="fas fa-boxes-stacked me-1"></i>Articles
+                        <span class="badge bg-secondary-subtle text-secondary-emphasis">{{ $fournisseur->nb_articles }}</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#onglet-journal"
+                            type="button" role="tab" aria-controls="onglet-journal" aria-selected="false">
+                        <i class="fas fa-clock-rotate-left me-1"></i>Journal
+                        <span class="badge bg-secondary-subtle text-secondary-emphasis">{{ $activites->count() }}</span>
+                    </button>
+                </li>
+            </ul>
         </div>
+
         <div class="card-body">
-            <div class="row g-4">
-                <div class="col-md-4">
-                    <div class="small text-uppercase text-muted fw-semibold">Personne à contacter</div>
-                    <div>{{ $fournisseur->contact ?: '—' }}</div>
-                </div>
-                <div class="col-md-4">
-                    <div class="small text-uppercase text-muted fw-semibold">Téléphone</div>
-                    <div>{{ $fournisseur->telephone ?: '—' }}</div>
-                </div>
-                <div class="col-md-4">
-                    <div class="small text-uppercase text-muted fw-semibold">Email</div>
-                    <div>
-                        @if($fournisseur->email)
-                            <a href="mailto:{{ $fournisseur->email }}">{{ $fournisseur->email }}</a>
-                        @else
-                            —
+            <div class="tab-content">
+
+                {{-- ── Onglet Informations ─────────────────────────────── --}}
+                <div class="tab-pane fade show active" id="onglet-informations" role="tabpanel">
+                    <div class="row g-4">
+                        <div class="col-md-4">
+                            <div class="small text-uppercase text-muted fw-semibold">Personne à contacter</div>
+                            <div>{{ $fournisseur->contact ?: '—' }}</div>
+                            {{-- Ce champ est l'interlocuteur « historique », saisi
+                                 en texte libre sur la fiche du fournisseur. Le
+                                 carnet complet, lui, vit dans l'onglet Contacts :
+                                 on le dit, sinon les deux se confondent. --}}
+                            @can('catalogue.contacts.index')
+                            <div class="form-text">
+                                Carnet complet dans l'onglet <a href="#" class="lien-onglet-contacts">Contacts</a>.
+                            </div>
+                            @endcan
+                        </div>
+                        <div class="col-md-4">
+                            <div class="small text-uppercase text-muted fw-semibold">Téléphone</div>
+                            <div>
+                                @if($fournisseur->telephone)
+                                    <a href="tel:{{ $fournisseur->telephone }}">{{ $fournisseur->telephone }}</a>
+                                @else
+                                    —
+                                @endif
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="small text-uppercase text-muted fw-semibold">Email</div>
+                            <div>
+                                @if($fournisseur->email)
+                                    <a href="mailto:{{ $fournisseur->email }}">{{ $fournisseur->email }}</a>
+                                @else
+                                    —
+                                @endif
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="small text-uppercase text-muted fw-semibold">Adresse</div>
+                            <div>{{ $fournisseur->adresse ?: '—' }}</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="small text-uppercase text-muted fw-semibold">Ajouté le</div>
+                            <div>{{ $fournisseur->created_at?->format('d/m/Y') }}</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="small text-uppercase text-muted fw-semibold">Articles au catalogue</div>
+                            <div>{{ $fournisseur->nb_articles }}</div>
+                        </div>
+                        @if($fournisseur->notes)
+                        <div class="col-12">
+                            <div class="small text-uppercase text-muted fw-semibold">Notes</div>
+                            <div class="text-muted">{{ $fournisseur->notes }}</div>
+                        </div>
                         @endif
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="small text-uppercase text-muted fw-semibold">Adresse</div>
-                    <div>{{ $fournisseur->adresse ?: '—' }}</div>
+
+                {{-- ── Onglet Contacts ─────────────────────────────────── --}}
+                @can('catalogue.contacts.index')
+                <div class="tab-pane fade" id="onglet-contacts" role="tabpanel">
+
+                    {{-- Toolbar + sélection de ligne : convention du projet,
+                         jamais de colonne d'actions par ligne. --}}
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        @can('catalogue.contacts.store')
+                        <button type="button" class="btn btn-primary btn-sm" id="btn-contact-add">
+                            <i class="fas fa-plus me-1"></i>Ajouter
+                        </button>
+                        @endcan
+                        @can('catalogue.contacts.update')
+                        <button type="button" class="btn btn-outline-primary btn-sm" id="btn-contact-edit" disabled>
+                            <i class="fas fa-edit me-1"></i>Modifier
+                        </button>
+                        <button type="button" class="btn btn-outline-success btn-sm" id="btn-contact-principal" disabled
+                                data-bs-toggle="tooltip" title="Désigner comme interlocuteur principal">
+                            <i class="fas fa-star me-1"></i>Définir principal
+                        </button>
+                        @endcan
+                        @can('catalogue.contacts.destroy')
+                        <button type="button" class="btn btn-outline-danger btn-sm" id="btn-contact-delete" disabled>
+                            <i class="fas fa-trash me-1"></i>Supprimer
+                        </button>
+                        @endcan
+                    </div>
+
+                    <table id="contacts-table"
+                           data-toggle="table"
+                           data-url="{{ route('catalogue.contacts.index', $fournisseur->id) }}"
+                           data-click-to-select="true"
+                           data-single-select="true"
+                           data-locale="fr-FR"
+                           class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th data-field="state" data-checkbox="true"></th>
+                                <th data-field="nom_complet" data-sortable="true">Nom</th>
+                                <th data-field="fonction">Fonction</th>
+                                <th data-field="telephone" data-formatter="telephoneFormatter">Téléphone</th>
+                                <th data-field="email" data-formatter="emailFormatter">Email</th>
+                                <th data-field="est_principal" data-formatter="principalFormatter" data-align="center">Principal</th>
+                                <th data-field="est_actif" data-formatter="statutFormatter" data-align="center">Statut</th>
+                            </tr>
+                        </thead>
+                    </table>
                 </div>
-                <div class="col-md-4">
-                    <div class="small text-uppercase text-muted fw-semibold">Ajouté le</div>
-                    <div>{{ $fournisseur->created_at?->format('d/m/Y') }}</div>
+                @endcan
+
+                {{-- ── Onglet Articles ─────────────────────────────────── --}}
+                <div class="tab-pane fade" id="onglet-articles" role="tabpanel">
+                    <div class="d-flex justify-content-end mb-2">
+                        <a href="{{ route('catalogue.articles.index', ['fournisseur_id' => $fournisseur->id]) }}" class="small">
+                            Voir tous les articles <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                    <table id="articles-table"
+                           data-toggle="table"
+                           data-url="{{ route('catalogue.articles.data', ['fournisseur_id' => $fournisseur->id]) }}"
+                           data-pagination="true"
+                           data-side-pagination="server"
+                           data-page-size="10"
+                           data-page-list="[10, 25, 50]"
+                           data-locale="fr-FR"
+                           class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th data-field="code" data-sortable="true">Code</th>
+                                <th data-field="nom" data-sortable="true">Désignation</th>
+                                <th data-field="nature_label">Nature</th>
+                                <th data-field="prix_indicatif" data-sortable="true" data-formatter="fcfaFormatter" data-align="end">Prix indicatif</th>
+                                <th data-field="est_actif" data-formatter="statutFormatter" data-align="center">Statut</th>
+                            </tr>
+                        </thead>
+                    </table>
                 </div>
-                <div class="col-md-4">
-                    <div class="small text-uppercase text-muted fw-semibold">Articles au catalogue</div>
-                    <div>{{ $fournisseur->nb_articles }}</div>
+
+                {{-- ── Onglet Journal ──────────────────────────────────── --}}
+                <div class="tab-pane fade" id="onglet-journal" role="tabpanel">
+                    @forelse($activites as $activite)
+                        @php
+                            $evenements = ['created' => ['Création', 'success'], 'updated' => ['Modification', 'info'], 'deleted' => ['Suppression', 'danger']];
+                            [$libelle, $couleur] = $evenements[$activite->event] ?? [ucfirst((string) $activite->event), 'secondary'];
+                        @endphp
+                        <div class="d-flex mb-3 {{ $loop->last ? '' : 'border-bottom pb-3' }}">
+                            <div class="me-3">
+                                <span class="badge bg-{{ $couleur }}">{{ $libelle }}</span>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="small">
+                                    @if(($modifies = array_keys($activite->changes()['attributes'] ?? [])) !== [])
+                                        Champs : {{ implode(', ', $modifies) }}
+                                    @else
+                                        {{ $activite->description }}
+                                    @endif
+                                </div>
+                                <div class="small text-muted">
+                                    {{ $activite->causer?->name ?? 'Système' }} — {{ $activite->created_at->format('d/m/Y H:i') }}
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <p class="text-muted small mb-0"><i class="fas fa-info-circle me-1"></i>Aucune activité enregistrée.</p>
+                    @endforelse
                 </div>
-                @if($fournisseur->notes)
-                <div class="col-12">
-                    <div class="small text-uppercase text-muted fw-semibold">Notes</div>
-                    <div class="text-muted">{{ $fournisseur->notes }}</div>
-                </div>
-                @endif
+
             </div>
-        </div>
-    </div>
-
-    {{-- 02 — Articles au catalogue --}}
-    <div class="card border-0 shadow-sm mb-3">
-        <div class="card-header bg-white border-0 pt-3 pb-0 d-flex justify-content-between align-items-center">
-            <h6 class="fw-bold text-uppercase small text-muted mb-0">02 — Articles au catalogue</h6>
-            <a href="{{ route('catalogue.articles.index', ['fournisseur_id' => $fournisseur->id]) }}" class="small">
-                Voir tous <i class="fas fa-arrow-right ms-1"></i>
-            </a>
-        </div>
-        <div class="card-body p-0">
-            <table id="articles-table"
-                   data-toggle="table"
-                   data-url="{{ route('catalogue.articles.data', ['fournisseur_id' => $fournisseur->id]) }}"
-                   data-pagination="true"
-                   data-side-pagination="server"
-                   data-page-size="5"
-                   data-page-list="[5, 10, 25]"
-                   data-locale="fr-FR"
-                   class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th data-field="code" data-sortable="true">Code</th>
-                        <th data-field="nom" data-sortable="true">Désignation</th>
-                        <th data-field="nature_label">Nature</th>
-                        <th data-field="prix_indicatif" data-sortable="true" data-formatter="fcfaFormatter" data-align="end">Prix indicatif</th>
-                        <th data-field="est_actif" data-formatter="statutFormatter" data-align="center">Statut</th>
-                    </tr>
-                </thead>
-            </table>
-        </div>
-    </div>
-
-    {{-- 03 — Journal d'activité --}}
-    <div class="card border-0 shadow-sm mb-3">
-        <div class="card-header bg-white border-0 pt-3 pb-0">
-            <h6 class="fw-bold text-uppercase small text-muted mb-0">03 — Journal d'activité</h6>
-        </div>
-        <div class="card-body">
-            @forelse($activites as $activite)
-                @php
-                    $evenements = ['created' => ['Création', 'success'], 'updated' => ['Modification', 'info'], 'deleted' => ['Suppression', 'danger']];
-                    [$libelle, $couleur] = $evenements[$activite->event] ?? [ucfirst((string) $activite->event), 'secondary'];
-                @endphp
-                <div class="d-flex mb-3 {{ $loop->last ? '' : 'border-bottom pb-3' }}">
-                    <div class="me-3">
-                        <span class="badge bg-{{ $couleur }}">{{ $libelle }}</span>
-                    </div>
-                    <div class="flex-grow-1">
-                        <div class="small">
-                            @if(($modifies = array_keys($activite->changes()['attributes'] ?? [])) !== [])
-                                Champs : {{ implode(', ', $modifies) }}
-                            @else
-                                {{ $activite->description }}
-                            @endif
-                        </div>
-                        <div class="small text-muted">
-                            {{ $activite->causer?->name ?? 'Système' }} — {{ $activite->created_at->format('d/m/Y H:i') }}
-                        </div>
-                    </div>
-                </div>
-            @empty
-                <p class="text-muted small mb-0"><i class="fas fa-info-circle me-1"></i>Aucune activité enregistrée.</p>
-            @endforelse
         </div>
     </div>
 </div>
 
 @include('catalogue::fournisseurs._modal')
+@can('catalogue.contacts.index')
+    @include('catalogue::fournisseurs._modal_contact')
+@endcan
 @endsection
 
 @push('js')

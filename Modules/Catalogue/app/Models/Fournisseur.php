@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 use Modules\Catalogue\Services\CodeSequence;
 use Modules\Core\Traits\LogsActivityWithModule;
@@ -64,6 +65,24 @@ class Fournisseur extends Model
     public function articles(): HasMany
     {
         return $this->hasMany(Article::class, 'fournisseur_principal_id');
+    }
+
+    /**
+     * Les interlocuteurs chez ce fournisseur.
+     *
+     * À ne pas confondre avec l'attribut `contact`, qui reste un texte libre
+     * pour l'interlocuteur habituel (donnée historique, conservée).
+     */
+    public function contacts(): HasMany
+    {
+        return $this->hasMany(ContactFournisseur::class, 'fournisseur_id');
+    }
+
+    /** Le contact désigné comme principal, s'il en existe un. */
+    public function contactPrincipal(): HasOne
+    {
+        return $this->hasOne(ContactFournisseur::class, 'fournisseur_id')
+            ->where('est_principal', true);
     }
 
     public function createur(): BelongsTo

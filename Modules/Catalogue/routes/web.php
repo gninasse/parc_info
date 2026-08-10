@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Modules\Catalogue\Http\Controllers\ApiController;
 use Modules\Catalogue\Http\Controllers\ArticleController;
 use Modules\Catalogue\Http\Controllers\CategorieController;
+use Modules\Catalogue\Http\Controllers\ContactFournisseurController;
 use Modules\Catalogue\Http\Controllers\FournisseurController;
 
 Route::middleware(['auth'])->prefix('catalogue')->name('catalogue.')->group(function () {
@@ -55,4 +56,26 @@ Route::middleware(['auth'])->prefix('catalogue')->name('catalogue.')->group(func
         Route::delete('/{id}', [FournisseurController::class, 'destroy'])->name('destroy');
         Route::patch('/{id}/toggle-status', [FournisseurController::class, 'toggleStatus'])->name('toggle-status');
     });
+
+    /*
+    | Contacts d'un fournisseur (onglet de la fiche).
+    |
+    | Les routes sont IMBRIQUÉES et `scopeBindings()` est décisif : il impose
+    | que le {contact} demandé appartienne au {fournisseur} de l'URL, sinon
+    | 404. Sans lui, un identifiant deviné permettrait de modifier ou de
+    | supprimer le contact d'un AUTRE fournisseur — le contrôle serait à
+    | réécrire dans chaque méthode, et un oubli suffirait à ouvrir la brèche.
+    */
+    Route::prefix('fournisseurs/{fournisseur}/contacts')
+        ->name('contacts.')
+        ->scopeBindings()
+        ->group(function () {
+            Route::get('/', [ContactFournisseurController::class, 'index'])->name('index');
+            Route::post('/', [ContactFournisseurController::class, 'store'])->name('store');
+            Route::get('/{contact}', [ContactFournisseurController::class, 'show'])->name('show');
+            Route::put('/{contact}', [ContactFournisseurController::class, 'update'])->name('update');
+            Route::delete('/{contact}', [ContactFournisseurController::class, 'destroy'])->name('destroy');
+            Route::patch('/{contact}/principal', [ContactFournisseurController::class, 'definirPrincipal'])
+                ->name('principal');
+        });
 });

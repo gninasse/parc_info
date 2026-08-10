@@ -119,7 +119,12 @@ class FournisseurController extends Controller implements HasMiddleware
             ->limit(10)
             ->get();
 
-        return view('catalogue::fournisseurs.show', compact('fournisseur', 'motifsBlocage', 'activites'));
+        // Compteur de l'onglet Contacts, rendu par le serveur pour être juste
+        // dès le premier affichage : la table, elle, ne se charge qu'à
+        // l'ouverture de l'onglet.
+        $nbContacts = $fournisseur->contacts()->count();
+
+        return view('catalogue::fournisseurs.show', compact('fournisseur', 'motifsBlocage', 'activites', 'nbContacts'));
     }
 
     public function store(StoreFournisseurRequest $request): JsonResponse
