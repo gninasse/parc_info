@@ -34,6 +34,14 @@ if (! is_dir($dossier)) {
 file_put_contents("{$dossier}/liste.html", $appel(route('achat.bons-commande.index')));
 file_put_contents("{$dossier}/liste.json", $appel(route('achat.bons-commande.data', ['limit' => 100]), true));
 
+/*
+ * Le tableau de bord (A-01). Il n'était PAS capturé, ce qui explique que le
+ * gel du graphique lui ait échappé : un défaut de mise en page ne se voit ni
+ * dans une réponse HTTP correcte, ni dans une charge JSON. La page est donc
+ * rendue ici pour que `gel-graphique.cjs` puisse contrôler sa structure.
+ */
+file_put_contents("{$dossier}/dashboard.html", $appel(route('achat.dashboard')));
+
 // Une charge filtrée, pour vérifier que le pied de tableau suit le filtre.
 file_put_contents(
     "{$dossier}/liste-valide.json",

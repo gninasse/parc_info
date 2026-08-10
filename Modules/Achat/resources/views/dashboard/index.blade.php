@@ -14,6 +14,22 @@
     .kpi-action { border-left-color: #dc3545; }
     .kpi-vigilance { border-left-color: #fd7e14; }
     .kpi a.stretched-link { text-decoration: none; }
+    /*
+        Zone du graphique — hauteur FIXÉE, et c'est indispensable.
+
+        Chart.js en `responsive: true` + `maintainAspectRatio: false` calcule
+        la taille du canvas d'après celle de son PARENT. Si le parent n'a pas
+        de hauteur propre, il prend celle de son contenu — donc celle du
+        canvas : le canvas grandit, le parent grandit, le canvas grandit
+        encore. La boucle ne converge jamais et fige l'onglet.
+
+        Le `position: relative` fait partie du correctif : sans lui, le canvas
+        absolu de Chart.js se dimensionnerait par rapport à un ancêtre plus
+        haut dans l'arbre, et la hauteur imposée ici ne servirait à rien.
+
+        Même convention que `Modules/Stock/.../statistiques` (.zone-graphique).
+    */
+    .zone-graphique { position: relative; height: 300px; width: 100%; }
     /* Dette d'intérim : orange hachuré (SPEC_UX §0.2) */
     .kpi-interim {
         border-left-color: #fd7e14;
@@ -189,10 +205,16 @@
         </div>
         <div class="card-body">
             {{-- Les régularisations en sont exclues (elles documentent le
-                 passé) : le graphique décrit l'activité, pas le rattrapage. --}}
-            <canvas id="graphique-evolution" height="80"
-                    data-evolution='@json($evolution)'
-                    aria-label="Dépenses engagées par mois sur douze mois"></canvas>
+                 passé) : le graphique décrit l'activité, pas le rattrapage.
+
+                 Le canvas DOIT rester dans .zone-graphique : c'est ce
+                 conteneur à hauteur fixée qui empêche la boucle de
+                 redimensionnement de Chart.js (voir la CSS en tête de vue). --}}
+            <div class="zone-graphique">
+                <canvas id="graphique-evolution"
+                        data-evolution='@json($evolution)'
+                        aria-label="Dépenses engagées par mois sur douze mois"></canvas>
+            </div>
 
             {{-- Équivalent textuel : un graphique seul n'est pas accessible. --}}
             <details class="mt-2">

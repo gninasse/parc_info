@@ -7,11 +7,29 @@
  * carte de rapport finiraient par diverger.
  *
  * La bascule HT/TTC ne recharge pas la page : les deux séries sont déjà là.
+ *
+ * ATTENTION au dimensionnement : le canvas doit rester dans un conteneur à
+ * hauteur fixée (.zone-graphique). Sans lui, `responsive` +
+ * `maintainAspectRatio: false` fait grandir le canvas à chaque mesure, ce qui
+ * fige l'onglet. Le défaut a été constaté en usage réel.
  */
 
 $(function () {
     const canvas = document.getElementById('graphique-evolution');
     if (!canvas || typeof Chart === 'undefined') return;
+
+    // Garde-fou : si le conteneur à hauteur fixée a disparu de la vue, on
+    // dessine quand même, mais SANS `responsive` — un graphique figé à une
+    // taille est un désagrément ; un onglet gelé empêche de travailler.
+    const conteneurDimensionne = canvas.parentElement !== null
+        && canvas.parentElement.classList.contains('zone-graphique');
+
+    if (!conteneurDimensionne) {
+        console.warn(
+            '[achat] Le canvas du tableau de bord n\'est pas dans .zone-graphique : '
+            + 'mode non responsive activé pour éviter une boucle de redimensionnement.'
+        );
+    }
 
     const evolution = JSON.parse(canvas.dataset.evolution || '[]');
     if (evolution.length === 0) return;
@@ -33,8 +51,12 @@ $(function () {
             }],
         },
         options: {
-            responsive: true,
+            responsive: conteneurDimensionne,
             maintainAspectRatio: false,
+            // Les animations sont coupées : sur douze barres elles n'apportent
+            // rien, et chaque image redessinée est du temps processeur pris à
+            // une machine qui peut être modeste.
+            animation: false,
             plugins: {
                 legend: { display: false },
                 tooltip: {

@@ -57,3 +57,7 @@ node "$ICI/fiche.cjs"
 echo
 echo "→ Accessibilité des parcours critiques (SPEC_UX §18)"
 node "$ICI/accessibilite.cjs"
+
+echo
+echo "→ Dimensionnement du graphique du tableau de bord (anti-gel)"
+node "$ICI/gel-graphique.cjs"
